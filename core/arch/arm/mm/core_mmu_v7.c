@@ -632,22 +632,25 @@ void core_mmu_set_user_map(struct core_mmu_user_map *map)
 	/*
 	 * Update the reserved Context ID and TTBR0
 	 */
+	if (read_contextidr()) {
+		tlbi_asid(read_contextidr());
 
-	dsb();  /* ARM erratum 754322 */
-	write_contextidr(0);
-	isb();
+		dsb();  /* ARM erratum 754322 */
+		write_contextidr(0);
+		isb();
+	}
 
 	if (map) {
 		write_ttbr0(map->ttbr0);
 		isb();
 		write_contextidr(map->ctxid);
 		isb();
+		tlbi_asid(read_contextidr());
+
 	} else {
 		write_ttbr0(read_ttbr1());
 		isb();
 	}
-
-	tlbi_all();
 
 	/* Restore interrupts */
 	thread_unmask_exceptions(exceptions);

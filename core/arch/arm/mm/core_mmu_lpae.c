@@ -770,14 +770,18 @@ void core_mmu_set_user_map(struct core_mmu_user_map *map)
 {
 	uint64_t ttbr;
 	uint32_t exceptions = thread_mask_exceptions(THREAD_EXCP_ALL);
+	uint64_t prev_asid;
 
 	assert(user_va_idx != -1);
 
 	ttbr = read_ttbr0_64bit();
 	/* Clear ASID */
+	prev_asid = (ttbr >> TTBR_ASID_SHIFT) & TTBR_ASID_MASK;
 	ttbr &= ~((uint64_t)TTBR_ASID_MASK << TTBR_ASID_SHIFT);
 	write_ttbr0_64bit(ttbr);
 	isb();
+	if (prev_asid)
+		tlbi_asid(prev_asid);
 
 	/* Set the new map */
 	if (map && map->user_map) {
@@ -786,12 +790,11 @@ void core_mmu_set_user_map(struct core_mmu_user_map *map)
 		ttbr |= ((uint64_t)map->asid << TTBR_ASID_SHIFT);
 		write_ttbr0_64bit(ttbr);
 		isb();
+		tlbi_asid(map->asid);
 	} else {
 		l1_xlation_table[get_core_pos()][user_va_idx] = 0;
 		dsb();	/* Make sure the write above is visible */
 	}
-
-	tlbi_all();
 
 	thread_unmask_exceptions(exceptions);
 }
@@ -844,14 +847,18 @@ void core_mmu_set_user_map(struct core_mmu_user_map *map)
 {
 	uint64_t ttbr;
 	uint32_t daif = read_daif();
+	uint64_t prev_asid;
 
 	write_daif(daif | DAIF_AIF);
 
 	ttbr = read_ttbr0_el1();
+	prev_asid = (ttbr >> TTBR_ASID_SHIFT) & TTBR_ASID_MASK;
 	/* Clear ASID */
 	ttbr &= ~((uint64_t)TTBR_ASID_MASK << TTBR_ASID_SHIFT);
 	write_ttbr0_el1(ttbr);
 	isb();
+	if (prev_asid)
+		tlbi_asid(prev_asid);
 
 	/* Set the new map */
 	if (map && map->user_map) {
@@ -860,12 +867,11 @@ void core_mmu_set_user_map(struct core_mmu_user_map *map)
 		ttbr |= ((uint64_t)map->asid << TTBR_ASID_SHIFT);
 		write_ttbr0_el1(ttbr);
 		isb();
+		tlbi_asid(map->asid);
 	} else {
 		l1_xlation_table[get_core_pos()][user_va_idx] = 0;
 		dsb();	/* Make sure the write above is visible */
 	}
-
-	tlbi_all();
 
 	write_daif(daif);
 }

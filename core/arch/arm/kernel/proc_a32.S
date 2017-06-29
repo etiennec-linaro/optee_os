@@ -46,6 +46,8 @@ FUNC cpu_mmu_enable , :
 UNWIND(	.fnstart)
 	/* Invalidate TLB */
 	write_tlbiall
+	dsb
+	isb
 
 	/* Enable the MMU */
 	read_sctlr r0
@@ -66,6 +68,8 @@ UNWIND(	.fnstart)
 	/* Invalidate instruction cache and branch predictor */
 	write_iciallu
 	write_bpiall
+	dsb
+	isb
 
 	/* Enable the instruction cache */
 	read_sctlr r1
@@ -83,6 +87,11 @@ KEEP_PAGER cpu_mmu_enable_icache
 /* void cpu_mmu_enable_dcache(void) - enable data cache */
 FUNC cpu_mmu_enable_dcache , :
 UNWIND(	.fnstart)
+	/* Invalidate instruction cache and branch predictor */
+	write_bpiall
+	dsb
+	isb
+
 	read_sctlr r0
 	orr	r0, r0, #SCTLR_C
 	write_sctlr r0

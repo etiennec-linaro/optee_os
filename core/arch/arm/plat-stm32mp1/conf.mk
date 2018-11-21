@@ -17,6 +17,7 @@ $(call force,CFG_PSCI_ARM32,y)
 $(call force,CFG_SECONDARY_INIT_CNTFRQ,y)
 $(call force,CFG_SECURE_TIME_SOURCE_CNTPCT,y)
 $(call force,CFG_WITH_SOFTWARE_PRNG,y)
+$(call force,CFG_SM_PLATFORM_HANDLER,y)
 
 ifneq ($(filter $(CFG_EMBED_DTB_SOURCE_FILE),$(flavorlist-512M)),)
 CFG_TZDRAM_START ?= 0xde000000
@@ -37,6 +38,8 @@ CFG_WITH_STACK_CANARIES ?= y
 
 $(call force,CFG_STM32_BSEC,y)
 CFG_STM32_UART ?= y
+
+$(call force,CFG_STM32_BSEC_SIP,y)
 
 # Default enable some test facitilites
 CFG_TEE_CORE_EMBED_INTERNAL_TESTS ?= y

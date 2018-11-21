@@ -7,7 +7,14 @@
 #define __STM32_UTIL_H__
 
 #include <kernel/panic.h>
+#include <sm/sm.h>
 #include <stdint.h>
+
+/* SiP & OEM platform services */
+bool stm32_sip_service(struct sm_ctx *ctx,
+		       uint32_t *a0, uint32_t *a1, uint32_t *a2, uint32_t *a3);
+bool stm32_oem_service(struct sm_ctx *ctx,
+		       uint32_t *a0, uint32_t *a1, uint32_t *a2, uint32_t *a3);
 
 /* Backup registers and RAM utils */
 uintptr_t stm32mp_bkpreg(unsigned int idx);

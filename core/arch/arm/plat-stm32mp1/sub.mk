@@ -6,3 +6,4 @@ srcs-y += shared_resources.c
 
 subdirs-y += drivers
 subdirs-y += pm
+subdirs-y += service

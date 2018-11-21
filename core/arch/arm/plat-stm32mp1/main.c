@@ -15,8 +15,10 @@
 #include <kernel/spinlock.h>
 #include <mm/core_memprot.h>
 #include <platform_config.h>
+#include <sm/optee_smc.h>
 #include <sm/psci.h>
 #include <stm32_util.h>
+#include <tee/arch_svc.h>
 #include <tee/entry_std.h>
 #include <tee/entry_fast.h>
 #include <trace.h>
@@ -140,6 +142,29 @@ unsigned int stm32mp_get_otp_max(void)
 unsigned int stm32mp_get_otp_upper_start(void)
 {
 	return STM32MP1_UPPER_OTP_START;
+}
+
+/*
+ * SIP and other platform specific services
+ */
+bool sm_platform_handler(struct sm_ctx *ctx)
+{
+	uint32_t *a0 = (uint32_t *)(&ctx->nsec.r0);
+	uint32_t *a1 = (uint32_t *)(&ctx->nsec.r1);
+	uint32_t *a2 = (uint32_t *)(&ctx->nsec.r2);
+	uint32_t *a3 = (uint32_t *)(&ctx->nsec.r3);
+
+	if (!OPTEE_SMC_IS_FAST_CALL(*a0))
+		return true;
+
+	switch (OPTEE_SMC_OWNER_NUM(*a0)) {
+	case OPTEE_SMC_OWNER_SIP:
+		return stm32_sip_service(ctx, a0, a1, a2, a3);
+	case OPTEE_SMC_OWNER_OEM:
+		return stm32_oem_service(ctx, a0, a1, a2, a3);
+	default:
+		return true;
+	}
 }
 
 uint32_t may_spin_lock(unsigned int *lock)

@@ -4,10 +4,14 @@
  */
 
 #include <compiler.h>
+#include <console.h>
 #include <drivers/serial.h>
 #include <drivers/stm32_uart.h>
 #include <io.h>
 #include <keep.h>
+#include <kernel/delay.h>
+#include <stm32_util.h>
+#include <string.h>
 #include <util.h>
 
 #define UART_REG_CR1			0x00	/* Control register 1 */
@@ -20,6 +24,11 @@
 #define UART_REG_RDR			0x24	/* Receive data register */
 #define UART_REG_TDR			0x28	/* Transmit data register */
 #define UART_REG_PRESC			0x2c	/* Prescaler register */
+
+#define STM32_UART_IOMEM_SIZE		0x400
+
+#define PUTC_TIMEOUT_US			1000
+#define FLUSH_TIMEOUT_US		16000
 
 /*
  * Uart Interrupt & status register bits
@@ -36,26 +45,49 @@
 
 static vaddr_t loc_chip_to_base(struct serial_chip *chip)
 {
-	struct console_pdata *pd =
-		container_of(chip, struct console_pdata, chip);
+	struct stm32_uart_pdata *pd;
 
-	return io_pa_or_va(&pd->base);
+	pd = container_of(chip, struct stm32_uart_pdata, chip);
+
+	if (cpu_mmu_enabled()) {
+		if (!pd->base.va) {
+			void *va = phys_to_virt(pd->base.pa,
+						pd->secure ? MEM_AREA_IO_SEC :
+						MEM_AREA_IO_NSEC);
+
+			assert(va);
+			pd->base.va = (vaddr_t)va;
+		}
+
+		return pd->base.va;
+	}
+
+	return pd->base.pa;
 }
 
 static void loc_flush(struct serial_chip *chip)
 {
 	vaddr_t base = loc_chip_to_base(chip);
+	uint64_t timeout_ref = utimeout_init(FLUSH_TIMEOUT_US);
 
 	while (!(read32(base + UART_REG_ISR) & USART_ISR_TXFE))
-		;
+		if (utimeout_elapsed(FLUSH_TIMEOUT_US, timeout_ref))
+			return;
 }
 
 static void loc_putc(struct serial_chip *chip, int ch)
 {
 	vaddr_t base = loc_chip_to_base(chip);
+	uint64_t timeout_ref = utimeout_init(PUTC_TIMEOUT_US);
 
-	while (!(read32(base + UART_REG_ISR) & USART_ISR_TXE_TXFNF))
-		;
+	while (!(read32(base + UART_REG_ISR) & USART_ISR_TXE_TXFNF)) {
+		if (utimeout_elapsed(PUTC_TIMEOUT_US, timeout_ref)) {
+			if (read32(base + UART_REG_ISR) & USART_ISR_TXE_TXFNF)
+				break;
+
+			return;
+		}
+	}
 
 	write32(ch, base + UART_REG_TDR);
 }
@@ -77,17 +109,19 @@ static int loc_getchar(struct serial_chip *chip)
 	return read32(base + UART_REG_RDR) & 0xff;
 }
 
-static const struct serial_ops serial_ops = {
+static const struct serial_ops stm32_uart_serial_ops = {
 	.flush = loc_flush,
 	.putc = loc_putc,
 	.have_rx_data = loc_have_rx_data,
 	.getchar = loc_getchar,
 
 };
-KEEP_PAGER(serial_ops);
+KEEP_PAGER(stm32_uart_serial_ops);
 
-void stm32_uart_init(struct console_pdata *pd, vaddr_t base)
+static struct serial_chip *serial_console;
+
+void stm32_uart_init(struct stm32_uart_pdata *pd, vaddr_t base)
 {
 	pd->base.pa = base;
-	pd->chip.ops = &serial_ops;
+	pd->chip.ops = &stm32_uart_serial_ops;
 }

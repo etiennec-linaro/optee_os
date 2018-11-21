@@ -35,6 +35,7 @@ CFG_TEE_CORE_NB_CORE ?= 2
 CFG_WITH_PAGER ?= y
 CFG_WITH_LPAE ?= y
 CFG_WITH_STACK_CANARIES ?= y
+CFG_MMAP_REGIONS ?= 23
 
 $(call force,CFG_STM32_BSEC,y)
 CFG_STM32_UART ?= y
@@ -47,3 +48,5 @@ CFG_WITH_STATS ?= y
 # Non secure UART and GPIO/pinctrl for the output console
 CFG_WITH_NSEC_GPIOS ?= y
 CFG_WITH_NSEC_UARTS ?= y
+# UART instance used for early console (0 disables early console)
+CFG_STM32_EARLY_CONSOLE_UART ?= 4

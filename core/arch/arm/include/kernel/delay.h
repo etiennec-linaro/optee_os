@@ -1,5 +1,6 @@
 /* SPDX-License-Identifier: BSD-2-Clause */
 /*
+ * Copyright (c) 2018, Linaro Limited
  * Copyright (C) 2017, Fuzhou Rockchip Electronics Co., Ltd.
  * All rights reserved.
  *
@@ -29,7 +30,14 @@
 #ifndef __KERNEL_DELAY_H
 #define __KERNEL_DELAY_H
 
+#include <stdbool.h>
+#include <stdint.h>
+
 void udelay(uint32_t us);
 void mdelay(uint32_t ms);
+
+uint64_t utimeout_init(uint32_t us);
+bool utimeout_elapsed(uint32_t us, uint64_t ref);
+unsigned int utimeout_elapsed_us(uint32_t us, uint64_t reference);
 
 #endif

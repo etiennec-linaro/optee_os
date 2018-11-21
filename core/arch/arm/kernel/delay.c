@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: BSD-2-Clause
 /*
+ * Copyright (c) 2018, Linaro Limited
  * Copyright (C) 2017, Fuzhou Rockchip Electronics Co., Ltd.
  * All rights reserved.
  *
@@ -29,12 +30,15 @@
 #include <arm.h>
 #include <kernel/delay.h>
 
+#define US2CNT(m)	(((uint64_t)m * (uint64_t)read_cntfrq()) / 1000000ULL)
+#define CNT2US(m)	((uint32_t)(((uint64_t)m * 1000000ULL) / read_cntfrq()))
+
 void udelay(uint32_t us)
 {
 	uint64_t start, target;
 
 	start = read_cntpct();
-	target = ((uint64_t)read_cntfrq() * us) / 1000000ULL;
+	target = US2CNT(us);
 
 	while (read_cntpct() - start <= target)
 		;
@@ -43,4 +47,38 @@ void udelay(uint32_t us)
 void mdelay(uint32_t ms)
 {
 	udelay(1000 * ms);
+}
+
+uint64_t utimeout_init(uint32_t us)
+{
+	return read_cntpct() + US2CNT(us);
+}
+
+bool utimeout_elapsed(uint32_t us, uint64_t reference)
+{
+	uint64_t origin = reference - US2CNT(us);
+	uint64_t now = read_cntpct();
+
+	if (origin < reference)
+		return now < origin || now > reference;
+
+	return now < origin && now > reference;
+}
+
+unsigned int utimeout_elapsed_us(uint32_t us, uint64_t reference)
+{
+	uint64_t origin = reference - US2CNT(us);
+	uint64_t now = read_cntpct();
+
+	if (origin < reference) {
+		if (now < origin || now > reference)
+			return CNT2US(now - reference);
+
+		return 0;
+	}
+
+	if (now < origin && now > reference)
+		return CNT2US(now - reference);
+
+	return 0;
 }

@@ -16,6 +16,11 @@ uintptr_t stm32mp_bkpreg(unsigned int idx);
 uintptr_t get_gicc_base(void);
 uintptr_t get_gicd_base(void);
 
+/* Platform util for the BSEC driver */
+uintptr_t stm32mp_get_bsec_base(void);
+unsigned int stm32mp_get_otp_max(void);
+unsigned int stm32mp_get_otp_upper_start(void);
+
 /* Power management service */
 #ifdef CFG_PSCI_ARM32
 void stm32mp_register_online_cpu(void);

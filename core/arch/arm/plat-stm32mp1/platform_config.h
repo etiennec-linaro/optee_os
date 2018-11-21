@@ -11,6 +11,7 @@
 /* Make stacks aligned to data cache line length */
 #define STACK_ALIGNMENT			32
 
+#define BSEC_BASE			0x5c005000
 #define CRYP1_BASE			0x54001000
 #define GIC_BASE			0xa0021000ul
 #define GPIOA_BASE			0x50002000
@@ -49,6 +50,23 @@
 
 #define CONSOLE_UART_BASE		STM32MP1_DEBUG_USART_BASE
 #define CONSOLE_UART_SIZE		1024
+
+/* BSEC OTP resources */
+#define STM32MP1_OTP_MAX_ID		0x5FU
+#define STM32MP1_UPPER_OTP_START	0x20U
+
+#define OTP_MAX_SIZE			(STM32MP1_OTP_MAX_ID + 1U)
+
+#define DATA0_OTP			0
+#define PART_NUMBER_OTP			1
+#define MONOTONIC_OTP			4
+#define NAND_OTP			9
+#define UID0_OTP			13
+#define UID1_OTP			14
+#define UID2_OTP			15
+#define HW2_OTP				18
+
+#define DATA0_OTP_SECURED		BIT(6)
 
 /* GIC resources */
 #define GIC_SIZE			0x2000

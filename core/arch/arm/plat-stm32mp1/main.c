@@ -23,6 +23,7 @@
 
 register_phys_mem(MEM_AREA_IO_NSEC, CONSOLE_UART_BASE, CONSOLE_UART_SIZE);
 
+register_phys_mem(MEM_AREA_IO_SEC, BSEC_BASE, SMALL_PAGE_SIZE);
 register_phys_mem(MEM_AREA_IO_SEC, GIC_BASE, GIC_SIZE);
 register_phys_mem(MEM_AREA_IO_SEC, TAMP_BASE, SMALL_PAGE_SIZE);
 
@@ -116,6 +117,29 @@ uintptr_t get_gicd_base(void)
 		return (uintptr_t)phys_to_virt_io(pbase);
 
 	return pbase;
+}
+
+uintptr_t stm32mp_get_bsec_base(void)
+{
+	static void *va;
+
+	if (!cpu_mmu_enabled())
+		return BSEC_BASE;
+
+	if (!va)
+		va = phys_to_virt(BSEC_BASE, MEM_AREA_IO_SEC);
+
+	return (vaddr_t)va;
+}
+
+unsigned int stm32mp_get_otp_max(void)
+{
+	return STM32MP1_OTP_MAX_ID;
+}
+
+unsigned int stm32mp_get_otp_upper_start(void)
+{
+	return STM32MP1_UPPER_OTP_START;
 }
 
 uint32_t may_spin_lock(unsigned int *lock)

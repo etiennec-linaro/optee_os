@@ -35,6 +35,7 @@ CFG_WITH_PAGER ?= y
 CFG_WITH_LPAE ?= y
 CFG_WITH_STACK_CANARIES ?= y
 
+$(call force,CFG_STM32_BSEC,y)
 CFG_STM32_UART ?= y
 
 # Default enable some test facitilites

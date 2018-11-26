@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: BSD-2-Clause
  */
 
+#include <stdlib.h>
 #include <assert.h>
 #include <inttypes.h>
 #include <sks_internal_abi.h>
@@ -1485,4 +1486,42 @@ bool object_is_private(struct sks_attrs_head *head)
 		return true;
 
 	return false;
+}
+
+/*
+ * Generate and add a CKA_ID attribute to an object
+ *
+ * @attrs - Target object
+ * @set_id - Reference to ID to add or NULL is ID shall be generated
+ * @id_size - Byte size if the ID, either supplied by @set_id or generated
+ * Return an SKS return code
+ */
+uint32_t generate_id(struct sks_attrs_head **attrs,
+		     void *set_id, size_t id_size)
+{
+	uint32_t rv;
+	void *id = set_id;
+
+	rv = get_attribute(*attrs, SKS_CKA_ID, NULL, NULL);
+	if (rv != SKS_NOT_FOUND) {
+		if (!rv)
+			EMSG("CKA_ID already found in object");
+
+		return SKS_CKR_GENERAL_ERROR;
+	}
+
+	if (!id) {
+		id = malloc(id_size);
+		if (!id)
+			return SKS_MEMORY;
+
+		TEE_GenerateRandom(id, (uint32_t)id_size);
+	}
+
+	rv = add_attribute(attrs, SKS_CKA_ID, id, id_size);
+
+	if (!set_id)
+		free(id);
+
+	return rv;
 }

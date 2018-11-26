@@ -160,4 +160,7 @@ bool object_is_private(struct sks_attrs_head *head);
 void pkcs11_max_min_key_size(uint32_t key_type, uint32_t *max_key_size,
 			     uint32_t *min_key_size, bool bit_size_only);
 
+uint32_t generate_id(struct sks_attrs_head **attrs,
+		     void *set_id, size_t id_size);
+
 #endif /*__PKCS11_ATTRIBUTE_H*/

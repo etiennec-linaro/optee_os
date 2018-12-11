@@ -37,6 +37,9 @@ CFG_WITH_STACK_CANARIES ?= y
 
 CFG_STM32_UART ?= y
 
-# Default enable the test facitilites
+# Default enable some test facitilites
 CFG_TEE_CORE_EMBED_INTERNAL_TESTS ?= y
 CFG_WITH_STATS ?= y
+# Non secure UART and GPIO/pinctrl for the output console
+CFG_WITH_NSEC_GPIOS ?= y
+CFG_WITH_NSEC_UARTS ?= y

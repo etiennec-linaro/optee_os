@@ -23,6 +23,7 @@
 #define __CRYPTO_CRYPTO_H
 
 #include <tee_api_types.h>
+#include <util.h>
 
 TEE_Result crypto_init(void);
 
@@ -267,8 +268,6 @@ TEE_Result hash_sha256_check(const uint8_t *hash, const uint8_t *data,
 TEE_Result hash_sha512_256_compute(uint8_t *digest, const uint8_t *data,
 		size_t data_size);
 
-#define CRYPTO_RNG_SRC_IS_QUICK(sid) (!!((sid) & 1))
-
 /*
  * enum crypto_rng_src - RNG entropy source
  *
@@ -277,10 +276,18 @@ TEE_Result hash_sha512_256_compute(uint8_t *digest, const uint8_t *data,
  * directly to the pool. The difference is that in the latter case RPC to
  * normal world can be performed and in the former it must not.
  */
+#define RNG_SID_SRC_QUEUED		BIT(0)
+#define RNG_SID_SRC_NUM_SHIFT		1
+#define RNG_SID_GET_SNUM(sid)		((sid) >> RNG_SID_SRC_NUM_SHIFT)
+#define RNG_SID_SET_SNUM(num)		((num) << RNG_SID_SRC_NUM_SHIFT)
+
+#define CRYPTO_RNG_SRC_IS_QUICK(sid)	((sid) & RNG_SID_SRC_QUEUED)
+
 enum crypto_rng_src {
-	CRYPTO_RNG_SRC_JITTER_SESSION	= (0 << 1 | 0),
-	CRYPTO_RNG_SRC_JITTER_RPC	= (1 << 1 | 1),
-	CRYPTO_RNG_SRC_NONSECURE	= (1 << 1 | 0),
+	CRYPTO_RNG_SRC_JITTER_SESSION = RNG_SID_SET_SNUM(0),
+	CRYPTO_RNG_SRC_NONSECURE = RNG_SID_SET_SNUM(1),
+	CRYPTO_RNG_SRC_JITTER_RPC = RNG_SID_SET_SNUM(1) | RNG_SID_SRC_QUEUED,
+	CRYPTO_RNG_SRC_HW_RNG = RNG_SID_SET_SNUM(2),
 };
 
 /*

@@ -4,6 +4,7 @@
  */
 
 #include <assert.h>
+#include <crypto/crypto.h>
 #include <drivers/stm32_rng.h>
 #include <io.h>
 #include <kernel/dt.h>
@@ -187,6 +188,26 @@ bail:
 	return rc;
 }
 
+#ifdef CFG_WITH_SOFTWARE_PRNG
+#define PRNG_ENTROPY_BUF_SIZE		32
+
+static void __maybe_unused add_entropy_to_prng(void)
+{
+	static unsigned int prng_pool_num;
+	uint8_t buf[PRNG_ENTROPY_BUF_SIZE];
+
+	if (stm32_rng_read(buf, sizeof(buf)))
+		panic();
+
+	crypto_rng_add_event(CRYPTO_RNG_SRC_HW_RNG, &prng_pool_num,
+			     buf, sizeof(buf));
+}
+#else
+static void __maybe_unused add_entropy_to_prng(void)
+{
+}
+#endif
+
 #ifdef CFG_EMBED_DTB
 static TEE_Result stm32_rng_init(void)
 {
@@ -222,6 +243,8 @@ static TEE_Result stm32_rng_init(void)
 		stm32_rng->clock = (unsigned long)dt_info.clock;
 
 		DMSG("RNG init");
+
+		add_entropy_to_prng();
 	}
 
 	return TEE_SUCCESS;

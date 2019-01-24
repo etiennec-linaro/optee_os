@@ -179,24 +179,21 @@ void main_secondary_init_gic(void)
 	stm32mp_register_online_cpu();
 }
 
+static uintptr_t get_gic_base(void)
+{
+	struct io_pa_va base = { .pa = GIC_BASE };
+
+	return io_pa_or_va(&base);
+}
+
 uintptr_t get_gicc_base(void)
 {
-	uintptr_t pbase = GIC_BASE + GICC_OFFSET;
-
-	if (cpu_mmu_enabled())
-		return (uintptr_t)phys_to_virt_io(pbase);
-
-	return pbase;
+	return get_gic_base() + GICC_OFFSET;
 }
 
 uintptr_t get_gicd_base(void)
 {
-	uintptr_t pbase = GIC_BASE + GICD_OFFSET;
-
-	if (cpu_mmu_enabled())
-		return (uintptr_t)phys_to_virt_io(pbase);
-
-	return pbase;
+	return get_gic_base() + GICD_OFFSET;
 }
 
 uint32_t may_spin_lock(unsigned int *lock)

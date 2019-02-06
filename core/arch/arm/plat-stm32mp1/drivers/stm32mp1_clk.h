@@ -34,17 +34,4 @@ void stm32mp1_clk_enable(unsigned long id);
  */
 void stm32mp1_clk_disable(unsigned long id);
 
-/*
- * Return whether target clock is enabled or not
- * @id: Target clock (see stm32mp1 clock bindings IDs)
- */
-bool stm32mp1_clk_is_enabled(unsigned long id);
-
-/*
- * Get target clock frequency
- * @id: Target clock (see stm32mp1 clock bindings IDs)
- * Return the frequency in Hertz
- */
-unsigned long stm32mp1_clk_get_rate(unsigned long id);
-
 #endif /*__STM32MP1_CLK_H*/

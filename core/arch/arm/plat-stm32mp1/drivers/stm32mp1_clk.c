@@ -825,7 +825,7 @@ static bool __clk_is_enabled(struct stm32mp1_clk_gate const *gate)
 	return read32(base + gate->offset) & BIT(gate->bit);
 }
 
-bool stm32mp1_clk_is_enabled(unsigned long id)
+bool stm32_clock_is_enabled(unsigned long id)
 {
 	int i = stm32mp1_clk_get_gated_id(id);
 
@@ -905,7 +905,7 @@ static long get_timer_rate(long parent_rate, unsigned int apb_bus)
 	return parent_rate * (timgxpre + 1) * 2;
 }
 
-unsigned long stm32mp1_clk_get_rate(unsigned long id)
+unsigned long stm32_clock_get_rate(unsigned long id)
 {
 	int p;
 	unsigned long rate;

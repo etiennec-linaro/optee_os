@@ -812,7 +812,7 @@ static void __clk_enable(struct stm32mp1_clk_gate const *gate)
 	if (gate->set_clr)
 		io_write32(base + gate->offset, bit);
 	else
-		io_setbits32(base + gate->offset, bit);
+		stm32shregs_setbits(base + gate->offset, bit);
 
 	FMSG("Clock %u has been enabled", gate->clock_id);
 }
@@ -825,7 +825,7 @@ static void __clk_disable(struct stm32mp1_clk_gate const *gate)
 	if (gate->set_clr)
 		io_write32(base + gate->offset + RCC_MP_ENCLRR_OFFSET, bit);
 	else
-		io_clrbits32(base + gate->offset, bit);
+		stm32shregs_clrbits(base + gate->offset, bit);
 
 	FMSG("Clock %u has been disabled", gate->clock_id);
 }

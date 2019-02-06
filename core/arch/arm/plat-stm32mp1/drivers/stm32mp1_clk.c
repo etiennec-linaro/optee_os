@@ -835,7 +835,7 @@ bool stm32_clock_is_enabled(unsigned long id)
 	return __clk_is_enabled(gate_ref(i));
 }
 
-void stm32mp1_clk_enable(unsigned long id)
+void __stm32mp1_clk_enable(unsigned long id, bool secure)
 {
 	int i = stm32mp1_clk_get_gated_id(id);
 	uint32_t exceptions;
@@ -847,15 +847,13 @@ void stm32mp1_clk_enable(unsigned long id)
 
 	exceptions = may_spin_lock(&refcount_lock);
 
-	if (!gate_refcounts[i])
+	if (incr_shrefcnt(&gate_refcounts[i], secure))
 		__clk_enable(gate_ref(i));
-
-	gate_refcounts[i]++;
 
 	may_spin_unlock(&refcount_lock, exceptions);
 }
 
-void stm32mp1_clk_disable(unsigned long id)
+void __stm32mp1_clk_disable(unsigned long id, bool secure)
 {
 	int i = stm32mp1_clk_get_gated_id(id);
 	uint32_t exceptions;
@@ -867,9 +865,7 @@ void stm32mp1_clk_disable(unsigned long id)
 
 	exceptions = may_spin_lock(&refcount_lock);
 
-	assert(gate_refcounts[i]);
-	gate_refcounts[i]--;
-	if (!gate_refcounts[i])
+	if (decr_shrefcnt(&gate_refcounts[i], secure))
 		__clk_disable(gate_ref(i));
 
 	may_spin_unlock(&refcount_lock, exceptions);

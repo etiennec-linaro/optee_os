@@ -8,10 +8,10 @@
 
 void stm32_clock_enable(unsigned long id)
 {
-	stm32mp1_clk_enable(id);
+	stm32mp1_clk_enable_secure(id);
 }
 
 void stm32_clock_disable(unsigned long id)
 {
-	stm32mp1_clk_disable(id);
+	stm32mp1_clk_disable_secure(id);
 }

@@ -23,15 +23,50 @@ enum stm32mp_osc_id {
 };
 
 /*
- * Enable target clock with reference counting
- * @id: Target clock (see stm32mp1 clock bindings IDs)
+ * Enable/disable clock from a secure or non-secure request
+ * @id: Target clock from stm32mp1 clock bindings IDs
+ * @secure_request: False if and only if non-secure world request clock enable
+ *
+ * The difference between secure/non-secure origin is related to the
+ * reference counter used to track clock state.
  */
-void stm32mp1_clk_enable(unsigned long id);
+void __stm32mp1_clk_enable(unsigned long id, bool secure_request);
 
 /*
- * Disable target clock with reference counting
- * @id: Target clock (see stm32mp1 clock bindings IDs)
+ * Enable clock from a secure or non-secure request
+ * @id: Target clock from stm32mp1 clock bindings IDs
+ * @secure_request: False if and only if non-secure world request clock disable
  */
-void stm32mp1_clk_disable(unsigned long id);
+void __stm32mp1_clk_disable(unsigned long id, bool secure_request);
+
+/*
+ * Return whether target clock is enabled or not
+ * @id: Target clock from stm32mp1 clock bindings IDs
+ */
+bool stm32mp1_clk_is_enabled(unsigned long id);
+
+/*
+ * Helpers for enabling/disabling clocks from secure and non-secure requests.
+ * @id: Target clock from stm32mp1 clock bindings IDs
+ */
+static inline void stm32mp1_clk_enable_non_secure(unsigned long id)
+{
+	__stm32mp1_clk_enable(id, false);
+}
+
+static inline void stm32mp1_clk_enable_secure(unsigned long id)
+{
+	__stm32mp1_clk_enable(id, true);
+}
+
+static inline void stm32mp1_clk_disable_non_secure(unsigned long id)
+{
+	__stm32mp1_clk_disable(id, false);
+}
+
+static inline void stm32mp1_clk_disable_secure(unsigned long id)
+{
+	__stm32mp1_clk_disable(id, true);
+}
 
 #endif /*__STM32MP1_CLK_H*/

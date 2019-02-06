@@ -52,6 +52,25 @@ static inline void stm32mp_register_online_cpu(void)
 uint32_t may_spin_lock(unsigned int *lock);
 void may_spin_unlock(unsigned int *lock, uint32_t exceptions);
 
+/* Lock/unlock access to shared registers with exception mask value */
+uint32_t lock_stm32shregs(void);
+void unlock_stm32shregs(uint32_t exceptions);
+
+/*
+ * io_mask32() like functions with locking of shared registers access
+ */
+void io_mask32_stm32shregs(uintptr_t addr, uint32_t value, uint32_t mask);
+
+static inline void stm32shregs_setbits(uintptr_t addr, uint32_t value)
+{
+	io_mask32_stm32shregs(addr, value, value);
+}
+
+static inline void stm32shregs_clrbits(uintptr_t addr, uint32_t value)
+{
+	io_mask32_stm32shregs(addr, 0, value);
+}
+
 /*
  * Util for clock gating and to get clock rate for stm32 and platform drivers
  * @id: Target clock ID, ID used in clock DT bindings

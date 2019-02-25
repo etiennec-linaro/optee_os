@@ -44,9 +44,16 @@ struct pseudo_ta_head {
 	SCATTERED_ARRAY_DEFINE_PG_ITEM(pseudo_tas, struct pseudo_ta_head) = \
 		{ __VA_ARGS__ }
 
+struct pseudo_ta_session {
+	uint32_t session_id;
+	void *session_ctx;
+	TAILQ_ENTRY(pseudo_ta_session) link;
+};
+
 struct pseudo_ta_ctx {
 	const struct pseudo_ta_head *pseudo_ta;
 	struct tee_ta_ctx ctx;
+	TAILQ_HEAD(sessions, pseudo_ta_session) sessions;
 };
 
 bool is_pseudo_ta_ctx(struct tee_ta_ctx *ctx);

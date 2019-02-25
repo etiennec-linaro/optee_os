@@ -8,6 +8,7 @@
 #include <kernel/panic.h>
 #include <mm/core_memprot.h>
 #include <pta_invoke_tests.h>
+#include <sys/queue.h>
 #include <string.h>
 #include <tee/cache.h>
 #include <tee_api_defines.h>
@@ -359,28 +360,73 @@ static TEE_Result test_dump_sdp(uint32_t type, TEE_Param p[TEE_NUM_PARAMS])
  * Trusted Application Entry Points
  */
 
+struct session {
+	TAILQ_ENTRY(session) link;
+};
+
+static TAILQ_HEAD(session_listi, session) session_list =
+	TAILQ_HEAD_INITIALIZER(session_list);
+
 static TEE_Result create_ta(void)
 {
 	DMSG("create entry point for pseudo TA \"%s\"", TA_NAME);
+
+	if (!TAILQ_EMPTY(&session_list))
+		return TEE_ERROR_GENERIC;
+
 	return TEE_SUCCESS;
 }
 
 static void destroy_ta(void)
 {
+	if (!TAILQ_EMPTY(&session_list))
+		panic("pta_invoke_test: bad state");
+
 	DMSG("destroy entry point for pseudo ta \"%s\"", TA_NAME);
 }
 
 static TEE_Result open_session(uint32_t param_type __unused,
 			       TEE_Param params[TEE_NUM_PARAMS] __unused,
-			       void **session __unused)
+			       void **session)
 {
+	/* Safely return a memory reference, OP-TEE will hide it in a handle */
+	struct session *sess = calloc(1, sizeof(*sess));
+
 	DMSG("open entry point for pseudo ta \"%s\"", TA_NAME);
+
+	if (!sess)
+		return TEE_ERROR_OUT_OF_MEMORY;
+
+	TAILQ_INSERT_TAIL(&session_list, sess, link);
+
+	*session = sess;
+
 	return TEE_SUCCESS;
 }
 
-static void close_session(void *session __unused)
+static TEE_Result find_session(void *session)
+{
+	struct session *cur = NULL;
+	struct session *next = NULL;
+
+	TAILQ_FOREACH_SAFE(cur, &session_list, link, next)
+		if (session == (void *)cur)
+			return TEE_SUCCESS;
+
+	return TEE_ERROR_ITEM_NOT_FOUND;
+
+}
+
+static void close_session(void *session)
 {
 	DMSG("close entry point for pseudo ta \"%s\"", TA_NAME);
+
+	if (find_session(session) != TEE_SUCCESS)
+		panic("invalid ID");
+
+	TAILQ_REMOVE(&session_list, (struct session *)session, link);
+
+	free(session);
 }
 
 static TEE_Result invoke_command(void *session __unused,
@@ -388,6 +434,11 @@ static TEE_Result invoke_command(void *session __unused,
 				 TEE_Param params[TEE_NUM_PARAMS])
 {
 	FMSG("command entry point for pseudo ta \"%s\"", TA_NAME);
+
+	if (find_session(session) != TEE_SUCCESS) {
+		EMSG("Invalid session %p", session);
+		return TEE_ERROR_ITEM_NOT_FOUND;
+	}
 
 	switch (command_id) {
 	case PTA_INVOKE_TESTS_CMD_TRACE:

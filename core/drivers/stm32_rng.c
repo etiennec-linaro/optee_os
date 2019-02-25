@@ -62,15 +62,15 @@ static struct stm32_rng_instance *stm32_rng;
  */
 static void conceal_seed_error(vaddr_t rng_base)
 {
-	if (read32(rng_base + RNG_SR) & (RNG_SR_SECS | RNG_SR_SEIS)) {
+	if (io_read32(rng_base + RNG_SR) & (RNG_SR_SECS | RNG_SR_SEIS)) {
 		size_t i = 0;
 
 		io_mask32(rng_base + RNG_SR, 0, RNG_SR_SEIS);
 
 		for (i = 12; i != 0; i--)
-			(void)read32(rng_base + RNG_DR);
+			(void)io_read32(rng_base + RNG_DR);
 
-		if (read32(rng_base + RNG_SR) & RNG_SR_SEIS)
+		if (io_read32(rng_base + RNG_SR) & RNG_SR_SEIS)
 			panic("RNG noise");
 	}
 }
@@ -84,9 +84,9 @@ TEE_Result stm32_rng_read_raw(vaddr_t rng_base, uint8_t *out, size_t *size)
 	uint32_t exceptions = thread_mask_exceptions(THREAD_EXCP_ALL);
 	uint64_t timeout_ref = timeout_init_us(RNG_TIMEOUT_US);
 
-	if (!(read32(rng_base + RNG_CR) & RNG_CR_RNGEN)) {
+	if (!(io_read32(rng_base + RNG_CR) & RNG_CR_RNGEN)) {
 		/* Enable RNG if not, clock error is disabled */
-		write32(RNG_CR_RNGEN | RNG_CR_CED, rng_base + RNG_CR);
+		io_write32(rng_base + RNG_CR, RNG_CR_RNGEN | RNG_CR_CED);
 		enabled = true;
 	}
 
@@ -94,18 +94,18 @@ TEE_Result stm32_rng_read_raw(vaddr_t rng_base, uint8_t *out, size_t *size)
 	while (!timeout_elapsed(timeout_ref)) {
 		conceal_seed_error(rng_base);
 
-		if (read32(rng_base + RNG_SR) & RNG_SR_DRDY)
+		if (io_read32(rng_base + RNG_SR) & RNG_SR_DRDY)
 			break;
 	}
 
-	if (read32(rng_base + RNG_SR) & RNG_SR_DRDY) {
+	if (io_read32(rng_base + RNG_SR) & RNG_SR_DRDY) {
 		uint8_t *buf = out;
 		size_t req_size = MIN(RNG_FIFO_BYTE_DEPTH, *size);
 		size_t len = req_size;
 
 		/* RNG is ready: read up to 4 32bit words */
 		while (len) {
-			uint32_t data32 = read32(rng_base + RNG_DR);
+			uint32_t data32 = io_read32(rng_base + RNG_DR);
 			size_t sz = MIN(len, sizeof(uint32_t));
 
 			memcpy(buf, &data32, sz);
@@ -117,7 +117,7 @@ TEE_Result stm32_rng_read_raw(vaddr_t rng_base, uint8_t *out, size_t *size)
 	}
 
 	if (enabled)
-		write32(0, rng_base + RNG_CR);
+		io_write32(rng_base + RNG_CR, 0);
 
 	thread_unmask_exceptions(exceptions);
 
@@ -126,20 +126,20 @@ TEE_Result stm32_rng_read_raw(vaddr_t rng_base, uint8_t *out, size_t *size)
 
 static void gate_rng(bool enable, struct stm32_rng_instance *dev)
 {
-	vaddr_t rng_base = io_pa_or_va(&dev->base);
+	vaddr_t rng_cr = io_pa_or_va(&dev->base) + RNG_CR;
 	uint32_t exceptions = may_spin_lock(&dev->lock);
 
 	if (enable) {
 		/* incr_refcnt return non zero if resource shall be enabled */
 		if (incr_refcnt(&dev->refcount)) {
 			stm32_clock_enable(dev->clock);
-			write32(0, rng_base + RNG_CR);
-			write32(RNG_CR_RNGEN | RNG_CR_CED, rng_base + RNG_CR);
+			io_write32(rng_cr, 0);
+			io_write32(rng_cr, RNG_CR_RNGEN | RNG_CR_CED);
 		}
 	} else {
 		/* decr_refcnt return non zero if resource shall be disabled */
 		if (decr_refcnt(&dev->refcount)) {
-			write32(0, rng_base + RNG_CR);
+			io_write32(rng_cr, 0);
 			stm32_clock_disable(dev->clock);
 		}
 	}
@@ -150,7 +150,7 @@ static void gate_rng(bool enable, struct stm32_rng_instance *dev)
 TEE_Result stm32_rng_read(uint8_t *out, size_t size)
 {
 	TEE_Result rc = 0;
-	uint32_t exceptions;
+	uint32_t exceptions = 0;
 	vaddr_t rng_base = io_pa_or_va(&stm32_rng->base);
 	uint8_t *out_ptr = out;
 	size_t out_size = 0;

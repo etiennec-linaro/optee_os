@@ -11,18 +11,24 @@
 #include <drivers/stm32_uart.h>
 #include <drivers/stm32mp1_etzpc.h>
 #include <dt-bindings/clock/stm32mp1-clks.h>
+#include <drivers/stm32_rng.h>
+#include <drivers/stm32mp1_rcc.h>
+#include <io.h>
 #include <kernel/generic_boot.h>
 #include <kernel/dt.h>
+#include <kernel/delay.h>
 #include <kernel/misc.h>
 #include <kernel/panic.h>
 #include <kernel/pm_stubs.h>
 #include <kernel/spinlock.h>
+#include <kernel/tee_time.h>
 #include <mm/core_memprot.h>
 #include <platform_config.h>
 #include <sm/psci.h>
 #include <stm32_util.h>
 #include <tee/entry_std.h>
 #include <tee/entry_fast.h>
+#include <tee/tee_cryp_utl.h>
 #include <trace.h>
 
 #ifdef CFG_WITH_NSEC_GPIOS
@@ -329,3 +335,48 @@ unsigned int stm32_get_gpio_bank_clock(unsigned int bank)
 	assert(bank <= GPIO_BANK_K);
 	return GPIOA + bank;
 }
+
+#ifdef CFG_STM32_RNG
+#define RNG1_RESET_TIMEOUT_US		1000
+void plat_rng_init(void)
+{
+	TEE_Result res;
+	uintptr_t rng = (uintptr_t)phys_to_virt(RNG1_BASE, MEM_AREA_IO_SEC);
+	uintptr_t rcc = stm32_rcc_base();
+	struct seed {
+		uint8_t seed1[16];
+		TEE_Time seed2;
+	} seed;
+	size_t size = 0;
+	uint64_t timeout_ref = timeout_init_us(RNG1_RESET_TIMEOUT_US);
+
+	assert(cpu_mmu_enabled());
+
+	/* Clock/reset drivers are not probed yet: prepare RNG1 */
+	io_setbits32(rcc + RCC_MP_AHB5ENSETR, RCC_MP_AHB5ENSETR_RNG1EN);
+	io_setbits32(rcc + RCC_MP_AHB5LPENCLRR, RCC_MP_AHB5LPENSETR_RNG1LPEN);
+	io_setbits32(rcc + RCC_AHB5RSTSETR, RCC_AHB5RSTSETR_RNG1RST);
+	while (!(io_read32(rcc + RCC_AHB5RSTSETR) & RCC_AHB5RSTSETR_RNG1RST))
+		if (timeout_elapsed(timeout_ref))
+			panic();
+	io_setbits32(rcc + RCC_AHB5RSTCLRR, RCC_AHB5RSTSETR_RNG1RST);
+	while (io_read32(rcc + RCC_AHB5RSTSETR) & RCC_AHB5RSTSETR_RNG1RST)
+		if (timeout_elapsed(timeout_ref))
+			panic();
+
+	size = sizeof(seed.seed1);
+	if (stm32_rng_read_raw(rng, seed.seed1, &size))
+		panic();
+	if (size != sizeof(seed.seed1))
+		panic();
+
+	if (tee_time_get_sys_time(&seed.seed2))
+		panic();
+
+	res = crypto_rng_init(&seed, sizeof(seed));
+	if (res) {
+		DMSG("Failed to initialize RNG: %x", res);
+		panic();
+	}
+}
+#endif

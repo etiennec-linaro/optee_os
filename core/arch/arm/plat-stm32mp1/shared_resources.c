@@ -136,10 +136,45 @@ static __maybe_unused const char *shres2str_state(enum stm32mp_shres id)
 }
 #endif
 
+/* GPIOZ bank may have several number of pins */
+#ifdef CFG_DT
+static int gpioz_nbpin = -1;
+
+static unsigned int get_gpioz_nbpin_unpg(void)
+{
+	if (gpioz_nbpin >= 0)
+		return (unsigned int)gpioz_nbpin;
+
+	panic();
+}
+KEEP_PAGER(get_gpioz_nbpin_unpg);
+
 static unsigned int get_gpioz_nbpin(void)
+{
+	if (gpioz_nbpin < 0) {
+		void *fdt = get_embedded_dt();
+
+		if (fdt == NULL)
+			panic();
+
+		gpioz_nbpin = fdt_get_gpioz_nbpins_from_dt(fdt);
+		assert(gpioz_nbpin >= 0 &&
+		       gpioz_nbpin <= STM32MP1_GPIOZ_PIN_MAX_COUNT);
+	}
+
+	return (unsigned int)gpioz_nbpin;
+}
+#else
+static unsigned int get_gpioz_nbpin_unpg(void)
 {
 	return STM32MP1_GPIOZ_PIN_MAX_COUNT;
 }
+
+static unsigned int get_gpioz_nbpin(void)
+{
+	return get_gpioz_nbpin_unpg();
+}
+#endif
 
 static void register_periph(enum stm32mp_shres id, unsigned int state)
 {

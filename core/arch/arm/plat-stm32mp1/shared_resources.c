@@ -550,6 +550,14 @@ bool stm32mp_clock_is_non_secure(unsigned long clock_id)
 	return stm32mp_periph_is_non_secure(shres_id);
 }
 
+bool stm32mp_clock_is_secure(unsigned long clock_id)
+{
+	if (stm32mp_clock_is_shared(clock_id))
+		return false;
+
+	return !stm32mp_clock_is_non_secure(clock_id);
+}
+
 static bool mckprot_resource(enum stm32mp_shres id)
 {
 	switch (id) {
@@ -689,6 +697,8 @@ static TEE_Result stm32mp1_init_shres(void)
 		IMSG("stm32mp %-8s (%2u): %-14s",
 		     shres2str_id(id), id, shres2str_state(*state));
 	}
+
+	stm32mp_update_earlyboot_clocks_state();
 
 	set_etzpc_secure_configuration();
 	set_gpio_secure_configuration();

@@ -1212,6 +1212,71 @@ static void get_osc_freq_from_dt(void *fdt)
 	}
 }
 
+/* Sync secure clock refcount after all drivers probe/inits,  */
+void stm32mp_update_earlyboot_clocks_state(void)
+{
+	unsigned int idx = 0;
+
+	for (idx = 0; idx < NB_GATES; idx++) {
+		const struct stm32mp1_clk_gate *ref = gate_ref(idx);
+		unsigned long clock_id = ref->clock_id;
+
+		if (!__clk_is_enabled(ref))
+			continue;
+
+		/*
+		 * Drop non-secure refcount set on shareable clocks that are
+		 * not shared. Secure clock should not hold a non-secure
+		 * refcount. Non-secure clock cannot hold any refcount. Shared
+		 * clock may hold secure and non-secure refcounts.
+		 */
+		if (stm32mp_clock_is_shareable(clock_id) &&
+		    stm32mp_clock_is_secure(clock_id))
+			stm32mp1_clk_disable_non_secure(clock_id);
+
+		/*
+		 * Disable secure clocks enabled from early boot but not
+		 * explicitly enabled from the secure world.
+		 */
+		if (!stm32mp_clock_is_non_secure(clock_id) &&
+		    !gate_refcounts[idx])
+			__clk_disable(ref);
+	}
+
+	/* Dump clocks state */
+	for (idx = 0; idx < NB_GATES; idx++) {
+		const struct stm32mp1_clk_gate *ref = gate_ref(idx);
+		unsigned long clock_id = ref->index;
+		int __maybe_unused p = stm32mp1_clk_get_parent(clock_id);
+
+		FMSG("stm32mp clock %3lu is %sabled (refcnt %d) (parent %d %s)",
+			clock_id, __clk_is_enabled(ref) ? "en" : "dis",
+			gate_refcounts[idx],
+			p, p < 0 ? "n.a" : stm32mp1_clk_parent_name[p]);
+	}
+}
+
+/* Set a non-secure refcount on shareable clock that were enabled from boot */
+static void sync_earlyboot_clocks_state(void)
+{
+	unsigned int idx = 0;
+
+	for (idx = 0; idx < NB_GATES; idx++)
+		assert(!gate_refcounts[idx]);
+
+	/*
+	 * Set a non-secure refcount for shareable clocks enabled from boot.
+	 * It will be dropped after core inits for secure-only clocks.
+	 */
+	for (idx = 0; idx < NB_GATES; idx++) {
+		struct stm32mp1_clk_gate const *gate = gate_ref(idx);
+
+		if (__clk_is_enabled(gate) &&
+		    stm32mp_clock_is_shareable(gate->index))
+			gate_refcounts[idx] = SHREFCNT_NONSECURE_FLAG;
+	}
+}
+
 static TEE_Result stm32mp1_clk_early_init(void)
 {
 	void *fdt;
@@ -1271,6 +1336,8 @@ static TEE_Result stm32mp1_clk_early_init(void)
 
 	if (ignored != 0)
 		IMSG("DT clock tree configurations were ignored");
+
+	sync_earlyboot_clocks_state();
 
 	return TEE_SUCCESS;
 }

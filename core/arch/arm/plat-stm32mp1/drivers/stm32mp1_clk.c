@@ -1212,6 +1212,37 @@ static void get_osc_freq_from_dt(void *fdt)
 	}
 }
 
+static void _clock_resume(void)
+{
+	unsigned int idx;
+
+	/* Sync secure and shared clocks physical state on functional state */
+	for (idx = 0; idx < NB_GATES; idx++) {
+		struct stm32mp1_clk_gate const *gate = gate_ref(idx);
+
+		if (stm32mp_clock_is_non_secure(gate->index))
+			continue;
+
+		if (gate_refcounts[idx]) {
+			DMSG("Force clock %d enable", gate->index);
+			__clk_enable(gate);
+		} else {
+			DMSG("Force clock %d disable", gate->index);
+			__clk_disable(gate);
+		}
+	}
+}
+
+static TEE_Result clock_pm(enum pm_op op, uint32_t pm_hint __unused,
+			   const struct pm_callback_handle *pm_handle __unused)
+{
+	if (op == PM_OP_RESUME)
+		_clock_resume();
+
+	return TEE_SUCCESS;
+}
+KEEP_PAGER(clock_pm);
+
 /* Sync secure clock refcount after all drivers probe/inits,  */
 void stm32mp_update_earlyboot_clocks_state(void)
 {

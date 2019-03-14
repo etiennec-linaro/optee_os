@@ -633,6 +633,30 @@ static void check_rcc_secure_configuration(void)
 		panic();
 }
 
+static void gpio_secure_resume(void)
+{
+	unsigned int pin = 0;
+
+	/* Release secure hardening of non-secure pins at resume */
+	for (pin = 0; pin < get_gpioz_nbpin_unpg(); pin++) {
+		enum stm32mp_shres id = STM32MP1_SHRES_GPIOZ(pin);
+
+		if (stm32mp_periph_is_non_secure(id) ||
+		    stm32mp_periph_is_unregistered(id))
+			stm32_gpio_set_secure_cfg(GPIO_BANK_Z, pin, false);
+	}
+}
+
+static TEE_Result gpioz_pm(enum pm_op op, uint32_t pm_hint __unused,
+			   const struct pm_callback_handle *pm_handle __unused)
+{
+	if (op == PM_OP_RESUME)
+		gpio_secure_resume();
+
+	return TEE_SUCCESS;
+}
+KEEP_PAGER(gpioz_pm);
+
 static void set_gpio_secure_configuration(void)
 {
 	unsigned int pin = 0;
@@ -643,6 +667,8 @@ static void set_gpio_secure_configuration(void)
 
 		stm32_gpio_set_secure_cfg(GPIO_BANK_Z, pin, secure);
 	}
+
+	register_pm_driver_cb(gpioz_pm, NULL);
 }
 
 static TEE_Result stm32mp1_init_shres(void)

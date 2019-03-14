@@ -679,9 +679,70 @@ static void set_gpio_secure_configuration(void)
 	register_pm_driver_cb(gpioz_pm, NULL);
 }
 
+static void register_always_secure_clocks(void)
+{
+	/* Allow configurations where RCC is not secured */
+	if (stm32_rcc_is_secure())
+		return;
+
+	/*
+	 * Register secure clock parents and init a refcount for
+	 * secure only resources that are not registered from a driver probe.
+	 * - DDR controller and phy clocks.
+	 * - TZC400, ETZPC and STGEN clocks.
+	 * - RTCAPB clocks on multi-core
+	 */
+	stm32mp_register_clock_parents_secure(DDRC1);
+	stm32mp1_clk_enable_secure(DDRC1);
+	stm32mp_register_clock_parents_secure(DDRC1LP);
+	stm32mp1_clk_enable_secure(DDRC1LP);
+	stm32mp_register_clock_parents_secure(DDRC2);
+	stm32mp1_clk_enable_secure(DDRC2);
+	stm32mp_register_clock_parents_secure(DDRC2LP);
+	stm32mp1_clk_enable_secure(DDRC2LP);
+	stm32mp_register_clock_parents_secure(DDRPHYC);
+	stm32mp1_clk_enable_secure(DDRPHYC);
+	stm32mp_register_clock_parents_secure(DDRPHYCLP);
+	stm32mp1_clk_enable_secure(DDRPHYCLP);
+	stm32mp_register_clock_parents_secure(DDRCAPB);
+	stm32mp1_clk_enable_secure(DDRCAPB);
+	stm32mp_register_clock_parents_secure(AXIDCG);
+	stm32mp1_clk_enable_secure(AXIDCG);
+	stm32mp_register_clock_parents_secure(DDRPHYCAPB);
+	stm32mp1_clk_enable_secure(DDRPHYCAPB);
+	stm32mp_register_clock_parents_secure(DDRPHYCAPBLP);
+	stm32mp1_clk_enable_secure(DDRPHYCAPBLP);
+
+	stm32mp_register_clock_parents_secure(TZPC);
+	stm32mp1_clk_enable_secure(TZPC);
+	stm32mp_register_clock_parents_secure(TZC1);
+	stm32mp1_clk_enable_secure(TZC1);
+	stm32mp_register_clock_parents_secure(TZC2);
+	stm32mp1_clk_enable_secure(TZC2);
+	stm32mp_register_clock_parents_secure(STGEN_K);
+	stm32mp1_clk_enable_secure(STGEN_K);
+
+	stm32mp_register_clock_parents_secure(BSEC);
+	stm32mp1_clk_enable_secure(BSEC);
+
+	stm32mp_register_clock_parents_secure(BKPSRAM);
+
+	stm32mp_register_clock_parents_secure(RTCAPB);
+
+#if CFG_TEE_CORE_NB_CORE > 1
+	stm32mp1_clk_enable_secure(RTCAPB);
+#endif
+
+	/* The low power sequences mandates RNG1 and CRYP1 support */
+	stm32mp_register_clock_parents_secure(RNG1_K);
+	stm32mp_register_clock_parents_secure(CRYP1);
+}
+
 static TEE_Result stm32mp1_init_shres(void)
 {
 	enum stm32mp_shres id = STM32MP1_SHRES_COUNT;
+
+	register_always_secure_clocks();
 
 	lock_registering();
 

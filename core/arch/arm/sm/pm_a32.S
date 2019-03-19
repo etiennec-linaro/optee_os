@@ -193,8 +193,8 @@ a7_resume:
 	write_cpacr r10
 	write_mvbar r11
 	write_bpiall
-	isb
 	dsb
+	isb
 	/* MMU will be enabled here */
 	write_sctlr r8
 	isb

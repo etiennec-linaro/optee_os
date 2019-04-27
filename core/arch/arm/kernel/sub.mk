@@ -60,7 +60,7 @@ srcs-$(CFG_VIRTUALIZATION) += virtualization.c
 
 srcs-$(CFG_TA_FTRACE_SUPPORT) += ftrace.c
 
-ifeq ($(CFG_WITH_SPCI),1)
+ifeq ($(CFG_WITH_SPCI),y)
 srcs-y += spci.c
 srcs-$(CFG_ARM64_core) += spci_a64.S
 endif

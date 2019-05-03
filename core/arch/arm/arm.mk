@@ -79,7 +79,7 @@ endif
 
 core-platform-cppflags	+= -I$(arch-dir)/include
 core-platform-subdirs += \
-	$(addprefix $(arch-dir)/, kernel crypto mm tee pta) $(platform-dir)
+	$(addprefix $(arch-dir)/, kernel crypto mm tee pta scmi) $(platform-dir)
 
 ifneq ($(CFG_WITH_ARM_TRUSTED_FW),y)
 core-platform-subdirs += $(arch-dir)/sm

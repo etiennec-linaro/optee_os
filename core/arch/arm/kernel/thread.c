@@ -327,7 +327,6 @@ static void init_regs(struct thread_ctx *thread,
 {
 	/* In case of SCMI message, a1 is set to deadbeef */
 	if (args->a1 == 0xDEADBEEF) {
-		DMSG("init_regs thread_handle_std_smc w/ SCMI payload\n");
 		thread->regs.pc = (uint32_t)thread_std_scmi_entry;
 	} else
 		thread->regs.pc = (uint32_t)thread_std_smc_entry;

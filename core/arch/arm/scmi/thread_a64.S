@@ -9,7 +9,7 @@
 #include <generated/asm-defines.h>
 #include <keep.h>
 #include <sm/teesmc_opteed.h>
-#if CFG_WITH_SPCI
+#ifdef CFG_WITH_SPCI
 #include <spci.h>
 #endif
 
@@ -37,7 +37,7 @@ FUNC thread_std_scmi_entry , :
 
 	bl	thread_state_free
 
-#if CFG_WITH_SPCI
+#ifdef CFG_WITH_SPCI
 	/* TODO: Passing stale values in x4-x7 back to normal world*/
 	sub	sp, sp, #THREAD_SMC_ARGS_SIZE
 	store_xregs sp, THREAD_SMC_ARGS_X0, 20, 23

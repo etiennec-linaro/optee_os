@@ -29,7 +29,7 @@
  *      loop indefinitely in order to facilitate the connection of a debugger
  *      instead of trapping.
  */
-noreturn void fwk_trap(void);
+__noreturn void fwk_trap(void);
 
 /*!
  * \brief Mark a code path as unreachable.
@@ -37,7 +37,7 @@ noreturn void fwk_trap(void);
  * \details This function will trap in debug builds, but in release builds
  *      this code path will be marked as unreachable to the optimizer.
  */
-noreturn void fwk_unreachable(void);
+__noreturn void fwk_unreachable(void);
 
 /*!
  * \brief Expect the success of a condition.

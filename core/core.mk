@@ -117,6 +117,12 @@ libdir = core/lib/zlib
 include mk/lib.mk
 endif
 
+ifeq ($(CFG_WITH_SCMI),y)
+libname = scmi
+libdir = core/lib/libscmi
+include mk/lib.mk
+endif
+
 #
 # Do main source
 #

@@ -7,46 +7,32 @@
 
 #include <fwk_arch.h>
 #include <fwk_errno.h>
+#include <fwk_mm.h>
 #include <fwk_noreturn.h>
-#include <fwk_host.h>
+#include <internal/fwk_module.h>
+#include <internal/fwk_thread.h>
+#include <kernel/panic.h>
+#include <malloc.h>
 
-#define HEAP_SIZE (1024*1024)
-uint8_t scmi_local_heap[HEAP_SIZE];
-int initialized = FWK_E_INIT;
 
-extern int host_interrupt_init(struct fwk_arch_interrupt_driver **driver);
-extern void __fwk_run_event(void);
-
-static int mm_init(struct fwk_arch_mm_data *data)
+void *fwk_mm_alloc(size_t num, size_t size)
 {
-    const size_t size = HEAP_SIZE;
-	void *mem;
-
-    mem = scmi_local_heap;
-	if (mem == NULL)
-        return FWK_E_NOMEM;
-
-    data->start = (uintptr_t)mem;
-    data->size = size;
-
-    return FWK_SUCCESS;
+    return malloc(num * size);
+}
+void *fwk_mm_calloc(size_t num, size_t size)
+{
+    return calloc(num, size);
 }
 
-static const struct fwk_arch_init_driver arch_init_driver = {
-    .mm = mm_init,
-    .interrupt = host_interrupt_init,
-};
-
+void optee_init_scmi(void);
 void optee_init_scmi(void)
 {
-	if (initialized)
-		initialized = fwk_arch_init(&arch_init_driver);
-
-	__fwk_run_event();
+	if (__fwk_module_init() != FWK_SUCCESS)
+		panic();
 }
 
+void optee_process_scmi(void);
 void optee_process_scmi(void)
 {
 	__fwk_run_event();
 }
-

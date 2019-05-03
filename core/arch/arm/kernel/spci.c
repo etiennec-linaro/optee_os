@@ -285,11 +285,11 @@ uint32_t spci_msg_send_prepare(struct thread_eret_args *args)
 		optee_msg = (struct thread_eret_args *) tmp;
 		memset(optee_msg, 0, sizeof(*optee_msg));
 
-		/* Copy the message */
-		memcpy(optee_msg, args, sizeof(*args));
+		/* Copy the returned message (return args) */
+		memcpy(optee_msg, args, sizeof(*optee_msg));
 
 		/* Set the message length */
-		msg_hdr->length = sizeof(*args);
+		msg_hdr->length = sizeof(*optee_msg);
 	}
 
 	/* Mark the buffer as full */

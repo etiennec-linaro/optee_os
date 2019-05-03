@@ -255,7 +255,7 @@ static void respond(fwk_id_t service_id, const void *payload, size_t size)
      * specification it should be like that for all commands.
      */
     if ((payload != NULL) && (*((int32_t *)payload) < SCMI_SUCCESS)) {
-       scmi_ctx.log_api->log(MOD_LOG_GROUP_ERROR,
+       scmi_ctx.log_api->log(MOD_LOG_GROUP_WARNING,
            "[SCMI] Protocol 0x%x, message_id 0x%x returned with error %d\n",
            ctx->scmi_protocol_id, ctx->scmi_message_id, *((int *)payload));
     }
@@ -414,7 +414,7 @@ static int scmi_base_discover_list_protocols_handler(fwk_id_t service_id,
     size_t max_payload_size;
     size_t payload_size;
     size_t entry_count;
-    size_t protocol_count, protocol_count_max;
+    size_t protocol_count = 0, protocol_count_max = 0;
     unsigned int index;
     uint8_t protocol_id;
 
@@ -782,7 +782,7 @@ static int scmi_process_event(const struct fwk_event *event,
         payload, payload_size, ctx->scmi_message_id);
 
     if (status != FWK_SUCCESS) {
-        scmi_ctx.log_api->log(MOD_LOG_GROUP_ERROR,
+        scmi_ctx.log_api->log(MOD_LOG_GROUP_WARNING,
             "[SCMI] Protocol 0x%x handler error (%e), message_id = 0x%x\n",
             ctx->scmi_protocol_id, status, ctx->scmi_message_id);
     }

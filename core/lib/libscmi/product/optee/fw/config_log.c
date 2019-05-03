@@ -11,7 +11,7 @@
 #include <mod_log.h>
 
 /*
- * Log module
+ * Log module (needed by SCMI modules)
  */
 static const struct mod_log_config log_data = {
     .device_id = FWK_ID_MODULE_INIT(FWK_MODULE_IDX_OPTEE_CONSOLE),
@@ -20,9 +20,7 @@ static const struct mod_log_config log_data = {
                   MOD_LOG_GROUP_INFO |
                   MOD_LOG_GROUP_WARNING |
                   MOD_LOG_GROUP_DEBUG,
-    .banner = FWK_BANNER_SCP
-              "Host Firmware\n"
-              BUILD_VERSION_DESCRIBE_STRING "\n",
+    .banner = "Embed SCMI support",
 };
 
 const struct fwk_module_config config_log = {

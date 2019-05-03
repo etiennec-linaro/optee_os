@@ -19,6 +19,7 @@
 static bool initialized;
 static const struct fwk_arch_interrupt_driver *driver;
 
+int fwk_interrupt_init(const struct fwk_arch_interrupt_driver *_driver);
 int fwk_interrupt_init(const struct fwk_arch_interrupt_driver *_driver)
 {
     /* Validate driver by checking that all function pointers are non-null */

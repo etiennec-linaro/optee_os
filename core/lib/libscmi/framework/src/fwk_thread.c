@@ -159,7 +159,7 @@ error:
     return status;
 }
 
-noreturn void __fwk_thread_run(void)
+__noreturn void __fwk_thread_run(void)
 {
     for (;;) {
         while (!fwk_list_is_empty(&ctx.event_queue))

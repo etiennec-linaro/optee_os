@@ -25,7 +25,7 @@ static struct mod_log_driver_api *log_driver;
                          MOD_LOG_GROUP_INFO | \
                          MOD_LOG_GROUP_WARNING)
 
-static const char * const errstr[] = {
+static const char * const __maybe_unused errstr[] = {
     [FWK_SUCCESS]        = "SUCCESS",
     [-FWK_E_PARAM]       = "E_PARAM",
     [-FWK_E_ALIGN]       = "E_ALIGN",
@@ -47,7 +47,7 @@ static const char * const errstr[] = {
     [-FWK_E_PANIC]       = "E_PANIC",
 };
 
-static int do_putchar(char c)
+static __maybe_unused int do_putchar(char c)
 {
     int status;
 
@@ -65,7 +65,7 @@ static int do_putchar(char c)
     return FWK_SUCCESS;
 }
 
-static int print_uint64(uint64_t value, unsigned int base, unsigned int fill)
+static __maybe_unused int print_uint64(uint64_t value, unsigned int base, unsigned int fill)
 {
     /* Just need enough space to store 64 bit decimal integer */
     unsigned char str[20];
@@ -94,7 +94,7 @@ static int print_uint64(uint64_t value, unsigned int base, unsigned int fill)
     return FWK_SUCCESS;
 }
 
-static int print_int32(int32_t num, unsigned int fill)
+static __maybe_unused int print_int32(int32_t num, unsigned int fill)
 {
     int status;
     uint64_t unum;
@@ -110,7 +110,7 @@ static int print_int32(int32_t num, unsigned int fill)
     return print_uint64(unum, 10, fill);
 }
 
-static int print_string(const char *str)
+static __maybe_unused int print_string(const char *str)
 {
     int status;
 
@@ -123,7 +123,7 @@ static int print_string(const char *str)
     return FWK_SUCCESS;
 }
 
-static int do_print(const char *fmt, va_list *args)
+static __maybe_unused int do_print(const char *fmt, va_list *args)
 {
     int status;
     int bit64;
@@ -248,10 +248,11 @@ static bool is_valid_group(unsigned int group)
  * Module API
  */
 
-static int do_log(enum mod_log_group group, const char *fmt, ...)
+static __printf(2, 0) int do_log(enum mod_log_group group, const char *fmt, ...)
 {
     int status;
     va_list args;
+    int optee_trace_level = 0;
 
     /* API called too early */
     if (log_driver == NULL)
@@ -267,13 +268,25 @@ static int do_log(enum mod_log_group group, const char *fmt, ...)
     if (fmt == NULL)
         return FWK_E_PARAM;
 
+    switch (group) {
+    case MOD_LOG_GROUP_DEBUG:
+        optee_trace_level = TRACE_DEBUG;
+        break;
+    case MOD_LOG_GROUP_WARNING:
+    case MOD_LOG_GROUP_INFO:
+        optee_trace_level = TRACE_INFO;
+	break;
+    case MOD_LOG_GROUP_ERROR:
+        optee_trace_level = TRACE_ERROR;
+        break;
+    default:
+        return FWK_E_PARAM;
+    }
+
     if (group & log_config->log_groups) {
         va_start(args, fmt);
-        status = do_print(fmt, &args);
+        trace_printf_ap(optee_trace_level, fmt, args);
         va_end(args);
-
-        if (status != FWK_SUCCESS)
-            return status;
     }
 
     return FWK_SUCCESS;

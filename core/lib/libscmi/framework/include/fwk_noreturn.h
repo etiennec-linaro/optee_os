@@ -12,10 +12,12 @@
 #ifndef FWK_NORETURN_H
 #define FWK_NORETURN_H
 
+#ifndef BUILD_OPTEE // OP-TEE relies on noretrun as attribute
 #ifdef __ARMCC_VERSION
 #   define noreturn _Noreturn
 #else
 #   include <stdnoreturn.h>
 #endif
+#endif //BUILD_OPTEE
 
 #endif /* FWK_NORETURN_H */

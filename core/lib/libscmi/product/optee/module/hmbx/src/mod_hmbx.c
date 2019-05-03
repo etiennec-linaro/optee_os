@@ -327,7 +327,7 @@ static int smt_signal_message(fwk_id_t channel_id)
 	return smt_slave_handler(channel_ctx);
 }
 
-struct mod_smt_memory * smt_get_memory(fwk_id_t channel_id)
+static struct mod_smt_memory * smt_get_memory(fwk_id_t channel_id)
 {
 	int status;
 	struct smt_channel_ctx *channel_ctx;
@@ -471,6 +471,13 @@ static int smt_process_bind_request(fwk_id_t source_id,
             /* Ids are equal */
             *api = &driver_input_api;
        } else {
+
+	       EMSG("Mismatching elt: mod-idx %u/%u, elt-idx %u/%u",
+			fwk_id_get_module_idx(channel_ctx->driver_id),
+			fwk_id_get_module_idx(source_id),
+			fwk_id_get_element_idx(channel_ctx->driver_id),
+			fwk_id_get_element_idx(source_id));
+
             /* A module that we did not bind to is trying to bind to us */
             assert(false);
             return FWK_E_ACCESS;

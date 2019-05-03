@@ -66,7 +66,19 @@
  */
 #define STM32_SIP_FUNC_RCC			0x1000
 
-/* Service ID for STM32_SIP_FUNC_RCC */
+/*
+ * SIP function STM32_SIP_FUNC_PWR
+ *
+ * Argument a0: (input) SMCC ID
+ *		(output) status return code
+ * Argument a1: (input) Service ID (STM32_SIP_REG_xxx)
+ * Argument a2: (input) register offset or physical address
+ *		(output) register read value, if applicable
+ * Argument a3: (input) register target value if applicable
+ */
+#define STM32_SIP_FUNC_PWR			0x1001
+
+/* Service ID for STM32_SIP_FUNC_RCC/_PWR */
 #define STM32_SIP_REG_READ			0x0
 #define STM32_SIP_REG_WRITE			0x1
 #define STM32_SIP_REG_SET			0x2

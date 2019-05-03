@@ -9,6 +9,7 @@
 #include <string.h>
 #include <stm32_util.h>
 
+#include "rcc_svc.h"
 #include "stm32mp1_smc.h"
 
 /* STM32 SiP Service UUID */
@@ -44,6 +45,10 @@ static enum sm_handler_ret sip_service(struct sm_ctx *ctx __unused,
 	case STM32_SIP_FUNC_UID:
 		get_sip_func_uid(a0, a1, a2, a3);
 		break;
+	case STM32_SIP_FUNC_RCC:
+		*a0 = rcc_scv_handler(*a1, *a2, *a3);
+		break;
+#endif
 	default:
 		return SM_HANDLER_PENDING_SMC;
 	}

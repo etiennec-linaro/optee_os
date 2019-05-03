@@ -513,6 +513,26 @@ static const struct stm32mp1_clk_pll *pll_ref(unsigned int idx)
 	return &stm32mp1_clk_pll[idx];
 }
 
+static unsigned int get_id_from_rcc_bit(unsigned int offset, unsigned int bit)
+{
+	unsigned int idx = 0;
+
+	for (idx = 0; idx < NB_GATES; idx++) {
+		const struct stm32mp1_clk_gate *gate = gate_ref(idx);
+
+		if ((offset == gate->offset) && (bit == gate->bit))
+			return gate->clock_id;
+
+		if (gate->set_clr &&
+		    (offset == (gate->offset + RCC_MP_ENCLRR_OFFSET)) &&
+		    (bit == gate->bit))
+			return gate->clock_id;
+	}
+
+	/* Currently only supported gated clocks */
+	return ~0U;
+}
+
 static int stm32mp1_clk_get_gated_id(unsigned long id)
 {
 	unsigned int i = 0;
@@ -993,6 +1013,15 @@ unsigned long stm32_clock_get_rate(unsigned long id)
 		rate = get_timer_rate(rate, 2);
 
 	return rate;
+}
+
+/*
+ * Lookup platform clock from enable bit location in RCC registers.
+ * Return a valid clock ID on success, return ~0 on error.
+ */
+unsigned long stm32mp1_clk_rcc2id(size_t offset, size_t bit)
+{
+	return get_id_from_rcc_bit(offset, bit);
 }
 
 /*

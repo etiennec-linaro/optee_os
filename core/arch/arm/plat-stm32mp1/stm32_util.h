@@ -67,6 +67,9 @@ bool stm32_clock_is_enabled(unsigned long id);
 void stm32_nsec_clock_enable(unsigned long id);
 void stm32_nsec_clock_disable(unsigned long id);
 
+/* Convert a RCC reference into a logical clock reference */
+unsigned long stm32mp1_clk_rcc2id(size_t offset, size_t bit);
+
 /* Synchronise clock states after drivers initialization */
 void stm32mp_update_earlyboot_clocks_state(void);
 

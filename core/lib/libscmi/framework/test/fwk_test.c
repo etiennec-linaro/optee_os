@@ -17,7 +17,7 @@ extern struct fwk_test_suite_desc test_suite;
 
 static jmp_buf test_buf_context;
 
-noreturn void __assert_fail(const char *assertion,
+__noreturn void __assert_fail(const char *assertion,
     const char *file, unsigned int line, const char *function)
 {
     printf("Assertion failed: %s\n", assertion);

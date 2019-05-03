@@ -23,8 +23,11 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+
+#ifdef BUILD_HOST
 #include <sys/select.h>
 #include <termios.h>
+#endif
 
 struct mhu_smt_channel {
     fwk_id_t id;
@@ -54,6 +57,7 @@ struct mhu_ctx {
 
 static struct mhu_ctx mhu_ctx;
 
+void spci_raise_event_ospm0(void);
 void spci_raise_event_ospm0(void)
 {
     struct mhu_device_ctx *device_ctx;
@@ -69,6 +73,7 @@ void spci_raise_event_ospm0(void)
 
 extern uint8_t scmi_ospm0_mb[];
 
+void* spci_get_buffer_ospm0(void);
 void* spci_get_buffer_ospm0(void)
 {
 	return scmi_ospm0_mb;
@@ -227,6 +232,7 @@ unsigned int spci_config[] = {
 };
 
 static const struct fwk_element spci_element_table[] = {
+    /* FIXME: remove the element: no secure client expected */
     [SPCI_DEVICE_IDX_S] = {
         .name = "SPCI TEE",
         .sub_element_count = 1,

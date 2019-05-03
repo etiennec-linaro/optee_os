@@ -187,6 +187,8 @@ int fwk_interrupt_set_isr_param(unsigned int interrupt,
  */
 int fwk_interrupt_get_current(unsigned int *interrupt);
 
+int fwk_interrupt_set_isr_fault(void (*isr)(void));
+
 /*!
  * @}
  */

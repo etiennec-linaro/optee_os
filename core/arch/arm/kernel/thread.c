@@ -35,6 +35,8 @@
 #include <trace.h>
 #include <util.h>
 
+#include <scmi.h>
+
 #include "thread_private.h"
 
 #ifdef CFG_WITH_ARM_TRUSTED_FW
@@ -329,7 +331,11 @@ static void thread_lazy_restore_ns_vfp(void)
 static void init_regs(struct thread_ctx *thread,
 		struct thread_smc_args *args)
 {
-	thread->regs.pc = (uint32_t)thread_std_smc_entry;
+	/* In case of SCMI message, a1 is set to deadbeef */
+	if (args->a1 == 0xDEADBEEF) {
+		thread->regs.pc = (uint32_t)thread_std_scmi_entry;
+	} else
+		thread->regs.pc = (uint32_t)thread_std_smc_entry;
 
 	/*
 	 * Stdcalls starts in SVC mode with masked foreign interrupts, masked
@@ -363,7 +369,11 @@ static void init_regs(struct thread_ctx *thread,
 static void init_regs(struct thread_ctx *thread,
 		struct thread_smc_args *args)
 {
-	thread->regs.pc = (uint64_t)thread_std_smc_entry;
+	/* In case of SCMI message, a1 is set to deadbeef */
+	if (args->a1 == 0xDEADBEEF) {
+		thread->regs.pc = (uint64_t)thread_std_scmi_entry;
+	} else
+		thread->regs.pc = (uint64_t)thread_std_smc_entry;
 
 	/*
 	 * Stdcalls starts in SVC mode with masked foreign interrupts, masked

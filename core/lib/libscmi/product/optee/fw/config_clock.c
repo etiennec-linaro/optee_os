@@ -5,14 +5,16 @@
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
-#include <stddef.h>
+#include <assert.h>
 #include <fwk_element.h>
+#include <fwk_id.h>
 #include <fwk_module.h>
 #include <fwk_module_idx.h>
 #include <mod_clock.h>
 #include <mod_css_clock.h>
 #include <mod_system_pll.h>
 #include <mod_power_domain.h>
+#include <stddef.h>
 
 #include "config_power_domain.h"
 #include "clock_devices.h"

@@ -10,6 +10,7 @@
 #include <sm/optee_smc.h>
 #include <spci_private.h>
 #include <string.h>
+#include <scmi.h>
 
 /* One buffer for each security state */
 #define SPCI_MAX_BUFS		2
@@ -214,15 +215,18 @@ void *spci_msg_recv(int32_t status, struct thread_smc_args *args)
 	if (msg_type == SPCI_MSG_TYPE_ARCH)
 		panic();
 
-	/* Check if message length is same as OP-TEE message length */
-	assert(msg_hdr->length == sizeof(*optee_msg));
+	/* Escape tag for SCMI server */
+	if (!spci_scmi_recv_escape(msg_hdr, args)) {
+		/* Check if message length is same as OP-TEE message length */
+		assert(msg_hdr->length == sizeof(*optee_msg));
 
-	/* Obtain reference to OP-TEE message */
-	tmp = (void *) msg_hdr->payload;
-	optee_msg = (spci_optee_msg_t *) tmp;
+		/* Obtain reference to OP-TEE message */
+		tmp = (void *) msg_hdr->payload;
+		optee_msg = (spci_optee_msg_t *) tmp;
 
-	/* Copy the message */
-	memcpy(args, optee_msg, sizeof(*optee_msg));
+		/* Copy the message */
+		memcpy(args, optee_msg, sizeof(*optee_msg));
+	}
 
 	/* Zero the message memory */
 	memset((void *) msg_hdr, 0, sizeof(*msg_hdr) + msg_hdr->length);
@@ -236,7 +240,7 @@ void *spci_msg_recv(int32_t status, struct thread_smc_args *args)
 		return &thread_vector_table.std_smc_entry;
 }
 
-uint32_t realy_msg_to_vm_rx(struct thread_smc_args *args);
+uint32_t realy_msg_to_vm_rx(struct thread_eret_args *args);
 
 uint32_t spci_msg_send_prepare(struct thread_eret_args *args)
 {
@@ -274,16 +278,19 @@ uint32_t spci_msg_send_prepare(struct thread_eret_args *args)
 	msg_type <<= SPCI_MSG_TYPE_SHIFT;
 	msg_hdr->flags |= msg_type;
 
-	/* Populate the message payload */
-	tmp = (void *) msg_hdr->payload;
-	optee_msg = (struct thread_eret_args *) tmp;
-	memset(optee_msg, 0, sizeof(*optee_msg));
+	/* Escape tag for SCMI server */
+	if (!spci_scmi_send_escape(msg_hdr, args)) {
+		/* Populate the message payload */
+		tmp = (void *) msg_hdr->payload;
+		optee_msg = (struct thread_eret_args *) tmp;
+		memset(optee_msg, 0, sizeof(*optee_msg));
 
-	/* Copy the returned message (return args) */
-	memcpy(optee_msg, args, sizeof(*optee_msg));
+		/* Copy the returned message (return args) */
+		memcpy(optee_msg, args, sizeof(*optee_msg));
 
-	/* Set the message length */
-	msg_hdr->length = sizeof(*optee_msg);
+		/* Set the message length */
+		msg_hdr->length = sizeof(*optee_msg);
+	}
 
 	/* Mark the buffer as full */
 	tx_buf->hdr.state = SPCI_BUF_STATE_FULL;

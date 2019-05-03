@@ -552,10 +552,10 @@ enum sm_handler_ret tee_spci_handler(struct thread_smc_args *args,
 	panic();
 }
 
-uint32_t realy_msg_to_vm_rx(struct thread_smc_args *args);
+uint32_t realy_msg_to_vm_rx(struct thread_eret_args *args);
 
 
-uint32_t realy_msg_to_vm_rx(struct thread_smc_args *args __unused)
+uint32_t realy_msg_to_vm_rx(struct thread_eret_args *args __unused)
 {
 	uint32_t vm_id = 0; /*Force to 0, caller should set args->a7*/;
 	struct spci_msg_buf_desc *tx_buf_desc = NULL;

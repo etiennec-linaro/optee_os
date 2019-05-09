@@ -724,6 +724,8 @@ static TEE_Result stm32mp1_init_final_shres(void)
 		     shres2str_id(id), id, shres2str_state(*state));
 	}
 
+	stm32mp_update_earlyboot_clocks_state();
+
 	set_etzpc_secure_configuration();
 	set_gpio_secure_configuration();
 	register_pm_driver_cb(gpioz_pm, NULL);

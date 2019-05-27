@@ -942,7 +942,7 @@ void stm32_clock_enable(unsigned long id)
 
 void stm32_clock_disable(unsigned long id)
 {
-	_clock_disable(id, false);
+	_clock_disable(id, true);
 }
 
 static long get_timer_rate(long parent_rate, unsigned int apb_bus)

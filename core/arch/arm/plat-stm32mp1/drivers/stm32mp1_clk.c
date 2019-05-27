@@ -1356,7 +1356,7 @@ static void sync_earlyboot_clocks_state(void)
 		BSEC,
 	};
 	const unsigned long secure_only[] = {
-		BKPSRAM, RTCAPB, RNG1, CRYP1,
+		BKPSRAM, RTCAPB, RNG1_K, CRYP1,
 	};
 
 	for (idx = 0; idx < NB_GATES; idx++)

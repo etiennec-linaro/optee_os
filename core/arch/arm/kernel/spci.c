@@ -218,7 +218,7 @@ uint32_t spci_msg_send_prepare(struct thread_eret_args *args)
 {
 	uint32_t msg_loc, msg_type, attrs;
 	spci_msg_hdr_t *msg_hdr;
-	spci_optee_msg_t *optee_msg;
+	struct thread_eret_args *optee_msg;
 	spci_msg_buf_desc_t *tx_buf_desc;
 	spci_buf_t *tx_buf;
 	void *tmp;

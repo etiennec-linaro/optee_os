@@ -141,6 +141,8 @@ int psci_cpu_on(uint32_t core_id, uint32_t entry, uint32_t context_id)
 	uint32_t excep;
 	int rc;
 
+	return PSCI_RET_INVALID_PARAMETERS;
+
 	if (!pos || pos >= CFG_TEE_CORE_NB_CORE)
 		return PSCI_RET_INVALID_PARAMETERS;
 

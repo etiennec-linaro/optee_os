@@ -14,7 +14,7 @@
 #include <sm/optee_smc.h>
 #include <sm/teesmc_opteed.h>
 #include <sm/teesmc_opteed_macros.h>
-#if CFG_WITH_SPCI
+#ifdef CFG_WITH_SPCI
 #include <spci.h>
 #endif
 
@@ -45,7 +45,7 @@ LOCAL_FUNC vector_std_smc_entry , :
 	 * hasn't switched stack (error detected) it will do a normal "C"
 	 * return.
 	*/
-#if CFG_WITH_SPCI
+#ifdef CFG_WITH_SPCI
 	mov	x0, sp
 	bl	spci_msg_send_prepare
 	/* Unwind stack completely */
@@ -66,7 +66,7 @@ LOCAL_FUNC vector_fast_smc_entry , :
 	store_xregs sp, THREAD_SMC_ARGS_X0, 0, 7
 	mov	x0, sp
 	bl	thread_handle_fast_smc
-#if CFG_WITH_SPCI
+#ifdef CFG_WITH_SPCI
 	mov	x0, sp
 	bl	spci_msg_send_prepare
 	/* Unwind stack completely */
@@ -88,7 +88,7 @@ LOCAL_FUNC vector_fiq_entry , :
 	adr	x16, thread_nintr_handler_ptr
 	ldr	x16, [x16]
 	blr	x16
-#if CFG_WITH_SPCI
+#ifdef CFG_WITH_SPCI
 	b	spci_msg_recv_invoke
 #else
 	ldr	x0, =TEESMC_OPTEED_RETURN_FIQ_DONE
@@ -224,7 +224,7 @@ FUNC thread_std_smc_entry , :
 
 	bl	thread_state_free
 
-#if CFG_WITH_SPCI
+#ifdef CFG_WITH_SPCI
 	/* TODO: Passing stale values in x4-x7 back to normal world*/
 	sub	sp, sp, #THREAD_SMC_ARGS_SIZE
 	store_xregs sp, THREAD_SMC_ARGS_X0, 20, 23
@@ -1055,7 +1055,7 @@ END_FUNC el0_sync_abort
 	mov	w2, #0
 	mov	w3, #0
 	/* w4 is already filled in above */
-#if CFG_WITH_SPCI
+#ifdef CFG_WITH_SPCI
 	/* TODO: Passing stale values in x5-x7 back to normal world*/
 	sub	sp, sp, #THREAD_SMC_ARGS_SIZE
 	store_xregs sp, THREAD_SMC_ARGS_X0, 1, 4

@@ -563,7 +563,12 @@ void __weak tee_entry_std(struct thread_smc_args *smc_args)
 	case OPTEE_MSG_CMD_UNREGISTER_SHM:
 		unregister_shm(smc_args, arg, num_params);
 		break;
-
+#if defined(CFG_WITH_SPCI) && !defined(CFG_WITH_ARM_TRUSTED_FW)
+	// TODO
+	//case OPTEE_MSG_CMD_SPCI_BUF_LIST:
+	//	spci_buf_list_exchange(smc_args, arg, num_params);
+	//	break;
+#endif
 	default:
 		EMSG("Unknown cmd 0x%x\n", arg->cmd);
 		smc_args->a0 = OPTEE_SMC_RETURN_EBADCMD;

@@ -17,6 +17,10 @@
 #include <sm/teesmc_opteed.h>
 #include <sm/teesmc_opteed_macros.h>
 
+#ifdef CFG_WITH_SPCI
+#include <spci.h>
+#endif
+
 #include "thread_private.h"
 
 	.arch_extension sec
@@ -41,10 +45,19 @@ UNWIND(	.cantunwind)
 	 * hasn't switched stack (error detected) it will do a normal "C"
 	 * return.
 	 */
+#ifdef CFG_WITH_SPCI
+	mov	r0, sp
+	bl	spci_msg_send_prepare
+	/* Unwind stack completely */
+	add	sp, sp, #THREAD_SMC_ARGS_SIZE
+	/* Call SPCI_MSG_SEND_RECV with attributes in r0 */
+	b	spci_msg_send_recv_invoke
+#else
 	pop	{r1-r8}
 	ldr	r0, =TEESMC_OPTEED_RETURN_CALL_DONE
 	smc	#0
 	b	.	/* SMC should not return */
+#endif
 UNWIND(	.fnend)
 END_FUNC vector_std_smc_entry
 
@@ -54,10 +67,19 @@ UNWIND(	.cantunwind)
 	push	{r0-r7}
 	mov	r0, sp
 	bl	thread_handle_fast_smc
+#ifdef CFG_WITH_SPCI
+	mov	r0, sp
+	bl	spci_msg_send_prepare
+	/* Unwind stack completely */
+	add	sp, sp, #THREAD_SMC_ARGS_SIZE
+	/* Call SPCI_MSG_SEND_RECV with attributes in r0 */
+	b	spci_msg_send_recv_invoke
+#else
 	pop	{r1-r8}
 	ldr	r0, =TEESMC_OPTEED_RETURN_CALL_DONE
 	smc	#0
 	b	.	/* SMC should not return */
+#endif
 UNWIND(	.fnend)
 END_FUNC vector_fast_smc_entry
 
@@ -69,10 +91,19 @@ UNWIND(	.cantunwind)
 	ldr	lr, =thread_nintr_handler_ptr
  	ldr	lr, [lr]
  	blx	lr
+#ifdef CFG_WITH_SPCI
+#ifdef CFG_WITH_ARM_TRUSTED_FW
+	b	spci_msg_recv_invoke
+#else
+	mov_imm r0, TEESMC_OPTEED_RETURN_FIQ_DONE
+	b	spci_msg_loop
+#endif
+#else
 	mov	r1, r0
 	ldr	r0, =TEESMC_OPTEED_RETURN_FIQ_DONE
 	smc	#0
 	b	.	/* SMC should not return */
+#endif
 UNWIND(	.fnend)
 END_FUNC vector_fiq_entry
 
@@ -370,6 +401,26 @@ UNWIND(	.cantunwind)
 
 	bl	thread_state_free
 
+#ifdef CFG_WITH_SPCI
+	/* TODO: Passing stale values in x4-x7 back to normal world*/
+#if 0
+	sub	sp, sp, #(THREAD_SMC_ARGS_SIZE - THREAD_SMC_ARGS_X0)
+	stm	sp, {r4-r7}
+	sub	sp, sp, #THREAD_SMC_ARGS_SIZE
+#else
+	sub	sp, sp, #THREAD_SMC_ARGS_SIZE
+	str	r4, [sp, #(THREAD_SMC_ARGS_X0 + 0)]
+	str	r5, [sp, #(THREAD_SMC_ARGS_X0 + 4)]
+	str	r6, [sp, #(THREAD_SMC_ARGS_X0 + 8)]
+	str	r7, [sp, #(THREAD_SMC_ARGS_X0 + 12)]
+#endif
+	mov	r0, sp
+	bl	spci_msg_send_prepare
+	/* Unwind stack completely */
+	add	sp, sp, #THREAD_SMC_ARGS_SIZE
+	/* Call SPCI_MSG_SEND_RECV with attributes in r0 */
+	b	spci_msg_send_recv_invoke
+#else
 	ldr	r0, =TEESMC_OPTEED_RETURN_CALL_DONE
 	mov	r1, r4
 	mov	r2, r5
@@ -377,6 +428,7 @@ UNWIND(	.cantunwind)
 	mov	r4, r7
 	smc	#0
 	b	.	/* SMC should not return */
+#endif
 UNWIND(	.fnend)
 END_FUNC thread_std_smc_entry
 
@@ -417,8 +469,23 @@ UNWIND(	.save	{r0})
 	mov	r4, r0			/* Supply thread index */
 	ldr	r0, =TEESMC_OPTEED_RETURN_CALL_DONE
 	ldm	r5, {r1-r3}		/* Load rv[] into r0-r2 */
+#ifdef CFG_WITH_SPCI
+	/* TODO: Passing stale values in x5-x7 back to normal world*/
+	sub	sp, sp, #THREAD_SMC_ARGS_SIZE
+	str	r1, [sp, #(THREAD_SMC_ARGS_X0 + 0)]
+	str	r2, [sp, #(THREAD_SMC_ARGS_X0 + 4)]
+	str	r3, [sp, #(THREAD_SMC_ARGS_X0 + 8)]
+	str	r4, [sp, #(THREAD_SMC_ARGS_X0 + 12)]
+	mov	r0, sp
+	bl	spci_msg_send_prepare
+	/* Unwind stack completely */
+	add	sp, sp, #THREAD_SMC_ARGS_SIZE
+	/* Call SPCI_MSG_SEND_RECV with attributes in r0 */
+	b	spci_msg_send_recv_invoke
+#else
 	smc	#0
 	b	.	/* SMC should not return */
+#endif
 
 .thread_rpc_return:
 	/*
@@ -714,8 +781,23 @@ END_FUNC thread_unwind_user_mode
 	mov	r2, #0
 	mov	r3, #0
 	/* r4 is already filled in above */
+#ifdef CFG_WITH_SPCI
+	/* TODO: Passing stale values in x5-x7 back to normal world*/
+	sub	sp, sp, #THREAD_SMC_ARGS_SIZE
+	str	r1, [sp, #(THREAD_SMC_ARGS_X0 + 0)]
+	str	r2, [sp, #(THREAD_SMC_ARGS_X0 + 4)]
+	str	r3, [sp, #(THREAD_SMC_ARGS_X0 + 8)]
+	str	r4, [sp, #(THREAD_SMC_ARGS_X0 + 12)]
+	mov	r0, sp
+	bl	spci_msg_send_prepare
+	/* Unwind stack completely */
+	add	sp, sp, #THREAD_SMC_ARGS_SIZE
+	/* Call SPCI_MSG_SEND_RECV with attributes in r0 */
+	b	spci_msg_send_recv_invoke
+#else
 	smc	#0
 	b	.	/* SMC should not return */
+#endif
 .endm
 
 	.section .text.thread_excp_vect

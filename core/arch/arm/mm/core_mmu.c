@@ -28,10 +28,13 @@
 #include <stdlib.h>
 #include <trace.h>
 #include <util.h>
-#if CFG_WITH_SPCI
+
+#ifdef CFG_WITH_SPCI
 #include <spci_private.h>
+#ifdef CFG_WITH_ARM_TRUSTED_FW
 #include <sp_res_desc_def.h>
 #endif
+#endif /*CFG_WITH_SPCI*/
 
 #include "core_mmu_private.h"
 
@@ -620,7 +623,7 @@ uint32_t core_mmu_type_to_attr(enum teecore_memtypes t)
 		return attr | TEE_MATTR_SECURE | TEE_MATTR_PRW | cached;
 	case MEM_AREA_NSEC_SHM:
 		return attr | TEE_MATTR_PRW | cached;
-#if CFG_WITH_SPCI
+#ifdef CFG_WITH_SPCI
 	case MEM_AREA_SPCI_SEC_SHM:
 		return attr | TEE_MATTR_SECURE | TEE_MATTR_PRW | cached;
 	case MEM_AREA_SPCI_NSEC_SHM:
@@ -805,7 +808,7 @@ static void add_pager_vaspace(struct tee_mmap_region *mmap, size_t num_elems,
 	*end += size;
 }
 
-#ifdef CFG_WITH_SPCI
+#if defined(CFG_WITH_SPCI) && defined(CFG_WITH_ARM_TRUSTED_FW)
 static bool __maybe_unused check_mem(spci_msg_sp_init_t *sp_init_msg,
 				     struct core_mmu_phys_mem *mem)
 {
@@ -920,7 +923,7 @@ static bool get_next_mem(void **ptr __unused, unsigned int *iter,
 
 	return false;
 }
-#endif
+#endif /*CFG_WITH_SPCI && CFG_WITH_ARM_TRUSTED_FW*/
 
 static void init_mem_map(struct tee_mmap_region *memory_map, size_t num_elems)
 {
@@ -1127,7 +1130,7 @@ void core_init_mmu_map(void)
 			if (!pbuf_is_inside(nsec_shared, map->pa, map->size))
 				panic("NS_SHM can't fit in nsec_shared");
 			break;
-#if CFG_WITH_SPCI
+#ifdef CFG_WITH_SPCI
 		case MEM_AREA_SPCI_SEC_SHM:
 		case MEM_AREA_SPCI_NSEC_SHM:
 #endif

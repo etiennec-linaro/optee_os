@@ -32,6 +32,7 @@
 #include <sm/optee_smc.h>
 #include <sm/psci.h>
 #include <sm/sm.h>
+#include <sm/spci.h>
 #include <sm/std_smc.h>
 #include <tee/uuid.h>
 #include <trace.h>
@@ -41,14 +42,21 @@ static const TEE_UUID uuid = {
 	{0x98, 0xd2, 0x74, 0xf4, 0x38, 0x27, 0x98, 0xbb},
 };
 
-void smc_std_handler(struct thread_smc_args *args, struct sm_nsec_ctx *nsec)
+bool smc_std_handler(struct thread_smc_args *args,
+				    struct sm_nsec_ctx *nsec)
 {
 	uint32_t smc_fid = args->a0;
+	unsigned int fnum __maybe_unused = OPTEE_SMC_FUNC_NUM(smc_fid);
 
 	if (is_psci_fid(smc_fid)) {
 		tee_psci_handler(args, nsec);
-		return;
+		return true;
 	}
+
+#ifdef CFG_WITH_SPCI
+	if (fnum >= SPCI_FID_MIN && fnum <= SPCI_FID_MAX)
+		return tee_spci_handler(args, nsec);
+#endif
 
 	switch (smc_fid) {
 	case ARM_STD_SVC_CALL_COUNT:
@@ -75,4 +83,6 @@ void smc_std_handler(struct thread_smc_args *args, struct sm_nsec_ctx *nsec)
 		args->a0 = OPTEE_SMC_RETURN_UNKNOWN_FUNCTION;
 		break;
 	}
+
+	return true;
 }

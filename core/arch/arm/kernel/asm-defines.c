@@ -13,6 +13,9 @@
 DEFINES
 {
 #ifdef ARM32
+	DEFINE(THREAD_SMC_ARGS_X0, offsetof(struct thread_smc_args, a0));
+	DEFINE(THREAD_SMC_ARGS_SIZE, sizeof(struct thread_smc_args));
+
 	DEFINE(SM_NSEC_CTX_R0, offsetof(struct sm_nsec_ctx, r0));
 	DEFINE(SM_NSEC_CTX_R8, offsetof(struct sm_nsec_ctx, r8));
 	DEFINE(SM_SEC_CTX_R0, offsetof(struct sm_sec_ctx, r0));

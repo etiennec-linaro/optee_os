@@ -24,8 +24,11 @@ uintptr_t spci_arch_msg_get(uint16_t msg_type);
 void spci_msg_put(unsigned int sec_state);
 void *spci_msg_recv(int32_t status, struct thread_smc_args *args);
 void spci_msg_recv_invoke(void);
-uint32_t spci_msg_send_prepare(struct thread_smc_args *args);
+uint32_t spci_msg_send_prepare(struct thread_eret_args *args);
 void spci_msg_send_recv_invoke(uint32_t attributes);
 void spci_msg_loop(void);
+
+// Addons for Armv7
+spci_msg_buf_desc_t *get_spci_buffer(int sec, int dir);
 
 #endif /* SPCI_PRIVATE_H */

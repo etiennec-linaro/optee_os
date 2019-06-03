@@ -501,11 +501,7 @@ static struct mobj *get_cmd_buffer(paddr_t parg, uint32_t *num_params)
 	return mobj_shm_alloc(parg, args_size, 0);
 }
 
-/*
- * Note: this function is weak just to make it possible to exclude it from
- * the unpaged area.
- */
-void __weak tee_entry_std(struct thread_smc_args *smc_args)
+static void tee_entry_std_call_wit_args(struct thread_smc_args *smc_args)
 {
 	paddr_t parg;
 	struct optee_msg_arg *arg = NULL;	/* fix gcc warning */
@@ -570,10 +566,33 @@ void __weak tee_entry_std(struct thread_smc_args *smc_args)
 	//	break;
 #endif
 	default:
-		EMSG("Unknown cmd 0x%x\n", arg->cmd);
+		EMSG("Unknown cmd 0x%x", arg->cmd);
 		smc_args->a0 = OPTEE_SMC_RETURN_EBADCMD;
 	}
 	mobj_free(mobj);
+}
+
+/*
+ * Note: this function is weak just to make it possible to exclude it from
+ * the unpaged area.
+ */
+void __weak tee_entry_std(struct thread_smc_args *smc_args)
+{
+	switch (smc_args->a0) {
+	case OPTEE_SMC_CALL_WITH_ARG:
+		tee_entry_std_call_wit_args(smc_args);
+		return;
+	case OPTEE_SMC_SPCI_BUF_LIST_EXCHANGE:
+		EMSG("SMC SPCI_BUF_LIST_EXCHANGE 0x%" PRIx64 " not supported",
+		     (uint64_t)smc_args->a0);
+		smc_args->a0 = OPTEE_SMC_RETURN_EBADCMD;
+		return;
+	default:
+		EMSG("Unknown SMC 0x%" PRIx64, (uint64_t)smc_args->a0);
+		DMSG("Expected 0x%x", OPTEE_SMC_CALL_WITH_ARG);
+		smc_args->a0 = OPTEE_SMC_RETURN_EBADCMD;
+		return;
+	}
 }
 
 static TEE_Result default_mobj_init(void)

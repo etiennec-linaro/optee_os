@@ -111,10 +111,10 @@ void spci_late_init(void)
 			buf = (spci_buf_t *) va;
 			buf->hdr.state = SPCI_BUF_STATE_EMPTY;
 
-			DMSG("Buf pa: 0x%lx \n", pa);
-			DMSG("Buf va: 0x%lx \n", *va);
-			DMSG("Buf pg: 0x%lx \n", buf_desc[ctr0][ctr1].page_count);
-			DMSG("Buf at: 0x%x \n", buf_desc[ctr0][ctr1].attributes);
+			DMSG("Buf pa: 0x%lx \n", (unsigned long)pa);
+			DMSG("Buf va: 0x%lx \n", (unsigned long)*va);
+			DMSG("Buf pg: 0x%lx \n", (unsigned long)buf_desc[ctr0][ctr1].page_count);
+			DMSG("Buf at: 0x%x \n", (unsigned)buf_desc[ctr0][ctr1].attributes);
 			DMSG("Buf sg: %s   \n", &buf->hdr.signature[0]);
 			DMSG("Buf st: %s   \n",
 			     (buf->hdr.state == SPCI_BUF_STATE_EMPTY) ?

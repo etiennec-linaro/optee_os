@@ -6,6 +6,7 @@
 #include <arm.h>
 #include <compiler.h>
 #include <kernel/misc.h>
+#include <kernel/panic.h>
 #include <platform_config.h>
 #include <sm/optee_smc.h>
 #include <sm/sm.h>
@@ -33,8 +34,11 @@ uint32_t sm_from_nsec(struct sm_ctx *ctx)
 
 #ifdef CFG_PSCI_ARM32
 	if (OPTEE_SMC_OWNER_NUM(*nsec_r0) == OPTEE_SMC_OWNER_STANDARD) {
-		smc_std_handler((struct thread_smc_args *)nsec_r0, &ctx->nsec);
-		return SM_EXIT_TO_NON_SECURE;
+		struct thread_smc_args *nsec_args = (void *)nsec_r0;
+		enum sm_handler_ret ret = smc_std_handler(nsec_args, &ctx->nsec);
+
+		if (ret == SM_HANDLER_SMC_HANDLED)
+			return SM_EXIT_TO_NON_SECURE;
 	}
 #endif
 
@@ -42,10 +46,12 @@ uint32_t sm_from_nsec(struct sm_ctx *ctx)
 	sm_restore_unbanked_regs(&ctx->sec.ub_regs);
 
 	memcpy(&ctx->sec.r0, nsec_r0, sizeof(uint32_t) * 8);
+#ifndef CFG_WITH_SPCI
 	if (OPTEE_SMC_IS_FAST_CALL(ctx->sec.r0))
 		ctx->sec.mon_lr = (uint32_t)&thread_vector_table.fast_smc_entry;
 	else
 		ctx->sec.mon_lr = (uint32_t)&thread_vector_table.std_smc_entry;
+#endif
 
 	return SM_EXIT_TO_SECURE;
 }

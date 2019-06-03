@@ -14,11 +14,25 @@
 #include <mm/core_mmu.h>
 
 #ifdef CFG_CORE_RESERVED_SHM
+/*
+ * Platform or architecture may override this function when SPCI message
+ * buffer(s) is/are located in the reserved shared memory.
+ */
+void __weak carveout_spci_buf_from_exported_reserved_shm(paddr_t *pa __unused,
+							 size_t *len __unused)
+{
+}
+
 static void tee_entry_get_shm_config(struct thread_smc_args *args)
 {
+	paddr_t pa = default_nsec_shm_paddr;
+	size_t size = default_nsec_shm_size;
+
+	carveout_spci_buf_from_exported_reserved_shm(&pa, &size);
+
 	args->a0 = OPTEE_SMC_RETURN_OK;
-	args->a1 = default_nsec_shm_paddr;
-	args->a2 = default_nsec_shm_size;
+	args->a1 = pa;
+	args->a2 = size;
 	/* Should this be TEESMC cache attributes instead? */
 	args->a3 = core_mmu_is_shm_cached();
 }

@@ -207,7 +207,12 @@ typedef struct spci_msg_hdr {
 	uint16_t		target_sp_vcpu;
 	uint16_t		source_sp;
 	uint16_t		source_sp_vcpu;
+#ifdef ARM32
+	uint32_t		payload[];
+#endif
+#ifdef ARM64
 	uint64_t		payload[];
+#endif
 } spci_msg_hdr_t;
 
 /* Architectural message types */

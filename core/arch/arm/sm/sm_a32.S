@@ -14,7 +14,11 @@
 #include <sm/sm.h>
 #include <sm/teesmc_opteed.h>
 #include <sm/teesmc_opteed_macros.h>
+#include <spci.h>
 #include <util.h>
+
+/* Macro to replace signed SPCI_INTERRUPTED (-5) not supported in ASM code */
+#define SPCI_INTERRUPTED_ERRNO 0xFFFFFFFB
 
 #define SM_CTX_SEC_END	(SM_CTX_SEC + SM_CTX_SEC_SIZE)
 
@@ -167,6 +171,7 @@ UNWIND(	.cantunwind)
 	 */
 	sub	sp, sp, #(SM_CTX_NSEC + SM_NSEC_CTX_R0)
 
+	/* Update SCR */
 	bic	r1, r1, #(SCR_NS | SCR_FIQ) /* Clear NS and FIQ bit in SCR */
 	write_scr r1
 	isb
@@ -227,15 +232,21 @@ UNWIND(	.cantunwind)
 	add     r0, sp, #(SM_CTX_NSEC + SM_NSEC_CTX_R8)
 	stm	r0!, {r8-r12}
 
+#ifndef CFG_WITH_SPCI
 	/* Set FIQ entry */
 	ldr	r0, =(thread_vector_table + THREAD_VECTOR_TABLE_FIQ_ENTRY)
 	str	r0, [sp, #(SM_CTX_SEC + SM_SEC_CTX_MON_LR)]
+#endif
 
 	/* Restore secure context */
 	add	r0, sp, #SM_CTX_SEC
 	bl	sm_restore_unbanked_regs
 
 	add	sp, sp, #(SM_CTX_SEC + SM_SEC_CTX_MON_LR)
+
+#if CFG_WITH_SPCI
+	mov_imm r0, SPCI_INTERRUPTED_ERRNO
+#endif
 
 	rfefd	sp!
 UNWIND(	.fnend)

@@ -63,6 +63,7 @@ srcs-$(CFG_TA_FTRACE_SUPPORT) += ftrace.c
 ifeq ($(CFG_WITH_SPCI),y)
 srcs-y += spci.c
 srcs-$(CFG_ARM64_core) += spci_a64.S
+srcs-$(CFG_ARM32_core) += spci_a32.S
 endif
 
 srcs-y += link_dummies.c

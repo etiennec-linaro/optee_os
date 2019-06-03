@@ -20,5 +20,17 @@
 #define is_psci_fid(_fid) \
 	(((_fid) & PSCI_FID_MASK) == PSCI_FID_VALUE)
 
-void smc_std_handler(struct thread_smc_args *args, struct sm_nsec_ctx *nsec);
+/*
+ * Returns whether SMC was handled from smc_std_handler in secure monitor
+ * or if it shall reach OP-TEE core .
+ */
+enum sm_handler_ret smc_std_handler(struct thread_smc_args *args,
+				    struct sm_nsec_ctx *nsec);
+
+/*
+ * SPCI function identifier bounds
+ */
+#define SPCI_FID_MIN			0x0060u
+#define SPCI_FID_MAX			0x00ffu
+
 #endif

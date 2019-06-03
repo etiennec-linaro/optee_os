@@ -142,8 +142,9 @@ typedef struct spci_buf {
 #define SPCI_MEM_REG_ARCH_GRAN_16K	U(1)
 #define SPCI_MEM_REG_ARCH_GRAN_64K	U(2)
 #define SPCI_MEM_REG_ARCH_GRAN_RES	U(3)
-#define SPCI_MEM_REG_ARCH_GRAN(gran)	(((gran) & SPCI_MEM_REG_ARCH_GRAN_MASK)	\
-					 << SPCI_MEM_REG_ARCH_GRAN_SHIFT))
+#define SPCI_MEM_REG_ARCH_GRAN(gran)	(((gran) & \
+					  SPCI_MEM_REG_ARCH_GRAN_MASK) << \
+					 SPCI_MEM_REG_ARCH_GRAN_SHIFT)
 
 /* Macro to define attributes of an architectural memory region */
 #define SPCI_MEM_REG_ARCH(type, sec, gran)			\

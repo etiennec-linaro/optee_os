@@ -84,7 +84,7 @@
  * 384fb3e0-e7f8-11e3-af63-0002a5d5c51b.
  * see also OPTEE_MSG_UID_* in optee_msg.h
  */
-#define OPTEE_SMC_FUNCID_CALLS_UID OPTEE_MSG_FUNCID_CALLS_UID
+#define OPTEE_SMC_FUNCID_CALLS_UID	OPTEE_MSG_FUNCID_CALLS_UID
 #define OPTEE_SMC_CALLS_UID \
 	OPTEE_SMC_CALL_VAL(OPTEE_SMC_32, OPTEE_SMC_FAST_CALL, \
 			   OPTEE_SMC_OWNER_TRUSTED_OS_API, \
@@ -96,7 +96,7 @@
  * Returns 2.0 if using API specified in this file without further extensions.
  * see also OPTEE_MSG_REVISION_* in optee_msg.h
  */
-#define OPTEE_SMC_FUNCID_CALLS_REVISION OPTEE_MSG_FUNCID_CALLS_REVISION
+#define OPTEE_SMC_FUNCID_CALLS_REVISION		OPTEE_MSG_FUNCID_CALLS_REVISION
 #define OPTEE_SMC_CALLS_REVISION \
 	OPTEE_SMC_CALL_VAL(OPTEE_SMC_32, OPTEE_SMC_FAST_CALL, \
 			   OPTEE_SMC_OWNER_TRUSTED_OS_API, \
@@ -111,7 +111,7 @@
  * Returns UUID in a0-4 in the same way as OPTEE_SMC_CALLS_UID
  * described above.
  */
-#define OPTEE_SMC_FUNCID_GET_OS_UUID OPTEE_MSG_FUNCID_GET_OS_UUID
+#define OPTEE_SMC_FUNCID_GET_OS_UUID	OPTEE_MSG_FUNCID_GET_OS_UUID
 #define OPTEE_SMC_CALL_GET_OS_UUID \
 	OPTEE_SMC_FAST_CALL_VAL(OPTEE_SMC_FUNCID_GET_OS_UUID)
 
@@ -126,7 +126,7 @@
  * described above. May optionally return a 32-bit build identifier in a2,
  * with zero meaning unspecified.
  */
-#define OPTEE_SMC_FUNCID_GET_OS_REVISION OPTEE_MSG_FUNCID_GET_OS_REVISION
+#define OPTEE_SMC_FUNCID_GET_OS_REVISION	OPTEE_MSG_FUNCID_GET_OS_REVISION
 #define OPTEE_SMC_CALL_GET_OS_REVISION \
 	OPTEE_SMC_FAST_CALL_VAL(OPTEE_SMC_FUNCID_GET_OS_REVISION)
 
@@ -171,7 +171,7 @@
  * OPTEE_SMC_RETURN_IS_RPC()		Call suspended by RPC call to normal
  *					world.
  */
-#define OPTEE_SMC_FUNCID_CALL_WITH_ARG OPTEE_MSG_FUNCID_CALL_WITH_ARG
+#define OPTEE_SMC_FUNCID_CALL_WITH_ARG	OPTEE_MSG_FUNCID_CALL_WITH_ARG
 #define OPTEE_SMC_CALL_WITH_ARG \
 	OPTEE_SMC_STD_CALL_VAL(OPTEE_SMC_FUNCID_CALL_WITH_ARG)
 
@@ -198,7 +198,7 @@
  * a1-3 Not used
  * a4-7	Preserved
  */
-#define OPTEE_SMC_FUNCID_GET_SHM_CONFIG	7
+#define OPTEE_SMC_FUNCID_GET_SHM_CONFIG		7
 #define OPTEE_SMC_GET_SHM_CONFIG \
 	OPTEE_SMC_FAST_CALL_VAL(OPTEE_SMC_FUNCID_GET_SHM_CONFIG)
 
@@ -508,7 +508,7 @@
  *	the memory or doing an RPC
  * a6-7	Preserved
  */
-#define OPTEE_SMC_RPC_FUNC_ALLOC	0
+#define OPTEE_SMC_RPC_FUNC_ALLOC		0
 #define OPTEE_SMC_RETURN_RPC_ALLOC \
 	OPTEE_SMC_RPC_VAL(OPTEE_SMC_RPC_FUNC_ALLOC)
 
@@ -528,7 +528,7 @@
  * a1-2	Not used
  * a3-7	Preserved
  */
-#define OPTEE_SMC_RPC_FUNC_FREE		2
+#define OPTEE_SMC_RPC_FUNC_FREE			2
 #define OPTEE_SMC_RETURN_RPC_FREE \
 	OPTEE_SMC_RPC_VAL(OPTEE_SMC_RPC_FUNC_FREE)
 
@@ -543,7 +543,7 @@
  * a0	SMC Function ID, OPTEE_SMC_CALL_RETURN_FROM_RPC.
  * a1-7	Preserved
  */
-#define OPTEE_SMC_RPC_FUNC_FOREIGN_INTR	4
+#define OPTEE_SMC_RPC_FUNC_FOREIGN_INTR		4
 #define OPTEE_SMC_RETURN_RPC_FOREIGN_INTR \
 	OPTEE_SMC_RPC_VAL(OPTEE_SMC_RPC_FUNC_FOREIGN_INTR)
 
@@ -575,6 +575,31 @@
 #define OPTEE_SMC_RPC_FUNC_CMD		5
 #define OPTEE_SMC_RETURN_RPC_CMD \
 	OPTEE_SMC_RPC_VAL(OPTEE_SMC_RPC_FUNC_CMD)
+
+/*
+ * SPCI support for 32bit architectures: process SPCI_MSG_BUF_LIST_EXCHANGE
+ * in yield execution mode of the std_smc entry.
+ *
+ * Normal World OS or Hypervisor issues this call to register/unregister
+ * shared memory buffers used for SPCI communication.
+ *
+ * Call requests usage:
+ * a0	OPTEE_SMC_SPCI_BUF_LIST_EXCHANGE
+ * a1	SPCI spci_msg_buf physical address
+ * a2-6 Not used
+ * a7	Hypervisor Client ID register
+ *
+ * Normal return register usage:
+ * a0	OPTEE_SMC_RETURN_OK
+ * a1-7 Preserved
+ *
+ * Error return:
+ * a0	OPTEE_SMC_RETURN_UNKNOWN_FUNCTION   Requested call is not implemented
+ * a1-7	Preserved
+ */
+#define OPTEE_SMC_FUNCID_SPCI_BUF_LIST		OPTEE_MSG_ARM32_SPCI_BUF_LIST
+#define OPTEE_SMC_SPCI_BUF_LIST_EXCHANGE \
+	OPTEE_SMC_STD_CALL_VAL(OPTEE_SMC_FUNCID_SPCI_BUF_LIST)
 
 /* Returned in a0 */
 #define OPTEE_SMC_RETURN_UNKNOWN_FUNCTION 0xFFFFFFFF

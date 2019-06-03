@@ -534,23 +534,15 @@ void nsec_sessions_list_head(struct tee_ta_session_head **open_sessions)
 	*open_sessions = &tee_open_sessions;
 }
 
-/*
- * Note: this function is weak just to make it possible to exclude it from
- * the unpaged area.
- */
-void __weak tee_entry_std(struct thread_smc_args *smc_args)
+static void tee_entry_std_call_wit_args(struct thread_smc_args *smc_args)
 {
 	paddr_t parg = 0;
 	struct optee_msg_arg *arg = NULL;
 	uint32_t num_params = 0;
 	struct mobj *mobj = NULL;
 
-	if (smc_args->a0 != OPTEE_SMC_CALL_WITH_ARG) {
-		EMSG("Unknown SMC 0x%" PRIx64, (uint64_t)smc_args->a0);
-		DMSG("Expected 0x%x", OPTEE_SMC_CALL_WITH_ARG);
-		smc_args->a0 = OPTEE_SMC_RETURN_EBADCMD;
-		return;
-	}
+	assert(smc_args->a0 == OPTEE_SMC_CALL_WITH_ARG);
+
 	parg = (uint64_t)smc_args->a1 << 32 | smc_args->a2;
 
 	/* Check if this region is in static shared space */
@@ -612,6 +604,29 @@ void __weak tee_entry_std(struct thread_smc_args *smc_args)
 		smc_args->a0 = OPTEE_SMC_RETURN_EBADCMD;
 	}
 	mobj_free(mobj);
+}
+
+/*
+ * Note: this function is weak just to make it possible to exclude it from
+ * the unpaged area.
+ */
+void __weak tee_entry_std(struct thread_smc_args *smc_args)
+{
+	switch (smc_args->a0) {
+	case OPTEE_SMC_CALL_WITH_ARG:
+		tee_entry_std_call_wit_args(smc_args);
+		return;
+	case OPTEE_SMC_SPCI_BUF_LIST_EXCHANGE:
+		EMSG("SMC SPCI_BUF_LIST_EXCHANGE 0x%" PRIx64 " not supported",
+		     (uint64_t)smc_args->a0);
+		smc_args->a0 = OPTEE_SMC_RETURN_EBADCMD;
+		return;
+	default:
+		EMSG("Unknown SMC 0x%" PRIx64, (uint64_t)smc_args->a0);
+		DMSG("Expected 0x%x", OPTEE_SMC_CALL_WITH_ARG);
+		smc_args->a0 = OPTEE_SMC_RETURN_EBADCMD;
+		return;
+	}
 }
 
 static TEE_Result default_mobj_init(void)

@@ -308,4 +308,13 @@ struct optee_msg_arg {
 #define OPTEE_MSG_CMD_UNREGISTER_SHM	5
 #define OPTEE_MSG_FUNCID_CALL_WITH_ARG	0x0004
 
+/*
+ * s/optee_msg_arg/optee_spci_msg/g
+ * s/OPTEE_MSG_CMD_/SPCI_MSG_CMD_/g
+ *
+ * Do a secure call with struct spci_msg as argument
+ * The SPCI_MSG_CMD_* below defines what goes in struct optee_spci_msg::cmd
+ */
+#define OPTEE_MSG_ARM32_SPCI_BUF_LIST	0x0005
+
 #endif /* _OPTEE_MSG_H */

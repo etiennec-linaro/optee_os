@@ -108,7 +108,7 @@ void spci_late_init(void)
 							     MEM_AREA_SPCI_NSEC_SHM);
 
 			/* Set the buffer state as empty */
-			buf = (spci_buf_t *) va;
+			buf = (spci_buf_t *)(*va);
 			buf->hdr.state = SPCI_BUF_STATE_EMPTY;
 
 			DMSG("Buf pa: 0x%lx \n", (unsigned long)pa);

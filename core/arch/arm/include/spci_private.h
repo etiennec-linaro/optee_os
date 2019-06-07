@@ -28,4 +28,7 @@ uint32_t spci_msg_send_prepare(struct thread_eret_args *args);
 void spci_msg_send_recv_invoke(uint32_t attributes);
 void spci_msg_loop(void);
 
+// Addons for Armv7
+spci_msg_buf_desc_t *get_spci_buffer(int sec, int dir);
+
 #endif /* SPCI_PRIVATE_H */

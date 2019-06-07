@@ -5,9 +5,12 @@
 #ifndef SCMI_H
 #define SCMI_H
 
-void __weak __thread_std_scmi_entry(struct thread_smc_args *args);
+#include <kernel/thread.h>
+#include <spci.h>
 
-/* Handles a stdcall, r0-r7 holds the parameters */
+void __thread_std_scmi_entry(struct thread_smc_args *args);
+
+/* Handles a SCMI notification by calling SCMI server with message arguments */
 void thread_std_scmi_entry(void);
 
 int32_t spci_scmi_recv_escape(spci_msg_hdr_t *msg_hdr, struct thread_smc_args *args);

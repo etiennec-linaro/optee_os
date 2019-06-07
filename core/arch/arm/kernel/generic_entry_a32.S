@@ -343,6 +343,14 @@ KEEP_INIT _start
 #define flush_cpu_semaphores
 #endif
 
+.weak get_spci_init_msg
+FUNC get_spci_init_msg , :
+UNWIND(	.fnstart)
+	mov	r0, r7		/* SPCI init message from bootarg r1 */
+	bx	lr
+UNWIND(	.fnend)
+END_FUNC get_spci_init_msg
+
 LOCAL_FUNC reset_primary , :
 UNWIND(	.fnstart)
 UNWIND(	.cantunwind)
@@ -426,6 +434,12 @@ shadow_stack_access_ok:
 	bl	arm_cl2_config
 #endif
 
+#if defined(CFG_WITH_SPCI)
+	/* Pass init message to SPCI init (TODO 32b with 64b sm) */
+	bl	get_spci_init_msg
+	bl	spci_early_init
+#endif
+
 	/*
 	 * Invalidate dcache for all memory used during initialization to
 	 * avoid nasty surprices when the cache is turned on. We must not
@@ -451,6 +465,10 @@ shadow_stack_access_ok:
 	bl	cpu_mmu_enable_dcache
 
 	enable_branch_prediction
+
+#if defined(CFG_WITH_SPCI)
+	bl	spci_late_init
+#endif
 
 	mov	r0, r4		/* pageable part address */
 	mov	r1, r5		/* ns-entry address */
@@ -492,6 +510,15 @@ shadow_stack_access_ok:
 	 */
 	bl 	thread_clr_boot_thread
 
+#if defined(CFG_WITH_SPCI)
+	/* Free RX buffer */
+	mov	r0, #0			/* TODO: Unforgivable hack */
+	bl	spci_msg_put
+	mov	r2, #0			/* clear value returned to nsec */
+	mov	r3, #0			/* clear value returned to nsec */
+	mov	r4, #0			/* clear value returned to nsec */
+	b	spci_msg_recv_invoke
+#else
 #if defined(CFG_WITH_ARM_TRUSTED_FW)
 	/* Pass the vector address returned from main_init */
 	mov	r1, r4
@@ -506,6 +533,7 @@ shadow_stack_access_ok:
 	mov	r0, #TEESMC_OPTEED_RETURN_ENTRY_DONE
 	smc	#0
 	b	.	/* SMC should not return */
+#endif /*CFG_WITH_SPCI*/
 UNWIND(	.fnend)
 END_FUNC reset_primary
 
@@ -591,6 +619,15 @@ UNWIND(	.cantunwind)
 #endif
 	bl	generic_boot_init_secondary
 
+#if defined(CFG_WITH_SPCI)
+	/* Free RX buffer */
+	mov	r0, #0			/* TODO: Unforgivable hack */
+	bl	spci_msg_put
+	mov	r2, #0			/* clear value returned to nsec */
+	mov	r3, #0			/* clear value returned to nsec */
+	mov	r4, #0			/* clear value returned to nsec */
+	b	spci_msg_recv_invoke
+#else
 	mov	r0, #TEESMC_OPTEED_RETURN_ENTRY_DONE
 	mov	r1, r6
 	mov	r2, #0
@@ -598,6 +635,7 @@ UNWIND(	.cantunwind)
 	mov	r4, #0
 	smc	#0
 	b	.	/* SMC should not return */
+#endif /*CFG_WITH_SPCI*/
 UNWIND(	.fnend)
 END_FUNC reset_secondary
 KEEP_PAGER reset_secondary

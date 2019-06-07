@@ -13,6 +13,7 @@
 #include <string.h>
 #include "sm_private.h"
 
+#include <kernel/panic.h>
 bool sm_from_nsec(struct sm_ctx *ctx)
 {
 	uint32_t *nsec_r0 = (uint32_t *)(&ctx->nsec.r0);
@@ -40,9 +41,11 @@ bool sm_from_nsec(struct sm_ctx *ctx)
 	sm_restore_unbanked_regs(&ctx->sec.ub_regs);
 
 	memcpy(&ctx->sec.r0, nsec_r0, sizeof(uint32_t) * 8);
+#ifndef CFG_WITH_SPCI
 	if (OPTEE_SMC_IS_FAST_CALL(ctx->sec.r0))
 		ctx->sec.mon_lr = (uint32_t)&thread_vector_table.fast_smc_entry;
 	else
 		ctx->sec.mon_lr = (uint32_t)&thread_vector_table.std_smc_entry;
+#endif
 	return true;	/* return into secure state */
 }

@@ -20,7 +20,19 @@ static spci_msg_buf_desc_t buf_desc[SPCI_MAX_SEC_STATES][SPCI_MAX_BUFS];
 /* Special message with initialisation information */
 static spci_msg_sp_init_t *sp_init_msg;
 
-uintptr_t spci_arch_msg_get(uint16_t msg_type)
+#ifndef CFG_ARM_TRUSTED_FIRMWARE
+spci_msg_buf_desc_t *get_spci_buffer(int sec, int dir)
+{
+	assert(sec == SPCI_MEM_REG_ARCH_SEC_S ||
+	       sec == SPCI_MEM_REG_ARCH_SEC_NS);
+	assert(dir == SPCI_MEM_REG_ARCH_TYPE_RX ||
+	       dir == SPCI_MEM_REG_ARCH_TYPE_TX);
+
+	return &buf_desc[sec][dir];
+}
+#endif
+
+uintptr_t spci_arch_msg_get(uint16_t msg_type __maybe_unused)
 {
 	assert(msg_type == SPCI_ARCH_MSG_TYPE_SP_INIT);
 	assert(sp_init_msg != NULL);
@@ -101,12 +113,24 @@ void spci_late_init(void)
 				continue;
 
 			/* Secure or non-secure */
+#if defined(CFG_WITH_ARM_TRUSTED_FW)
 			if (ctr0 == 0)
 				*va = (vaddr_t) phys_to_virt((paddr_t) pa,
 							     MEM_AREA_SPCI_SEC_SHM);
 			else
 				*va = (vaddr_t) phys_to_virt((paddr_t) pa,
 							     MEM_AREA_SPCI_NSEC_SHM);
+#else
+			/*
+			 * All SPCI message buffer are located in non-secure
+			 * memory since there is only 1 secure partition
+			 */
+			*va = (vaddr_t) phys_to_virt((paddr_t)pa,
+						     MEM_AREA_SPCI_NSEC_SHM);
+			if (!*va)
+				*va = (vaddr_t) phys_to_virt((paddr_t)pa,
+							     MEM_AREA_NSEC_SHM);
+#endif
 
 			/* Set the buffer state as empty */
 			buf = (spci_buf_t *)(*va);
@@ -163,10 +187,8 @@ void *spci_msg_recv(int32_t status, struct thread_smc_args *args)
 	 * There is an FIQ to handle. There is no message. Jump to
 	 * the FIQ handler directly.
 	 */
-	if (status == SPCI_INTERRUPTED) {
-		DMSG("Received FIQ\n");
+	if (status == SPCI_INTERRUPTED)
 		return &thread_vector_table.fiq_entry;
-	}
 
 	/* Get a reference to the RX buffer */
 	msg_loc = status >> SPCI_MSG_RECV_MSGLOC_SHIFT;
@@ -218,7 +240,9 @@ void *spci_msg_recv(int32_t status, struct thread_smc_args *args)
 		return &thread_vector_table.std_smc_entry;
 }
 
-uint32_t spci_msg_send_prepare(struct thread_eret_args *args)
+uint32_t realy_msg_to_vm_rx(struct thread_eret_args *args);
+
+uint32_t spci_msg_send_prepare(struct thread_smc_args *args)
 {
 	uint32_t msg_loc, msg_type, attrs;
 	spci_msg_hdr_t *msg_hdr;
@@ -233,8 +257,12 @@ uint32_t spci_msg_send_prepare(struct thread_eret_args *args)
 	tx_buf = (spci_buf_t *) tx_buf_desc->va;
 
 	/* TODO: Assuming UP. Use spinlocks to protect buffer later */
-	if (tx_buf->hdr.state != SPCI_BUF_STATE_EMPTY)
-		panic();
+
+	if (tx_buf->hdr.state != SPCI_BUF_STATE_EMPTY) {
+		EMSG(" TX buffer not empty: waiting");
+		while (tx_buf->hdr.state != SPCI_BUF_STATE_EMPTY)
+			;
+	}
 
 	/*
 	 * Get the common message header.
@@ -267,10 +295,15 @@ uint32_t spci_msg_send_prepare(struct thread_eret_args *args)
 	/* Mark the buffer as full */
 	tx_buf->hdr.state = SPCI_BUF_STATE_FULL;
 
+#ifdef CFG_ARM_TRUSTED_FIRMWARE
 	/*
 	 * Populate Attributes parameter. TODO: Assume blocking behaviour
 	 * without notifications.
 	 */
 	attrs = msg_loc << SPCI_MSG_SEND_ATTRS_MSGLOC_SHIFT;
+#else
+	attrs = realy_msg_to_vm_rx(args);
+#endif
+
 	return attrs;
 }

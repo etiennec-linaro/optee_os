@@ -21,4 +21,8 @@
 	(((_fid) & PSCI_FID_MASK) == PSCI_FID_VALUE)
 
 void smc_std_handler(struct thread_smc_args *args, struct sm_nsec_ctx *nsec);
+
+#define SPCI_FID_MIN			0x0060u
+#define SPCI_FID_MAX			0x00ffu
+
 #endif

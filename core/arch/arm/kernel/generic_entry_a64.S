@@ -12,7 +12,7 @@
 #include <sm/optee_smc.h>
 #include <sm/teesmc_opteed.h>
 #include <sm/teesmc_opteed_macros.h>
-#if CFG_WITH_SPCI
+#ifdef CFG_WITH_SPCI
 #include <generated/asm-defines.h>
 #include <spci.h>
 #endif
@@ -58,7 +58,7 @@
 FUNC _start , :
 	mov	x19, x0		/* Save pagable part address */
 	mov	x20, x2		/* Save DT address */
-#if CFG_WITH_SPCI
+#ifdef CFG_WITH_SPCI
 	mov	x21, x1		/* Save reference to SPCI RX buffer */
 #endif
 
@@ -123,7 +123,7 @@ clear_bss:
 	sub	x1, x1, x0
 	bl	dcache_inv_range
 
-#if CFG_WITH_SPCI
+#ifdef CFG_WITH_SPCI
 	/* Pass reference to RX buffer with init. message */
 	mov	x0, x21
 	bl	spci_early_init
@@ -138,7 +138,7 @@ clear_bss:
 	bl	cpu_mmu_enable_icache
 	bl	cpu_mmu_enable_dcache
 
-#if CFG_WITH_SPCI
+#ifdef CFG_WITH_SPCI
 	bl	spci_late_init
 #endif
 
@@ -172,7 +172,7 @@ clear_bss:
 	 */
 	bl 	thread_clr_boot_thread
 
-#if CFG_WITH_SPCI
+#ifdef CFG_WITH_SPCI
 	/* Free RX buffer */
 	mov	x0, xzr		/* TODO: Unforgivable hack */
 	bl	spci_msg_put

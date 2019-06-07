@@ -321,6 +321,11 @@ static void thread_lazy_restore_ns_vfp(void)
 #endif /*CFG_WITH_VFP*/
 }
 
+/* Provide a stub when not building with CFG_WITH_SPCI */
+void __weak thread_std_scmi_entry(void)
+{
+}
+
 #ifdef ARM32
 static void init_regs(struct thread_ctx *thread,
 		struct thread_smc_args *args)

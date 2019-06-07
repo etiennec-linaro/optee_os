@@ -222,7 +222,7 @@ uint32_t spci_msg_send_prepare(struct thread_eret_args *args)
 {
 	uint32_t msg_loc, msg_type, attrs;
 	spci_msg_hdr_t *msg_hdr;
-	spci_optee_msg_t *optee_msg;
+	struct thread_eret_args *optee_msg;
 	spci_msg_buf_desc_t *tx_buf_desc;
 	spci_buf_t *tx_buf;
 	void *tmp;
@@ -254,14 +254,14 @@ uint32_t spci_msg_send_prepare(struct thread_eret_args *args)
 	if (!spci_scmi_send_escape(msg_hdr, args)) {
 		/* Populate the message payload */
 		tmp = (void *) msg_hdr->payload;
-		optee_msg = (spci_optee_msg_t *) tmp;
+		optee_msg = (struct thread_eret_args *) tmp;
 		memset(optee_msg, 0, sizeof(*optee_msg));
 
-		/* Copy the message */
-		memcpy(optee_msg, args, sizeof(*args));
+		/* Copy the returned message (return args) */
+		memcpy(optee_msg, args, sizeof(*optee_msg));
 
 		/* Set the message length */
-		msg_hdr->length = sizeof(*args);
+		msg_hdr->length = sizeof(*optee_msg);
 	}
 
 	/* Mark the buffer as full */

@@ -12,6 +12,6 @@ void thread_std_scmi_entry(void);
 
 int32_t spci_scmi_recv_escape(spci_msg_hdr_t *msg_hdr, struct thread_smc_args *args);
 
-int32_t spci_scmi_send_escape(spci_msg_hdr_t *msg_hdr, struct thread_smc_args *args);
+int32_t spci_scmi_send_escape(spci_msg_hdr_t *msg_hdr, struct thread_eret_args *args);
 
 #endif /* SCMI_H */

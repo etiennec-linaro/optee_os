@@ -40,7 +40,8 @@ struct __attribute((packed)) scpi_mb_memory {
 
 #define SCMI_PAYLOAD_SIZE       (128)
 
-int32_t spci_scmi_recv_escape(spci_msg_hdr_t *msg_hdr, struct thread_smc_args *args)
+int32_t spci_scmi_recv_escape(spci_msg_hdr_t *msg_hdr,
+			      struct thread_smc_args *args)
 {
 	struct __attribute((packed)) scpi_mb_memory *message;
 
@@ -70,7 +71,8 @@ int32_t spci_scmi_recv_escape(spci_msg_hdr_t *msg_hdr, struct thread_smc_args *a
 	return 1;
 }
 
-int32_t spci_scmi_send_escape(spci_msg_hdr_t *msg_hdr, struct thread_smc_args *args)
+int32_t spci_scmi_send_escape(spci_msg_hdr_t *msg_hdr,
+			      struct thread_eret_args *args)
 {
 	struct __attribute((packed)) scpi_mb_memory *message;
 	int size;

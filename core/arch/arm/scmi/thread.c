@@ -16,12 +16,33 @@
 
 /*
  * Interface with SCMI server
- * TODO: add them in a dedicated header file
  */
-extern void* spci_get_buffer_ospm0(void);
-extern void optee_init_scmi(void);
-extern void optee_process_scmi(void);
-extern void spci_raise_event_ospm0(void);
+
+/* from libscmi: spci_get_buffer_ospm0() to get SCMI msg buffer */
+void* spci_get_buffer_ospm0(void);
+
+/* from libscmi: optee_init_scmi() initializes the framwork */
+void optee_init_scmi(void);
+
+/* from libscmi: optee_process_scmi() process a SCMI message process */
+void optee_process_scmi(void);
+
+/* from libscmi: raise an event in the SCMI framwork before calling optee_process_scmi() */
+void spci_raise_event_ospm0(void);
+
+void __weak *spci_get_buffer_ospm0(void)
+{
+	return NULL;
+}
+void __weak optee_init_scmi(void)
+{
+}
+void __weak optee_process_scmi(void)
+{
+}
+void __weak spci_raise_event_ospm0(void)
+{
+}
 
 /*!
  * \brief Message header layout

@@ -1,5 +1,5 @@
 
-ifeq ($(CFG_WITH_SPCI),1)
+ifeq ($(CFG_WITH_SPCI),y)
 srcs-y += thread.c
 srcs-$(CFG_ARM64_core) += thread_a64.S
 

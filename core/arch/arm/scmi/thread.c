@@ -43,10 +43,10 @@ struct __attribute((packed)) scpi_mb_memory {
 int32_t spci_scmi_recv_escape(spci_msg_hdr_t *msg_hdr,
 			      struct thread_smc_args *args)
 {
-	struct __attribute((packed)) scpi_mb_memory *message;
+	struct __attribute((packed)) scpi_mb_memory *message = NULL;
 
 	/* Get the payload */
-	message = msg_hdr->payload;
+	message = (void *)msg_hdr->payload;
 
 	/* Check for escape tag from SCMI payload */
 	if (message->reserved0 != 0xDEADBEEF)
@@ -102,10 +102,11 @@ int32_t spci_scmi_send_escape(spci_msg_hdr_t *msg_hdr,
  * Note: this function is weak just to make it possible to exclude it from
  * the unpaged area.
  */
-void __weak __thread_std_scmi_entry(struct thread_smc_args *args)
+void __weak __thread_std_scmi_entry(struct thread_smc_args *args __unused)
 {
-	struct __attribute((packed)) scpi_mb_memory *message, *tmp;
-	int i, size;
+	struct __attribute((packed)) scpi_mb_memory *message = NULL;
+	unsigned int i = 0;
+	unsigned int size = 0;
 
 	message = spci_get_buffer_ospm0();
 

@@ -255,15 +255,15 @@ static void respond(fwk_id_t service_id, const void *payload, size_t size)
      * specification it should be like that for all commands.
      */
     if ((payload != NULL) && (*((int32_t *)payload) < SCMI_SUCCESS)) {
-       scmi_ctx.log_api->log(MOD_LOG_GROUP_WARNING,
+       LOG(scmi_ctx.log_api, MOD_LOG_GROUP_WARNING,
            "[SCMI] Protocol 0x%x, message_id 0x%x returned with error %d\n",
            ctx->scmi_protocol_id, ctx->scmi_message_id, *((int *)payload));
     }
 
     status = ctx->respond(ctx->transport_id, payload, size);
     if (status != FWK_SUCCESS)
-        scmi_ctx.log_api->log(MOD_LOG_GROUP_ERROR,
-            "[SCMI] Failed to send response (%e)\n", status);
+        LOG(scmi_ctx.log_api, MOD_LOG_GROUP_ERROR,
+            "[SCMI] Failed to send response (%d)\n", status);
 }
 
 static const struct mod_scmi_from_protocol_api mod_scmi_from_protocol_api = {
@@ -752,14 +752,15 @@ static int scmi_process_event(const struct fwk_event *event,
 
     status = transport_api->get_message_header(transport_id, &message_header);
     if (status != FWK_SUCCESS) {
-        scmi_ctx.log_api->log(MOD_LOG_GROUP_ERROR,
+
+        LOG(scmi_ctx.log_api, MOD_LOG_GROUP_ERROR,
             "[SCMI] Unable to read message header\n");
         return status;
     }
 
     status = transport_api->get_payload(transport_id, &payload, &payload_size);
     if (status != FWK_SUCCESS) {
-        scmi_ctx.log_api->log(MOD_LOG_GROUP_ERROR,
+        LOG(scmi_ctx.log_api, MOD_LOG_GROUP_ERROR,
             "[SCMI] Unable to read message payload\n");
         return status;
     }
@@ -770,7 +771,7 @@ static int scmi_process_event(const struct fwk_event *event,
     protocol_idx = scmi_ctx.scmi_protocol_id_to_idx[ctx->scmi_protocol_id];
 
     if (protocol_idx == 0) {
-        scmi_ctx.log_api->log(MOD_LOG_GROUP_ERROR,
+        LOG(scmi_ctx.log_api, MOD_LOG_GROUP_ERROR,
             "[SCMI] Protocol 0x%x not supported\n", ctx->scmi_protocol_id);
         ctx->respond(transport_id, &(int32_t) { SCMI_NOT_SUPPORTED },
                      sizeof(int32_t));
@@ -782,8 +783,8 @@ static int scmi_process_event(const struct fwk_event *event,
         payload, payload_size, ctx->scmi_message_id);
 
     if (status != FWK_SUCCESS) {
-        scmi_ctx.log_api->log(MOD_LOG_GROUP_WARNING,
-            "[SCMI] Protocol 0x%x handler error (%e), message_id = 0x%x\n",
+        LOG(scmi_ctx.log_api, MOD_LOG_GROUP_WARNING,
+            "[SCMI] Protocol 0x%x handler error (%d), message_id = 0x%x\n",
             ctx->scmi_protocol_id, status, ctx->scmi_message_id);
     }
 

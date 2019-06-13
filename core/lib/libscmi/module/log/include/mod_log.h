@@ -65,6 +65,12 @@ enum mod_log_group {
  */
 #define MOD_LOG_API_ID  FWK_ID_API(FWK_MODULE_IDX_LOG, 0)
 
+/*
+ * Helper for logging to console
+ */
+#define LOG(log_api, group, ...)	((log_api)->log(group, __VA_ARGS__))
+
+
 /*!
  * \brief Module configuration.
  */

@@ -31,6 +31,10 @@ int trace_get_level(void);
 void trace_printf(const char *func, int line, int level, bool level_ok,
 		  const char *fmt, ...) __printf(5, 6);
 
+#include <stdarg.h>
+
+void trace_printf_ap(int level, const char *fmt, va_list ap) __printf(2, 0);
+
 #define trace_printf_helper(level, level_ok, ...) \
 	trace_printf(__func__, __LINE__, (level), (level_ok), \
 		     __VA_ARGS__)
@@ -84,10 +88,10 @@ void trace_printf(const char *func, int line, int level, bool level_ok,
 
 void dhex_dump(const char *function, int line, int level,
 	       const void *buf, int len);
-#if (TRACE_LEVEL < TRACE_DEBUG)
+#if (TRACE_LEVEL < TRACE_ERROR)
 #define DHEXDUMP(buf, len) (void)0
 #else
-#define DHEXDUMP(buf, len) dhex_dump(__func__, __LINE__, TRACE_DEBUG, \
+#define DHEXDUMP(buf, len) dhex_dump(__func__, __LINE__, TRACE_ERROR, \
 				     buf, len)
 #endif
 

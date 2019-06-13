@@ -31,6 +31,10 @@ int trace_get_level(void);
 void trace_printf(const char *func, int line, int level, bool level_ok,
 		  const char *fmt, ...) __printf(5, 6);
 
+#include <stdarg.h>
+
+void trace_printf_ap(int level, const char *fmt, va_list ap) __printf(2, 0);
+
 #define trace_printf_helper(level, level_ok, ...) \
 	trace_printf(__func__, __LINE__, (level), (level_ok), \
 		     __VA_ARGS__)

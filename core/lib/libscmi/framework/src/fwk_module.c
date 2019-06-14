@@ -419,7 +419,10 @@ int __fwk_module_init(void)
 
     ctx.initialized = true;
 
+#ifndef BUILD_OPTEE
+	// TODO need to find a better define
     __fwk_thread_run();
+#endif
 
     return FWK_SUCCESS;
 }

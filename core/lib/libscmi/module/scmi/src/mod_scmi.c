@@ -17,7 +17,11 @@
 #include <fwk_mm.h>
 #include <fwk_module.h>
 #include <fwk_module_idx.h>
+#ifdef BUILD_HAS_MULTITHREADING
 #include <fwk_multi_thread.h>
+#else
+#include <fwk_thread.h>
+#endif
 #include <internal/mod_scmi.h>
 #include <internal/scmi.h>
 #include <internal/scmi_base.h>
@@ -613,7 +617,11 @@ static int scmi_service_init(fwk_id_t service_id, unsigned int unused,
     ctx = &scmi_ctx.service_ctx_table[fwk_id_get_element_idx(service_id)];
     ctx->config = config;
 
+#ifdef BUILD_HAS_MULTITHREADING
     return fwk_thread_create(service_id);
+#else
+    return FWK_SUCCESS;
+#endif
 }
 
 static int scmi_bind(fwk_id_t id, unsigned int round)

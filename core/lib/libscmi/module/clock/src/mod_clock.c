@@ -167,8 +167,10 @@ static int clock_init(fwk_id_t module_id, unsigned int element_count,
     if (element_count == 0)
         return FWK_SUCCESS;
 
+#ifdef BUILD_HAS_NOTIFICATION
     if (config == NULL)
         return FWK_E_PARAM;
+#endif
 
     module_ctx.config = config;
     module_ctx.dev_ctx_table = fwk_mm_calloc(element_count,
@@ -212,7 +214,9 @@ static int clock_bind(fwk_id_t id, unsigned int round)
 
 static int clock_start(fwk_id_t id)
 {
+#ifdef BUILD_HAS_NOTIFICATION
     int status;
+#endif
     struct clock_dev_ctx *ctx;
 
     /* Nothing to be done at the module level */
@@ -224,6 +228,7 @@ static int clock_start(fwk_id_t id)
     if (fwk_id_is_type(ctx->config->pd_source_id, FWK_ID_TYPE_NONE))
          return FWK_SUCCESS;
 
+#ifdef BUILD_HAS_NOTIFICATION
     if ((ctx->api->process_power_transition != NULL) &&
         (fwk_id_is_type(
             module_ctx.config->pd_transition_notification_id,
@@ -247,6 +252,7 @@ static int clock_start(fwk_id_t id)
         if (status != FWK_SUCCESS)
             return status;
     }
+#endif
 
     return FWK_SUCCESS;
 }
@@ -261,6 +267,8 @@ static int clock_process_bind_request(fwk_id_t source_id, fwk_id_t target_id,
     *api = &clock_api;
     return FWK_SUCCESS;
 }
+
+#ifdef BUILD_HAS_NOTIFICATION
 
 static int clock_process_pd_pre_transition_notification(
     struct clock_dev_ctx *ctx,
@@ -445,16 +453,22 @@ static int clock_process_notification(
         return FWK_E_HANDLER;
 }
 
+#endif
+
 const struct fwk_module module_clock = {
     .name = "Clock HAL",
     .type = FWK_MODULE_TYPE_HAL,
     .api_count = MOD_CLOCK_API_COUNT,
     .event_count = 0,
+#ifdef BUILD_HAS_NOTIFICATION
     .notification_count = MOD_CLOCK_NOTIFICATION_IDX_COUNT,
+#endif
     .init = clock_init,
     .element_init = clock_dev_init,
     .bind = clock_bind,
     .start = clock_start,
     .process_bind_request = clock_process_bind_request,
+#ifdef BUILD_HAS_NOTIFICATION
     .process_notification = clock_process_notification,
+#endif
 };

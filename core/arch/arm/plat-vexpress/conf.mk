@@ -66,6 +66,19 @@ CFG_CRYPTO_WITH_CE ?= y
 endif
 
 ifeq ($(PLATFORM_FLAVOR),qemu_virt)
+ifeq ($(CFG_WITH_SCMI),y)
+$(call force,CFG_WITH_SPCI,y)
+CFG_SCMI_VEXPRESS ?= y
+CFG_SCMI_CLOCK ?= y
+CFG_SCMI_DUMMY_CLOCK ?= y
+endif #CFG_WITH_SCMI
+ifeq ($(CFG_WITH_SPCI),y)
+CFG_SPCI_MSG_BUF_BASE ?= 0x7fe00000
+CFG_SPCI_MSG_BUF_SIZE ?= 0x00004000
+CFG_SHMEM_START  ?= 0x7fe04000
+CFG_SHMEM_SIZE   ?= 0x001fc000
+endif #CFG_WITH_SPCI
+
 CFG_TEE_CORE_NB_CORE = 4
 # [0e00.0000 0e0f.ffff] is reserved to early boot
 CFG_TZDRAM_START ?= 0x0e100000
@@ -89,9 +102,22 @@ $(call force,CFG_PSCI_ARM32,y)
 $(call force,CFG_DT,y)
 CFG_DTB_MAX_SIZE ?= 0x100000
 CFG_TA_ASLR ?= y
-endif
+endif #qemu_virt
 
 ifeq ($(PLATFORM_FLAVOR),qemu_armv8a)
+ifeq ($(CFG_WITH_SCMI),y)
+$(call force,CFG_WITH_SPCI,y)
+CFG_SCMI_VEXPRESS ?= y
+CFG_SCMI_CLOCK ?= y
+CFG_SCMI_DUMMY_CLOCK ?= y
+endif #CFG_WITH_SCMI
+ifeq ($(CFG_WITH_SPCI),y)
+CFG_SPCI_MSG_BUF_BASE ?= 0x42000000
+CFG_SPCI_MSG_BUF_SIZE ?= 0x00004000
+CFG_SHMEM_START  ?= 0x42004000
+CFG_SHMEM_SIZE   ?= 0x001fc000
+endif #CFG_WITH_SPCI
+
 CFG_TEE_CORE_NB_CORE = 4
 # [0e00.0000 0e0f.ffff] is reserved to early boot
 CFG_TZDRAM_START ?= 0x0e100000

@@ -51,7 +51,7 @@ libscmi_modules-$(CFG_WITH_SPCI) += spci hmbx
 libscmi_modules-$(CFG_SCMI_CLOCK) += clock scmi_clock
 libscmi_modules-$(CFG_SCMI_POWER_DOMAIN) += scmi_power_domain
 libscmi_modules-$(CFG_SCMI_STM32MP1) += stm32_clock
-libscmi_modules-$(CFG_SCMI_VEXPRESS) += dummy_clock
+libscmi_modules-$(CFG_SCMI_DUMMY_CLOCK) += dummy_clock
 
 gensrcs-y += scmi_module_list
 libscmi-module-list-out = $(out-dir)/core/lib/libscmi
@@ -92,6 +92,8 @@ srcs-$(CFG_SCMI_DUMMY_CLOCK) += product/optee/module/dummy_clock/src/mod_dummy_c
 
 srcs-y += product/optee/fw/config_hmbx.c
 srcs-y += product/optee/fw/config_scmi.c
+
+srcs-$(CFG_SCMI_VEXPRESS) += product/optee/fw/config_vexpress.c
 
 global-incdirs-y += framework/include
 srcs-y += arch/src/optee.c

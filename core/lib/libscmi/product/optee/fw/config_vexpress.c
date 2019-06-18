@@ -143,7 +143,8 @@ static const struct fwk_element *clock_config_desc_table(fwk_id_t module_id)
 	return clock_elt;
 }
 
-struct fwk_module_config config_clock = {
+/* Exported in libscmi */
+const struct fwk_module_config config_clock = {
 	.get_element_table = clock_config_desc_table,
 };
 
@@ -168,8 +169,8 @@ static const struct fwk_element *dummy_clock_desc_table(fwk_id_t module_id)
 	return dummy_clock_elt;
 }
 
-
-struct fwk_module_config config_dummy_clock = {
+/* Exported in libscmi */
+const struct fwk_module_config config_dummy_clock = {
 	.get_element_table = dummy_clock_desc_table,
 };
 
@@ -194,6 +195,7 @@ static const struct mod_scmi_clock_config scmi_agent = {
         .agent_count = FWK_ARRAY_SIZE(agent_table),
 };
 
+/* Exported in libscmi */
 const struct fwk_module_config config_scmi_clock = {
 	/* Register module elements straight from data table */
 	.data = (void *)&scmi_agent,

@@ -592,8 +592,8 @@ static int add_dt_path_subnode(struct dt_descriptor *dt, const char *path,
 
 static int add_optee_dt_node(struct dt_descriptor *dt)
 {
-	int offs;
-	int ret;
+	int offs = 0;
+	int ret = 0;
 
 	if (fdt_path_offset(dt->blob, "/firmware/optee") >= 0) {
 		DMSG("OP-TEE Device Tree node already exists!\n");
@@ -615,11 +615,129 @@ static int add_optee_dt_node(struct dt_descriptor *dt)
 				 "linaro,optee-tz");
 	if (ret < 0)
 		return -1;
-	ret = fdt_setprop_string(dt->blob, offs, "method", "smc");
+	ret = fdt_setprop_string(dt->blob, offs, "method", "spci");
 	if (ret < 0)
 		return -1;
 	return 0;
 }
+
+#if defined(CFG_WITH_SCMI)
+static int add_scmi_dt_node(struct dt_descriptor *dt)
+{
+	int offs = 0;
+	int sub_offs __maybe_unused = 0;
+	int ret = 0;
+
+	if (fdt_path_offset(dt->blob, "/firmware/scmi") >= 0) {
+		DMSG("SCMI Device Tree node already exists!");
+		return 0;
+	}
+
+	offs = fdt_path_offset(dt->blob, "/firmware");
+	if (offs < 0) {
+		offs = add_dt_path_subnode(dt, "/", "firmware");
+		if (offs < 0)
+			return -1;
+	}
+
+	offs = fdt_add_subnode(dt->blob, offs, "scmi");
+	if (offs < 0)
+		return -1;
+	ret = fdt_setprop_string(dt->blob, offs, "compatible", "arm,scmi");
+	if (ret < 0)
+		return -1;
+	ret = fdt_setprop_string(dt->blob, offs, "method", "spci");
+	if (ret < 0)
+		return -1;
+	ret = fdt_setprop_cell(dt->blob, offs, "#address-cells", 1);
+	if (ret < 0)
+		return -1;
+	ret = fdt_setprop_cell(dt->blob, offs, "#size-cells", 0);
+	if (ret < 0)
+		return -1;
+	ret = fdt_setprop_string(dt->blob, offs, "status", "okay");
+	if (ret < 0)
+		return -1;
+
+#ifdef CFG_SCMI_POWER_DOMAIN
+	/* scmi_devpd sub-node */
+	sub_offs = fdt_add_subnode(dt->blob, offs, "scmi_devpd");
+	if (sub_offs < 0)
+		return -1;
+
+	ret = fdt_setprop_cell(dt->blob, sub_offs, "reg", 0x11);
+	if (ret < 0)
+		return -1;
+	ret = fdt_setprop_cell(dt->blob, sub_offs, "#power-domain-cells", 1);
+	if (ret < 0)
+		return -1;
+#endif
+
+#ifdef CFG_SCMI_CLOCK
+	/* scmi_clk sub-node */
+	sub_offs = fdt_add_subnode(dt->blob, offs, "scmi_clk");
+	if (sub_offs < 0)
+		return -1;
+	ret = fdt_setprop_cell(dt->blob, sub_offs, "reg", 0x14);
+	if (ret < 0)
+		return -1;
+	ret = fdt_setprop_cell(dt->blob, sub_offs, "#clock-cells", 1);
+	if (ret < 0)
+		return -1;
+#endif /*CFG_SCMI_CLOCK*/
+
+#ifdef CFG_SCMI_RESET
+	/* scmi_clk sub-node */
+	sub_offs = fdt_add_subnode(dt->blob, offs, "scmi_reset");
+	if (sub_offs < 0)
+		return -1;
+	ret = fdt_setprop_cell(dt->blob, sub_offs, "reg", 0x16);
+	if (ret < 0)
+		return -1;
+	ret = fdt_setprop_cell(dt->blob, sub_offs, "#reset-cells", 1);
+	if (ret < 0)
+		return -1;
+#endif /*CFG_SCMI_RESET*/
+
+	return 0;
+}
+#else
+static int add_scmi_dt_node(struct dt_descriptor *dt __unused)
+{
+	return 0;
+}
+#endif /*CFG_WITH_SCMI*/
+
+#if defined(CFG_WITH_SPCI)
+static int add_spci_dt_node(struct dt_descriptor *dt)
+{
+	int offs = 0;
+	int ret;
+
+	if (fdt_path_offset(dt->blob, "/spci") >= 0) {
+		DMSG("SPCI Device Tree node already exists!");
+		return 0;
+	}
+
+	offs = fdt_add_subnode(dt->blob, 0, "spci");
+	if (offs < 0)
+		return -1;
+
+	ret = fdt_setprop_string(dt->blob, offs, "compatible",
+				 "arm,spci-alpha2");
+	if (ret < 0)
+		return -1;
+	ret = fdt_setprop_string(dt->blob, offs, "status", "okay");
+	if (ret < 0)
+		return -1;
+	return 0;
+}
+#else
+static int add_spci_dt_node(struct dt_descriptor *dt __unused)
+{
+	return 0;
+}
+#endif /*CFG_WITH_SPCI*/
 
 #ifdef CFG_PSCI_ARM32
 static int append_psci_compatible(void *fdt, int offs, const char *str)
@@ -864,15 +982,37 @@ static struct core_mmu_phys_mem *get_memory(void *fdt, size_t *nelems)
 
 static int mark_static_shm_as_reserved(struct dt_descriptor *dt)
 {
-	vaddr_t shm_start;
-	vaddr_t shm_end;
+	vaddr_t shm_start = 0;
+	vaddr_t shm_end = 0;
 
 	core_mmu_get_mem_by_type(MEM_AREA_NSEC_SHM, &shm_start, &shm_end);
-	if (shm_start != shm_end)
-		return add_res_mem_dt_node(dt, "optee",
-					   virt_to_phys((void *)shm_start),
-					   shm_end - shm_start);
+	if (shm_start != shm_end) {
+		if (add_res_mem_dt_node(dt, "optee",
+					virt_to_phys((void *)shm_start),
+					shm_end - shm_start))
+			goto err;
+	}
 
+#ifdef CFG_WITH_SPCI
+	core_mmu_get_mem_by_type(MEM_AREA_SPCI_NSEC_SHM, &shm_start, &shm_end);
+	if (shm_start != shm_end) {
+		if (add_res_mem_dt_node(dt, "spci_optee_nsec",
+					virt_to_phys((void *)shm_start),
+					shm_end - shm_start))
+			goto err;
+	}
+
+	core_mmu_get_mem_by_type(MEM_AREA_SPCI_SEC_SHM, &shm_start, &shm_end);
+	if (shm_start != shm_end) {
+		if (add_res_mem_dt_node(dt, "spci_optee_sec",
+					virt_to_phys((void *)shm_start),
+					shm_end - shm_start))
+			goto err;
+	}
+#endif
+	return 0;
+
+err:
 	DMSG("No SHM configured");
 	return -1;
 }
@@ -930,6 +1070,12 @@ static void update_external_dt(void)
 
 	if (add_optee_dt_node(dt))
 		panic("Failed to add OP-TEE Device Tree node");
+
+	if (add_spci_dt_node(dt))
+		panic("Failed to add SPCI Device Tree node");
+
+	if (add_scmi_dt_node(dt))
+		panic("Failed to add SCMI Device Tree node");
 
 	if (config_psci(dt))
 		panic("Failed to config PSCI");

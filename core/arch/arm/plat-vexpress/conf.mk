@@ -55,6 +55,18 @@ $(call force,CFG_CORE_LARGE_PHYS_ADDR,y)
 endif
 
 ifeq ($(PLATFORM_FLAVOR),juno)
+ifeq ($(CFG_WITH_SCMI),y)
+$(call force,CFG_WITH_SPCI,y)
+CFG_SCMI_JUNO ?= y
+CFG_SCMI_CLOCK ?= y
+endif #CFG_WITH_SCMI
+ifeq ($(CFG_WITH_SPCI),y)
+CFG_SPCI_MSG_BUF_BASE ?= 0xfee00000
+CFG_SPCI_MSG_BUF_SIZE ?= 0x00004000
+CFG_SHMEM_START  ?= 0xfee04000
+CFG_SHMEM_SIZE   ?= 0x001fc000
+endif #CFG_WITH_SPCI
+
 CFG_TEE_CORE_NB_CORE = 6
 CFG_TZDRAM_START ?= 0xff000000
 CFG_TZDRAM_SIZE  ?= 0x00ff8000
@@ -63,7 +75,7 @@ CFG_SHMEM_SIZE   ?= 0x00200000
 # DRAM1 is defined above 4G
 $(call force,CFG_CORE_LARGE_PHYS_ADDR,y)
 CFG_CRYPTO_WITH_CE ?= y
-endif
+endif # juno
 
 ifeq ($(PLATFORM_FLAVOR),qemu_virt)
 CFG_TEE_CORE_NB_CORE = 4

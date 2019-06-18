@@ -53,6 +53,7 @@ libscmi_modules-$(CFG_SCMI_CLOCK) += clock scmi_clock
 libscmi_modules-$(CFG_SCMI_POWER_DOMAIN) += scmi_power_domain
 libscmi_modules-$(CFG_SCMI_STM32MP1) += stm32_clock
 libscmi_modules-$(CFG_SCMI_DUMMY_CLOCK) += dummy_clock
+libscmi_modules-$(CFG_SCMI_JUNO) += vpll
 
 gensrcs-y += scmi_module_list
 libscmi-module-list-out = $(out-dir)/core/lib/libscmi
@@ -70,6 +71,7 @@ recipe-scmi_module_list = \
 # - product/optee: modules configuration and local mmodules
 # - module/xxx: SCMI related modules and few generic ones
 # - framework: fwk stuff, likely more than needed.
+global-incdirs-y += module/css_clock/include
 global-incdirs-y += module/clock/include
 global-incdirs-y += module/log/include
 global-incdirs-y += module/power_domain/include
@@ -80,6 +82,7 @@ global-incdirs-y += product/optee/include
 global-incdirs-y += product/optee/module/dummy_clock/include
 global-incdirs-y += product/optee/module/hmbx/include
 global-incdirs-y += product/optee/module/stm32_clock/include
+global-incdirs-y += product/optee/module/vpll/include
 
 srcs-y += product/optee/module/log/src/mod_log.c
 
@@ -89,10 +92,16 @@ srcs-$(CFG_SCMI_CLOCK) += module/scmi_clock/src/mod_scmi_clock.c
 srcs-$(CFG_WITH_SPCI) += product/optee/module/hmbx/src/mod_hmbx.c
 srcs-$(CFG_WITH_SPCI) += product/optee/module/spci/src/mod_spci.c
 
-srcs-$(CFG_SCMI_DUMMY_CLOCK) += product/optee/module/dummy_clock/src/mod_dummy_clock.c
-
 srcs-y += product/optee/fw/config_hmbx.c
 srcs-y += product/optee/fw/config_scmi.c
+
+srcs-$(CFG_SCMI_DUMMY_CLOCK) += product/optee/module/dummy_clock/src/mod_dummy_clock.c
+
+srcs-$(CFG_SCMI_JUNO) += product/optee/module/vpll/src/mod_system_pll.c
+
+srcs-$(CFG_SCMI_JUNO) += product/optee/fw/config_clock.c
+srcs-$(CFG_SCMI_JUNO) += product/optee/fw/config_scmi_clock.c
+srcs-$(CFG_SCMI_JUNO) += product/optee/fw/config_vpll.c
 
 srcs-$(CFG_SCMI_VEXPRESS) += product/optee/fw/config_vexpress.c
 

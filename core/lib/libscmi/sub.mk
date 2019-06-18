@@ -95,6 +95,7 @@ srcs-y += product/optee/fw/config_hmbx.c
 srcs-y += product/optee/fw/config_scmi.c
 
 srcs-$(CFG_SCMI_DUMMY_CLOCK) += product/optee/module/dummy_clock/src/mod_dummy_clock.c
+srcs-$(CFG_SCMI_STM32MP1) += product/optee/module/stm32_clock/src/mod_stm32_clock.c
 
 srcs-$(CFG_SCMI_JUNO) += product/optee/module/vpll/src/mod_system_pll.c
 
@@ -103,6 +104,7 @@ srcs-$(CFG_SCMI_JUNO) += product/optee/fw/config_scmi_clock.c
 srcs-$(CFG_SCMI_JUNO) += product/optee/fw/config_vpll.c
 
 srcs-$(CFG_SCMI_VEXPRESS) += product/optee/fw/config_vexpress.c
+srcs-$(CFG_SCMI_STM32MP1) += product/optee/fw/config_stm32mp1.c
 
 global-incdirs-y += framework/include
 srcs-y += arch/src/optee.c

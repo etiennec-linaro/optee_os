@@ -46,7 +46,7 @@ static int get_rate(fwk_id_t dev_id, uint64_t *rate)
     ctx = module_ctx.dev_ctx_table + fwk_id_get_element_idx(dev_id);
 
     *rate = stm32_clock_get_rate(ctx->clock_id);
-MSG_RAW("SCMI clk %lu: rate = %" PRIu64, ctx->clock_id, *rate);
+    DMSG("SCMI clk %lu: rate = %" PRIu64, ctx->clock_id, *rate);
 
     return FWK_SUCCESS;
 }
@@ -65,7 +65,7 @@ static int set_state(fwk_id_t dev_id, enum mod_clock_state state)
 
 	ctx = module_ctx.dev_ctx_table + fwk_id_get_element_idx(dev_id);
 
-MSG_RAW("SCMI clk %u (clock_id %lu): set state %s",
+	DMSG("SCMI clk %u (clock_id %lu): set state %s",
 	 fwk_id_get_element_idx(dev_id), ctx->clock_id,
 	 state == MOD_CLOCK_STATE_STOPPED ? "off" : "on");
 

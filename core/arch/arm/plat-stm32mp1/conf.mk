@@ -18,6 +18,15 @@ $(call force,CFG_SECURE_TIME_SOURCE_CNTPCT,y)
 $(call force,CFG_SM_PLATFORM_HANDLER,y)
 $(call force,CFG_WITH_SOFTWARE_PRNG,y)
 
+# default enable SCMI for test purpose
+CFG_WITH_SCMI ?= y
+
+ifeq ($(CFG_WITH_SCMI),y)
+$(call force,CFG_WITH_SPCI,y)
+CFG_SCMI_CLOCK ?= y
+CFG_SCMI_STM32MP1 ?= y
+endif
+
 ifeq ($(CFG_WITH_SPCI),y)
 ifneq ($(filter $(CFG_EMBED_DTB_SOURCE_FILE),$(flavorlist-512M)),)
 CFG_SPCI_MSG_BUF_BASE ?= 0xdfe00000

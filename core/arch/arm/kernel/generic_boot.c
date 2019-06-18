@@ -607,6 +607,12 @@ static int add_dt_path_subnode(struct dt_descriptor *dt, const char *path,
 	return offs;
 }
 
+#ifdef CFG_WITH_SPCI
+#define OPTEE_METHOD	"spci"
+#else
+#define OPTEE_METHOD	"smc"
+#endif
+
 static int add_optee_dt_node(struct dt_descriptor *dt)
 {
 	int offs = 0;
@@ -632,7 +638,7 @@ static int add_optee_dt_node(struct dt_descriptor *dt)
 				 "linaro,optee-tz");
 	if (ret < 0)
 		return -1;
-	ret = fdt_setprop_string(dt->blob, offs, "method", "spci");
+	ret = fdt_setprop_string(dt->blob, offs, "method", OPTEE_METHOD);
 	if (ret < 0)
 		return -1;
 	return 0;

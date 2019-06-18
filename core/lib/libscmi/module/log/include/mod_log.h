@@ -68,8 +68,20 @@ enum mod_log_group {
 /*
  * Helper for logging to console
  */
+#ifdef BUILD_OPTEE
+#define LOG(log_api, group, ...)	do {	\
+		switch (group) {		\
+		case MOD_LOG_GROUP_ERROR:	\
+			EMSG(__VA_ARGS__);	\
+			break;			\
+		default:			\
+			DMSG(__VA_ARGS__);	\
+			break;			\
+		}				\
+	} while (0)
+#else
 #define LOG(log_api, group, ...)	((log_api)->log(group, __VA_ARGS__))
-
+#endif
 
 /*!
  * \brief Module configuration.

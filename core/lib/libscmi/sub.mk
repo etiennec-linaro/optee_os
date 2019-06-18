@@ -47,7 +47,7 @@ cflags-y += -DBUILD_OPTEE
 # TODO: Maybe no need to generate source files for this
 # Static amount of modules embedded into the framwork (fwk)
 #
-libscmi_modules-y := scmi log optee_console
+libscmi_modules-y := log scmi
 libscmi_modules-$(CFG_WITH_SPCI) += spci hmbx
 libscmi_modules-$(CFG_SCMI_CLOCK) += clock scmi_clock
 libscmi_modules-$(CFG_SCMI_POWER_DOMAIN) += scmi_power_domain
@@ -81,6 +81,8 @@ global-incdirs-y += product/optee/module/dummy_clock/include
 global-incdirs-y += product/optee/module/hmbx/include
 global-incdirs-y += product/optee/module/stm32_clock/include
 
+srcs-y += product/optee/module/log/src/mod_log.c
+
 srcs-y += module/scmi/src/mod_scmi.c
 srcs-$(CFG_SCMI_CLOCK) += module/clock/src/mod_clock.c
 srcs-$(CFG_SCMI_CLOCK) += module/scmi_clock/src/mod_scmi_clock.c
@@ -89,10 +91,6 @@ srcs-$(CFG_WITH_SPCI) += product/optee/module/spci/src/mod_spci.c
 
 srcs-$(CFG_SCMI_DUMMY_CLOCK) += product/optee/module/dummy_clock/src/mod_dummy_clock.c
 
-srcs-y += module/log/src/mod_log.c
-srcs-y += product/optee/module/optee_console/src/mod_optee_console.c
-
-srcs-y += product/optee/fw/config_log.c
 srcs-y += product/optee/fw/config_hmbx.c
 srcs-y += product/optee/fw/config_scmi.c
 

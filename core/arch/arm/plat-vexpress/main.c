@@ -200,6 +200,11 @@ int psci_cpu_on(uint32_t core_id, uint32_t entry, uint32_t context_id)
 	size_t pos = get_core_pos_mpidr(core_id);
 	static bool core_is_released[CFG_TEE_CORE_NB_CORE];
 
+#ifdef CFG_WITH_SPCI
+	/* SPCI-1.0-alpha2 does not yet suport SMP */
+	return PSCI_RET_INVALID_PARAMETERS;
+#endif
+
 	if (!pos || pos >= CFG_TEE_CORE_NB_CORE)
 		return PSCI_RET_INVALID_PARAMETERS;
 

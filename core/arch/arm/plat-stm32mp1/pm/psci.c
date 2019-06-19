@@ -120,7 +120,7 @@ static void raise_sgi0_as_secure(void)
 		   GIC_NON_SEC_SGI_0 | SHIFT_U32(TARGET_CPU1_GIC_MASK, 16));
 }
 
-static void release_secondary_early_hpen(size_t __unused pos)
+static void __maybe_unused release_secondary_early_hpen(size_t __unused pos)
 {
 	/* Need to send SIG#0 over Group0 after individual core 1 reset */
 	raise_sgi0_as_secure();
@@ -136,6 +136,14 @@ static void release_secondary_early_hpen(size_t __unused pos)
 }
 
 /* Override default psci_cpu_on() with platform specific sequence */
+#ifdef CFG_WITH_SPCI
+/* SPCI 1.0-alpha2 implementation does not yet support SMP */
+int psci_cpu_on(uint32_t core_id __unused, uint32_t entry __unused,
+		uint32_t context_id __unused)
+{
+	return PSCI_RET_INVALID_PARAMETERS;
+}
+#else
 int psci_cpu_on(uint32_t core_id, uint32_t entry, uint32_t context_id)
 {
 	size_t pos = get_core_pos_mpidr(core_id);
@@ -177,6 +185,7 @@ int psci_cpu_on(uint32_t core_id, uint32_t entry, uint32_t context_id)
 
 	return rc;
 }
+#endif /*CFG_WITH_SPCI*/
 
 /* Override default psci_cpu_off() with platform specific sequence */
 int psci_cpu_off(void)

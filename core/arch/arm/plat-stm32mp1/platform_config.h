@@ -11,10 +11,14 @@
 /* Make stacks aligned to data cache line length */
 #define STACK_ALIGNMENT			32
 
+/* Need few more xlat tables than the 5 default ones */
+#define MAX_XLAT_TABLES			6
+
 /* SoC interface registers base address */
 #define BSEC_BASE			0x5c005000
 #define ETZPC_BASE			0x5c007000
 #define CRYP1_BASE			0x54001000
+#define DDR_BASE			0xc0000000ul
 #define GIC_BASE			0xa0021000ul
 #define GPIOA_BASE			0x50002000
 #define GPIOB_BASE			0x50003000
@@ -47,6 +51,9 @@
 #define UART6_BASE			0x44003000
 #define UART7_BASE			0x40018000
 #define UART8_BASE			0x40019000
+
+/* DDR expected size if not found in device tree */
+#define STM32MP1_DDR_SIZE_DFLT		(1 * 1024 * 1024 * 1024)
 
 /* Console configuration */
 #define STM32MP1_DEBUG_USART_BASE	UART4_BASE

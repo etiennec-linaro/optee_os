@@ -54,6 +54,8 @@ register_phys_mem_pgdir(MEM_AREA_IO_SEC, RNG1_BASE, SMALL_PAGE_SIZE);
 register_phys_mem_pgdir(MEM_AREA_IO_SEC, TAMP_BASE, SMALL_PAGE_SIZE);
 register_phys_mem_pgdir(MEM_AREA_IO_SEC, USART1_BASE, SMALL_PAGE_SIZE);
 
+register_ddr(DDR_BASE, STM32MP1_DDR_SIZE_DFLT);
+
 static void main_fiq(void);
 
 static const struct thread_handlers handlers = {

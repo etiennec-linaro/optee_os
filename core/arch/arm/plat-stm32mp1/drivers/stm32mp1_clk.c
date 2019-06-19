@@ -270,6 +270,21 @@ static const uint8_t stm32mp1_clks[][2] = {
 #define NB_GATES	ARRAY_SIZE(stm32mp1_clk_gate)
 
 static const struct stm32mp1_clk_gate stm32mp1_clk_gate[] = {
+	//_CLK_FIXED(RCC_BDCR, RCC_BDCR_LSEON, CK_LSE, _UNKNOWN_ID),
+	//_CLK_FIXED(RCC_RDLSICR, RCC_RDLSICR_LSION, CK_LSI, _UNKNOWN_ID),
+	//_CLK_FIXED(RCC_PLL1CR, RCC_PLLNCR_PLLON, PLL1, _UNKNOWN_ID),
+	//_CLK_FIXED(RCC_PLL1CR, RCC_PLLNCR_DIVPEN, PLL1_P, _UNKNOWN_ID),
+	//_CLK_FIXED(RCC_PLL1CR, RCC_PLLNCR_DIVQEN, PLL1_Q, _UNKNOWN_ID),
+	//_CLK_FIXED(RCC_PLL1CR, RCC_PLLNCR_DIVREN, PLL1_R, _UNKNOWN_ID),
+	//_CLK_FIXED(RCC_PLL2CR, RCC_PLLNCR_PLLON, PLL2, _UNKNOWN_ID),
+	//_CLK_FIXED(RCC_PLL2CR, RCC_PLLNCR_DIVPEN, PLL2_P, _UNKNOWN_ID),
+	//_CLK_FIXED(RCC_PLL2CR, RCC_PLLNCR_DIVQEN, PLL2_Q, _UNKNOWN_ID),
+	//_CLK_FIXED(RCC_PLL2CR, RCC_PLLNCR_DIVREN, PLL2_R, _UNKNOWN_ID),
+	//_CLK_FIXED(RCC_PLL3CR, RCC_PLLNCR_PLLON, PLL3, _UNKNOWN_ID),
+	//_CLK_FIXED(RCC_PLL3CR, RCC_PLLNCR_DIVPEN, PLL3_P, _UNKNOWN_ID),
+	//_CLK_FIXED(RCC_PLL3CR, RCC_PLLNCR_DIVQEN, PLL3_Q, _UNKNOWN_ID),
+	//_CLK_FIXED(RCC_PLL3CR, RCC_PLLNCR_DIVREN, PLL3_R, _UNKNOWN_ID),
+
 	_CLK_FIXED(RCC_DDRITFCR, 0, DDRC1, _ACLK),
 	_CLK_FIXED(RCC_DDRITFCR, 1, DDRC1LP, _ACLK),
 	_CLK_FIXED(RCC_DDRITFCR, 2, DDRC2, _ACLK),
@@ -568,6 +583,35 @@ static int stm32mp1_clk_get_parent(unsigned long id)
 	for (j = 0U; j < ARRAY_SIZE(stm32mp1_clks); j++)
 		if (stm32mp1_clks[j][0] == id)
 			return (int)stm32mp1_clks[j][1];
+
+	switch (id) {
+	case PLL1:
+		return _PLL1_P;
+	case PLL1_P:
+		return _PLL1_P;
+	case PLL1_Q:
+		return _PLL1_Q;
+	case PLL1_R:
+		return _PLL1_R;
+	case PLL2:
+		return _PLL2_P;
+	case PLL2_P:
+		return _PLL2_P;
+	case PLL2_Q:
+		return _PLL2_Q;
+	case PLL2_R:
+		return _PLL2_R;
+	case PLL3:
+		return _PLL3_P;
+	case PLL3_P:
+		return _PLL3_P;
+	case PLL3_Q:
+		return _PLL3_Q;
+	case PLL3_R:
+		return _PLL3_R;
+	default:
+		break;
+	}
 
 	i = stm32mp1_clk_get_gated_id(id);
 	if (i < 0)
@@ -909,11 +953,235 @@ bool stm32_clock_is_enabled(unsigned long id)
 	return __clk_is_enabled(gate_ref(i));
 }
 
+static bool non_secure_access_allowed(unsigned long clock_id)
+{
+	enum stm32mp_shres shres_id = STM32MP1_SHRES_COUNT;
+
+	switch (clock_id) {
+	case CK_HSE:
+		shres_id = STM32MP1_SHRES_HSE;
+		break;
+	case CK_CSI:
+		shres_id = STM32MP1_SHRES_CSI;
+		break;
+	case CK_HSI:
+		shres_id = STM32MP1_SHRES_HSI;
+		break;
+	case PLL1:
+		shres_id = STM32MP1_SHRES_PLL1;
+		break;
+	case PLL1_P:
+		shres_id = STM32MP1_SHRES_PLL1_P;
+		break;
+	case PLL1_Q:
+		shres_id = STM32MP1_SHRES_PLL1_Q;
+		break;
+	case PLL1_R:
+		shres_id = STM32MP1_SHRES_PLL1_R;
+		break;
+	case PLL2:
+		shres_id = STM32MP1_SHRES_PLL1;
+		break;
+	case PLL2_P:
+		shres_id = STM32MP1_SHRES_PLL2_P;
+		break;
+	case PLL2_Q:
+		shres_id = STM32MP1_SHRES_PLL2_Q;
+		break;
+	case PLL2_R:
+		shres_id = STM32MP1_SHRES_PLL2_R;
+		break;
+	case PLL3:
+		shres_id = STM32MP1_SHRES_PLL3;
+		break;
+	case PLL3_P:
+		shres_id = STM32MP1_SHRES_PLL3_P;
+		break;
+	case PLL3_Q:
+		shres_id = STM32MP1_SHRES_PLL3_Q;
+		break;
+	case PLL3_R:
+		shres_id = STM32MP1_SHRES_PLL3_R;
+		break;
+	case SPI6_K:
+		shres_id = STM32MP1_SHRES_SPI6;
+		break;
+	case I2C4_K:
+		shres_id = STM32MP1_SHRES_I2C4;
+		break;
+	case I2C6_K:
+		shres_id = STM32MP1_SHRES_I2C6;
+		break;
+	case USART1_K:
+		shres_id = STM32MP1_SHRES_USART1;
+		break;
+	case IWDG1:
+		shres_id = STM32MP1_SHRES_IWDG1;
+		break;
+	case CRYP1:
+		shres_id = STM32MP1_SHRES_CRYP1;
+		break;
+	case HASH1:
+		shres_id = STM32MP1_SHRES_HASH1;
+		break;
+	case RNG1_K:
+		shres_id = STM32MP1_SHRES_RNG1;
+		break;
+	case RTC:
+		shres_id = STM32MP1_SHRES_RTC;
+		break;
+	default:
+		return true;
+	}
+
+	/* Periph shall be shared or non-secure */
+	return !stm32mp_periph_is_secure(shres_id);
+}
+
+// Move these into the generic gated table
+static void top_clock_setclr(unsigned long id, size_t *offset, uint32_t *mask)
+{
+	switch (id) {
+	case CK_HSE:
+		*offset = RCC_OCENSETR;
+		*mask = RCC_OCENR_HSEON;
+		return;
+	case CK_HSI:
+		*offset = RCC_OCENSETR;
+		*mask = RCC_OCENR_HSION;
+		return;
+	case CK_CSI:
+		*offset = RCC_OCENSETR;
+		*mask = RCC_OCENR_CSION;
+		return;
+	default:
+		return;
+	}
+}
+
+static void top_clock_reg(unsigned long id, size_t *offset, uint32_t *mask)
+{
+	switch (id) {
+	case CK_LSE:
+		*offset = RCC_BDCR;
+		*mask = RCC_BDCR_LSEON;
+		return;
+	case CK_LSI:
+		*offset = RCC_RDLSICR;
+		*mask = RCC_RDLSICR_LSION;
+		return;
+	case PLL1:
+		*offset = RCC_PLL1CR;
+		*mask = RCC_PLLNCR_PLLON;
+		return;
+	case PLL1_P:
+		*offset = RCC_PLL1CR;
+		*mask = RCC_PLLNCR_DIVPEN;
+		return;
+	case PLL1_Q:
+		*offset = RCC_PLL1CR;
+		*mask = RCC_PLLNCR_DIVQEN;
+		return;
+	case PLL1_R:
+		*offset = RCC_PLL1CR;
+		*mask = RCC_PLLNCR_DIVREN;
+		return;
+	case PLL2:
+		*offset = RCC_PLL2CR;
+		*mask = RCC_PLLNCR_PLLON;
+		return;
+	case PLL2_P:
+		*offset = RCC_PLL2CR;
+		*mask = RCC_PLLNCR_DIVPEN;
+		return;
+	case PLL2_Q:
+		*offset = RCC_PLL2CR;
+		*mask = RCC_PLLNCR_DIVQEN;
+		return;
+	case PLL2_R:
+		*offset = RCC_PLL2CR;
+		*mask = RCC_PLLNCR_DIVREN;
+		return;
+	case PLL3:
+		*offset = RCC_PLL3CR;
+		*mask = RCC_PLLNCR_PLLON;
+		return;
+	case PLL3_P:
+		*offset = RCC_PLL3CR;
+		*mask = RCC_PLLNCR_DIVPEN;
+		return;
+	case PLL3_Q:
+		*offset = RCC_PLL3CR;
+		*mask = RCC_PLLNCR_DIVQEN;
+		return;
+	case PLL3_R:
+		*offset = RCC_PLL3CR;
+		*mask = RCC_PLLNCR_DIVREN;
+		return;
+	default:
+		return;
+	}
+}
+
+/* Return 1 if the clock was handled, 0 otherwise */
+// TODO: Could add these clocks to the gated array
+static int enable_specific_clocks(unsigned long id, bool secure)
+{
+	vaddr_t rcc_base = stm32_rcc_base();
+	size_t offset = 0;
+	uint32_t mask = 0;
+
+	if (!secure && !non_secure_access_allowed(id))
+		return 1;
+
+	top_clock_setclr(id, &offset, &mask);
+	if (mask) {
+		io_write32(rcc_base + offset, mask);
+		return 1;
+	}
+
+	top_clock_reg(id, &offset, &mask);
+	if (mask) {
+		io_setbits32_stm32shregs(rcc_base + offset, mask);
+		return 1;
+	}
+
+	return 0;
+}
+
+static int disable_specific_clocks(unsigned long id, bool secure)
+{
+	vaddr_t rcc_base = stm32_rcc_base();
+	size_t offset = 0;
+	uint32_t mask = 0;
+
+	if (!secure && !non_secure_access_allowed(id))
+		return 1;
+
+	top_clock_setclr(id, &offset, &mask);
+	if (mask) {
+		io_write32(rcc_base + offset + RCC_MP_ENCLRR_OFFSET, mask);
+		return 1;
+	}
+
+	top_clock_reg(id, &offset, &mask);
+	if (mask) {
+		io_setbits32_stm32shregs(rcc_base + offset, mask);
+		return 1;
+	}
+
+	return 0;
+}
+
 static void _clock_enable(unsigned long id, bool secure)
 {
-	int i = stm32mp1_clk_get_gated_id(id);
+	int i = 0;
 	uint32_t exceptions = 0;
 
+	if (enable_specific_clocks(id, secure))
+		return;
+
+	i = stm32mp1_clk_get_gated_id(id);
 	if (i < 0) {
 		DMSG("Invalid clock %lu: %d", id, i);
 		panic();
@@ -929,9 +1197,13 @@ static void _clock_enable(unsigned long id, bool secure)
 
 static void _clock_disable(unsigned long id, bool secure)
 {
-	int i = stm32mp1_clk_get_gated_id(id);
+	int i = 0;
 	uint32_t exceptions = 0;
 
+	if (disable_specific_clocks(id, secure))
+		return;
+
+	i = stm32mp1_clk_get_gated_id(id);
 	if (i < 0) {
 		DMSG("Invalid clock %lu: %d", id, i);
 		panic();

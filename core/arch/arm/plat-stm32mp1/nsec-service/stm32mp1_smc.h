@@ -85,6 +85,24 @@
 #define STM32_SIP_REG_CLEAR			0x3
 
 /*
+ * SIP functions STM32_SIP_FUNC_BSEC
+ *
+ * Argument a0: (input) SMCC ID
+ *		(output) status return code
+ * Argument a1: (input) Service ID (STM32_SIP_BSEC_xxx)
+ * Argument a2: (input) OTP index
+ *		(output) OTP read value, if applicable
+ * Argument a3: (input) OTP value if applicable
+ */
+#define STM32_SIP_FUNC_BSEC			0x1003
+
+/* Service ID for STM32_SIP_FUNC_BSEC */
+#define STM32_SIP_BSEC_READ_SHADOW		0x1
+#define STM32_SIP_BSEC_PROG_OTP			0x2
+#define STM32_SIP_BSEC_WRITE_SHADOW		0x3
+#define STM32_SIP_BSEC_READ_OTP			0x4
+
+/*
  * OEM Functions
  */
 #define STM32_OEM_SVC_VERSION_MAJOR		0x0

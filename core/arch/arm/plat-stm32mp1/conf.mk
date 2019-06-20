@@ -50,6 +50,7 @@ CFG_STM32_RNG ?= y
 CFG_STM32_UART ?= y
 
 # SiP/OEM service for non-secure world
+CFG_STM32_BSEC_SIP ?= n
 CFG_STM32_PWR_SIP ?= y
 CFG_STM32_RCC_SIP ?= y
 

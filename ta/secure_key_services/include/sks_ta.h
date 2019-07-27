@@ -20,7 +20,7 @@
 /*
  * SKS_CMD_PING		Acknowledge TA presence and return TA version info
  *
- * Optinal invocation parameter:
+ * Optional invocation parameter:
  *
  * [out]        memref[2] = [
  *                      32bit version0 value,
@@ -44,7 +44,7 @@
  * SKS_CMD_CK_SLOT_INFO - Get cryptoki structured slot information
  *
  * [in]		memref[0] = 32bit slot ID
- * [out]	memref[0] = 32bit fine grain retrun code
+ * [out]	memref[0] = 32bit fine grain return code
  * [out]        memref[2] = (struct sks_ck_slot_info)info
  *
  * The TA instance may represent several PKCS#11 slots and associated tokens.
@@ -77,7 +77,7 @@ struct sks_slot_info {
  * SKS_CMD_CK_TOKEN_INFO - Get cryptoki structured token information
  *
  * [in]		memref[0] = 32bit slot ID
- * [out]	memref[0] = 32bit fine grain retrun code
+ * [out]	memref[0] = 32bit fine grain return code
  * [out]        memref[2] = (struct sks_ck_token_info)info
  *
  * The TA instance may represent several PKCS#11 slots and associated tokens.
@@ -139,7 +139,7 @@ struct sks_token_info {
  * SKS_CMD_CK_MECHANISM_IDS - Get list of the supported mechanisms
  *
  * [in]		memref[0] = 32bit slot ID
- * [out]	memref[0] = 32bit fine grain retrun code
+ * [out]	memref[0] = 32bit fine grain return code
  * [out]        memref[2] = 32bit array mechanism IDs
  *
  * This commands relates to the PKCS#11 API function C_GetMechanismList.
@@ -153,7 +153,7 @@ struct sks_token_info {
  *			32bit slot ID,
  *			32bit mechanism ID
  *		]
- * [out]	memref[0] = 32bit fine grain retrun code
+ * [out]	memref[0] = 32bit fine grain return code
  * [out]        memref[2] = (struct sks_mecha_info)info
  *
  * This commands relates to the PKCS#11 API function C_GetMechanismInfo.
@@ -199,7 +199,7 @@ struct sks_mechanism_info {
  *			8bit array PIN[PIN length],
  *			8bit array label[32]
  *		]
- * [out]	memref[0] = 32bit fine grain retrun code
+ * [out]	memref[0] = 32bit fine grain return code
  *
  * This commands relates to the PKCS#11 API function C_InitToken().
  */
@@ -213,7 +213,7 @@ struct sks_mechanism_info {
  *			32bit PIN length,
  *			8bit array PIN[PIN length]
  *		]
- * [out]	memref[0] = 32bit fine grain retrun code
+ * [out]	memref[0] = 32bit fine grain return code
  *
  * This commands relates to the PKCS#11 API function C_InitPIN().
  */
@@ -229,7 +229,7 @@ struct sks_mechanism_info {
  *			32bit new_pin_length,
  *			8bit array new_pin[new_pin_length]
  *		]
- * [out]	memref[0] = 32bit fine grain retrun code
+ * [out]	memref[0] = 32bit fine grain return code
  *
  * This commands relates to the PKCS#11 API function C_SetPIN()
  */
@@ -239,7 +239,7 @@ struct sks_mechanism_info {
  * SKS_CMD_CK_OPEN_RO_SESSION - Open read-only session
  *
  * [in]		memref[0] = 32bit slot ID
- * [out]	memref[0] = 32bit fine grain retrun code
+ * [out]	memref[0] = 32bit fine grain return code
  * [out]	memref[0] = 32bit session handle
  *
  * This commands relates to the PKCS#11 API function C_OpenSession() for a
@@ -251,11 +251,11 @@ struct sks_mechanism_info {
  * SKS_CMD_CK_OPEN_RW_SESSION - Open read/write session
  *
  * [in]		memref[0] = 32bit slot
- * [out]	memref[0] = 32bit fine grain retrun code
+ * [out]	memref[0] = 32bit fine grain return code
  * [out]	memref[0] = 32bit session handle
  *
  * This commands relates to the PKCS#11 API function C_OpenSession() for a
- * read/Write session.
+ * read/write session.
  */
 #define SKS_CMD_CK_OPEN_RW_SESSION	0x0000000a
 
@@ -263,7 +263,7 @@ struct sks_mechanism_info {
  * SKS_CMD_CK_CLOSE_SESSION - Close an opened session
  *
  * [in]		memref[0] = 32bit session handle
- * [out]	memref[0] = 32bit fine grain retrun code
+ * [out]	memref[0] = 32bit fine grain return code
  *
  * This commands relates to the PKCS#11 API function C_CloseSession().
  */
@@ -273,7 +273,7 @@ struct sks_mechanism_info {
  * SKS_CMD_CK_SESSION_INFO - Get Cryptoki information on a session
  *
  * [in]		memref[0] = 32bit session handle
- * [out]	memref[0] = 32bit fine grain retrun code
+ * [out]	memref[0] = 32bit fine grain return code
  * [out]        memref[2] = (struct sks_ck_session_info)info
  *
  * This commands relates to the PKCS#11 API function C_GetSessionInfo().
@@ -291,7 +291,7 @@ struct sks_session_info {
  * SKS_CMD_CK_CLOSE_ALL_SESSIONS - Close all client sessions on slot/token
  *
  * [in]		memref[0] = 32bit slot
- * [out]	memref[0] = 32bit fine grain retrun code
+ * [out]	memref[0] = 32bit fine grain return code
  *
  * This commands relates to the PKCS#11 API function C_CloseAllSessions().
  */
@@ -304,7 +304,7 @@ struct sks_session_info {
  *			32bit session handle,
  *			(struct sks_object_head)attribs + attributes data
  *		]
- * [out]	memref[0] = 32bit fine grain retrun code
+ * [out]	memref[0] = 32bit fine grain return code
  * [out]	memref[2] = 32bit object handle
  *
  * This commands relates to the PKCS#11 API function C_CreateObject().
@@ -339,7 +339,7 @@ struct sks_object_head {
  * structure followed by the attribute value, its byte size being defined
  * in the attribute header.
  *
- * @id - the 32bit identificator of the attribute, see SKS_CKA_<x>
+ * @id - the 32bit identifier of the attribute, see SKS_CKA_<x>
  * @size - the 32bit value attribute byte size
  * @data - then starts the attribute value
  */
@@ -356,21 +356,21 @@ struct sks_attribute_head {
  *			32bit session handle,
  *			32bit object handle
  *		]
- * [out]	memref[0] = 32bit fine grain retrun code
+ * [out]	memref[0] = 32bit fine grain return code
  *
  * This commands relates to the PKCS#11 API function C_DestroyObject().
  */
 #define SKS_CMD_DESTROY_OBJECT		0x0000000f
 
 /*
- * SKS_CMD_ENCRYPT_INIT - Initialize enryption processing
+ * SKS_CMD_ENCRYPT_INIT - Initialize encryption processing
  * SKS_CMD_DECRYPT_INIT - Initialize decryption processing
  *
  * [in]		memref[0] = [
  *			32bit session handle,
  *			(struct sks_attribute_head)mechanism + mecha parameters
  *		]
- * [out]	memref[0] = 32bit fine grain retrun code
+ * [out]	memref[0] = 32bit fine grain return code
  *
  * These commands relate to the PKCS#11 API functions C_EncryptInit() and
  * C_DecryptInit.
@@ -384,7 +384,7 @@ struct sks_attribute_head {
  *
  * [in]		memref[0] = 32bit session handle
  * [in]		memref[1] = input data to be processed
- * [out]	memref[0] = 32bit fine grain retrun code
+ * [out]	memref[0] = 32bit fine grain return code
  * [out]	memref[2] = output processed data
  *
  * These commands relate to the PKCS#11 API functions C_EncryptUpdate() and
@@ -398,7 +398,7 @@ struct sks_attribute_head {
  * SKS_CMD_DECRYPT_FINAL - Finalize decryption processing
  *
  * [in]		memref[0] = 32bit session handle
- * [out]	memref[0] = 32bit fine grain retrun code
+ * [out]	memref[0] = 32bit fine grain return code
  * [out]	memref[2] = output processed data
  *
  * These commands relate to the PKCS#11 API functions C_EncryptFinal() and
@@ -415,7 +415,7 @@ struct sks_attribute_head {
  *			(struct sks_attribute_head)mechanism + mecha parameters,
  *			(struct sks_object_head)attribs + attributes data
  *		]
- * [out]	memref[0] = 32bit fine grain retrun code
+ * [out]	memref[0] = 32bit fine grain return code
  * [out]	memref[2] = 32bit key handle
  *
  * This command relates to the PKCS#11 API functions C_GenerateKey().
@@ -431,7 +431,7 @@ struct sks_attribute_head {
  *			32bit key handle,
  *			(struct sks_attribute_head)mechanism + mecha parameters,
  *		]
- * [out]	memref[0] = 32bit fine grain retrun code
+ * [out]	memref[0] = 32bit fine grain return code
  *
  * These commands relate to the PKCS#11 API functions C_SignInit() and
  * C_VerifyInit.
@@ -445,7 +445,7 @@ struct sks_attribute_head {
  *
  * [in]		memref[0] = 32bit session handle
  * [in]		memref[1] = input data to be processed
- * [out]	memref[0] = 32bit fine grain retrun code
+ * [out]	memref[0] = 32bit fine grain return code
  *
  * These commands relate to the PKCS#11 API functions C_SignUpdate() and
  * C_VerifyUpdate.
@@ -458,7 +458,7 @@ struct sks_attribute_head {
  * SKS_CMD_VERIFY_FINAL - Finalize a signature verification processing
  *
  * [in]		memref[0] = 32bit session handle
- * [out]	memref[0] = 32bit fine grain retrun code
+ * [out]	memref[0] = 32bit fine grain return code
  * [out]	memref[2] = output processed data
  *
  * These commands relate to the PKCS#11 API functions C_SignFinal() and
@@ -474,7 +474,7 @@ struct sks_attribute_head {
  *			32bit session handle,
  *			(struct sks_object_head)attribs + attributes data
  *		]
- * [out]	memref[0] = 32bit fine grain retrun code
+ * [out]	memref[0] = 32bit fine grain return code
  *
  * This command relates to the PKCS#11 API function C_FindOjectsInit().
  */
@@ -484,7 +484,7 @@ struct sks_attribute_head {
  * SKS_CMD_FIND_OBJECTS - Get handles of matching objects
  *
  * [in]		memref[0] = 32bit session handle
- * [out]	memref[0] = 32bit fine grain retrun code
+ * [out]	memref[0] = 32bit fine grain return code
  * [out]	memref[2] = 32bit array object_handle_array[N]
  *
  * This command relates to the PKCS#11 API function C_FindOjects().
@@ -497,7 +497,7 @@ struct sks_attribute_head {
  * SKS_CMD_FIND_OBJECTS_FINAL - Finalize current objects search
  *
  * [in]		memref[0] = 32bit session handle
- * [out]	memref[0] = 32bit fine grain retrun code
+ * [out]	memref[0] = 32bit fine grain return code
  *
  * This command relates to the PKCS#11 API function C_FindOjectsFinal().
  */
@@ -510,7 +510,7 @@ struct sks_attribute_head {
  *			32bit session handle,
  *			32bit key handle
  *		]
- * [out]	memref[0] = 32bit fine grain retrun code
+ * [out]	memref[0] = 32bit fine grain return code
  * [out]	memref[2] = 32bit object_byte_size
  */
 #define SKS_CMD_GET_OBJECT_SIZE		0x00000020
@@ -523,7 +523,7 @@ struct sks_attribute_head {
  *			32bit object handle,
  *			(struct sks_object_head)attribs + attributes data
  *		]
- * [out]	memref[0] = 32bit fine grain retrun code
+ * [out]	memref[0] = 32bit fine grain return code
  * [out]	memref[2] = (struct sks_object_head)attribs + attributes data
  */
 #define SKS_CMD_GET_ATTRIBUTE_VALUE	0x00000021
@@ -536,7 +536,7 @@ struct sks_attribute_head {
  *			32bit object handle,
  *			(struct sks_object_head)attribs + attributes data
  *		]
- * [out]	memref[0] = 32bit fine grain retrun code
+ * [out]	memref[0] = 32bit fine grain return code
  * [out]	memref[2] = (struct sks_object_head)attribs + attributes data
  */
 #define SKS_CMD_SET_ATTRIBUTE_VALUE	0x00000022
@@ -550,7 +550,7 @@ struct sks_attribute_head {
  *			32bit key handle,
  *			(struct sks_object_head)attribs + attributes data
  *		]
- * [out]	memref[0] = 32bit fine grain retrun code
+ * [out]	memref[0] = 32bit fine grain return code
  * [out]	memref[2] = 32bit object handle
  */
 #define SKS_CMD_DERIVE_KEY		0x00000023
@@ -563,7 +563,7 @@ struct sks_attribute_head {
  *			32bit PIN byte size,
  *			byte arrays: PIN data
  *		]
- * [out]	memref[0] = 32bit fine grain retrun code
+ * [out]	memref[0] = 32bit fine grain return code
  */
 #define SKS_CMD_INIT_PIN		0x00000024
 
@@ -577,7 +577,7 @@ struct sks_attribute_head {
  *			32bit new PIN byte size,
  *			byte arrays: new PIN data
  *		]
- * [out]	memref[0] = 32bit fine grain retrun code
+ * [out]	memref[0] = 32bit fine grain return code
  */
 #define SKS_CMD_SET_PIN			0x00000025
 
@@ -590,7 +590,7 @@ struct sks_attribute_head {
  *			32bit PIN byte size,
  *			byte arrays: PIN data
  *		]
- * [out]	memref[0] = 32bit fine grain retrun code
+ * [out]	memref[0] = 32bit fine grain return code
  */
 #define SKS_CMD_LOGIN			0x00000026
 
@@ -609,7 +609,7 @@ struct sks_attribute_head {
  *			32bit PIN byte size,
  *			byte array: PIN data
  *		]
- * [out]	memref[0] = 32bit fine grain retrun code
+ * [out]	memref[0] = 32bit fine grain return code
  */
 #define SKS_CMD_LOGOUT			0x00000027
 
@@ -622,7 +622,7 @@ struct sks_attribute_head {
  *			(struct sks_object_head)pubkey_attribs + attributes data
  *			(struct sks_object_head)privkeyattribs + attributes data
  *		]
- * [out]	memref[0] = 32bit fine grain retrun code
+ * [out]	memref[0] = 32bit fine grain return code
  * [out]	memref[2] = [
  *			32bit public key handle,
  *			32bit prive key handle
@@ -638,7 +638,7 @@ struct sks_attribute_head {
  *
  * [in]		memref[0] = 32bit session handle
  * [in]		memref[1] = input data to be processed
- * [out]	memref[0] = 32bit fine grain retrun code
+ * [out]	memref[0] = 32bit fine grain return code
  * [out]	memref[2] = output processed data
  *
  * These commands relate to the PKCS#11 API functions C_EncryptUpdate() and
@@ -653,7 +653,7 @@ struct sks_attribute_head {
  *
  * [in]		memref[0] = 32bit session handle
  * [in]		memref[1] = input data to be processed
- * [out]	memref[0] = 32bit fine grain retrun code
+ * [out]	memref[0] = 32bit fine grain return code
  *
  * These commands relate to the PKCS#11 API functions C_SignUpdate() and
  * C_VerifyUpdate.
@@ -722,7 +722,7 @@ struct sks_attribute_head {
 #define SKS_TRUE				1
 
 /*
- * Attribute identificators
+ * Attribute identifiers
  * Valid values for struct sks_attribute_head::id
  *
  * SKS_ATTR_<x> corresponds to cryptoki CKA_<x>.
@@ -751,7 +751,7 @@ struct sks_attribute_head {
 #define SKS_CKA_DESTROYABLE			0x00000013
 #define SKS_CKA_ALWAYS_AUTHENTICATE		0x00000014
 #define SKS_CKA_WRAP_WITH_TRUSTED		0x00000015
-/* Last boolean properity ID (value is 63) is reserved */
+/* Last boolean property ID (value is 63) is reserved */
 #define SKS_BOOLPROPS_LAST			SKS_CKA_WRAP_WITH_TRUSTED
 #define SKS_BOOLPROPS_END			0x0000003F
 #define SKS_BOOLPROPH_FLAG			BIT(31)

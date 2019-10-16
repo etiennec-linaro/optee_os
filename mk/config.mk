@@ -488,9 +488,12 @@ ifeq ($(CFG_VIRTUALIZATION),y)
 $(call force,CFG_CORE_RODATA_NOEXEC,y)
 $(call force,CFG_CORE_RWDATA_NOEXEC,y)
 
+# Currently not supported for 32bit core
+$(call force,CFG_ARM32_core,n)
+
 # Default number of virtual guests
 CFG_VIRT_GUEST_COUNT ?= 2
-endif
+endif #CFG_VIRTUALIZATION
 
 # Enables backwards compatible derivation of RPMB and SSK keys
 CFG_CORE_HUK_SUBKEY_COMPAT ?= y

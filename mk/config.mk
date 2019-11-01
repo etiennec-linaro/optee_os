@@ -498,3 +498,8 @@ CFG_CORE_HUK_SUBKEY_COMPAT ?= y
 # Compress and encode conf.mk into the TEE core, and show the encoded string on
 # boot (with severity TRACE_INFO).
 CFG_SHOW_CONF_ON_BOOT ?= n
+
+# Embeds a SCMI server in core with dedicated PTA as interface to
+# non-secure world. Configuration expects a targe so-called product in
+# the SCMI server implmentation thru CFG_SCMI_SERVER_PRODUCT.
+CFG_SCMI_SERVER ?= n

@@ -60,3 +60,24 @@ endef
 
 $(foreach m,$(scmi-server-generic-modules-y), \
     $(eval $(call scmi-server-add-module,$(scmi-server-scp-path),$(strip $(m)))))
+
+# Generate fwk_module_idx.h and fwk_module_list.c
+scmi-server-script = $(libdir)/$(scmi-server-scp-path)/tools/gen_module_code.py
+
+scmi-server-out-path = $(out-dir)/$(libdir)
+scmi-server-modules-y = $(scmi-server-generic-modules-y)
+
+gensrcs-y += scmi_module_list
+cleanfiles += $(scmi-server-out-path)/fwk_module_list.c
+cleanfiles += $(scmi-server-out-path)/fwk_module_idx.h
+produce-scmi_module_list = fwk_module_list.c
+depends-scmi_module_list = $(1) $(scmi-server-script) FORCE
+recipe-scmi_module_list = \
+	$(scmi-server-script) --path $(scmi-server-out-path) \
+		$(scmi-server-modules-y) > /dev/null
+
+# fwk_module_idx.h must be build before source files are compiled
+# hence it is a dependency for main target all.
+cflags-lib$(libname)-$(sm) += -I$(out-dir)/$(libdir)
+$(scmi-server-out-path)/fwk_module_idx.h: $(scmi-server-out-path)/fwk_module_list.c
+all: $(scmi-server-out-path)/fwk_module_idx.h

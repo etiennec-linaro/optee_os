@@ -419,7 +419,9 @@ int __fwk_module_init(void)
 
     ctx.initialized = true;
 
+    #ifndef BUILD_OPTEE
     __fwk_thread_run();
+    #endif
 
     return FWK_SUCCESS;
 }

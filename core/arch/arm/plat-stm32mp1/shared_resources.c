@@ -707,6 +707,11 @@ static TEE_Result stm32mp1_init_final_shres(void)
 	register_pm_driver_cb(gpioz_pm, NULL);
 	check_rcc_secure_configuration();
 
+#ifdef CFG_SCMI_SERVER
+	/* Synchornise SCMI clocks with clocks HW state */
+	stm32_scmi_clock_late_init();
+#endif
+
 	return TEE_SUCCESS;
 }
 /* Finalize shres after drivers initialization, hence driver_init_late() */

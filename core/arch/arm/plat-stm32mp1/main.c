@@ -66,6 +66,11 @@ register_dynamic_shm(DDR_BASE, CFG_TZDRAM_START - DDR_BASE);
 register_dynamic_shm(TZDRAM_END, DRAM_END - TZDRAM_END);
 #endif
 
+#ifdef CFG_SCMI_SERVER
+register_phys_mem(MEM_AREA_IO_NSEC, CFG_STM32MP1_SCMI_SHM_BASE,
+                  CFG_STM32MP1_SCMI_SHM_SIZE);
+#endif
+
 static const struct thread_handlers handlers = {
 	.cpu_on = pm_panic,
 	.cpu_off = pm_panic,

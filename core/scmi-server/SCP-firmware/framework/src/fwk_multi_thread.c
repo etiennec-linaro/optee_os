@@ -25,9 +25,15 @@
 #define SIGNAL_NO_READY_THREAD 0x08
 
 static struct __fwk_multi_thread_ctx ctx;
-#ifdef BUILD_HOST
-static const char err_msg_line[] = "[THR] Error %d @%d\n";
-static const char err_msg_func[] = "[THR] Error %d in %s\n";
+#if defined(BUILD_HOST) || defined(BUILD_OPTEE)
+#if defined(BUILD_OPTEE)
+#include <compiler.h>
+#else
+#define __maybe_unused
+#endif /* BUILD_OPTEE */
+
+static const char __maybe_unused err_msg_line[] = "[THR] Error %d @%d\n";
+static const char __maybe_unused err_msg_func[] = "[THR] Error %d in %s\n";
 #endif
 
 /*

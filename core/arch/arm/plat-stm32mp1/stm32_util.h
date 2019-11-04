@@ -281,4 +281,14 @@ bool stm32mp_gpio_bank_is_non_secure(unsigned int bank);
 /* Register parent clocks of @clock (ID used in clock DT bindings) as secure */
 void stm32mp_register_clock_parents_secure(unsigned long clock_id);
 
+#ifdef CFG_SCMI_SERVER
+/*!
+ * \brief Synchornise clock states after product initialization.
+ */
+void stm32_scmi_clock_late_init(void);
+#else
+static inline void stm32_scmi_clock_late_init(void)
+{
+}
+#endif
 #endif /*__STM32_UTIL_H__*/

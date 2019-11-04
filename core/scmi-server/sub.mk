@@ -1,3 +1,12 @@
+# SCMI server library is built from SCP-firmware source tree.
+# The firmware is made of the framework, a product and modules
+# from either the generic path (subdir module/) or form the
+# product path (subdir product/*/module/).
+#
+# The script generate files fwk_module_ids.h and fwk_module_list.c.
+# The header file shall be built before other SCP-firmware source
+# since most rely on fwk_module_ids.h.
+
 # Currently based on SCP-firmware revision 2.5.
 SCMI_VERSION_MAJOR = 2
 SCMI_VERSION_MINOR = 5
@@ -15,6 +24,18 @@ scmi-server-generic-modules-$(CFG_SCMI_SERVER_POWER_DOMAIN) += power_domain scmi
 global-incdirs-y += $(scmi-server-scp-path)/module/clock/include
 global-incdirs-y += $(scmi-server-scp-path)/module/reset_domain/include
 global-incdirs-y += $(scmi-server-scp-path)/module/power_domain/include
+
+# Product is expected to provide a sub.mk at $(scmi-server-product-path)
+# and fill scmi-server-generic-modules, scmi-server-product-modules, eventually
+# some srcs-y, incdirs-y...
+
+scmi-server-product := $(CFG_SCMI_SERVER_PRODUCT)
+scmi-server-product-path := $(scmi-server-scp-path)/product/optee-$(scmi-server-product)
+
+ifeq ($(wildcard $(libdir)/$(scmi-server-product-path)/optee_product.mk),)
+$(error optee_product.mk not found, check CFG_SCMI_SERVER_PRODUCT)
+endif
+include $(libdir)/$(scmi-server-product-path)/optee_product.mk
 
 # Internal build switches and directives
 cppflags-lib-y += -DBUILD_VERSION_MAJOR=$(SCMI_VERSION_MAJOR) \
@@ -50,6 +71,7 @@ $(eval $(call define-as-binary, BUILD_HAS_MOD_RESET_DOMAIN, \
 
 srcs-y += scmi_server.c
 subdirs-y += $(scmi-server-scp-path)/framework/src
+subdirs-y += $(scmi-server-product-path)
 
 # Helper to add module source and header files in framework
 # Used for generic modules and product specific modules
@@ -61,11 +83,15 @@ endef
 $(foreach m,$(scmi-server-generic-modules-y), \
     $(eval $(call scmi-server-add-module,$(scmi-server-scp-path),$(strip $(m)))))
 
+$(foreach m,$(scmi-server-product-modules-y), \
+    $(eval $(call scmi-server-add-module,$(scmi-server-product-path),$(strip $(m)))))
+
 # Generate fwk_module_idx.h and fwk_module_list.c
 scmi-server-script = $(libdir)/$(scmi-server-scp-path)/tools/gen_module_code.py
 
 scmi-server-out-path = $(out-dir)/$(libdir)
-scmi-server-modules-y = $(scmi-server-generic-modules-y)
+scmi-server-modules-y = $(scmi-server-generic-modules-y) \
+			$(scmi-server-product-modules-y)
 
 gensrcs-y += scmi_module_list
 cleanfiles += $(scmi-server-out-path)/fwk_module_list.c

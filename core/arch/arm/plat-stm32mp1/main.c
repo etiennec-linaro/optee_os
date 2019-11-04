@@ -55,6 +55,14 @@ register_phys_mem_pgdir(MEM_AREA_IO_SEC, RNG1_BASE, SMALL_PAGE_SIZE);
 register_phys_mem_pgdir(MEM_AREA_IO_SEC, TAMP_BASE, SMALL_PAGE_SIZE);
 register_phys_mem_pgdir(MEM_AREA_IO_SEC, USART1_BASE, SMALL_PAGE_SIZE);
 
+/* DDR main memory: non-secure areas can be used as SHM */
+register_ddr(CFG_DDR_START, CFG_DDR_SIZE);
+
+#if defined(CFG_SCMI_SERVER)
+/* Hard-coded: end and DDR, end of OP-TEE static SHM */
+register_phys_mem(MEM_AREA_IO_NSEC, 0xfffff000, 4096);
+#endif
+
 static const struct thread_handlers handlers = {
 	.cpu_on = pm_panic,
 	.cpu_off = pm_panic,

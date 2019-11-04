@@ -261,4 +261,15 @@ bool stm32mp_gpio_bank_is_shared(unsigned int bank);
 bool stm32mp_gpio_bank_is_non_secure(unsigned int bank);
 
 
+#ifdef CFG_SCMI_SERVER
+/*!
+ * \brief Synchornise clock states after product initialization.
+ */
+void stm32_scmi_clock_late_init(void);
+#else
+void stm32_scmi_clock_late_init(void)
+{
+}
+#endif
+
 #endif /*__STM32_UTIL_H__*/

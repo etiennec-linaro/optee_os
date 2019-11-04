@@ -70,7 +70,9 @@ void scmi_server_process_thread(unsigned int id)
 {
 	thread_entry();
 
-	optee_mhu_signal_smt_message(SCMI_CHANNEL_DEVICE_IDX_NS, id);
+	// FIXME: arg#0 of optee_mhu_signal_smt_message() should be
+	// the optee _mhu device index.
+	optee_mhu_signal_smt_message(0, id);
 	__fwk_run_event();
 
 	thread_exit();

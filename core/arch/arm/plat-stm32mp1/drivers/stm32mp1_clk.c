@@ -93,6 +93,8 @@ enum stm32mp1_parent_sel {
 	_USBPHY_SEL,
 	_USBO_SEL,
 	_RTC_SEL,
+	_MPU_SEL,
+	_PER_SEL,
 	_PARENT_SEL_NB,
 	_UNKNOWN_SEL = 0xff,
 };
@@ -127,6 +129,8 @@ static const uint8_t parent_id_clock_id[_PARENT_NB] = {
 	[_PCLK3] = CK_AXI,
 	[_PCLK4] = CK_AXI,
 	[_PCLK5] = CK_AXI,
+	[_CK_PER] = CK_PER,
+	[_CK_MPU] = CK_MPU,
 	[_CK_MCU] = CK_MCU,
 };
 
@@ -433,6 +437,14 @@ static const uint8_t rtc_parents[] = {
 	_UNKNOWN_ID, _LSE, _LSI, _HSE
 };
 
+static const uint8_t mpu_parents[] = {
+	_HSI, _HSE, _PLL1_P, _PLL1_P /* specific div */
+};
+
+static const uint8_t per_parents[] = {
+	_HSI, _HSE, _CSI,
+};
+
 static const struct stm32mp1_clk_sel stm32mp1_clk_sel[_PARENT_SEL_NB] = {
 	/* Secure aware clocks */
 	_CLK_PARENT(_STGEN_SEL, RCC_STGENCKSELR, 0, 0x3, stgen_parents),
@@ -441,6 +453,8 @@ static const struct stm32mp1_clk_sel stm32mp1_clk_sel[_PARENT_SEL_NB] = {
 	_CLK_PARENT(_USART1_SEL, RCC_UART1CKSELR, 0, 0x7, usart1_parents),
 	_CLK_PARENT(_RNG1_SEL, RCC_RNG1CKSELR, 0, 0x3, rng1_parents),
 	_CLK_PARENT(_RTC_SEL, RCC_BDCR, 0, 0x3, rtc_parents),
+	_CLK_PARENT(_MPU_SEL, RCC_MPCKSELR, 0, 0x3, mpu_parents),
+	_CLK_PARENT(_PER_SEL, RCC_CPERCKSELR, 0, 0x3, per_parents),
 	/* Always non-secure clocks (maybe used in some way in secure world) */
 	_CLK_PARENT(_UART6_SEL, RCC_UART6CKSELR, 0, 0x7, uart6_parents),
 	_CLK_PARENT(_UART24_SEL, RCC_UART24CKSELR, 0, 0x7, uart234578_parents),

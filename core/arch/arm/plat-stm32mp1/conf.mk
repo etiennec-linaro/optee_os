@@ -35,6 +35,8 @@ CFG_WITH_LPAE ?= y
 CFG_WITH_STACK_CANARIES ?= y
 CFG_MMAP_REGIONS ?= 23
 
+CFG_CORE_DYN_SHM ?= n
+
 ifeq ($(CFG_EMBED_DTB_SOURCE_FILE),)
 # Some drivers mandate DT support
 $(call force,CFG_STM32_I2C,n)

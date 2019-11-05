@@ -6,9 +6,11 @@
 #ifndef __STM32MP1_RCC_H__
 #define __STM32MP1_RCC_H__
 
+#ifndef __ASSEMBLER__
 #include <io.h>
 #include <stdbool.h>
 #include <util.h>
+#endif
 
 #define RCC_TZCR			0x00
 #define RCC_OCENSETR			0x0C
@@ -295,7 +297,8 @@
 #define RCC_BDCR_LSEDRV_MASK		GENMASK_32(5, 4)
 #define RCC_BDCR_LSEDRV_SHIFT		4
 #define RCC_BDCR_LSECSSON		BIT(8)
-#define RCC_BDCR_RTCCKEN		BIT(20)
+#define RCC_BDCR_RTCCKEN_POS		20
+#define RCC_BDCR_RTCCKEN		BIT(RCC_BDCR_RTCCKEN_POS)
 #define RCC_BDCR_RTCSRC_MASK		GENMASK_32(17, 16)
 #define RCC_BDCR_RTCSRC_SHIFT		16
 #define RCC_BDCR_VSWRST			BIT(31)

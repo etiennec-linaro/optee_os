@@ -252,6 +252,7 @@ static struct tee_mmap_region *find_map_by_pa(unsigned long pa)
 	return NULL;
 }
 
+__maybe_unused
 static bool pbuf_is_special_mem(paddr_t pbuf, size_t len,
 				const struct core_mmu_phys_mem *start,
 				const struct core_mmu_phys_mem *end)

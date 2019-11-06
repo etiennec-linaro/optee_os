@@ -145,23 +145,6 @@ static const char __maybe_unused *shres2str_id_tbl[STM32MP1_SHRES_COUNT] = {
 	[STM32MP1_SHRES_RTC] = "RTC",
 	[STM32MP1_SHRES_MCU] = "MCU",
 	[STM32MP1_SHRES_MDMA] = "MDMA",
-	[STM32MP1_SHRES_HSI] = "HSI",
-	[STM32MP1_SHRES_LSI] = "LSI",
-	[STM32MP1_SHRES_HSE] = "HSE",
-	[STM32MP1_SHRES_LSE] = "LSE",
-	[STM32MP1_SHRES_CSI] = "CSI",
-	[STM32MP1_SHRES_PLL1] = "PLL1",
-	[STM32MP1_SHRES_PLL1_P] = "PLL1_P",
-	[STM32MP1_SHRES_PLL1_Q] = "PLL1_Q",
-	[STM32MP1_SHRES_PLL1_R] = "PLL1_R",
-	[STM32MP1_SHRES_PLL2] = "PLL2",
-	[STM32MP1_SHRES_PLL2_P] = "PLL2_P",
-	[STM32MP1_SHRES_PLL2_Q] = "PLL2_Q",
-	[STM32MP1_SHRES_PLL2_R] = "PLL2_R",
-	[STM32MP1_SHRES_PLL3] = "PLL3",
-	[STM32MP1_SHRES_PLL3_P] = "PLL3_P",
-	[STM32MP1_SHRES_PLL3_Q] = "PLL3_Q",
-	[STM32MP1_SHRES_PLL3_R] = "PLL3_R",
 };
 
 static __maybe_unused const char *shres2str_id(enum stm32mp_shres id)
@@ -551,10 +534,6 @@ static bool mckprot_resource(enum stm32mp_shres id)
 {
 	switch (id) {
 	case STM32MP1_SHRES_MCU:
-	case STM32MP1_SHRES_PLL3:
-	case STM32MP1_SHRES_PLL3_P:
-	case STM32MP1_SHRES_PLL3_Q:
-	case STM32MP1_SHRES_PLL3_R:
 		return true;
 	default:
 		return false;

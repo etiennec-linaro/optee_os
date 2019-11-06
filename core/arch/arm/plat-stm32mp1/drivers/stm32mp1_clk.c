@@ -1083,6 +1083,28 @@ unsigned long stm32_clock_get_rate(unsigned long id)
 	return rate;
 }
 
+static void stm32_secure_clock_setup(void)
+{
+	unsigned int idx = 0;
+
+	/*
+	 * Enforce enable of several clocks:
+	 * - DDR interfaces related clocks.
+	 * - ETZPC and TZCs clocks for SoC peripherals and DDR access control.
+	 * - STGEN for CPU generic times reference clock.
+	 * - BSEC for non-secure Linux driver to access non-secure OTPs.
+	 * - RTCPAB for non-secure to access some backup registers access.
+	 */
+	const unsigned long secure_enable[] = {
+		DDRC1, DDRC1LP, DDRC2, DDRC2LP, DDRPHYC, DDRPHYCLP, DDRCAPB,
+		AXIDCG, DDRPHYCAPB, DDRPHYCAPBLP, TZPC, TZC1, TZC2, STGEN_K,
+		BSEC, RTCAPB,
+	};
+
+	for (idx = 0; idx < ARRAY_SIZE(secure_enable); idx++)
+		stm32_clock_enable(secure_enable[idx]);
+}
+
 #ifdef CFG_EMBED_DTB
 #define DT_RCC_CLK_COMPAT	"st,stm32mp1-rcc"
 
@@ -1141,7 +1163,7 @@ static void get_osc_freq_from_dt(void *fdt)
 	}
 }
 
-static TEE_Result stm32mp1_clk_early_init(void)
+static void stm32_clk_init_from_dt(void)
 {
 	void *fdt = NULL;
 	int node = 0;
@@ -1202,9 +1224,20 @@ static TEE_Result stm32mp1_clk_early_init(void)
 
 	if (ignored != 0)
 		IMSG("DT clock tree configurations were ignored");
+}
+#else
+static void stm32_clk_init_from_dt(void)
+{
+}
+#endif /*CFG_EMBED_DTB*/
+
+static TEE_Result stm32_clk_service_init(void)
+{
+	stm32_clk_init_from_dt();
+	stm32_secure_clock_setup();
 
 	return TEE_SUCCESS;
 }
 
-service_init(stm32mp1_clk_early_init);
-#endif /*CFG_EMBED_DTB*/
+/* Setup clock support before driver initialization */
+service_init(stm32_clk_service_init);

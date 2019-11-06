@@ -51,8 +51,14 @@ CFG_STM32_RNG ?= y
 CFG_STM32_UART ?= y
 
 # Default enable some test facitilites
+# Default do not enable those affecting pager resisdent memory footprint.
 CFG_TEE_CORE_EMBED_INTERNAL_TESTS ?= y
 CFG_WITH_STATS ?= y
+CFG_TEE_CORE_LOG_LEVEL ?= 2
+ifeq ($(CFG_WITH_PAGER),y)
+CFG_TEE_CORE_DEBUG ?=n
+CFG_UNWIND ?= n
+endif
 
 # Non-secure UART and GPIO/pinctrl for the output console
 CFG_WITH_NSEC_GPIOS ?= y

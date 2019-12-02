@@ -1251,6 +1251,24 @@ static void get_osc_freq_from_dt(void *fdt)
 	}
 }
 
+/* Set a non-secure refcount on shareable clock that were enabled from boot */
+static void enable_static_secure_clocks(void)
+{
+	unsigned int idx = 0;
+	const unsigned long secure_enable[] = {
+		DDRC1, DDRC1LP, DDRC2, DDRC2LP, DDRPHYC, DDRPHYCLP, DDRCAPB,
+		AXIDCG, DDRPHYCAPB, DDRPHYCAPBLP, TZPC, TZC1, TZC2, STGEN_K,
+		BSEC,
+#if CFG_TEE_CORE_NB_CORE > 1
+		/* RTCAPB shall remain enabled to boot secondary cores */
+		RTCAPB,
+#endif
+	};
+
+	for (idx = 0; idx <ARRAY_SIZE(secure_enable); idx++)
+		stm32_clock_enable(secure_enable[idx]);
+}
+
 static TEE_Result stm32mp1_clk_early_init(void)
 {
 	void *fdt = NULL;
@@ -1312,6 +1330,8 @@ static TEE_Result stm32mp1_clk_early_init(void)
 
 	if (ignored != 0)
 		IMSG("DT clock tree configurations were ignored");
+
+	enable_static_secure_clocks();
 
 	return TEE_SUCCESS;
 }

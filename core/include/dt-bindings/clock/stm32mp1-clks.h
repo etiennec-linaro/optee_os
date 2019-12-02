@@ -251,4 +251,29 @@
 #define LTDC_K		LTDC_PX
 #define ETHMAC_K	ETHCK_K
 
+/* SCMI clock identifiers */
+#define CK_SCMI_HSE		0
+#define CK_SCMI_HSI		1
+#define CK_SCMI_CSI		2
+#define CK_SCMI_LSE		3
+#define CK_SCMI_LSI		4
+#define CK_SCMI_PLL2_Q		5
+#define CK_SCMI_PLL3_Q		6
+#define CK_SCMI_PLL3_R		7
+#define CK_SCMI_MPU		8
+#define CK_SCMI_MCU		9
+#define CK_SCMI_AXI		10
+#define CK_SCMI_BSEC		11
+#define CK_SCMI_CRYP1		12
+#define CK_SCMI_GPIOZ		13
+#define CK_SCMI_HASH1		14
+#define CK_SCMI_I2C4		15
+#define CK_SCMI_I2C6		16
+#define CK_SCMI_IWDG1		17
+#define CK_SCMI_RNG1		18
+#define CK_SCMI_RTC		19
+#define CK_SCMI_RTCAPB		20
+#define CK_SCMI_SPI6		21
+#define CK_SCMI_USART1		22
+
 #endif /* _DT_BINDINGS_STM32MP1_CLKS_H_ */

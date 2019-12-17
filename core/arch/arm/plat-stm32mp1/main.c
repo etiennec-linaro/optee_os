@@ -66,6 +66,9 @@ register_dynamic_shm(DDR_BASE, CFG_TZDRAM_START - DDR_BASE);
 register_dynamic_shm(TZDRAM_END, DRAM_END - TZDRAM_END);
 #endif
 
+register_phys_mem(MEM_AREA_IO_NSEC, CFG_STM32MP1_SCMI_SHM_BASE,
+		  CFG_STM32MP1_SCMI_SHM_SIZE);
+
 static const struct thread_handlers handlers = {
 	.cpu_on = pm_panic,
 	.cpu_off = pm_panic,
@@ -211,24 +214,22 @@ void main_secondary_init_gic(void)
 	stm32mp_register_online_cpu();
 }
 
-#ifndef CFG_EMBED_DTB
 static TEE_Result init_stm32mp1_drivers(void)
 {
+#ifndef CFG_EMBED_DTB
 	/* Without secure DTB support, some drivers must be inited */
 	stm32_etzpc_init(ETZPC_BASE);
+#endif
 
-	return TEE_SUCCESS;
-}
-driver_init(init_stm32mp1_drivers);
-#endif /*!CFG_EMBED_DTB*/
-
-/* Platform initializations once all drivers are ready */
-static TEE_Result init_late_stm32mp1_drivers(void)
-{
 	/* Secure internal memories for the platform, once ETZPC is ready */
 	etzpc_configure_tzma(0, ETZPC_TZMA_ALL_SECURE);
 	etzpc_lock_tzma(0);
-	etzpc_configure_tzma(1, ETZPC_TZMA_ALL_SECURE);
+
+#if CFG_TZSRAM_START < SYSRAM_BASE + SYSRAM_SEC_SIZE
+	COMPILE_TIME_ASSERT(CFG_TZSRAM_START >= SYSRAM_BASE &&
+			    CFG_TZSRAM_SIZE <= SYSRAM_SEC_SIZE);
+#endif
+	etzpc_configure_tzma(1, SYSRAM_SEC_SIZE >> SMALL_PAGE_SHIFT);
 	etzpc_lock_tzma(1);
 
 	/* Static secure DECPROT configuration */
@@ -254,7 +255,7 @@ static TEE_Result init_late_stm32mp1_drivers(void)
 
 	return TEE_SUCCESS;
 }
-driver_init_late(init_late_stm32mp1_drivers);
+driver_init(init_stm32mp1_drivers);
 
 vaddr_t get_gicc_base(void)
 {

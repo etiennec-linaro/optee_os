@@ -228,7 +228,12 @@ static TEE_Result init_late_stm32mp1_drivers(void)
 	/* Secure internal memories for the platform, once ETZPC is ready */
 	etzpc_configure_tzma(0, ETZPC_TZMA_ALL_SECURE);
 	etzpc_lock_tzma(0);
-	etzpc_configure_tzma(1, ETZPC_TZMA_ALL_SECURE);
+
+#if CFG_TZSRAM_START < SYSRAM_BASE + SYSRAM_SEC_SIZE
+	COMPILE_TIME_ASSERT(CFG_TZSRAM_START >= SYSRAM_BASE &&
+			    CFG_TZSRAM_SIZE <= SYSRAM_SEC_SIZE);
+#endif
+	etzpc_configure_tzma(1, SYSRAM_SEC_SIZE >> SMALL_PAGE_SHIFT);
 	etzpc_lock_tzma(1);
 
 	/* Static secure DECPROT configuration */
@@ -254,7 +259,9 @@ static TEE_Result init_late_stm32mp1_drivers(void)
 
 	return TEE_SUCCESS;
 }
-driver_init_late(init_late_stm32mp1_drivers);
+
+/* Configure ETZPC once driver is ready from service_init init level */
+service_init_late(init_late_stm32mp1_drivers);
 
 vaddr_t get_gicc_base(void)
 {

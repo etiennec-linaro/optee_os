@@ -61,6 +61,9 @@ void stm32_clock_disable(unsigned long id);
 unsigned long stm32_clock_get_rate(unsigned long id);
 bool stm32_clock_is_enabled(unsigned long id);
 
+/* Return true if and only if non-secure world use the resource */
+bool stm32mp_nsec_can_access_clock(unsigned long id);
+
 /*
  * Util for reset signal assertion/desassertion for stm32 and platform drivers
  * @id: Target peripheral ID, ID used in reset DT bindings
@@ -219,24 +222,9 @@ enum stm32mp_shres {
 	STM32MP1_SHRES_I2C6,
 	STM32MP1_SHRES_RTC,
 	STM32MP1_SHRES_MCU,
-	STM32MP1_SHRES_HSI,
-	STM32MP1_SHRES_LSI,
-	STM32MP1_SHRES_HSE,
-	STM32MP1_SHRES_LSE,
-	STM32MP1_SHRES_CSI,
-	STM32MP1_SHRES_PLL1,
-	STM32MP1_SHRES_PLL1_P,
-	STM32MP1_SHRES_PLL1_Q,
-	STM32MP1_SHRES_PLL1_R,
-	STM32MP1_SHRES_PLL2,
-	STM32MP1_SHRES_PLL2_P,
-	STM32MP1_SHRES_PLL2_Q,
-	STM32MP1_SHRES_PLL2_R,
 	STM32MP1_SHRES_PLL3,
-	STM32MP1_SHRES_PLL3_P,
-	STM32MP1_SHRES_PLL3_Q,
-	STM32MP1_SHRES_PLL3_R,
 	STM32MP1_SHRES_MDMA,
+
 	STM32MP1_SHRES_COUNT
 };
 
@@ -283,15 +271,6 @@ bool stm32mp_gpio_bank_is_shared(unsigned int bank);
 
 /* Return true if and only if GPIO bank @bank is registered as non-secure */
 bool stm32mp_gpio_bank_is_non_secure(unsigned int bank);
-
-/* Return true if and only if @clock_id is shareable */
-bool stm32mp_clock_is_shareable(unsigned long clock_id);
-
-/* Return true if and only if @clock_id is shared by secure and non-secure */
-bool stm32mp_clock_is_shared(unsigned long clock_id);
-
-/* Return true if and only if @clock_id is assigned to non-secure world */
-bool stm32mp_clock_is_non_secure(unsigned long clock_id);
 
 /* Register parent clocks of @clock (ID used in clock DT bindings) as secure */
 void stm32mp_register_clock_parents_secure(unsigned long clock_id);

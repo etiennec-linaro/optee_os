@@ -6,6 +6,7 @@
 #include <compiler.h>
 #include <drivers/scmi-msg.h>
 #include <drivers/scmi.h>
+#include <dt-bindings/clock/stm32mp1-clks.h>
 #include <dt-bindings/reset/stm32mp1-resets.h>
 #include <initcall.h>
 #include <mm/core_memprot.h>
@@ -13,13 +14,31 @@
 #include <platform_config.h>
 #include <stdint.h>
 #include <stm32_util.h>
+#include <string.h>
 #include <tee_api_defines.h>
 #include <util.h>
 
 #define TIMEOUT_US_1MS		1000
 
+#define SCMI_CLOCK_NAME_SIZE	16
 #define SCMI_RD_NAME_SIZE	16
 
+/*
+ * struct stm32_scmi_clk - Data for the exposed clock
+ * @clock_id: Clock identifier in RCC clock driver
+ * @name: Clock string ID exposed to agent
+ */
+struct stm32_scmi_clk {
+	unsigned long clock_id;
+	const char *name;
+	bool enabled;
+};
+
+/*
+ * struct stm32_scmi_rd - Data for the exposed reset controller
+ * @reset_id: Reset identifier in RCC reset driver
+ * @name: Reset string ID exposed to agent
+ */
 struct stm32_scmi_rd {
 	unsigned long reset_id;
 	const char *name;
@@ -58,6 +77,43 @@ struct scmi_msg_channel *plat_scmi_get_channel(unsigned int agent_id)
 	return &scmi_channel[agent_id];
 }
 
+#define CLOCK_CELL(_scmi_id, _id, _name, _init_enabled) \
+	[_scmi_id] = { \
+		.clock_id = _id, \
+		.name = _name, \
+		.enabled = _init_enabled, \
+	}
+
+struct stm32_scmi_clk stm32_scmi0_clock[] = {
+	CLOCK_CELL(CK_SCMI0_HSE, CK_HSE, "ck_hse", true),
+	CLOCK_CELL(CK_SCMI0_HSI, CK_HSI, "ck_hsi", true),
+	CLOCK_CELL(CK_SCMI0_CSI, CK_CSI, "ck_csi", true),
+	CLOCK_CELL(CK_SCMI0_LSE, CK_LSE, "ck_lse", true),
+	CLOCK_CELL(CK_SCMI0_LSI, CK_LSI, "ck_lsi", true),
+	CLOCK_CELL(CK_SCMI0_PLL2_Q, PLL2_Q, "pll2_q", true),
+	CLOCK_CELL(CK_SCMI0_PLL2_R, PLL2_R, "pll2_r", true),
+	CLOCK_CELL(CK_SCMI0_MPU, CK_MPU, "ck_mpu", true),
+	CLOCK_CELL(CK_SCMI0_AXI, CK_AXI, "ck_axi", true),
+	CLOCK_CELL(CK_SCMI0_BSEC, BSEC, "bsec", true),
+	CLOCK_CELL(CK_SCMI0_CRYP1, CRYP1, "cryp1", false),
+	CLOCK_CELL(CK_SCMI0_GPIOZ, GPIOZ, "gpioz", false),
+	CLOCK_CELL(CK_SCMI0_HASH1, HASH1, "hash1", false),
+	CLOCK_CELL(CK_SCMI0_I2C4, I2C4_K, "i2c4_k", false),
+	CLOCK_CELL(CK_SCMI0_I2C6, I2C6_K, "i2c6_k", false),
+	CLOCK_CELL(CK_SCMI0_IWDG1, IWDG1, "iwdg1", false),
+	CLOCK_CELL(CK_SCMI0_RNG1, RNG1_K, "rng1_k", true),
+	CLOCK_CELL(CK_SCMI0_RTC, RTC, "ck_rtc", true),
+	CLOCK_CELL(CK_SCMI0_RTCAPB, RTCAPB, "rtcapb", true),
+	CLOCK_CELL(CK_SCMI0_SPI6, SPI6_K, "spi6_k", false),
+	CLOCK_CELL(CK_SCMI0_USART1, USART1_K, "usart1_k", false),
+};
+
+struct stm32_scmi_clk stm32_scmi1_clock[] = {
+	CLOCK_CELL(CK_SCMI1_PLL3_Q, PLL3_Q, "pll3_q", true),
+	CLOCK_CELL(CK_SCMI1_PLL3_R, PLL3_R, "pll3_r", true),
+	CLOCK_CELL(CK_SCMI1_MCU, CK_MCU, "ck_mcu", false),
+};
+
 #define RESET_CELL(_scmi_id, _id, _name) \
 	[_scmi_id] = { \
 		.reset_id = _id, \
@@ -91,8 +147,14 @@ struct scmi_agent_resources {
 
 const struct scmi_agent_resources agent_resources[] = {
 	[0] = {
+		.clock = stm32_scmi0_clock,
+		.clock_count = ARRAY_SIZE(stm32_scmi0_clock),
 		.rd = stm32_scmi0_reset_domain,
 		.rd_count = ARRAY_SIZE(stm32_scmi0_reset_domain),
+	},
+	[1] = {
+		.clock = stm32_scmi1_clock,
+		.clock_count = ARRAY_SIZE(stm32_scmi1_clock),
 	},
 };
 
@@ -149,8 +211,9 @@ const char *plat_scmi_sub_vendor_name(void)
 	return sub_vendor;
 }
 
-/* Currently supporting Reset Domains */
+/* Currently supporting Clocks and Reset Domains */
 static const uint8_t plat_protocol_list[] = {
+	SCMI_PROTOCOL_ID_CLOCK,
 	SCMI_PROTOCOL_ID_RESET_DOMAIN,
 	0 /* Null termination */
 };
@@ -170,6 +233,129 @@ const uint8_t *plat_scmi_protocol_list(unsigned int agent_id __unused)
 	       (ARRAY_SIZE(plat_protocol_list) - 1));
 
 	return plat_protocol_list;
+}
+
+/*
+ * Platform SCMI clocks
+ */
+static struct stm32_scmi_clk *find_clock(unsigned int agent_id,
+					 unsigned int scmi_id)
+{
+	const struct scmi_agent_resources *resource = find_resource(agent_id);
+	struct stm32_scmi_clk *clock = NULL;
+	size_t n = 0;
+
+	if (resource) {
+		for (n = 0U; n < resource->clock_count; n++) {
+			if (n == scmi_id) {
+				clock = &resource->clock[n];
+				break;
+			}
+		}
+	}
+
+	return clock;
+}
+
+size_t plat_scmi_clock_count(unsigned int agent_id)
+{
+	const struct scmi_agent_resources *resource = find_resource(agent_id);
+
+	if (!resource)
+		return 0;
+
+	return resource->clock_count;
+}
+
+const char *plat_scmi_clock_get_name(unsigned int agent_id,
+				     unsigned int scmi_id)
+{
+	struct stm32_scmi_clk *clock = find_clock(agent_id, scmi_id);
+
+	if (!clock || !stm32mp_nsec_can_access_clock(clock->clock_id))
+		return NULL;
+
+	return clock->name;
+}
+
+int32_t plat_scmi_clock_rates_array(unsigned int agent_id __unused,
+				    unsigned int scmi_id __unused,
+				    unsigned long *array __unused,
+				    size_t *nb_elts __unused)
+{
+	/*
+	 * Explicitly do not expose clock rates by array since not
+	 * fully supported by Linux kernel as of v5.4.24.
+	 */
+	return SCMI_NOT_SUPPORTED;
+}
+
+int32_t plat_scmi_clock_rates_by_step(unsigned int agent_id,
+				      unsigned int scmi_id,
+				      unsigned long *array)
+{
+	struct stm32_scmi_clk *clock = find_clock(agent_id, scmi_id);
+
+	if (!clock)
+		return SCMI_NOT_FOUND;
+
+	if (!stm32mp_nsec_can_access_clock(clock->clock_id))
+		return SCMI_DENIED;
+
+	array[0] = stm32_clock_get_rate(clock->clock_id);
+	array[1] = array[0];
+	array[2] = 0U;
+
+	return SCMI_SUCCESS;
+}
+
+unsigned long plat_scmi_clock_get_current_rate(unsigned int agent_id,
+					       unsigned int scmi_id)
+{
+	struct stm32_scmi_clk *clock = find_clock(agent_id, scmi_id);
+
+	if (!clock || !stm32mp_nsec_can_access_clock(clock->clock_id))
+		return 0;
+
+	return stm32_clock_get_rate(clock->clock_id);
+}
+
+int32_t plat_scmi_clock_get_state(unsigned int agent_id, unsigned int scmi_id)
+{
+	struct stm32_scmi_clk *clock = find_clock(agent_id, scmi_id);
+
+	if (!clock || !stm32mp_nsec_can_access_clock(clock->clock_id))
+		return 0;
+
+	return (int32_t)clock->enabled;
+}
+
+int32_t plat_scmi_clock_set_state(unsigned int agent_id, unsigned int scmi_id,
+				  bool enable_not_disable)
+{
+	struct stm32_scmi_clk *clock = find_clock(agent_id, scmi_id);
+
+	if (!clock)
+		return SCMI_NOT_FOUND;
+
+	if (!stm32mp_nsec_can_access_clock(clock->clock_id))
+		return SCMI_DENIED;
+
+	if (enable_not_disable) {
+		if (!clock->enabled) {
+			DMSG("SCMI clock %u enable", scmi_id);
+			stm32_clock_enable(clock->clock_id);
+			clock->enabled = true;
+		}
+	} else {
+		if (clock->enabled) {
+			DMSG("SCMI clock %u disable", scmi_id);
+			stm32_clock_disable(clock->clock_id);
+			clock->enabled = false;
+		}
+	}
+
+	return SCMI_SUCCESS;
 }
 
 /*
@@ -283,6 +469,23 @@ static TEE_Result stm32mp1_init_scmi_server(void)
 
 	for (i = 0; i < ARRAY_SIZE(agent_resources); i++) {
 		const struct scmi_agent_resources *res = &agent_resources[i];
+
+		for (j = 0; j < res->clock_count; j++) {
+			struct stm32_scmi_clk *clk = &res->clock[j];
+
+			if (!clk->name ||
+			    strlen(clk->name) > SCMI_CLOCK_NAME_SIZE) {
+				EMSG("SCMI clock name invalid");
+				panic();
+			}
+
+			/* Sync SCMI clocks with their targeted initial state */
+			if (!clk->enabled ||
+			    !stm32mp_nsec_can_access_clock(clk->clock_id))
+				continue;
+
+			stm32_clock_enable(clk->clock_id);
+		}
 
 		for (j = 0; j < res->rd_count; j++) {
 			struct stm32_scmi_rd *rd = &res->rd[j];

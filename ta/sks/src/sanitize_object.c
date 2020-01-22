@@ -169,7 +169,7 @@ static uint32_t sanitize_boolprop(struct sks_attrs_head **dst,
 		return SKS_FAILED;
 
 	mask = 1 << (shift % 32);
-	if ((*(uint8_t *)(cur + sizeof(*cli_ref))) == SKS_TRUE)
+	if ((*(uint8_t *)(cur + sizeof(*cli_ref))) == PKCS11_TRUE)
 		value = mask;
 	else
 		value = 0;

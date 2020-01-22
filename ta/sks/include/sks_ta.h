@@ -716,9 +716,9 @@ struct sks_attribute_head {
 
 /* Attribute specific values */
 #define PKCS11_CK_UNAVAILABLE_INFORMATION	((uint32_t)0xFFFFFFFF)
-#define SKS_FALSE				0
-#define SKS_TRUE				1
 #define PKCS11_UNDEFINED_ID			PKCS11_CK_UNAVAILABLE_INFORMATION
+#define PKCS11_FALSE				0
+#define PKCS11_TRUE				1
 
 /*
  * Attribute identifiers

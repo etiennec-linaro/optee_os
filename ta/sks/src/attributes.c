@@ -333,7 +333,7 @@ uint32_t get_attribute(struct sks_attrs_head *head, uint32_t attribute,
 		uint32_t *boolprop = NULL;
 
 		boolprop = (shift < 32) ? &head->boolpropl : &head->boolproph;
-		bbool = (*boolprop & (1 << (shift % 32))) ? SKS_TRUE : SKS_FALSE;
+		bbool = (*boolprop & (1 << (shift % 32))) ? PKCS11_TRUE : PKCS11_FALSE;
 
 		size = sizeof(uint8_t);
 		attr_ptr = &bbool;

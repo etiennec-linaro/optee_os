@@ -832,14 +832,14 @@ uint32_t create_attributes_from_template(struct sks_attrs_head **out,
 	switch (function) {
 	case PKCS11_FUNCTION_GENERATE:
 	case PKCS11_FUNCTION_GENERATE_PAIR:
-		local = SKS_TRUE;
+		local = PKCS11_TRUE;
 		break;
 	case PKCS11_FUNCTION_COPY:
 		local = get_bool(parent, PKCS11_CKA_LOCAL);
 		break;
 	case PKCS11_FUNCTION_DERIVE:
 	default:
-		local = SKS_FALSE;
+		local = PKCS11_FALSE;
 		break;
 	}
 	rv = add_attribute(&attrs, PKCS11_CKA_LOCAL, &local, sizeof(local));
@@ -850,8 +850,8 @@ uint32_t create_attributes_from_template(struct sks_attrs_head **out,
 	case PKCS11_CKO_SECRET_KEY:
 	case PKCS11_CKO_PRIVATE_KEY:
 	case PKCS11_CKO_PUBLIC_KEY:
-		always_sensitive = SKS_FALSE;
-		never_extract = SKS_FALSE;
+		always_sensitive = PKCS11_FALSE;
+		never_extract = PKCS11_FALSE;
 
 		switch (function) {
 		case PKCS11_FUNCTION_DERIVE:
@@ -1569,13 +1569,13 @@ bool attribute_is_exportable(struct sks_attribute_head *req_attr,
 		boolsize = sizeof(boolval);
 		rv = get_attribute(obj->attributes, PKCS11_CKA_EXTRACTABLE,
 				   &boolval, &boolsize);
-		if (rv || boolval == SKS_FALSE)
+		if (rv || boolval == PKCS11_FALSE)
 			return false;
 
 		boolsize = sizeof(boolval);
 		rv = get_attribute(obj->attributes, PKCS11_CKA_SENSITIVE,
 				   &boolval, &boolsize);
-		if (rv || boolval == SKS_TRUE)
+		if (rv || boolval == PKCS11_TRUE)
 			return false;
 		break;
 	default:

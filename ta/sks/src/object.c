@@ -324,7 +324,7 @@ static uint32_t token_obj_matches_ref(struct sks_attrs_head *req_attrs,
 
 	if (obj->attributes) {
 		if (!attributes_match_reference(obj->attributes, req_attrs))
-			return SKS_NOT_FOUND;
+			return PKCS11_NOT_FOUND;
 
 		return SKS_OK;
 	}
@@ -374,7 +374,7 @@ static uint32_t token_obj_matches_ref(struct sks_attrs_head *req_attrs,
 	}
 
 	if (!attributes_match_reference(attr, req_attrs)) {
-		rv = SKS_NOT_FOUND;
+		rv = PKCS11_NOT_FOUND;
 		goto bail;
 	}
 
@@ -538,7 +538,7 @@ uint32_t entry_find_objects_init(uintptr_t tee_session, TEE_Param *ctrl,
 		 */
 		if (req_attrs->attrs_count) {
 			rv = token_obj_matches_ref(req_attrs, obj);
-			if (rv == SKS_NOT_FOUND)
+			if (rv == PKCS11_NOT_FOUND)
 				continue;
 			if (rv != SKS_OK)
 				goto bail;
@@ -572,7 +572,7 @@ uint32_t entry_find_objects_init(uintptr_t tee_session, TEE_Param *ctrl,
 		find_ctx->count++;
 	}
 
-	if (rv == SKS_NOT_FOUND)
+	if (rv == PKCS11_NOT_FOUND)
 		rv = SKS_OK;
 
 	/* Save target attributes to search (if needed later) */
@@ -809,7 +809,7 @@ uint32_t entry_get_attribute_value(uintptr_t tee_session, TEE_Param *ctrl,
 		switch (rv) {
 		case SKS_OK:
 			break;
-		case SKS_NOT_FOUND:
+		case PKCS11_NOT_FOUND:
 			cli_ref->size = PKCS11_CK_UNAVAILABLE_INFORMATION;
 			attr_type_invalid = 1;
 			break;

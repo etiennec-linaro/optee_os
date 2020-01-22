@@ -827,7 +827,7 @@ uint32_t create_attributes_from_template(struct sks_attrs_head **out,
 		goto bail;
 
 	assert(get_attribute(attrs, PKCS11_CKA_LOCAL, NULL, NULL) ==
-		SKS_NOT_FOUND);
+		PKCS11_NOT_FOUND);
 
 	switch (function) {
 	case PKCS11_FUNCTION_GENERATE:
@@ -1510,7 +1510,7 @@ uint32_t add_missing_attribute_id(struct sks_attrs_head **attrs1,
 
 	rv = get_attribute_ptr(*attrs1, PKCS11_CKA_ID, &id1, &id1_size);
 	if (rv) {
-		if (rv != SKS_NOT_FOUND)
+		if (rv != PKCS11_NOT_FOUND)
 			return rv;
 		id1 = NULL;
 	}
@@ -1518,7 +1518,7 @@ uint32_t add_missing_attribute_id(struct sks_attrs_head **attrs1,
 	if (attrs2) {
 		rv = get_attribute_ptr(*attrs2, PKCS11_CKA_ID, &id2, &id2_size);
 		if (rv) {
-			if (rv != SKS_NOT_FOUND)
+			if (rv != PKCS11_NOT_FOUND)
 				return rv;
 			id2 = NULL;
 		}

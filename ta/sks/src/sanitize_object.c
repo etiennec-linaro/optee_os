@@ -163,7 +163,7 @@ static uint32_t sanitize_boolprop(struct sks_attrs_head **dst,
 	/* Get the boolean property shift position and value */
 	shift = sks_attr2boolprop_shift(cli_ref->id);
 	if (shift < 0)
-		return SKS_NOT_FOUND;
+		return PKCS11_NOT_FOUND;
 
 	if (shift >= SKS_MAX_BOOLPROP_SHIFT)
 		return SKS_FAILED;
@@ -226,7 +226,7 @@ static uint32_t sanitize_boolprops(struct sks_attrs_head **dst, void *src)
 		len = sizeof(cli_ref) + cli_ref.size;
 
 		rc = sanitize_boolprop(dst, &cli_ref, cur, boolprops, sanity);
-		if (rc != SKS_OK && rc != SKS_NOT_FOUND)
+		if (rc != SKS_OK && rc != PKCS11_NOT_FOUND)
 			return rc;
 	}
 
@@ -255,7 +255,7 @@ static uint32_t sanitize_indirect_attr(struct sks_attrs_head **dst,
 	case PKCS11_CKA_DERIVE_TEMPLATE:
 		break;
 	default:
-		return SKS_NOT_FOUND;
+		return PKCS11_NOT_FOUND;
 	}
 	/* Such attributes are expected only for keys (and vendor defined) */
 	if (sks_attr_class_is_key(class))
@@ -319,7 +319,7 @@ uint32_t sanitize_client_object(struct sks_attrs_head **dst,
 		rc = sanitize_indirect_attr(dst, &cli_ref, cur);
 		if (rc == SKS_OK)
 			continue;
-		if (rc != SKS_NOT_FOUND)
+		if (rc != PKCS11_NOT_FOUND)
 			goto bail;
 
 		if (!valid_sks_attribute_id(cli_ref.id, cli_ref.size)) {

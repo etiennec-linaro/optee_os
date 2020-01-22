@@ -150,7 +150,7 @@ uint32_t remove_attribute(struct sks_attrs_head **head, uint32_t attribute)
 	}
 
 	DMSG("SKS_VALUE not found");
-	return SKS_NOT_FOUND;
+	return PKCS11_NOT_FOUND;
 }
 
 uint32_t remove_attribute_check(struct sks_attrs_head **head, uint32_t attribute,
@@ -296,7 +296,7 @@ uint32_t get_attribute_ptr(struct sks_attrs_head *head, uint32_t attribute,
 	get_attribute_ptrs(head, attribute, attr_ptr, attr_size, &count);
 
 	if (!count)
-		return SKS_NOT_FOUND;
+		return PKCS11_NOT_FOUND;
 
 	if (count != 1)
 		return SKS_ERROR;
@@ -372,7 +372,7 @@ bool get_bool(struct sks_attrs_head *head, uint32_t attribute)
 #ifdef SKS_SHEAD_WITH_BOOLPROPS
 	shift = sks_attr2boolprop_shift(attribute);
 	if (shift < 0)
-		TEE_Panic(SKS_NOT_FOUND);
+		TEE_Panic(PKCS11_NOT_FOUND);
 
 	if (head_contains_boolprops(head)) {
 		if (shift > 31)
@@ -384,7 +384,7 @@ bool get_bool(struct sks_attrs_head *head, uint32_t attribute)
 
 	rc = get_attribute(head, attribute, &bbool, &size);
 
-	if (rc == SKS_NOT_FOUND)
+	if (rc == PKCS11_NOT_FOUND)
 		return false;
 
 	assert(rc == SKS_OK);

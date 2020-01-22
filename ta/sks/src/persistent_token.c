@@ -182,7 +182,7 @@ uint32_t unregister_persistent_object(struct ck_token *token, TEE_UUID *uuid)
 
 	if (index < 0) {
 		EMSG("Cannot unregister an invalid persistent object");
-		return SKS_NOT_FOUND;
+		return PKCS11_NOT_FOUND;
 	}
 
 	ptr = TEE_Malloc(sizeof(struct token_persistent_objs) +

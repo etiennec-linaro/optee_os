@@ -104,7 +104,7 @@ static uint32_t sks2tee_algorithm(uint32_t *tee_id,
 	}
 
 	if (n == end)
-		return SKS_NOT_IMPLEMENTED;
+		return PKCS11_NOT_IMPLEMENTED;
 
 	switch (proc_params->id) {
 	case PKCS11_CKM_SHA1_RSA_PKCS_PSS:
@@ -121,7 +121,7 @@ static uint32_t sks2tee_algorithm(uint32_t *tee_id,
 		rv = sks2tee_algo_ecdh(tee_id, proc_params, obj);
 		break;
 	case PKCS11_CKM_ECDH1_COFACTOR_DERIVE:
-		return SKS_NOT_IMPLEMENTED;
+		return PKCS11_NOT_IMPLEMENTED;
 	case PKCS11_CKM_ECDSA:
 	case PKCS11_CKM_ECDSA_SHA1:
 	case PKCS11_CKM_ECDSA_SHA224:
@@ -428,7 +428,7 @@ uint32_t step_asymm_operation(struct pkcs11_session *session,
 			break;
 
 		EMSG("TODO: compute hash for later authentication");
-		rv = SKS_NOT_IMPLEMENTED;
+		rv = PKCS11_NOT_IMPLEMENTED;
 		goto bail;
 	default:
 		/* Other mechanism do not expect multi stage operation */

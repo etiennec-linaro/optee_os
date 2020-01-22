@@ -711,8 +711,8 @@ struct sks_attribute_head {
 #define PKCS11_CKR_ATTRIBUTE_SENSITIVE			0x0000002d
 
 /* Status without strict equivalence in Cryptoki API */
-#define SKS_NOT_FOUND				0x00001000
-#define SKS_NOT_IMPLEMENTED			0x00001001
+#define PKCS11_NOT_FOUND				0x00001000
+#define PKCS11_NOT_IMPLEMENTED				0x00001001
 
 /* Attribute specific values */
 #define PKCS11_CK_UNAVAILABLE_INFORMATION	((uint32_t)0xFFFFFFFF)

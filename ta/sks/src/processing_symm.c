@@ -81,7 +81,7 @@ static uint32_t sks2tee_algorithm(uint32_t *tee_id,
 	}
 
 	if (n == end)
-		return SKS_NOT_IMPLEMENTED;
+		return PKCS11_NOT_IMPLEMENTED;
 
 	return SKS_OK;
 }
@@ -113,7 +113,7 @@ static uint32_t sks2tee_key_type(uint32_t *tee_type, struct sks_object *obj)
 		}
 	}
 
-	return SKS_NOT_FOUND;
+	return PKCS11_NOT_FOUND;
 }
 
 static uint32_t allocate_tee_operation(struct pkcs11_session *session,

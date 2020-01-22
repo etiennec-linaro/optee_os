@@ -76,22 +76,22 @@ void get_attribute_ptrs(struct sks_attrs_head *head, uint32_t attribute,
 			void **attr, uint32_t *attr_size, size_t *count);
 
 /*
- * If attributes is not found return SKS_NOT_FOUND.
+ * If attributes is not found return PKCS11_NOT_FOUND.
  * If attr_size != NULL, return in in *attr_size attribute value size.
  * If attr != NULL return in *attr the address in memory of the attribute value.
  *
- * Return a SKS_OK or SKS_NOT_FOUND on success, or a SKS return code.
+ * Return a SKS_OK or PKCS11_NOT_FOUND on success, or a SKS return code.
  */
 uint32_t get_attribute_ptr(struct sks_attrs_head *head, uint32_t attribute,
 			   void **attr_ptr, uint32_t *attr_size);
 /*
- * If attribute is not found, return SKS_NOT_FOUND.
+ * If attribute is not found, return PKCS11_NOT_FOUND.
  * If attr_size != NULL, check *attr_size matches attributes size of return
  * SKS_SHORT_BUFFER with expected size in *attr_size.
  * If attr != NULL and attr_size is NULL or gives expected buffer size,
  * copy attribute value into attr.
  *
- * Return a SKS_OK or SKS_NOT_FOUND on success, or a SKS return code.
+ * Return a SKS_OK or PKCS11_NOT_FOUND on success, or a SKS return code.
  */
 uint32_t get_attribute(struct sks_attrs_head *head, uint32_t attribute,
 			void *attr, uint32_t *attr_size);

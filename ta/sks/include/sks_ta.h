@@ -17,7 +17,7 @@
 #define SKS_VERSION_ID1		0
 
 /*
- * SKS_CMD_PING		Acknowledge TA presence and return TA version info
+ * PKCS11_CMD_PING		Acknowledge TA presence and return TA version info
  *
  * Optional invocation parameter:
  *
@@ -26,10 +26,10 @@
  *                      32bit version1 value
  *              ]
  */
-#define SKS_CMD_PING			0x00000000
+#define PKCS11_CMD_PING				0x00000000
 
 /*
- * SKS_CMD_CK_SLOT_LIST - Get the table of the valid slot IDs
+ * PKCS11_CMD_SLOT_LIST - Get the table of the valid slot IDs
  *
  * [out]        memref[2] = 32bit array slot_ids[slot counts]
  *
@@ -37,10 +37,10 @@
  * This command relates the PKCS#11 API function C_GetSlotList and return the
  * valid IDs recognized by the trusted application.
  */
-#define SKS_CMD_CK_SLOT_LIST		0x00000001
+#define PKCS11_CMD_SLOT_LIST			0x00000001
 
 /*
- * SKS_CMD_CK_SLOT_INFO - Get cryptoki structured slot information
+ * PKCS11_CMD_SLOT_INFO - Get cryptoki structured slot information
  *
  * [in]		memref[0] = 32bit slot ID
  * [out]	memref[0] = 32bit fine grain return code
@@ -50,7 +50,7 @@
  * This command relates the PKCS#11 API function C_GetSlotInfo and return the
  * information about the target slot.
  */
-#define SKS_CMD_CK_SLOT_INFO		0x00000002
+#define PKCS11_CMD_SLOT_INFO			0x00000002
 
 #define SKS_SLOT_DESC_SIZE		64
 #define SKS_SLOT_MANUFACTURER_SIZE	32
@@ -73,7 +73,7 @@ struct sks_slot_info {
 #define PKCS11_CKFS_HW_SLOT			(1U << 2)
 
 /*
- * SKS_CMD_CK_TOKEN_INFO - Get cryptoki structured token information
+ * PKCS11_CMD_TOKEN_INFO - Get cryptoki structured token information
  *
  * [in]		memref[0] = 32bit slot ID
  * [out]	memref[0] = 32bit fine grain return code
@@ -83,7 +83,7 @@ struct sks_slot_info {
  * This command relates the PKCS#11 API function C_GetTokenInfo and return the
  * information about the target represented token.
  */
-#define SKS_CMD_CK_TOKEN_INFO		0x00000003
+#define PKCS11_CMD_TOKEN_INFO			0x00000003
 
 #define SKS_TOKEN_LABEL_SIZE		32
 #define SKS_TOKEN_MANUFACTURER_SIZE	32
@@ -135,7 +135,7 @@ struct sks_token_info {
 #define PKCS11_CKFT_ERROR_STATE				(1U << 17)
 
 /*
- * SKS_CMD_CK_MECHANISM_IDS - Get list of the supported mechanisms
+ * PKCS11_CMD_MECHANISM_IDS - Get list of the supported mechanisms
  *
  * [in]		memref[0] = 32bit slot ID
  * [out]	memref[0] = 32bit fine grain return code
@@ -143,10 +143,10 @@ struct sks_token_info {
  *
  * This commands relates to the PKCS#11 API function C_GetMechanismList.
  */
-#define SKS_CMD_CK_MECHANISM_IDS	0x00000004
+#define PKCS11_CMD_MECHANISM_IDS		0x00000004
 
 /*
- * SKS_CMD_CK_MECHANISM_INFO - Get information on a specific mechanism
+ * PKCS11_CMD_MECHANISM_INFO - Get information on a specific mechanism
  *
  * [in]		memref[0] = [
  *			32bit slot ID,
@@ -157,7 +157,7 @@ struct sks_token_info {
  *
  * This commands relates to the PKCS#11 API function C_GetMechanismInfo.
  */
-#define SKS_CMD_CK_MECHANISM_INFO	0x00000005
+#define PKCS11_CMD_MECHANISM_INFO		0x00000005
 
 struct sks_mechanism_info {
 	uint32_t min_key_size;
@@ -190,7 +190,7 @@ struct sks_mechanism_info {
 #define PKCS11_CKFM_EC_COMPRESS		(1U << 25)
 
 /*
- * SKS_CMD_CK_INIT_TOKEN - Initialize PKCS#11 token
+ * PKCS11_CMD_INIT_TOKEN - Initialize PKCS#11 token
  *
  * [in]		memref[0] = [
  *			32bit slot ID,
@@ -202,10 +202,10 @@ struct sks_mechanism_info {
  *
  * This commands relates to the PKCS#11 API function C_InitToken().
  */
-#define SKS_CMD_CK_INIT_TOKEN		0x00000006
+#define PKCS11_CMD_INIT_TOKEN			0x00000006
 
 /*
- * SKS_CMD_CK_INIT_PIN - Initialize PKCS#11 token PIN
+ * PKCS11_CMD_INIT_PIN - Initialize PKCS#11 token PIN
  *
  * [in]		memref[0] = [
  *			32bit session handle,
@@ -216,10 +216,10 @@ struct sks_mechanism_info {
  *
  * This commands relates to the PKCS#11 API function C_InitPIN().
  */
-#define SKS_CMD_CK_INIT_PIN		0x00000007
+#define PKCS11_CMD_INIT_PIN			0x00000007
 
 /*
- * SKS_CMD_CK_SET_PIN - Set PKCS#11 token PIN
+ * PKCS11_CMD_SET_PIN - Set PKCS#11 token PIN
  *
  * [in]		memref[0] = [
  *			32bit session handle,
@@ -232,10 +232,10 @@ struct sks_mechanism_info {
  *
  * This commands relates to the PKCS#11 API function C_SetPIN()
  */
-#define SKS_CMD_CK_SET_PIN		0x00000008
+#define PKCS11_CMD_SET_PIN			0x00000008
 
 /*
- * SKS_CMD_CK_OPEN_RO_SESSION - Open read-only session
+ * PKCS11_CMD_OPEN_RO_SESSION - Open read-only session
  *
  * [in]		memref[0] = 32bit slot ID
  * [out]	memref[0] = 32bit fine grain return code
@@ -244,10 +244,10 @@ struct sks_mechanism_info {
  * This commands relates to the PKCS#11 API function C_OpenSession() for a
  * read-only session.
  */
-#define SKS_CMD_CK_OPEN_RO_SESSION	0x00000009
+#define PKCS11_CMD_OPEN_RO_SESSION		0x00000009
 
 /*
- * SKS_CMD_CK_OPEN_RW_SESSION - Open read/write session
+ * PKCS11_CMD_OPEN_RW_SESSION - Open read/write session
  *
  * [in]		memref[0] = 32bit slot
  * [out]	memref[0] = 32bit fine grain return code
@@ -256,20 +256,20 @@ struct sks_mechanism_info {
  * This commands relates to the PKCS#11 API function C_OpenSession() for a
  * read/write session.
  */
-#define SKS_CMD_CK_OPEN_RW_SESSION	0x0000000a
+#define PKCS11_CMD_OPEN_RW_SESSION		0x0000000a
 
 /*
- * SKS_CMD_CK_CLOSE_SESSION - Close an opened session
+ * PKCS11_CMD_CLOSE_SESSION - Close an opened session
  *
  * [in]		memref[0] = 32bit session handle
  * [out]	memref[0] = 32bit fine grain return code
  *
  * This commands relates to the PKCS#11 API function C_CloseSession().
  */
-#define SKS_CMD_CK_CLOSE_SESSION	0x0000000b
+#define PKCS11_CMD_CLOSE_SESSION		0x0000000b
 
 /*
- * SKS_CMD_CK_SESSION_INFO - Get Cryptoki information on a session
+ * PKCS11_CMD_SESSION_INFO - Get Cryptoki information on a session
  *
  * [in]		memref[0] = 32bit session handle
  * [out]	memref[0] = 32bit fine grain return code
@@ -277,7 +277,7 @@ struct sks_mechanism_info {
  *
  * This commands relates to the PKCS#11 API function C_GetSessionInfo().
  */
-#define SKS_CMD_CK_SESSION_INFO		0x0000000c
+#define PKCS11_CMD_SESSION_INFO			0x0000000c
 
 struct sks_session_info {
 	uint32_t slot_id;
@@ -287,17 +287,17 @@ struct sks_session_info {
 };
 
 /*
- * SKS_CMD_CK_CLOSE_ALL_SESSIONS - Close all client sessions on slot/token
+ * PKCS11_CMD_CLOSE_ALL_SESSIONS - Close all client sessions on slot/token
  *
  * [in]		memref[0] = 32bit slot
  * [out]	memref[0] = 32bit fine grain return code
  *
  * This commands relates to the PKCS#11 API function C_CloseAllSessions().
  */
-#define SKS_CMD_CK_CLOSE_ALL_SESSIONS	0x0000000d
+#define PKCS11_CMD_CLOSE_ALL_SESSIONS		0x0000000d
 
 /*
- * SKS_CMD_IMPORT_OBJECT - Import a raw object in the session or token
+ * PKCS11_CMD_IMPORT_OBJECT - Import a raw object in the session or token
  *
  * [in]		memref[0] = [
  *			32bit session handle,
@@ -308,7 +308,7 @@ struct sks_session_info {
  *
  * This commands relates to the PKCS#11 API function C_CreateObject().
  */
-#define SKS_CMD_IMPORT_OBJECT		0x0000000e
+#define PKCS11_CMD_IMPORT_OBJECT		0x0000000e
 
 /**
  * Serialization of object attributes
@@ -349,7 +349,7 @@ struct sks_attribute_head {
 };
 
 /*
- * SKS_CMD_DESTROY_OBJECT - Destroy an object
+ * PKCS11_CMD_DESTROY_OBJECT - Destroy an object
  *
  * [in]		memref[0] = [
  *			32bit session handle,
@@ -359,11 +359,11 @@ struct sks_attribute_head {
  *
  * This commands relates to the PKCS#11 API function C_DestroyObject().
  */
-#define SKS_CMD_DESTROY_OBJECT		0x0000000f
+#define PKCS11_CMD_DESTROY_OBJECT		0x0000000f
 
 /*
- * SKS_CMD_ENCRYPT_INIT - Initialize encryption processing
- * SKS_CMD_DECRYPT_INIT - Initialize decryption processing
+ * PKCS11_CMD_ENCRYPT_INIT - Initialize encryption processing
+ * PKCS11_CMD_DECRYPT_INIT - Initialize decryption processing
  *
  * [in]		memref[0] = [
  *			32bit session handle,
@@ -374,12 +374,12 @@ struct sks_attribute_head {
  * These commands relate to the PKCS#11 API functions C_EncryptInit() and
  * C_DecryptInit.
  */
-#define SKS_CMD_ENCRYPT_INIT		0x00000010
-#define SKS_CMD_DECRYPT_INIT		0x00000011
+#define PKCS11_CMD_ENCRYPT_INIT			0x00000010
+#define PKCS11_CMD_DECRYPT_INIT			0x00000011
 
 /*
- * SKS_CMD_ENCRYPT_UPDATE - Update encryption processing
- * SKS_CMD_DECRYPT_UPDATE - Update decryption processing
+ * PKCS11_CMD_ENCRYPT_UPDATE - Update encryption processing
+ * PKCS11_CMD_DECRYPT_UPDATE - Update decryption processing
  *
  * [in]		memref[0] = 32bit session handle
  * [in]		memref[1] = input data to be processed
@@ -389,12 +389,12 @@ struct sks_attribute_head {
  * These commands relate to the PKCS#11 API functions C_EncryptUpdate() and
  * C_DecryptUpdate.
  */
-#define SKS_CMD_ENCRYPT_UPDATE		0x00000012
-#define SKS_CMD_DECRYPT_UPDATE		0x00000013
+#define PKCS11_CMD_ENCRYPT_UPDATE		0x00000012
+#define PKCS11_CMD_DECRYPT_UPDATE		0x00000013
 
 /*
- * SKS_CMD_ENCRYPT_FINAL - Finalize encryption processing
- * SKS_CMD_DECRYPT_FINAL - Finalize decryption processing
+ * PKCS11_CMD_ENCRYPT_FINAL - Finalize encryption processing
+ * PKCS11_CMD_DECRYPT_FINAL - Finalize decryption processing
  *
  * [in]		memref[0] = 32bit session handle
  * [out]	memref[0] = 32bit fine grain return code
@@ -403,11 +403,11 @@ struct sks_attribute_head {
  * These commands relate to the PKCS#11 API functions C_EncryptFinal() and
  * C_DecryptFinal.
  */
-#define SKS_CMD_ENCRYPT_FINAL		0x00000014
-#define SKS_CMD_DECRYPT_FINAL		0x00000015
+#define PKCS11_CMD_ENCRYPT_FINAL		0x00000014
+#define PKCS11_CMD_DECRYPT_FINAL		0x00000015
 
 /*
- * SKS_CMD_GENERATE_SYMM_KEY - Generate a symmetric key
+ * PKCS11_CMD_GENERATE_KEY - Generate a symmetric key
  *
  * [in]		memref[0] = [
  *			32bit session handle,
@@ -419,11 +419,11 @@ struct sks_attribute_head {
  *
  * This command relates to the PKCS#11 API functions C_GenerateKey().
  */
-#define SKS_CMD_GENERATE_SYMM_KEY	0x00000016
+#define PKCS11_CMD_GENERATE_KEY			0x00000016
 
 /*
- * SKS_CMD_SIGN_INIT - Initialize a signature computation processing
- * SKS_CMD_VERIFY_INIT - Initialize a signature verification processing
+ * PKCS11_CMD_SIGN_INIT - Initialize a signature computation processing
+ * PKCS11_CMD_VERIFY_INIT - Initialize a signature verification processing
  *
  * [in]		memref[0] = [
  *			32bit session handle,
@@ -435,12 +435,12 @@ struct sks_attribute_head {
  * These commands relate to the PKCS#11 API functions C_SignInit() and
  * C_VerifyInit.
  */
-#define SKS_CMD_SIGN_INIT		0x00000017
-#define SKS_CMD_VERIFY_INIT		0x00000018
+#define PKCS11_CMD_SIGN_INIT			0x00000017
+#define PKCS11_CMD_VERIFY_INIT			0x00000018
 
 /*
- * SKS_CMD_SIGN_UPDATE - Update a signature computation processing
- * SKS_CMD_VERIFY_UPDATE - Update a signature verification processing
+ * PKCS11_CMD_SIGN_UPDATE - Update a signature computation processing
+ * PKCS11_CMD_VERIFY_UPDATE - Update a signature verification processing
  *
  * [in]		memref[0] = 32bit session handle
  * [in]		memref[1] = input data to be processed
@@ -449,12 +449,12 @@ struct sks_attribute_head {
  * These commands relate to the PKCS#11 API functions C_SignUpdate() and
  * C_VerifyUpdate.
  */
-#define SKS_CMD_SIGN_UPDATE		0x00000019
-#define SKS_CMD_VERIFY_UPDATE		0x0000001a
+#define PKCS11_CMD_SIGN_UPDATE			0x00000019
+#define PKCS11_CMD_VERIFY_UPDATE		0x0000001a
 
 /*
- * SKS_CMD_SIGN_FINAL - Finalize a signature computation processing
- * SKS_CMD_VERIFY_FINAL - Finalize a signature verification processing
+ * PKCS11_CMD_SIGN_FINAL - Finalize a signature computation processing
+ * PKCS11_CMD_VERIFY_FINAL - Finalize a signature verification processing
  *
  * [in]		memref[0] = 32bit session handle
  * [out]	memref[0] = 32bit fine grain return code
@@ -463,11 +463,11 @@ struct sks_attribute_head {
  * These commands relate to the PKCS#11 API functions C_SignFinal() and
  * C_VerifyFinal.
  */
-#define SKS_CMD_SIGN_FINAL		0x0000001b
-#define SKS_CMD_VERIFY_FINAL		0x0000001c
+#define PKCS11_CMD_SIGN_FINAL			0x0000001b
+#define PKCS11_CMD_VERIFY_FINAL			0x0000001c
 
 /*
- * SKS_CMD_FIND_OBJECTS_INIT - Initialize a objects search
+ * PKCS11_CMD_FIND_OBJECTS_INIT - Initialize a objects search
  *
  * [in]		memref[0] = [
  *			32bit session handle,
@@ -477,10 +477,10 @@ struct sks_attribute_head {
  *
  * This command relates to the PKCS#11 API function C_FindOjectsInit().
  */
-#define SKS_CMD_FIND_OBJECTS_INIT	0x0000001d
+#define PKCS11_CMD_FIND_OBJECTS_INIT		0x0000001d
 
 /*
- * SKS_CMD_FIND_OBJECTS - Get handles of matching objects
+ * PKCS11_CMD_FIND_OBJECTS - Get handles of matching objects
  *
  * [in]		memref[0] = 32bit session handle
  * [out]	memref[0] = 32bit fine grain return code
@@ -490,20 +490,20 @@ struct sks_attribute_head {
  * The size of object_handle_array depends output buffer size
  * provided by the client.
  */
-#define SKS_CMD_FIND_OBJECTS		0x0000001e
+#define PKCS11_CMD_FIND_OBJECTS			0x0000001e
 
 /*
- * SKS_CMD_FIND_OBJECTS_FINAL - Finalize current objects search
+ * PKCS11_CMD_FIND_OBJECTS_FINAL - Finalize current objects search
  *
  * [in]		memref[0] = 32bit session handle
  * [out]	memref[0] = 32bit fine grain return code
  *
  * This command relates to the PKCS#11 API function C_FindOjectsFinal().
  */
-#define SKS_CMD_FIND_OBJECTS_FINAL	0x0000001f
+#define PKCS11_CMD_FIND_OBJECTS_FINAL		0x0000001f
 
 /*
- * SKS_CMD_GET_OBJECT_SIZE - Get size used by object in the TEE
+ * PKCS11_CMD_GET_OBJECT_SIZE - Get size used by object in the TEE
  *
  * [in]		memref[0] = [
  *			32bit session handle,
@@ -512,10 +512,10 @@ struct sks_attribute_head {
  * [out]	memref[0] = 32bit fine grain return code
  * [out]	memref[2] = 32bit object_byte_size
  */
-#define SKS_CMD_GET_OBJECT_SIZE		0x00000020
+#define PKCS11_CMD_GET_OBJECT_SIZE		0x00000020
 
 /*
- * SKS_CMD_GET_ATTRIBUTE_VALUE - Get the value of object attribute(s)
+ * PKCS11_CMD_GET_ATTRIBUTE_VALUE - Get the value of object attribute(s)
  *
  * [in]		memref[0] = [
  *			32bit session handle,
@@ -525,10 +525,10 @@ struct sks_attribute_head {
  * [out]	memref[0] = 32bit fine grain return code
  * [out]	memref[2] = (struct sks_object_head)attribs + attributes data
  */
-#define SKS_CMD_GET_ATTRIBUTE_VALUE	0x00000021
+#define PKCS11_CMD_GET_ATTRIBUTE_VALUE		0x00000021
 
 /*
- * SKS_CMD_SET_ATTRIBUTE_VALUE - Set the value for object attribute(s)
+ * PKCS11_CMD_SET_ATTRIBUTE_VALUE - Set the value for object attribute(s)
  *
  * [in]		memref[0] = [
  *			32bit session handle,
@@ -538,10 +538,10 @@ struct sks_attribute_head {
  * [out]	memref[0] = 32bit fine grain return code
  * [out]	memref[2] = (struct sks_object_head)attribs + attributes data
  */
-#define SKS_CMD_SET_ATTRIBUTE_VALUE	0x00000022
+#define PKCS11_CMD_SET_ATTRIBUTE_VALUE		0x00000022
 
 /*
- * SKS_CMD_DERIVE_KEY - Derive a key from already provisioned parent key
+ * PKCS11_CMD_DERIVE_KEY - Derive a key from already provisioned parent key
  *
  * [in]		memref[0] = [
  *			32bit session handle,
@@ -552,10 +552,10 @@ struct sks_attribute_head {
  * [out]	memref[0] = 32bit fine grain return code
  * [out]	memref[2] = 32bit object handle
  */
-#define SKS_CMD_DERIVE_KEY		0x00000023
+#define PKCS11_CMD_DERIVE_KEY			0x00000023
 
 /*
- * SKS_CMD_INIT_PIN - Initialize user PIN
+ * PKCS11_CMD_INIT_PIN - Initialize user PIN
  *
  * [in]		memref[0] = [
  *			32bit session handle,
@@ -564,10 +564,10 @@ struct sks_attribute_head {
  *		]
  * [out]	memref[0] = 32bit fine grain return code
  */
-#define SKS_CMD_INIT_PIN		0x00000024
+#define PKCS11_CMD_INIT_PIN			0x00000024
 
 /*
- * SKS_CMD_SET_PIN - Change user PIN
+ * PKCS11_CMD_SET_PIN - Change user PIN
  *
  * [in]		memref[0] = [
  *			32bit session handle,
@@ -578,10 +578,10 @@ struct sks_attribute_head {
  *		]
  * [out]	memref[0] = 32bit fine grain return code
  */
-#define SKS_CMD_SET_PIN			0x00000025
+#define PKCS11_CMD_SET_PIN			0x00000025
 
 /*
- * SKS_CMD_LOGIN - Initialize user PIN
+ * PKCS11_CMD_LOGIN - Initialize user PIN
  *
  * [in]		memref[0] = [
  *			32bit session handle,
@@ -591,17 +591,17 @@ struct sks_attribute_head {
  *		]
  * [out]	memref[0] = 32bit fine grain return code
  */
-#define SKS_CMD_LOGIN			0x00000026
+#define PKCS11_CMD_LOGIN			0x00000026
 
 /*
- * Values for user identifier parameter in SKS_CMD_LOGIN
+ * Values for user identifier parameter in PKCS11_CMD_LOGIN
  */
 #define PKCS11_CKU_SO			0x000
 #define PKCS11_CKU_USER			0x001
 #define PKCS11_CKU_CONTEXT_SPECIFIC	0x002
 
 /*
- * SKS_CMD_LOGOUT - Log out from token
+ * PKCS11_CMD_LOGOUT - Log out from token
  *
  * [in]		memref[0] = [
  *			32bit session handle,
@@ -610,10 +610,10 @@ struct sks_attribute_head {
  *		]
  * [out]	memref[0] = 32bit fine grain return code
  */
-#define SKS_CMD_LOGOUT			0x00000027
+#define PKCS11_CMD_LOGOUT			0x00000027
 
 /*
- * SKS_CMD_GENERATE_KEY_PAIR - Generate an asymmetric key pair
+ * PKCS11_CMD_GENERATE_KEY_PAIR - Generate an asymmetric key pair
  *
  * [in]		memref[0] = [
  *			32bit session handle,
@@ -629,11 +629,11 @@ struct sks_attribute_head {
  *
  * This command relates to the PKCS#11 API functions C_GenerateKeyPair().
  */
-#define SKS_CMD_GENERATE_KEY_PAIR	0x00000028
+#define PKCS11_CMD_GENERATE_KEY_PAIR		0x00000028
 
 /*
- * SKS_CMD_ENCRYPT_ONESHOT - Update and finalize encryption processing
- * SKS_CMD_DECRYPT_ONESHOT - Update and finalize decryption processing
+ * PKCS11_CMD_ENCRYPT_ONESHOT - Update and finalize encryption processing
+ * PKCS11_CMD_DECRYPT_ONESHOT - Update and finalize decryption processing
  *
  * [in]		memref[0] = 32bit session handle
  * [in]		memref[1] = input data to be processed
@@ -643,12 +643,12 @@ struct sks_attribute_head {
  * These commands relate to the PKCS#11 API functions C_EncryptUpdate() and
  * C_DecryptUpdate.
  */
-#define SKS_CMD_ENCRYPT_ONESHOT		0x00000029
-#define SKS_CMD_DECRYPT_ONESHOT		0x0000002a
+#define PKCS11_CMD_ENCRYPT_ONESHOT		0x00000029
+#define PKCS11_CMD_DECRYPT_ONESHOT		0x0000002a
 
 /*
- * SKS_CMD_SIGN_ONESHOT - Update and finalize a signature computation
- * SKS_CMD_VERIFY_ONESHOT - Update and finalize a signature verification
+ * PKCS11_CMD_SIGN_ONESHOT - Update and finalize a signature computation
+ * PKCS11_CMD_VERIFY_ONESHOT - Update and finalize a signature verification
  *
  * [in]		memref[0] = 32bit session handle
  * [in]		memref[1] = input data to be processed
@@ -657,8 +657,8 @@ struct sks_attribute_head {
  * These commands relate to the PKCS#11 API functions C_SignUpdate() and
  * C_VerifyUpdate.
  */
-#define SKS_CMD_SIGN_ONESHOT		0x0000002b
-#define SKS_CMD_VERIFY_ONESHOT		0x0000002c
+#define PKCS11_CMD_SIGN_ONESHOT			0x0000002b
+#define PKCS11_CMD_VERIFY_ONESHOT		0x0000002c
 
 /*
  * Command return codes

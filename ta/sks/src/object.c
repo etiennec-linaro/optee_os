@@ -415,7 +415,7 @@ static void release_find_obj_context(struct pkcs11_session *session,
 }
 
 /*
- * Entry for command SKS_CMD_FIND_OBJECTS_INIT
+ * Entry for command PKCS11_CMD_FIND_OBJECTS_INIT
  */
 uint32_t entry_find_objects_init(uintptr_t tee_session, TEE_Param *ctrl,
 				 TEE_Param *in, TEE_Param *out)
@@ -591,7 +591,7 @@ bail:
 }
 
 /*
- * Entry for command SKS_CMD_FIND_OBJECTS
+ * Entry for command PKCS11_CMD_FIND_OBJECTS
  */
 uint32_t entry_find_objects(uintptr_t tee_session, TEE_Param *ctrl,
 			    TEE_Param *in, TEE_Param *out)
@@ -667,7 +667,7 @@ void release_session_find_obj_context(struct pkcs11_session *session)
 }
 
 /*
- * Entry for command SKS_CMD_FIND_OBJECTS_FINAL
+ * Entry for command PKCS11_CMD_FIND_OBJECTS_FINAL
  */
 uint32_t entry_find_objects_final(uintptr_t tee_session, TEE_Param *ctrl,
 				  TEE_Param *in, TEE_Param *out)
@@ -701,7 +701,7 @@ uint32_t entry_find_objects_final(uintptr_t tee_session, TEE_Param *ctrl,
 }
 
 /*
- * Entry for command SKS_CMD_GET_ATTRIBUTE_VALUE
+ * Entry for command PKCS11_CMD_GET_ATTRIBUTE_VALUE
  */
 uint32_t entry_get_attribute_value(uintptr_t tee_session, TEE_Param *ctrl,
 				   TEE_Param *in, TEE_Param *out)

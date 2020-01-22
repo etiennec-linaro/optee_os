@@ -760,7 +760,7 @@ static uint32_t create_pkcs11_priv_key_attributes(struct sks_attrs_head **out,
  * - template has value for a read-only attribute: return ATTRIBUTE_READ_ONLY
  * - template+default+parent => still miss an attribute: return TEMPLATE_INCONSISTENT
  *
- * INFO on SKS_CMD_COPY_OBJECT:
+ * INFO on PKCS11_CMD_COPY_OBJECT:
  * - parent PKCS11_CKA_COPYIABLE=false => return ACTION_PROHIBITED.
  * - template can specify PKCS11_CKA_TOKEN, PKCS11_CKA_PRIVATE, PKCS11_CKA_MODIFIABLE,
  *   PKCS11_CKA_DESTROYABLE.

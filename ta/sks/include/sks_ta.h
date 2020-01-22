@@ -716,9 +716,9 @@ struct sks_attribute_head {
 
 /* Attribute specific values */
 #define PKCS11_CK_UNAVAILABLE_INFORMATION	((uint32_t)0xFFFFFFFF)
-#define SKS_UNDEFINED_ID			PKCS11_CK_UNAVAILABLE_INFORMATION
 #define SKS_FALSE				0
 #define SKS_TRUE				1
+#define PKCS11_UNDEFINED_ID			PKCS11_CK_UNAVAILABLE_INFORMATION
 
 /*
  * Attribute identifiers
@@ -787,7 +787,7 @@ struct sks_attribute_head {
 #define PKCS11_CKA_EC_POINT_X				0x88800001
 #define PKCS11_CKA_EC_POINT_Y				0x88800002
 /* Vendor extension: reserved for undefined ID (~0U) */
-#define PKCS11_CKA_UNDEFINED_ID				SKS_UNDEFINED_ID
+#define PKCS11_CKA_UNDEFINED_ID				PKCS11_UNDEFINED_ID
 
 /*
  * Valid values for attribute PKCS11_CKA_CLASS
@@ -803,7 +803,7 @@ struct sks_attribute_head {
 #define PKCS11_CKO_HW_FEATURE				0x007
 #define PKCS11_CKO_MECHANISM				0x008
 /* Vendor extension: reserved for undefined ID (~0U) */
-#define PKCS11_CKO_UNDEFINED_ID				SKS_UNDEFINED_ID
+#define PKCS11_CKO_UNDEFINED_ID				PKCS11_UNDEFINED_ID
 
 /*
  * Valid values for attribute PKCS11_CKA_KEY_TYPE
@@ -822,7 +822,7 @@ struct sks_attribute_head {
 #define PKCS11_CKK_DSA					0x00a
 #define PKCS11_CKK_DH					0x00b
 /* Vendor extension: reserved for undefined ID (~0U) */
-#define PKCS11_CKK_UNDEFINED_ID				SKS_UNDEFINED_ID
+#define PKCS11_CKK_UNDEFINED_ID				PKCS11_UNDEFINED_ID
 
 /*
  * Valid values for attribute PKCS11_CKA_MECHANISM_TYPE
@@ -889,7 +889,7 @@ struct sks_attribute_head {
 #define PKCS11_PROCESSING_IMPORT				0x1000
 #define PKCS11_PROCESSING_COPY				0x1001
 /* Vendor extension: reserved for undefined ID (~0U) */
-#define PKCS11_CKM_UNDEFINED_ID				SKS_UNDEFINED_ID
+#define PKCS11_CKM_UNDEFINED_ID				PKCS11_UNDEFINED_ID
 
 /*
  * Valid values key differentiation function identifiers
@@ -905,7 +905,7 @@ struct sks_attribute_head {
 #define PKCS11_CKD_SHA512_KDF				0x0007UL
 #define PKCS11_CKD_CPDIVERSIFY_KDF			0x0008UL
 /* Vendor extension: reserved for undefined ID (~0U) */
-#define PKCS11_CKD_UNDEFINED_ID				SKS_UNDEFINED_ID
+#define PKCS11_CKD_UNDEFINED_ID				PKCS11_UNDEFINED_ID
 
 /*
  * Valid values MG function identifiers
@@ -917,7 +917,7 @@ struct sks_attribute_head {
 #define PKCS11_CKG_MGF1_SHA384				0x0003UL
 #define PKCS11_CKG_MGF1_SHA512				0x0004UL
 /* Vendor extension: reserved for undefined ID (~0U) */
-#define PKCS11_CKG_UNDEFINED_ID				SKS_UNDEFINED_ID
+#define PKCS11_CKG_UNDEFINED_ID				PKCS11_UNDEFINED_ID
 
 /*
  * Valid values for RSA PKCS/OAEP source type identifier

@@ -793,7 +793,7 @@ uint32_t entry_get_attribute_value(uintptr_t tee_session, TEE_Param *ctrl,
 
 		/* Check 1. */
 		if (!attribute_is_exportable(cli_ref, obj)) {
-			cli_ref->size = PKCS11_CK_UNAVAILABLE_INFORMATION;
+			cli_ref->size = PKCS11_UNAVAILABLE_INFORMATION;
 			attr_sensitive = 1;
 			continue;
 		}
@@ -810,7 +810,7 @@ uint32_t entry_get_attribute_value(uintptr_t tee_session, TEE_Param *ctrl,
 		case SKS_OK:
 			break;
 		case PKCS11_NOT_FOUND:
-			cli_ref->size = PKCS11_CK_UNAVAILABLE_INFORMATION;
+			cli_ref->size = PKCS11_UNAVAILABLE_INFORMATION;
 			attr_type_invalid = 1;
 			break;
 		case SKS_SHORT_BUFFER:

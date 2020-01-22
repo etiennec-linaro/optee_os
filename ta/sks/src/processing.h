@@ -10,7 +10,7 @@
 #include <pkcs11_attributes.h>
 
 struct pkcs11_session;
-struct sks_object;
+struct pkcs11_object;
 struct active_processing;
 
 /*
@@ -47,7 +47,7 @@ uint32_t entry_derive_key(uintptr_t teesess, TEE_Param *ctrl,
 /*
  * Util
  */
-size_t get_object_key_bit_size(struct sks_object *obj);
+size_t get_object_key_bit_size(struct pkcs11_object *obj);
 
 void release_active_processing(struct pkcs11_session *session);
 
@@ -55,7 +55,7 @@ uint32_t alloc_get_tee_attribute_data(TEE_ObjectHandle tee_obj,
 					     uint32_t attribute,
 					     void **data, size_t *size);
 
-uint32_t tee2sks_add_attribute(struct sks_attrs_head **head, uint32_t sks_id,
+uint32_t tee2sks_add_attribute(struct pkcs11_attrs_head **head, uint32_t sks_id,
 				TEE_ObjectHandle tee_obj, uint32_t tee_id);
 
 /*
@@ -65,8 +65,8 @@ bool processing_is_tee_symm(uint32_t proc_id);
 
 uint32_t init_symm_operation(struct pkcs11_session *session,
 				enum processing_func function,
-				struct sks_attribute_head *proc_params,
-				struct sks_object *key);
+				struct pkcs11_attribute_head *proc_params,
+				struct pkcs11_object *key);
 
 uint32_t step_symm_operation(struct pkcs11_session *session,
 				enum processing_func function,
@@ -99,13 +99,13 @@ bool processing_is_tee_asymm(uint32_t proc_id);
 
 uint32_t init_asymm_operation(struct pkcs11_session *session,
 				enum processing_func function,
-				struct sks_attribute_head *proc_params,
-				struct sks_object *obj);
+				struct pkcs11_attribute_head *proc_params,
+				struct pkcs11_object *obj);
 
 uint32_t do_symm_derivation(struct pkcs11_session *session,
-			     struct sks_attribute_head *proc_params,
-			     struct sks_object *parent_key,
-			     struct sks_attrs_head **head);
+			     struct pkcs11_attribute_head *proc_params,
+			     struct pkcs11_object *parent_key,
+			     struct pkcs11_attrs_head **head);
 
 uint32_t step_asymm_operation(struct pkcs11_session *session,
 			      enum processing_func function,
@@ -113,58 +113,58 @@ uint32_t step_asymm_operation(struct pkcs11_session *session,
 			      TEE_Param *io1, TEE_Param *io2);
 
 uint32_t do_asymm_derivation(struct pkcs11_session *session,
-			     struct sks_attribute_head *proc_params,
-			     struct sks_attrs_head **head);
+			     struct pkcs11_attribute_head *proc_params,
+			     struct pkcs11_attrs_head **head);
 
 
 /*
  * Elliptic curve crypto algorithm specific functions
  */
 uint32_t load_tee_ec_key_attrs(TEE_Attribute **tee_attrs, size_t *tee_count,
-				struct sks_object *obj);
+				struct pkcs11_object *obj);
 
 size_t ec_params2tee_keysize(void *attr, size_t size);
 
 uint32_t ec_params2tee_curve(void *attr, size_t size);
 
 uint32_t sks2tee_algo_ecdh(uint32_t *tee_id,
-			   struct sks_attribute_head *proc_params,
-			   struct sks_object *obj);
+			   struct pkcs11_attribute_head *proc_params,
+			   struct pkcs11_object *obj);
 
-uint32_t sks2tee_ecdh_param_pub(struct sks_attribute_head *proc_params,
+uint32_t sks2tee_ecdh_param_pub(struct pkcs11_attribute_head *proc_params,
 			        void **pub_data, size_t *pub_size);
 
 uint32_t sks2tee_algo_ecdsa(uint32_t *tee_id,
-			   struct sks_attribute_head *proc_params,
-			   struct sks_object *obj);
+			   struct pkcs11_attribute_head *proc_params,
+			   struct pkcs11_object *obj);
 
-uint32_t generate_ec_keys(struct sks_attribute_head *proc_params,
-			  struct sks_attrs_head **pub_head,
-			  struct sks_attrs_head **priv_head);
+uint32_t generate_ec_keys(struct pkcs11_attribute_head *proc_params,
+			  struct pkcs11_attrs_head **pub_head,
+			  struct pkcs11_attrs_head **priv_head);
 
 /*
  * RSA crypto algorithm specific functions
  */
 uint32_t load_tee_rsa_key_attrs(TEE_Attribute **tee_attrs, size_t *tee_count,
-				struct sks_object *obj);
+				struct pkcs11_object *obj);
 
 uint32_t sks2tee_proc_params_rsa_pss(struct active_processing *processing,
-				     struct sks_attribute_head *proc_params);
+				     struct pkcs11_attribute_head *proc_params);
 
 void tee_release_rsa_pss_operation(struct active_processing *processing);
 
 uint32_t sks2tee_algo_rsa_pss(uint32_t *tee_id,
-				struct sks_attribute_head *proc_params);
+				struct pkcs11_attribute_head *proc_params);
 
 uint32_t sks2tee_algo_rsa_oaep(uint32_t *tee_id,
-				struct sks_attribute_head *proc_params);
+				struct pkcs11_attribute_head *proc_params);
 
 uint32_t tee_init_rsa_aes_key_wrap_operation(struct active_processing *proc,
 					     void *proc_params,
 					     size_t params_size);
 
-uint32_t generate_rsa_keys(struct sks_attribute_head *proc_params,
-			   struct sks_attrs_head **pub_head,
-			   struct sks_attrs_head **priv_head);
+uint32_t generate_rsa_keys(struct pkcs11_attribute_head *proc_params,
+			   struct pkcs11_attrs_head **pub_head,
+			   struct pkcs11_attrs_head **priv_head);
 
 #endif /*__SKS_PROCESSING_H__*/

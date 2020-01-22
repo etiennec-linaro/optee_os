@@ -118,7 +118,7 @@ static void init_pin_keys(struct ck_token *token, unsigned int uid)
 
 /* UUID for persistent object */
 uint32_t create_object_uuid(struct ck_token *token __unused,
-			    struct sks_object *obj)
+			    struct pkcs11_object *obj)
 {
 	assert(!obj->uuid);
 
@@ -138,7 +138,7 @@ uint32_t create_object_uuid(struct ck_token *token __unused,
 }
 
 void destroy_object_uuid(struct ck_token *token __unused,
-			 struct sks_object *obj)
+			 struct pkcs11_object *obj)
 {
 	if (!obj->uuid)
 		return;
@@ -342,7 +342,7 @@ struct ck_token *init_token_db(unsigned int token_id)
 
 		for (idx = 0; idx < db_objs->count; idx++) {
 			/* Create an empty object instance */
-			struct sks_object *obj = NULL;
+			struct pkcs11_object *obj = NULL;
 			TEE_UUID *uuid = NULL;
 
 			uuid = TEE_Malloc(sizeof(TEE_UUID),

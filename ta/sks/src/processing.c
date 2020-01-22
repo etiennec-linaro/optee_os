@@ -132,8 +132,8 @@ uint32_t entry_import_object(uintptr_t tee_session,
 	struct serialargs ctrlargs;
 	uint32_t session_handle = 0;
 	struct pkcs11_session *session = NULL;
-	struct sks_attrs_head *head = NULL;
-	struct sks_object_head *template = NULL;
+	struct pkcs11_attrs_head *head = NULL;
+	struct pkcs11_object_head *template = NULL;
 	size_t template_size = 0;
 	uint32_t obj_handle = 0;
 
@@ -208,7 +208,7 @@ uint32_t entry_import_object(uintptr_t tee_session,
 		goto bail;
 
 	/*
-	 * Now obj_handle (through the related struct sks_object instance)
+	 * Now obj_handle (through the related struct pkcs11_object instance)
 	 * owns the serialised buffer that holds the object attributes.
 	 * We reset attrs->buffer to NULL as serializer object is no more
 	 * the attributes buffer owner.
@@ -228,11 +228,11 @@ bail:
 	return rv;
 }
 
-size_t get_object_key_bit_size(struct sks_object *obj)
+size_t get_object_key_bit_size(struct pkcs11_object *obj)
 {
 	void *a_ptr = NULL;
 	uint32_t a_size = 0;
-	struct sks_attrs_head *attrs = obj->attributes;
+	struct pkcs11_attrs_head *attrs = obj->attributes;
 
 	switch (get_type(attrs)) {
 	case PKCS11_CKK_AES:
@@ -267,7 +267,7 @@ size_t get_object_key_bit_size(struct sks_object *obj)
 	}
 }
 
-static uint32_t generate_random_key_value(struct sks_attrs_head **head)
+static uint32_t generate_random_key_value(struct pkcs11_attrs_head **head)
 {
 	uint32_t rv = 0;
 	void *data;
@@ -309,9 +309,9 @@ uint32_t entry_generate_secret(uintptr_t tee_session,
 	struct serialargs ctrlargs;
 	uint32_t session_handle = 0;
 	struct pkcs11_session *session = NULL;
-	struct sks_attribute_head *proc_params = NULL;
-	struct sks_attrs_head *head = NULL;
-	struct sks_object_head *template = NULL;
+	struct pkcs11_attribute_head *proc_params = NULL;
+	struct pkcs11_attrs_head *head = NULL;
+	struct pkcs11_object_head *template = NULL;
 	size_t template_size = 0;
 	uint32_t obj_handle = 0;
 
@@ -407,7 +407,7 @@ uint32_t entry_generate_secret(uintptr_t tee_session,
 		goto bail;
 
 	/*
-	 * Now obj_handle (through the related struct sks_object instance)
+	 * Now obj_handle (through the related struct pkcs11_object instance)
 	 * owns the serialized buffer that holds the object attributes.
 	 * We reset attrs->buffer to NULL as serializer object is no more
 	 * the attributes buffer owner.
@@ -455,7 +455,7 @@ uint32_t alloc_get_tee_attribute_data(TEE_ObjectHandle tee_obj,
 	return tee2sks_error(res);
 }
 
-uint32_t tee2sks_add_attribute(struct sks_attrs_head **head, uint32_t sks_id,
+uint32_t tee2sks_add_attribute(struct pkcs11_attrs_head **head, uint32_t sks_id,
 				TEE_ObjectHandle tee_obj, uint32_t tee_id)
 {
 	uint32_t rv = 0;
@@ -484,10 +484,10 @@ uint32_t entry_generate_key_pair(uintptr_t teesess,
 	struct serialargs ctrlargs;
 	uint32_t session_handle = 0;
 	struct pkcs11_session *session = NULL;
-	struct sks_attribute_head *proc_params = NULL;
-	struct sks_attrs_head *pub_head = NULL;
-	struct sks_attrs_head *priv_head = NULL;
-	struct sks_object_head *template = NULL;
+	struct pkcs11_attribute_head *proc_params = NULL;
+	struct pkcs11_attrs_head *pub_head = NULL;
+	struct pkcs11_attrs_head *priv_head = NULL;
+	struct pkcs11_object_head *template = NULL;
 	size_t template_size = 0;
 	uint32_t pubkey_handle = 0;
 	uint32_t privkey_handle = 0;
@@ -612,7 +612,7 @@ uint32_t entry_generate_key_pair(uintptr_t teesess,
 		goto bail;
 
 	/*
-	 * Now obj_handle (through the related struct sks_object instance)
+	 * Now obj_handle (through the related struct pkcs11_object instance)
 	 * owns the serialized buffer that holds the object attributes.
 	 * We reset attrs->buffer to NULL as serializer object is no more
 	 * the attributes buffer owner.
@@ -656,9 +656,9 @@ uint32_t entry_processing_init(uintptr_t tee_session, TEE_Param *ctrl,
 	struct serialargs ctrlargs;
 	uint32_t session_handle = 0;
 	struct pkcs11_session *session = NULL;
-	struct sks_attribute_head *proc_params = NULL;
+	struct pkcs11_attribute_head *proc_params = NULL;
 	uint32_t key_handle = 0;
-	struct sks_object *obj = NULL;
+	struct pkcs11_object *obj = NULL;
 
 	TEE_MemFill(&ctrlargs, 0, sizeof(ctrlargs));
 
@@ -878,11 +878,11 @@ uint32_t entry_derive_key(uintptr_t tee_session, TEE_Param *ctrl,
 	struct serialargs ctrlargs;
 	uint32_t session_handle = 0;
 	struct pkcs11_session *session = NULL;
-	struct sks_attribute_head *proc_params = NULL;
+	struct pkcs11_attribute_head *proc_params = NULL;
 	uint32_t parent_handle = 0;
-	struct sks_object *parent_obj;
-	struct sks_attrs_head *head = NULL;
-	struct sks_object_head *template = NULL;
+	struct pkcs11_object *parent_obj;
+	struct pkcs11_attrs_head *head = NULL;
+	struct pkcs11_object_head *template = NULL;
 	size_t template_size = 0;
 	uint32_t out_handle = 0;
 	uint32_t __maybe_unused mecha_id = 0;
@@ -1024,7 +1024,7 @@ uint32_t entry_derive_key(uintptr_t tee_session, TEE_Param *ctrl,
 		goto bail;
 
 	/*
-	 * Now out_handle (through the related struct sks_object instance)
+	 * Now out_handle (through the related struct pkcs11_object instance)
 	 * owns the serialized buffer that holds the object attributes.
 	 * We reset attrs->buffer to NULL as serializer object is no more
 	 * the attributes buffer owner.

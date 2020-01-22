@@ -48,7 +48,7 @@ bool processing_is_tee_symm(uint32_t proc_id)
 }
 
 static uint32_t sks2tee_algorithm(uint32_t *tee_id,
-			      struct sks_attribute_head *proc_params)
+			      struct pkcs11_attribute_head *proc_params)
 {
 	static const uint32_t sks2tee_algo[][2] = {
 		/* AES flavors */
@@ -86,7 +86,7 @@ static uint32_t sks2tee_algorithm(uint32_t *tee_id,
 	return SKS_OK;
 }
 
-static uint32_t sks2tee_key_type(uint32_t *tee_type, struct sks_object *obj)
+static uint32_t sks2tee_key_type(uint32_t *tee_type, struct pkcs11_object *obj)
 {
 	static const uint32_t sks2tee_key_type[][2] = {
 		{ PKCS11_CKK_AES, TEE_TYPE_AES },
@@ -118,8 +118,8 @@ static uint32_t sks2tee_key_type(uint32_t *tee_type, struct sks_object *obj)
 
 static uint32_t allocate_tee_operation(struct pkcs11_session *session,
 					enum processing_func function,
-					struct sks_attribute_head *proc_params,
-					struct sks_object *obj)
+					struct pkcs11_attribute_head *proc_params,
+					struct pkcs11_object *obj)
 {
 	uint32_t size = (uint32_t)get_object_key_bit_size(obj);
 	uint32_t algo = 0;
@@ -159,7 +159,7 @@ static uint32_t allocate_tee_operation(struct pkcs11_session *session,
 }
 
 static uint32_t load_tee_key(struct pkcs11_session *session,
-				struct sks_object *obj)
+				struct pkcs11_object *obj)
 {
 	TEE_Attribute tee_attr;
 	size_t object_size = 0;
@@ -219,7 +219,7 @@ error:
 }
 
 static uint32_t init_tee_operation(struct pkcs11_session *session,
-				   struct sks_attribute_head *proc_params)
+				   struct pkcs11_attribute_head *proc_params)
 {
 	uint32_t rv = SKS_ERROR;
 
@@ -281,8 +281,8 @@ static uint32_t init_tee_operation(struct pkcs11_session *session,
 
 uint32_t init_symm_operation(struct pkcs11_session *session,
 				enum processing_func function,
-				struct sks_attribute_head *proc_params,
-				struct sks_object *obj)
+				struct pkcs11_attribute_head *proc_params,
+				struct pkcs11_object *obj)
 {
 	uint32_t rv = 0;
 
@@ -522,9 +522,9 @@ bail:
 }
 
 uint32_t do_symm_derivation(struct pkcs11_session *session __unused,
-			     struct sks_attribute_head *proc_params __unused,
-			     struct sks_object *parent_key __unused,
-			     struct sks_attrs_head **head __unused)
+			     struct pkcs11_attribute_head *proc_params __unused,
+			     struct pkcs11_object *parent_key __unused,
+			     struct pkcs11_attrs_head **head __unused)
 {
 	EMSG("Symm key derivation not yet supported");
 	return SKS_ERROR;

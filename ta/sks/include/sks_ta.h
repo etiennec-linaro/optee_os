@@ -44,7 +44,7 @@
  *
  * [in]		memref[0] = 32bit slot ID
  * [out]	memref[0] = 32bit fine grain return code
- * [out]        memref[2] = (struct sks_ck_slot_info)info
+ * [out]        memref[2] = (struct pkcs11_slot_info)info
  *
  * The TA instance may represent several PKCS#11 slots and associated tokens.
  * This command relates the PKCS#11 API function C_GetSlotInfo and return the
@@ -56,7 +56,7 @@
 #define SKS_SLOT_MANUFACTURER_SIZE	32
 #define SKS_SLOT_VERSION_SIZE		2
 
-struct sks_slot_info {
+struct pkcs11_slot_info {
 	uint8_t slotDescription[SKS_SLOT_DESC_SIZE];
 	uint8_t manufacturerID[SKS_SLOT_MANUFACTURER_SIZE];
 	uint32_t flags;
@@ -65,7 +65,7 @@ struct sks_slot_info {
 };
 
 /*
- * Values for sks_token_info::flags.
+ * Values for pkcs11_token_info::flags.
  * PKCS11_CKFS_<x> corresponds to cryptoki flag CKF_<x> related to slot flags.
  */
 #define PKCS11_CKFS_TOKEN_PRESENT		(1U << 0)
@@ -77,7 +77,7 @@ struct sks_slot_info {
  *
  * [in]		memref[0] = 32bit slot ID
  * [out]	memref[0] = 32bit fine grain return code
- * [out]        memref[2] = (struct sks_ck_token_info)info
+ * [out]        memref[2] = (struct pkcs11_token_info)info
  *
  * The TA instance may represent several PKCS#11 slots and associated tokens.
  * This command relates the PKCS#11 API function C_GetTokenInfo and return the
@@ -90,7 +90,7 @@ struct sks_slot_info {
 #define SKS_TOKEN_MODEL_SIZE		16
 #define SKS_TOKEN_SERIALNUM_SIZE	16
 
-struct sks_token_info {
+struct pkcs11_token_info {
 	uint8_t label[SKS_TOKEN_LABEL_SIZE];
 	uint8_t manufacturerID[SKS_TOKEN_MANUFACTURER_SIZE];
 	uint8_t model[SKS_TOKEN_MODEL_SIZE];
@@ -112,7 +112,7 @@ struct sks_token_info {
 };
 
 /*
- * Values for sks_token_info::flags.
+ * Values for pkcs11_token_info::flags.
  * PKCS11_CKFT_<x> corresponds to cryptoki CKF_<x> related to token flags.
  */
 #define PKCS11_CKFT_RNG					(1U << 0)
@@ -153,20 +153,20 @@ struct sks_token_info {
  *			32bit mechanism ID
  *		]
  * [out]	memref[0] = 32bit fine grain return code
- * [out]        memref[2] = (struct sks_mecha_info)info
+ * [out]        memref[2] = (struct pkcs11_mechanism_info)info
  *
  * This commands relates to the PKCS#11 API function C_GetMechanismInfo.
  */
 #define PKCS11_CMD_MECHANISM_INFO		0x00000005
 
-struct sks_mechanism_info {
+struct pkcs11_mechanism_info {
 	uint32_t min_key_size;
 	uint32_t max_key_size;
 	uint32_t flags;
 };
 
 /*
- * Values for sks_mechanism_info::flags.
+ * Values for pkcs11_mechanism_info::flags.
  * PKCS11_CKFM_<x> strictly matches cryptoki CKF_<x> related to mechanism flags.
  */
 #define PKCS11_CKFM_HW			(1U << 0)
@@ -273,13 +273,13 @@ struct sks_mechanism_info {
  *
  * [in]		memref[0] = 32bit session handle
  * [out]	memref[0] = 32bit fine grain return code
- * [out]        memref[2] = (struct sks_ck_session_info)info
+ * [out]        memref[2] = (struct pkcs11_session_info)info
  *
  * This commands relates to the PKCS#11 API function C_GetSessionInfo().
  */
 #define PKCS11_CMD_SESSION_INFO			0x0000000c
 
-struct sks_session_info {
+struct pkcs11_session_info {
 	uint32_t slot_id;
 	uint32_t state;
 	uint32_t flags;
@@ -301,7 +301,7 @@ struct sks_session_info {
  *
  * [in]		memref[0] = [
  *			32bit session handle,
- *			(struct sks_object_head)attribs + attributes data
+ *			(struct pkcs11_object_head)attribs + attributes data
  *		]
  * [out]	memref[0] = 32bit fine grain return code
  * [out]	memref[2] = 32bit object handle
@@ -315,7 +315,7 @@ struct sks_session_info {
  */
 
 /*
- * sks_object_head - Header of object whose data are serialized in memory
+ * pkcs11_object_head - Header of object whose data are serialized in memory
  *
  * An object in made of several attributes. Attributes are store one next to
  * the other with byte alignment as serialized byte arrays. Appended
@@ -327,7 +327,7 @@ struct sks_session_info {
  * @attrs_count - number of attribute items stored in attrs[]
  * @attrs - then starts the attributes data
  */
-struct sks_object_head {
+struct pkcs11_object_head {
 	uint32_t attrs_size;
 	uint32_t attrs_count;
 	uint8_t attrs[];
@@ -342,7 +342,7 @@ struct sks_object_head {
  * @size - the 32bit value attribute byte size
  * @data - then starts the attribute value
  */
-struct sks_attribute_head {
+struct pkcs11_attribute_head {
 	uint32_t id;
 	uint32_t size;
 	uint8_t data[];
@@ -367,7 +367,7 @@ struct sks_attribute_head {
  *
  * [in]		memref[0] = [
  *			32bit session handle,
- *			(struct sks_attribute_head)mechanism + mecha parameters
+ *			(struct pkcs11_attribute_head)mechanism + mecha parameters
  *		]
  * [out]	memref[0] = 32bit fine grain return code
  *
@@ -411,8 +411,8 @@ struct sks_attribute_head {
  *
  * [in]		memref[0] = [
  *			32bit session handle,
- *			(struct sks_attribute_head)mechanism + mecha parameters,
- *			(struct sks_object_head)attribs + attributes data
+ *			(struct pkcs11_attribute_head)mechanism + mecha parameters,
+ *			(struct pkcs11_object_head)attribs + attributes data
  *		]
  * [out]	memref[0] = 32bit fine grain return code
  * [out]	memref[2] = 32bit key handle
@@ -428,7 +428,7 @@ struct sks_attribute_head {
  * [in]		memref[0] = [
  *			32bit session handle,
  *			32bit key handle,
- *			(struct sks_attribute_head)mechanism + mecha parameters,
+ *			(struct pkcs11_attribute_head)mechanism + mecha parameters,
  *		]
  * [out]	memref[0] = 32bit fine grain return code
  *
@@ -471,7 +471,7 @@ struct sks_attribute_head {
  *
  * [in]		memref[0] = [
  *			32bit session handle,
- *			(struct sks_object_head)attribs + attributes data
+ *			(struct pkcs11_object_head)attribs + attributes data
  *		]
  * [out]	memref[0] = 32bit fine grain return code
  *
@@ -520,10 +520,10 @@ struct sks_attribute_head {
  * [in]		memref[0] = [
  *			32bit session handle,
  *			32bit object handle,
- *			(struct sks_object_head)attribs + attributes data
+ *			(struct pkcs11_object_head)attribs + attributes data
  *		]
  * [out]	memref[0] = 32bit fine grain return code
- * [out]	memref[2] = (struct sks_object_head)attribs + attributes data
+ * [out]	memref[2] = (struct pkcs11_object_head)attribs + attributes data
  */
 #define PKCS11_CMD_GET_ATTRIBUTE_VALUE		0x00000021
 
@@ -533,10 +533,10 @@ struct sks_attribute_head {
  * [in]		memref[0] = [
  *			32bit session handle,
  *			32bit object handle,
- *			(struct sks_object_head)attribs + attributes data
+ *			(struct pkcs11_object_head)attribs + attributes data
  *		]
  * [out]	memref[0] = 32bit fine grain return code
- * [out]	memref[2] = (struct sks_object_head)attribs + attributes data
+ * [out]	memref[2] = (struct pkcs11_object_head)attribs + attributes data
  */
 #define PKCS11_CMD_SET_ATTRIBUTE_VALUE		0x00000022
 
@@ -545,9 +545,9 @@ struct sks_attribute_head {
  *
  * [in]		memref[0] = [
  *			32bit session handle,
- *			(struct sks_attribute_head)mechanism + mecha parameters,
+ *			(struct pkcs11_attribute_head)mechanism + mecha parameters,
  *			32bit key handle,
- *			(struct sks_object_head)attribs + attributes data
+ *			(struct pkcs11_object_head)attribs + attributes data
  *		]
  * [out]	memref[0] = 32bit fine grain return code
  * [out]	memref[2] = 32bit object handle
@@ -617,9 +617,9 @@ struct sks_attribute_head {
  *
  * [in]		memref[0] = [
  *			32bit session handle,
- *			(struct sks_attribute_head)mechanism + mecha parameters,
- *			(struct sks_object_head)pubkey_attribs + attributes data
- *			(struct sks_object_head)privkeyattribs + attributes data
+ *			(struct pkcs11_attribute_head)mechanism + mecha parameters,
+ *			(struct pkcs11_object_head)pubkey_attribs + attributes data
+ *			(struct pkcs11_object_head)privkeyattribs + attributes data
  *		]
  * [out]	memref[0] = 32bit fine grain return code
  * [out]	memref[2] = [
@@ -722,7 +722,7 @@ struct sks_attribute_head {
 
 /*
  * Attribute identifiers
- * Valid values for struct sks_attribute_head::id
+ * Valid values for struct pkcs11_attribute_head::id
  *
  * PKCS11_CKA_<x> relates to cryptoki CKA_<x>.
  * Value range [0 63] is reserved to boolean value attributes.
@@ -935,9 +935,9 @@ struct sks_attribute_head {
  * C structures.
  *
  * Processing parameters are used as argument the C_EncryptInit and friends
- * using the struct sks_attribute_head format where field 'type' is the SKS
+ * using the struct pkcs11_attribute_head format where field 'type' is the SKS
  * processing ID and field 'size' is the parameter byte size. Below is shown
- * the head structure struct sks_attribute_head fields and the trailling data
+ * the head structure struct pkcs11_attribute_head fields and the trailling data
  * that are the effective parameters binary blob for the target
  * processing/mechanism.
  *

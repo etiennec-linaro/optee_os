@@ -12,8 +12,8 @@
 
 struct pkcs11_session;
 
-struct sks_object {
-	LIST_ENTRY(sks_object) link;
+struct pkcs11_object {
+	LIST_ENTRY(pkcs11_object) link;
 	/* pointer to the serialized object attributes */
 	void *attributes;
 	TEE_ObjectHandle key_handle;	/* Valid handle for TEE operations */
@@ -24,21 +24,21 @@ struct sks_object {
 	TEE_ObjectHandle attribs_hdl;
 };
 
-LIST_HEAD(object_list, sks_object);
+LIST_HEAD(object_list, pkcs11_object);
 
-struct sks_object *sks_handle2object(uint32_t client_handle,
+struct pkcs11_object *sks_handle2object(uint32_t client_handle,
 				     struct pkcs11_session *session);
 
-uint32_t sks_object2handle(struct sks_object *obj,
+uint32_t sks_object2handle(struct pkcs11_object *obj,
 			   struct pkcs11_session *session);
 
-struct sks_object *create_token_object_instance(struct sks_attrs_head *head,
+struct pkcs11_object *create_token_object_instance(struct pkcs11_attrs_head *head,
 						TEE_UUID *uuid);
 
-uint32_t create_object(void *session, struct sks_attrs_head *attributes,
+uint32_t create_object(void *session, struct pkcs11_attrs_head *attributes,
 			uint32_t *handle);
 
-void destroy_object(struct pkcs11_session *session, struct sks_object *object,
+void destroy_object(struct pkcs11_session *session, struct pkcs11_object *object,
 		    bool session_object_only);
 
 /*

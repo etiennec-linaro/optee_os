@@ -19,13 +19,13 @@
 #include "serializer.h"
 #include "sks_helpers.h"
 
-struct sks_object *sks_handle2object(uint32_t handle,
+struct pkcs11_object *sks_handle2object(uint32_t handle,
 				     struct pkcs11_session *session)
 {
 	return handle_lookup(&session->object_handle_db, handle);
 }
 
-uint32_t sks_object2handle(struct sks_object *obj,
+uint32_t sks_object2handle(struct pkcs11_object *obj,
 			   struct pkcs11_session *session)
 {
 	return handle_lookup_handle(&session->object_handle_db, obj);
@@ -50,7 +50,7 @@ static struct ck_token *get_session_token(void *session)
 }
 
 /* Release resources of a non persistent object */
-static void cleanup_volatile_obj_ref(struct sks_object *obj)
+static void cleanup_volatile_obj_ref(struct pkcs11_object *obj)
 {
 	if (!obj)
 		return;
@@ -69,7 +69,7 @@ static void cleanup_volatile_obj_ref(struct sks_object *obj)
 
 
 /* Release resources of a persistent object including volatile resources */
-static void cleanup_persistent_object(struct sks_object *obj,
+static void cleanup_persistent_object(struct pkcs11_object *obj,
 				      struct ck_token *token)
 {
 	TEE_Result res;
@@ -109,7 +109,7 @@ out:
  * @session_object_only - true is only session object shall be destroyed
  */
 void destroy_object(struct pkcs11_session *session,
-			  struct sks_object *obj,
+			  struct pkcs11_object *obj,
 			  bool session_only)
 {
 #ifdef DEBUG
@@ -149,11 +149,11 @@ void destroy_object(struct pkcs11_session *session,
 	}
 }
 
-static struct sks_object *create_object_instance(struct sks_attrs_head *head)
+static struct pkcs11_object *create_object_instance(struct pkcs11_attrs_head *head)
 {
-	struct sks_object *obj = NULL;
+	struct pkcs11_object *obj = NULL;
 
-	obj = TEE_Malloc(sizeof(struct sks_object), TEE_MALLOC_FILL_ZERO);
+	obj = TEE_Malloc(sizeof(struct pkcs11_object), TEE_MALLOC_FILL_ZERO);
 	if (!obj)
 		return NULL;
 
@@ -164,10 +164,10 @@ static struct sks_object *create_object_instance(struct sks_attrs_head *head)
 	return obj;
 }
 
-struct sks_object *create_token_object_instance(struct sks_attrs_head *head,
+struct pkcs11_object *create_token_object_instance(struct pkcs11_attrs_head *head,
 						TEE_UUID *uuid)
 {
-	struct sks_object *obj = create_object_instance(head);
+	struct pkcs11_object *obj = create_object_instance(head);
 
 	if (!obj)
 		return NULL;
@@ -184,12 +184,12 @@ struct sks_object *create_token_object_instance(struct sks_attrs_head *head,
  * @attributes - reference to serialized attributes
  * @handle - generated handle for the created object
  */
-uint32_t create_object(void *sess, struct sks_attrs_head *head,
+uint32_t create_object(void *sess, struct pkcs11_attrs_head *head,
 		       uint32_t *out_handle)
 {
 	uint32_t rv = 0;
 	TEE_Result res = TEE_SUCCESS;
-	struct sks_object *obj = NULL;
+	struct pkcs11_object *obj = NULL;
 	struct pkcs11_session *session = (struct pkcs11_session *)sess;
 	uint32_t obj_handle = 0;
 
@@ -272,7 +272,7 @@ uint32_t entry_destroy_object(uintptr_t tee_session, TEE_Param *ctrl,
 	uint32_t session_handle = 0;
 	uint32_t object_handle = 0;
 	struct pkcs11_session *session = NULL;
-	struct sks_object *object = NULL;
+	struct pkcs11_object *object = NULL;
 	uint32_t rv = 0;
 
 	TEE_MemFill(&ctrlargs, 0, sizeof(ctrlargs));
@@ -310,14 +310,14 @@ uint32_t entry_destroy_object(uintptr_t tee_session, TEE_Param *ctrl,
 	return rv;
 }
 
-static uint32_t token_obj_matches_ref(struct sks_attrs_head *req_attrs,
-				      struct sks_object *obj)
+static uint32_t token_obj_matches_ref(struct pkcs11_attrs_head *req_attrs,
+				      struct pkcs11_object *obj)
 {
 	uint32_t rv = 0;
 	TEE_Result res = TEE_ERROR_GENERIC;
 	TEE_ObjectHandle hdl = obj->attribs_hdl;
 	TEE_ObjectInfo info;
-	struct sks_attrs_head *attr = NULL;
+	struct pkcs11_attrs_head *attr = NULL;
 	uint32_t read_bytes = 0;
 
 	TEE_MemFill(&info, 0, sizeof(info));
@@ -424,9 +424,9 @@ uint32_t entry_find_objects_init(uintptr_t tee_session, TEE_Param *ctrl,
 	struct serialargs ctrlargs;
 	uint32_t session_handle = 0;
 	struct pkcs11_session *session = NULL;
-	struct sks_object_head *template = NULL;
-	struct sks_attrs_head *req_attrs = NULL;
-	struct sks_object *obj = NULL;
+	struct pkcs11_object_head *template = NULL;
+	struct pkcs11_attrs_head *req_attrs = NULL;
+	struct pkcs11_object *obj = NULL;
 	struct pkcs11_find_objects *find_ctx = NULL;
 
 	TEE_MemFill(&ctrlargs, 0, sizeof(ctrlargs));
@@ -633,7 +633,7 @@ uint32_t entry_find_objects(uintptr_t tee_session, TEE_Param *ctrl,
 		return PKCS11_CKR_OPERATION_NOT_INITIALIZED;
 
 	for (count = 0, idx = ctx->next; idx < ctx->count; idx++, count++) {
-		struct sks_object *obj = NULL;
+		struct pkcs11_object *obj = NULL;
 
 		if (count >= out_count)
 			break;
@@ -710,8 +710,8 @@ uint32_t entry_get_attribute_value(uintptr_t tee_session, TEE_Param *ctrl,
 	struct serialargs ctrlargs;
 	uint32_t session_handle = 0;
 	struct pkcs11_session *session = NULL;
-	struct sks_object_head *template = NULL;
-	struct sks_object *obj = NULL;
+	struct pkcs11_object_head *template = NULL;
+	struct pkcs11_object *obj = NULL;
 	uint32_t object_handle = 0;
 	char *cur = NULL;
 	size_t len = 0;
@@ -782,12 +782,12 @@ uint32_t entry_get_attribute_value(uintptr_t tee_session, TEE_Param *ctrl,
 	 * 5. Otherwise, the ulValueLen field is modified to hold the value
 	 * PKCS11_CK_UNAVAILABLE_INFORMATION.
 	 */
-	cur = (char *)template + sizeof(struct sks_object_head);
+	cur = (char *)template + sizeof(struct pkcs11_object_head);
 	end = cur + template->attrs_size;
 
 	for (; cur < end; cur += len) {
-		struct sks_attribute_head *cli_ref =
-			(struct sks_attribute_head *)(void *)cur;
+		struct pkcs11_attribute_head *cli_ref =
+			(struct pkcs11_attribute_head *)(void *)cur;
 
 		len = sizeof(*cli_ref) + cli_ref->size;
 

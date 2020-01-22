@@ -113,13 +113,13 @@ enum processing_step {
 	PKCS11_FUNC_STEP_FINAL,
 };
 
-struct sks_attrs_head;
+struct pkcs11_attrs_head;
 struct pkcs11_session;
 
 /* Create an attribute list for a new object (TODO: add parent attribs) */
-uint32_t create_attributes_from_template(struct sks_attrs_head **out,
+uint32_t create_attributes_from_template(struct pkcs11_attrs_head **out,
 					 void *template, size_t template_size,
-					 struct sks_attrs_head *parent,
+					 struct pkcs11_attrs_head *parent,
 					 enum processing_func func);
 
 /*
@@ -129,24 +129,24 @@ uint32_t create_attributes_from_template(struct sks_attrs_head **out,
  * - use a mechanism with provided configuration
  */
 uint32_t check_created_attrs_against_token(struct pkcs11_session *session,
-					   struct sks_attrs_head *head);
+					   struct pkcs11_attrs_head *head);
 
 uint32_t check_created_attrs_against_parent_key(uint32_t proc_id,
-						struct sks_attrs_head *parent,
-						struct sks_attrs_head *head);
+						struct pkcs11_attrs_head *parent,
+						struct pkcs11_attrs_head *head);
 
 uint32_t check_created_attrs_against_processing(uint32_t proc_id,
-						struct sks_attrs_head *head);
+						struct pkcs11_attrs_head *head);
 
-uint32_t check_created_attrs(struct sks_attrs_head *key1,
-			     struct sks_attrs_head *key2);
+uint32_t check_created_attrs(struct pkcs11_attrs_head *key1,
+			     struct pkcs11_attrs_head *key2);
 
 uint32_t check_parent_attrs_against_processing(uint32_t proc_id,
 					       enum processing_func func,
-					       struct sks_attrs_head *head);
+					       struct pkcs11_attrs_head *head);
 
 uint32_t check_access_attrs_against_token(struct pkcs11_session *session,
-					  struct sks_attrs_head *head);
+					  struct pkcs11_attrs_head *head);
 
 uint32_t check_mechanism_against_processing(struct pkcs11_session *session,
 					    uint32_t mechanism_type,
@@ -155,15 +155,15 @@ uint32_t check_mechanism_against_processing(struct pkcs11_session *session,
 
 int check_pkcs11_mechanism_flags(uint32_t mechanism_type, uint32_t flags);
 
-bool object_is_private(struct sks_attrs_head *head);
+bool object_is_private(struct pkcs11_attrs_head *head);
 
 void pkcs11_max_min_key_size(uint32_t key_type, uint32_t *max_key_size,
 			     uint32_t *min_key_size, bool bit_size_only);
 
-bool attribute_is_exportable(struct sks_attribute_head *req_attr,
-			     struct sks_object *obj);
+bool attribute_is_exportable(struct pkcs11_attribute_head *req_attr,
+			     struct pkcs11_object *obj);
 
-uint32_t add_missing_attribute_id(struct sks_attrs_head **attrs1,
-				  struct sks_attrs_head **attrs2);
+uint32_t add_missing_attribute_id(struct pkcs11_attrs_head **attrs1,
+				  struct pkcs11_attrs_head **attrs2);
 
 #endif /*__PKCS11_ATTRIBUTE_H*/

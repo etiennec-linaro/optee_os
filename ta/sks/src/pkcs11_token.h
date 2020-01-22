@@ -235,8 +235,8 @@ int update_persistent_db(struct ck_token *token, size_t offset, size_t size);
 void close_persistent_db(struct ck_token *token);
 
 /* Token persistent objects */
-uint32_t create_object_uuid(struct ck_token *token, struct sks_object *obj);
-void destroy_object_uuid(struct ck_token *token, struct sks_object *obj);
+uint32_t create_object_uuid(struct ck_token *token, struct pkcs11_object *obj);
+void destroy_object_uuid(struct ck_token *token, struct pkcs11_object *obj);
 uint32_t unregister_persistent_object(struct ck_token *token, TEE_UUID *uuid);
 uint32_t register_persistent_object(struct ck_token *token, TEE_UUID *uuid);
 uint32_t get_persistent_objects_list(struct ck_token *token,
@@ -260,7 +260,7 @@ static inline bool session_is_active(struct pkcs11_session *session)
 
 int set_processing_state(struct pkcs11_session *session,
 			 enum processing_func function,
-			 struct sks_object *obj1, struct sks_object *obj2);
+			 struct pkcs11_object *obj1, struct pkcs11_object *obj2);
 
 bool pkcs11_session_is_read_write(struct pkcs11_session *session);
 bool pkcs11_session_is_public(struct pkcs11_session *session);

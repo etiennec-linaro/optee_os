@@ -323,8 +323,8 @@ static uint8_t *pkcs11_object_default_boolprop(uint32_t attribute)
  * or to a validate client configuration value. This function append the input
  * attribute (id/size/value) in the serialized object.
  */
-static uint32_t pkcs11_import_object_boolprop(struct sks_attrs_head **out,
-					      struct sks_attrs_head *template,
+static uint32_t pkcs11_import_object_boolprop(struct pkcs11_attrs_head **out,
+					      struct pkcs11_attrs_head *template,
 					      uint32_t attribute)
 {
 	uint32_t rv = 0;
@@ -342,8 +342,8 @@ static uint32_t pkcs11_import_object_boolprop(struct sks_attrs_head **out,
 	return add_attribute(out, attribute, attr, sizeof(uint8_t));
 }
 
-static uint32_t set_mandatory_boolprops(struct sks_attrs_head **out,
-					struct sks_attrs_head *temp,
+static uint32_t set_mandatory_boolprops(struct pkcs11_attrs_head **out,
+					struct pkcs11_attrs_head *temp,
 					uint32_t const *bp, size_t bp_count)
 {
 	uint32_t rv = SKS_OK;
@@ -358,8 +358,8 @@ static uint32_t set_mandatory_boolprops(struct sks_attrs_head **out,
 	return rv;
 }
 
-static uint32_t __unused set_mandatory_attributes(struct sks_attrs_head **out,
-					 struct sks_attrs_head *temp,
+static uint32_t __unused set_mandatory_attributes(struct pkcs11_attrs_head **out,
+					 struct pkcs11_attrs_head *temp,
 					 uint32_t const *bp, size_t bp_count)
 {
 	uint32_t rv = SKS_OK;
@@ -382,8 +382,8 @@ static uint32_t __unused set_mandatory_attributes(struct sks_attrs_head **out,
 	return rv;
 }
 
-static uint32_t set_optional_attributes(struct sks_attrs_head **out,
-					struct sks_attrs_head *temp,
+static uint32_t set_optional_attributes(struct pkcs11_attrs_head **out,
+					struct pkcs11_attrs_head *temp,
 					uint32_t const *bp, size_t bp_count)
 {
 	uint32_t rv = SKS_OK;
@@ -497,8 +497,8 @@ static const uint32_t pkcs11_ec_private_key_optional[] = {
 	PKCS11_CKA_EC_POINT_X, PKCS11_CKA_EC_POINT_Y, // temporarily until DER support
 };
 
-static uint32_t create_pkcs11_storage_attributes(struct sks_attrs_head **out,
-						 struct sks_attrs_head *temp)
+static uint32_t create_pkcs11_storage_attributes(struct pkcs11_attrs_head **out,
+						 struct pkcs11_attrs_head *temp)
 {
 	uint32_t const *boolprops = &pkcs11_any_object_boolprops[0];
 	uint32_t const *optional = &pkcs11_any_object_optional[0];
@@ -529,8 +529,8 @@ static uint32_t create_pkcs11_storage_attributes(struct sks_attrs_head **out,
 	return set_optional_attributes(out, temp, optional, optional_count);
 }
 
-static uint32_t create_pkcs11_genkey_attributes(struct sks_attrs_head **out,
-						struct sks_attrs_head *temp)
+static uint32_t create_pkcs11_genkey_attributes(struct pkcs11_attrs_head **out,
+						struct pkcs11_attrs_head *temp)
 {
 	uint32_t const *boolprops = &pkcs11_any_key_boolprops[0];
 	uint32_t const *optional = &pkcs11_any_key_optional[0];
@@ -559,8 +559,8 @@ static uint32_t create_pkcs11_genkey_attributes(struct sks_attrs_head **out,
 	return set_optional_attributes(out, temp, optional, optional_count);
 }
 
-static uint32_t create_pkcs11_symm_key_attributes(struct sks_attrs_head **out,
-						  struct sks_attrs_head *temp)
+static uint32_t create_pkcs11_symm_key_attributes(struct pkcs11_attrs_head **out,
+						  struct pkcs11_attrs_head *temp)
 {
 	uint32_t const *boolprops = &pkcs11_symm_key_boolprops[0];
 	uint32_t const *optional = &pkcs11_symm_key_optional[0];
@@ -599,8 +599,8 @@ static uint32_t create_pkcs11_symm_key_attributes(struct sks_attrs_head **out,
 	return set_optional_attributes(out, temp, optional, optional_count);
 }
 
-static uint32_t create_pkcs11_data_attributes(struct sks_attrs_head **out,
-					      struct sks_attrs_head *temp)
+static uint32_t create_pkcs11_data_attributes(struct pkcs11_attrs_head **out,
+					      struct pkcs11_attrs_head *temp)
 {
 	uint32_t rv = 0;
 
@@ -619,8 +619,8 @@ static uint32_t create_pkcs11_data_attributes(struct sks_attrs_head **out,
 	return rv;
 }
 
-static uint32_t create_pkcs11_pub_key_attributes(struct sks_attrs_head **out,
-						 struct sks_attrs_head *temp)
+static uint32_t create_pkcs11_pub_key_attributes(struct pkcs11_attrs_head **out,
+						 struct pkcs11_attrs_head *temp)
 {
 	uint32_t rv = 0;
 	uint32_t const *boolprops = &pkcs11_public_key_boolprops[0];
@@ -684,8 +684,8 @@ static uint32_t create_pkcs11_pub_key_attributes(struct sks_attrs_head **out,
 	return set_optional_attributes(out, temp, optional, optional_count);
 }
 
-static uint32_t create_pkcs11_priv_key_attributes(struct sks_attrs_head **out,
-						  struct sks_attrs_head *temp)
+static uint32_t create_pkcs11_priv_key_attributes(struct pkcs11_attrs_head **out,
+						  struct pkcs11_attrs_head *temp)
 {
 	uint32_t const *boolprops = &pkcs11_private_key_boolprops[0];
 	uint32_t const *mandated = &pkcs11_private_key_mandated[0];
@@ -767,13 +767,13 @@ static uint32_t create_pkcs11_priv_key_attributes(struct sks_attrs_head **out,
  * - SENSITIVE can change from false to true, not from true to false.
  * - LOCAL is the parent LOCAL
  */
-uint32_t create_attributes_from_template(struct sks_attrs_head **out,
+uint32_t create_attributes_from_template(struct pkcs11_attrs_head **out,
 					 void *template, size_t template_size,
-					 struct sks_attrs_head *parent,
+					 struct pkcs11_attrs_head *parent,
 					 enum processing_func function)
 {
-	struct sks_attrs_head *temp = NULL;
-	struct sks_attrs_head *attrs = NULL;
+	struct pkcs11_attrs_head *temp = NULL;
+	struct pkcs11_attrs_head *attrs = NULL;
 	uint32_t rv = 0;
 	uint8_t local = 0;
 	uint8_t always_sensitive = 0;
@@ -901,7 +901,7 @@ bail:
 	return rv;
 }
 
-static uint32_t check_attrs_misc_integrity(struct sks_attrs_head *head)
+static uint32_t check_attrs_misc_integrity(struct pkcs11_attrs_head *head)
 {
 	/* FIXME: is it useful? */
 	if (get_bool(head, PKCS11_CKA_NEVER_EXTRACTABLE) &&
@@ -927,7 +927,7 @@ static uint32_t check_attrs_misc_integrity(struct sks_attrs_head *head)
  * Check access to object against authentication to token
  */
 uint32_t check_access_attrs_against_token(struct pkcs11_session *session,
-					  struct sks_attrs_head *head)
+					  struct pkcs11_attrs_head *head)
 {
 	bool private = true;
 
@@ -959,7 +959,7 @@ uint32_t check_access_attrs_against_token(struct pkcs11_session *session,
  * Check the attributes of a to-be-created object matches the token state
  */
 uint32_t check_created_attrs_against_token(struct pkcs11_session *session,
-					   struct sks_attrs_head *head)
+					   struct pkcs11_attrs_head *head)
 {
 	uint32_t rc = 0;
 
@@ -990,8 +990,8 @@ uint32_t check_created_attrs_against_token(struct pkcs11_session *session,
  */
 uint32_t check_created_attrs_against_parent_key(
 					uint32_t proc_id __unused,
-					struct sks_attrs_head *parent __unused,
-					struct sks_attrs_head *head __unused)
+					struct pkcs11_attrs_head *parent __unused,
+					struct pkcs11_attrs_head *head __unused)
 {
 	/*
 	 * TODO
@@ -1025,7 +1025,7 @@ uint32_t check_created_attrs_against_parent_key(
  * @head - head of the attributes of the to-be-created object.
  */
 uint32_t check_created_attrs_against_processing(uint32_t proc_id,
-						struct sks_attrs_head *head)
+						struct pkcs11_attrs_head *head)
 {
 	uint8_t bbool = 0;
 
@@ -1148,12 +1148,12 @@ void pkcs11_max_min_key_size(uint32_t key_type, uint32_t *max_key_size,
 	}
 }
 
-uint32_t check_created_attrs(struct sks_attrs_head *key1,
-			     struct sks_attrs_head *key2)
+uint32_t check_created_attrs(struct pkcs11_attrs_head *key1,
+			     struct pkcs11_attrs_head *key2)
 {
-	struct sks_attrs_head *secret = NULL;
-	struct sks_attrs_head *private = NULL;
-	struct sks_attrs_head *public = NULL;
+	struct pkcs11_attrs_head *secret = NULL;
+	struct pkcs11_attrs_head *private = NULL;
+	struct pkcs11_attrs_head *public = NULL;
 	uint32_t max_key_size = 0;
 	uint32_t min_key_size = 0;
 	uint32_t key_length = 0;
@@ -1279,7 +1279,7 @@ uint32_t check_created_attrs(struct sks_attrs_head *key1,
 
 /* Check processing ID against attribute ALLOWED_PROCESSINGS if any */
 static bool parent_key_complies_allowed_processings(uint32_t proc_id,
-						    struct sks_attrs_head *head)
+						    struct pkcs11_attrs_head *head)
 {
 	char *attr = NULL;
 	uint32_t size = 0;
@@ -1315,7 +1315,7 @@ static bool parent_key_complies_allowed_processings(uint32_t proc_id,
  */
 uint32_t check_parent_attrs_against_processing(uint32_t proc_id,
 					       enum processing_func function,
-					       struct sks_attrs_head *head)
+					       struct pkcs11_attrs_head *head)
 {
 	uint32_t __maybe_unused rc = 0;
 	uint32_t key_class = get_class(head);
@@ -1479,7 +1479,7 @@ uint32_t check_parent_attrs_against_processing(uint32_t proc_id,
 	return SKS_OK;
 }
 
-bool object_is_private(struct sks_attrs_head *head)
+bool object_is_private(struct pkcs11_attrs_head *head)
 {
 	if (get_class(head) == PKCS11_CKO_PRIVATE_KEY)
 		return true;
@@ -1499,8 +1499,8 @@ bool object_is_private(struct sks_attrs_head *head)
  * @attrs2 - Object paired to attrs1 or NULL
  * Return an SKS return code
  */
-uint32_t add_missing_attribute_id(struct sks_attrs_head **attrs1,
-				  struct sks_attrs_head **attrs2)
+uint32_t add_missing_attribute_id(struct pkcs11_attrs_head **attrs1,
+				  struct pkcs11_attrs_head **attrs2)
 {
 	uint32_t rv = 0;
 	void *id1 = NULL;
@@ -1552,8 +1552,8 @@ uint32_t add_missing_attribute_id(struct sks_attrs_head **attrs1,
 	return rv;
 }
 
-bool attribute_is_exportable(struct sks_attribute_head *req_attr,
-			     struct sks_object *obj)
+bool attribute_is_exportable(struct pkcs11_attribute_head *req_attr,
+			     struct pkcs11_object *obj)
 {
 	uint8_t boolval = 0;
 	uint32_t boolsize = 0;

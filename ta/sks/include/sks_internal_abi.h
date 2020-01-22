@@ -27,7 +27,7 @@
  * - the 32bit value attribute byte size
  * - the effective value of the attribute (variable size)
  */
-struct sks_ref {
+struct pkcs11_ref {
 	uint32_t id;
 	uint32_t size;
 	uint8_t data[];
@@ -44,7 +44,7 @@ struct sks_ref {
  * @boolproph - 32bit bitmask storing boolean properties #32 to #64.
  * @attrs - then starts the blob binary data
  */
-struct sks_attrs_head {
+struct pkcs11_attrs_head {
 	uint32_t attrs_size;
 	uint32_t attrs_count;
 #ifdef SKS_SHEAD_WITH_TYPE

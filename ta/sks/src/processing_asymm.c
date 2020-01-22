@@ -48,8 +48,8 @@ bool processing_is_tee_asymm(uint32_t proc_id)
 
 static uint32_t sks2tee_algorithm(uint32_t *tee_id,
 				  enum processing_func function,
-				  struct sks_attribute_head *proc_params,
-				  struct sks_object *obj)
+				  struct pkcs11_attribute_head *proc_params,
+				  struct pkcs11_object *obj)
 {
 	static const uint32_t sks2tee_algo[][2] = {
 		/* RSA flavors */
@@ -142,7 +142,7 @@ static uint32_t sks2tee_algorithm(uint32_t *tee_id,
 	return rv;
 }
 
-static uint32_t sks2tee_key_type(uint32_t *tee_type, struct sks_object *obj,
+static uint32_t sks2tee_key_type(uint32_t *tee_type, struct pkcs11_object *obj,
 				 enum processing_func function)
 {
 	uint32_t class = get_class(obj->attributes);
@@ -186,8 +186,8 @@ static uint32_t sks2tee_key_type(uint32_t *tee_type, struct sks_object *obj,
 
 static uint32_t allocate_tee_operation(struct pkcs11_session *session,
 					enum processing_func function,
-					struct sks_attribute_head *proc_params,
-					struct sks_object *obj)
+					struct pkcs11_attribute_head *proc_params,
+					struct pkcs11_object *obj)
 {
 	uint32_t size = (uint32_t)get_object_key_bit_size(obj);
 	uint32_t algo = 0;
@@ -212,7 +212,7 @@ static uint32_t allocate_tee_operation(struct pkcs11_session *session,
 }
 
 static uint32_t load_tee_key(struct pkcs11_session *session,
-				struct sks_object *obj,
+				struct pkcs11_object *obj,
 				enum processing_func function)
 {
 	TEE_Attribute *tee_attrs = NULL;
@@ -316,7 +316,7 @@ error:
 }
 
 static uint32_t init_tee_operation(struct pkcs11_session *session,
-				   struct sks_attribute_head *proc_params)
+				   struct pkcs11_attribute_head *proc_params)
 {
 	uint32_t rv = SKS_OK;
 
@@ -338,8 +338,8 @@ static uint32_t init_tee_operation(struct pkcs11_session *session,
 
 uint32_t init_asymm_operation(struct pkcs11_session *session,
 				enum processing_func function,
-				struct sks_attribute_head *proc_params,
-				struct sks_object *obj)
+				struct pkcs11_attribute_head *proc_params,
+				struct pkcs11_object *obj)
 {
 	uint32_t rv = 0;
 
@@ -565,8 +565,8 @@ bail:
 }
 
 uint32_t do_asymm_derivation(struct pkcs11_session *session,
-			     struct sks_attribute_head *proc_params,
-			     struct sks_attrs_head **head)
+			     struct pkcs11_attribute_head *proc_params,
+			     struct pkcs11_attrs_head **head)
 {
 	uint32_t rv = SKS_ERROR;
 	TEE_Result res = TEE_ERROR_GENERIC;

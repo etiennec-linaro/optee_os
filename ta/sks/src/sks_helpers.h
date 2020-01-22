@@ -19,7 +19,7 @@
 #define SKS_SHORT_BUFFER		PKCS11_CKR_BUFFER_TOO_SMALL
 #define SKS_FAILED			PKCS11_CKR_FUNCTION_FAILED
 
-struct sks_object;
+struct pkcs11_object;
 
 /*
  * Helper functions to analyse CK fields
@@ -41,7 +41,7 @@ bool mechanism_is_supported(uint32_t id);
 
 void sks2tee_mode(uint32_t *tee_id, uint32_t function);
 bool sks2tee_load_attr(TEE_Attribute *tee_ref, uint32_t tee_id,
-			struct sks_object *obj, uint32_t sks_id);
+			struct pkcs11_object *obj, uint32_t sks_id);
 
 /*
  * Convert SKS return code into a GPD TEE result ID when matching.

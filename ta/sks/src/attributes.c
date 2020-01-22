@@ -19,9 +19,9 @@
 #include "sks_helpers.h"
 #include "serializer.h"
 
-uint32_t init_attributes_head(struct sks_attrs_head **head)
+uint32_t init_attributes_head(struct pkcs11_attrs_head **head)
 {
-	*head = TEE_Malloc(sizeof(struct sks_attrs_head), TEE_MALLOC_FILL_ZERO);
+	*head = TEE_Malloc(sizeof(struct pkcs11_attrs_head), TEE_MALLOC_FILL_ZERO);
 	if (!*head)
 		return SKS_MEMORY;
 
@@ -50,10 +50,10 @@ static bool attribute_is_in_head(uint32_t attribute)
 }
 #endif
 
-uint32_t add_attribute(struct sks_attrs_head **head,
+uint32_t add_attribute(struct pkcs11_attrs_head **head,
 			uint32_t attribute, void *data, size_t size)
 {
-	size_t buf_len = sizeof(struct sks_attrs_head) + (*head)->attrs_size;
+	size_t buf_len = sizeof(struct pkcs11_attrs_head) + (*head)->attrs_size;
 	uint32_t rv = 0;
 	uint32_t data32 = 0;
 	char **bstart = (void *)head;
@@ -113,9 +113,9 @@ uint32_t add_attribute(struct sks_attrs_head **head,
 	return rv;
 }
 
-uint32_t remove_attribute(struct sks_attrs_head **head, uint32_t attribute)
+uint32_t remove_attribute(struct pkcs11_attrs_head **head, uint32_t attribute)
 {
-	struct sks_attrs_head *h = *head;
+	struct pkcs11_attrs_head *h = *head;
 	char *cur = NULL;
 	char *end = NULL;
 	size_t next_off = 0;
@@ -129,15 +129,15 @@ uint32_t remove_attribute(struct sks_attrs_head **head, uint32_t attribute)
 #endif
 
 	/* Let's find the target attribute */
-	cur = (char *)h + sizeof(struct sks_attrs_head);
+	cur = (char *)h + sizeof(struct pkcs11_attrs_head);
 	end = cur + h->attrs_size;
 	for (; cur < end; cur += next_off) {
-		struct sks_ref sks_ref;
+		struct pkcs11_ref pkcs11_ref;
 
-		TEE_MemMove(&sks_ref, cur, sizeof(sks_ref));
-		next_off = sizeof(sks_ref) + sks_ref.size;
+		TEE_MemMove(&pkcs11_ref, cur, sizeof(pkcs11_ref));
+		next_off = sizeof(pkcs11_ref) + pkcs11_ref.size;
 
-		if (sks_ref.id != attribute)
+		if (pkcs11_ref.id != attribute)
 			continue;
 
 		TEE_MemMove(cur, cur + next_off, end - (cur + next_off));
@@ -153,10 +153,10 @@ uint32_t remove_attribute(struct sks_attrs_head **head, uint32_t attribute)
 	return PKCS11_NOT_FOUND;
 }
 
-uint32_t remove_attribute_check(struct sks_attrs_head **head, uint32_t attribute,
+uint32_t remove_attribute_check(struct pkcs11_attrs_head **head, uint32_t attribute,
 				size_t max_check)
 {
-	struct sks_attrs_head *h = *head;
+	struct pkcs11_attrs_head *h = *head;
 	char *cur = NULL;
 	char *end = NULL;
 	size_t next_off = 0;
@@ -171,15 +171,15 @@ uint32_t remove_attribute_check(struct sks_attrs_head **head, uint32_t attribute
 #endif
 
 	/* Let's find the target attribute */
-	cur = (char *)h + sizeof(struct sks_attrs_head);
+	cur = (char *)h + sizeof(struct pkcs11_attrs_head);
 	end = cur + h->attrs_size;
 	for (; cur < end; cur += next_off) {
-		struct sks_ref sks_ref;
+		struct pkcs11_ref pkcs11_ref;
 
-		TEE_MemMove(&sks_ref, cur, sizeof(sks_ref));
-		next_off = sizeof(sks_ref) + sks_ref.size;
+		TEE_MemMove(&pkcs11_ref, cur, sizeof(pkcs11_ref));
+		next_off = sizeof(pkcs11_ref) + pkcs11_ref.size;
 
-		if (sks_ref.id != attribute)
+		if (pkcs11_ref.id != attribute)
 			continue;
 
 		found++;
@@ -211,10 +211,10 @@ uint32_t remove_attribute_check(struct sks_attrs_head **head, uint32_t attribute
 	return SKS_OK;
 }
 
-void get_attribute_ptrs(struct sks_attrs_head *head, uint32_t attribute,
+void get_attribute_ptrs(struct pkcs11_attrs_head *head, uint32_t attribute,
 			void **attr, uint32_t *attr_size, size_t *count)
 {
-	char *cur = (char *)head + sizeof(struct sks_attrs_head);
+	char *cur = (char *)head + sizeof(struct pkcs11_attrs_head);
 	char *end = cur + head->attrs_size;
 	size_t next_off = 0;
 	size_t max_found = *count;
@@ -231,13 +231,13 @@ void get_attribute_ptrs(struct sks_attrs_head *head, uint32_t attribute,
 #endif
 
 	for (; cur < end; cur += next_off) {
-		/* Structure aligned copy of the sks_ref in the object */
-		struct sks_ref sks_ref;
+		/* Structure aligned copy of the pkcs11_ref in the object */
+		struct pkcs11_ref pkcs11_ref;
 
-		TEE_MemMove(&sks_ref, cur, sizeof(sks_ref));
-		next_off = sizeof(sks_ref) + sks_ref.size;
+		TEE_MemMove(&pkcs11_ref, cur, sizeof(pkcs11_ref));
+		next_off = sizeof(pkcs11_ref) + pkcs11_ref.size;
 
-		if (sks_ref.id != attribute)
+		if (pkcs11_ref.id != attribute)
 			continue;
 
 		found++;
@@ -246,10 +246,10 @@ void get_attribute_ptrs(struct sks_attrs_head *head, uint32_t attribute,
 			continue;	/* only count matching attributes */
 
 		if (attr)
-			*attr_ptr++ = cur + sizeof(sks_ref);
+			*attr_ptr++ = cur + sizeof(pkcs11_ref);
 
 		if (attr_size)
-			*attr_size_ptr++ = sks_ref.size;
+			*attr_size_ptr++ = pkcs11_ref.size;
 
 		if (found == max_found)
 			break;
@@ -264,7 +264,7 @@ void get_attribute_ptrs(struct sks_attrs_head *head, uint32_t attribute,
 	*count = found;
 }
 
-uint32_t get_attribute_ptr(struct sks_attrs_head *head, uint32_t attribute,
+uint32_t get_attribute_ptr(struct pkcs11_attrs_head *head, uint32_t attribute,
 			   void **attr_ptr, uint32_t *attr_size)
 {
 	size_t count = 1;
@@ -304,7 +304,7 @@ uint32_t get_attribute_ptr(struct sks_attrs_head *head, uint32_t attribute,
 	return SKS_OK;
 }
 
-uint32_t get_attribute(struct sks_attrs_head *head, uint32_t attribute,
+uint32_t get_attribute(struct pkcs11_attrs_head *head, uint32_t attribute,
 			void *attr, uint32_t *attr_size)
 {
 	uint32_t rc = 0;
@@ -362,7 +362,7 @@ found:
 	return SKS_OK;
 }
 
-bool get_bool(struct sks_attrs_head *head, uint32_t attribute)
+bool get_bool(struct pkcs11_attrs_head *head, uint32_t attribute)
 {
 	uint32_t __maybe_unused rc = 0;
 	uint8_t bbool = 0;
@@ -391,8 +391,8 @@ bool get_bool(struct sks_attrs_head *head, uint32_t attribute)
 	return !!bbool;
 }
 
-bool attributes_match_reference(struct sks_attrs_head *candidate,
-				struct sks_attrs_head *ref)
+bool attributes_match_reference(struct pkcs11_attrs_head *candidate,
+				struct pkcs11_attrs_head *ref)
 {
 	size_t count = ref->attrs_count;
 	unsigned char *ref_attr = ref->attrs;
@@ -412,33 +412,33 @@ bool attributes_match_reference(struct sks_attrs_head *candidate,
 #endif
 
 	for (count = 0; count < ref->attrs_count; count++) {
-		struct sks_ref sks_ref;
+		struct pkcs11_ref pkcs11_ref;
 		void *found = NULL;
 		uint32_t size = 0;
 		int shift = 0;
 
-		TEE_MemMove(&sks_ref, ref_attr, sizeof(sks_ref));
+		TEE_MemMove(&pkcs11_ref, ref_attr, sizeof(pkcs11_ref));
 
-		shift = sks_attr2boolprop_shift(sks_ref.id);
+		shift = sks_attr2boolprop_shift(pkcs11_ref.id);
 		if (shift >= 0) {
-			bool bb_ref = get_bool(ref, sks_ref.id);
-			bool bb_candidate = get_bool(candidate, sks_ref.id);
+			bool bb_ref = get_bool(ref, pkcs11_ref.id);
+			bool bb_candidate = get_bool(candidate, pkcs11_ref.id);
 
 			if (bb_ref != bb_candidate) {
 				return false;
 			}
 		} else {
-			rc = get_attribute_ptr(candidate, sks_ref.id,
+			rc = get_attribute_ptr(candidate, pkcs11_ref.id,
 					       &found, &size);
 
-			if (rc || !found || size != sks_ref.size ||
-			    TEE_MemCompare(ref_attr + sizeof(sks_ref),
+			if (rc || !found || size != pkcs11_ref.size ||
+			    TEE_MemCompare(ref_attr + sizeof(pkcs11_ref),
 					   found, size)) {
 				return false;
 			}
 		}
 
-		ref_attr += sizeof(sks_ref) + sks_ref.size;
+		ref_attr += sizeof(pkcs11_ref) + pkcs11_ref.size;
 	}
 
 	return true;
@@ -472,67 +472,67 @@ static uint32_t __trace_attributes(char *prefix, void *src, void *end)
 	*(prefix2 + prefix_len + 4) = '\0';
 
 	for (; cur < (char *)end; cur += next_off) {
-		struct sks_ref sks_ref;
+		struct pkcs11_ref pkcs11_ref;
 		uint8_t data[4] = { 0 };
 
-		TEE_MemMove(&sks_ref, cur, sizeof(sks_ref));
-		TEE_MemMove(&data[0], cur + sizeof(sks_ref),
-			    MIN(sks_ref.size, sizeof(data)));
+		TEE_MemMove(&pkcs11_ref, cur, sizeof(pkcs11_ref));
+		TEE_MemMove(&data[0], cur + sizeof(pkcs11_ref),
+			    MIN(pkcs11_ref.size, sizeof(data)));
 
-		next_off = sizeof(sks_ref) + sks_ref.size;
+		next_off = sizeof(pkcs11_ref) + pkcs11_ref.size;
 
-		switch (sks_ref.size) {
+		switch (pkcs11_ref.size) {
 		case 0:
 			IMSG_RAW(ATTR_FMT_0BYTE,
-				 prefix, sks2str_attr(sks_ref.id), "*",
-				 sks_ref.id, sks_ref.size);
+				 prefix, sks2str_attr(pkcs11_ref.id), "*",
+				 pkcs11_ref.id, pkcs11_ref.size);
 			break;
 		case 1:
 			IMSG_RAW(ATTR_FMT_1BYTE,
-				 prefix, sks2str_attr(sks_ref.id),
-				 sks2str_attr_value(sks_ref.id, sks_ref.size,
-						    cur + sizeof(sks_ref)),
-				 sks_ref.id, sks_ref.size, data[0]);
+				 prefix, sks2str_attr(pkcs11_ref.id),
+				 sks2str_attr_value(pkcs11_ref.id, pkcs11_ref.size,
+						    cur + sizeof(pkcs11_ref)),
+				 pkcs11_ref.id, pkcs11_ref.size, data[0]);
 			break;
 		case 2:
 			IMSG_RAW(ATTR_FMT_2BYTE,
-				 prefix, sks2str_attr(sks_ref.id),
-				 sks2str_attr_value(sks_ref.id, sks_ref.size,
-						    cur + sizeof(sks_ref)),
-				 sks_ref.id, sks_ref.size, data[0], data[1]);
+				 prefix, sks2str_attr(pkcs11_ref.id),
+				 sks2str_attr_value(pkcs11_ref.id, pkcs11_ref.size,
+						    cur + sizeof(pkcs11_ref)),
+				 pkcs11_ref.id, pkcs11_ref.size, data[0], data[1]);
 			break;
 		case 3:
 			IMSG_RAW(ATTR_FMT_3BYTE,
-				 prefix, sks2str_attr(sks_ref.id),
-				 sks2str_attr_value(sks_ref.id, sks_ref.size,
-						    cur + sizeof(sks_ref)),
-				 sks_ref.id, sks_ref.size,
+				 prefix, sks2str_attr(pkcs11_ref.id),
+				 sks2str_attr_value(pkcs11_ref.id, pkcs11_ref.size,
+						    cur + sizeof(pkcs11_ref)),
+				 pkcs11_ref.id, pkcs11_ref.size,
 				 data[0], data[1], data[2]);
 			break;
 		case 4:
 			IMSG_RAW(ATTR_FMT_4BYTE,
-				 prefix, sks2str_attr(sks_ref.id),
-				 sks2str_attr_value(sks_ref.id, sks_ref.size,
-						    cur + sizeof(sks_ref)),
-				 sks_ref.id, sks_ref.size,
+				 prefix, sks2str_attr(pkcs11_ref.id),
+				 sks2str_attr_value(pkcs11_ref.id, pkcs11_ref.size,
+						    cur + sizeof(pkcs11_ref)),
+				 pkcs11_ref.id, pkcs11_ref.size,
 				 data[0], data[1], data[2], data[3]);
 			break;
 		default:
 			IMSG_RAW(ATTR_FMT_ARRAY,
-				 prefix, sks2str_attr(sks_ref.id),
-				 sks2str_attr_value(sks_ref.id, sks_ref.size,
-						    cur + sizeof(sks_ref)),
-				 sks_ref.id, sks_ref.size,
+				 prefix, sks2str_attr(pkcs11_ref.id),
+				 sks2str_attr_value(pkcs11_ref.id, pkcs11_ref.size,
+						    cur + sizeof(pkcs11_ref)),
+				 pkcs11_ref.id, pkcs11_ref.size,
 				 data[0], data[1], data[2], data[3]);
 			break;
 		}
 
-		switch (sks_ref.id) {
+		switch (pkcs11_ref.id) {
 		case PKCS11_CKA_WRAP_TEMPLATE:
 		case PKCS11_CKA_UNWRAP_TEMPLATE:
 		case PKCS11_CKA_DERIVE_TEMPLATE:
 			trace_attributes(prefix2,
-					 (void *)(cur + sizeof(sks_ref)));
+					 (void *)(cur + sizeof(pkcs11_ref)));
 			break;
 		default:
 			break;
@@ -549,7 +549,7 @@ static uint32_t __trace_attributes(char *prefix, void *src, void *end)
 }
 
 #ifdef SKS_SHEAD_WITH_BOOLPROPS
-static void trace_boolprops(const char *prefix, struct sks_attrs_head *head)
+static void trace_boolprops(const char *prefix, struct pkcs11_attrs_head *head)
 {
 	size_t __maybe_unused n = 0;
 
@@ -565,7 +565,7 @@ static void trace_boolprops(const char *prefix, struct sks_attrs_head *head)
 
 uint32_t trace_attributes(const char *prefix, void *ref)
 {
-	struct sks_attrs_head head;
+	struct pkcs11_attrs_head head;
 	char *pre = NULL;
 	uint32_t rc = 0;
 	size_t __maybe_unused n = 0;

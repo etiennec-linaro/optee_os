@@ -17,7 +17,7 @@
 #include "sks_helpers.h"
 
 uint32_t sks2tee_proc_params_rsa_pss(struct active_processing *processing,
-				     struct sks_attribute_head *proc_params)
+				     struct pkcs11_attribute_head *proc_params)
 {
 	struct serialargs args;
 	uint32_t rv;
@@ -55,7 +55,7 @@ void tee_release_rsa_pss_operation(struct active_processing *processing)
 }
 
 uint32_t sks2tee_algo_rsa_pss(uint32_t *tee_id,
-				struct sks_attribute_head *proc_params)
+				struct pkcs11_attribute_head *proc_params)
 {
 	struct serialargs args;
 	uint32_t rv;
@@ -151,7 +151,7 @@ uint32_t tee_init_rsa_aes_key_wrap_operation(struct active_processing *proc,
 }
 
 uint32_t sks2tee_algo_rsa_oaep(uint32_t *tee_id,
-				struct sks_attribute_head *proc_params)
+				struct pkcs11_attribute_head *proc_params)
 {
 	struct serialargs args;
 	uint32_t rv;
@@ -269,7 +269,7 @@ uint32_t tee_init_rsa_oaep_operation(struct active_processing *processing,
 }
 
 uint32_t load_tee_rsa_key_attrs(TEE_Attribute **tee_attrs, size_t *tee_count,
-				struct sks_object *obj)
+				struct pkcs11_object *obj)
 {
 	TEE_Attribute *attrs = NULL;
 	size_t count = 0;
@@ -370,8 +370,8 @@ uint32_t load_tee_rsa_key_attrs(TEE_Attribute **tee_attrs, size_t *tee_count,
 	return rv;
 }
 
-static uint32_t tee2sks_rsa_attributes(struct sks_attrs_head **pub_head,
-					struct sks_attrs_head **priv_head,
+static uint32_t tee2sks_rsa_attributes(struct pkcs11_attrs_head **pub_head,
+					struct pkcs11_attrs_head **priv_head,
 					TEE_ObjectHandle tee_obj)
 {
 	uint32_t rv;
@@ -431,9 +431,9 @@ bail:
 	return rv;
 }
 
-uint32_t generate_rsa_keys(struct sks_attribute_head *proc_params,
-			   struct sks_attrs_head **pub_head,
-			   struct sks_attrs_head **priv_head)
+uint32_t generate_rsa_keys(struct pkcs11_attribute_head *proc_params,
+			   struct pkcs11_attrs_head **pub_head,
+			   struct pkcs11_attrs_head **priv_head)
 {
 	uint32_t rv;
 	void *a_ptr;

@@ -598,7 +598,7 @@ size_t get_supported_mechanisms(uint32_t *array, size_t array_count)
 
 /* Initialize a TEE attribute for a target SKS attribute in an object */
 bool sks2tee_load_attr(TEE_Attribute *tee_ref, uint32_t tee_id,
-			struct sks_object *obj, uint32_t sks_id)
+			struct pkcs11_object *obj, uint32_t sks_id)
 {
 	void *a_ptr = NULL;
 	uint32_t a_size = 0;

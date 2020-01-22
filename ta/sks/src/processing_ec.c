@@ -932,7 +932,7 @@ uint32_t ec_params2tee_curve(void *ec_params, size_t size)
 }
 
 uint32_t load_tee_ec_key_attrs(TEE_Attribute **tee_attrs, size_t *tee_count,
-				struct sks_object *obj)
+				struct pkcs11_object *obj)
 {
 	TEE_Attribute *attrs = NULL;
 	size_t count = 0;
@@ -1016,8 +1016,8 @@ uint32_t load_tee_ec_key_attrs(TEE_Attribute **tee_attrs, size_t *tee_count,
 }
 
 uint32_t sks2tee_algo_ecdh(uint32_t *tee_id,
-			   struct sks_attribute_head *proc_params,
-			   struct sks_object *obj)
+			   struct pkcs11_attribute_head *proc_params,
+			   struct pkcs11_object *obj)
 {
 	struct serialargs args;
 	uint32_t rv = 0;
@@ -1060,7 +1060,7 @@ uint32_t sks2tee_algo_ecdh(uint32_t *tee_id,
 	return SKS_OK;
 }
 
-uint32_t sks2tee_ecdh_param_pub(struct sks_attribute_head *proc_params,
+uint32_t sks2tee_ecdh_param_pub(struct pkcs11_attribute_head *proc_params,
 			        void **pub_data, size_t *pub_size)
 {
 	struct serialargs args;
@@ -1092,8 +1092,8 @@ uint32_t sks2tee_ecdh_param_pub(struct sks_attribute_head *proc_params,
 }
 
 uint32_t sks2tee_algo_ecdsa(uint32_t *tee_id,
-			   struct sks_attribute_head *proc_params,
-			   struct sks_object *obj)
+			   struct pkcs11_attribute_head *proc_params,
+			   struct pkcs11_object *obj)
 {
 	switch (proc_params->id) {
 	case PKCS11_CKM_ECDSA:
@@ -1131,8 +1131,8 @@ uint32_t sks2tee_algo_ecdsa(uint32_t *tee_id,
 	return SKS_OK;
 }
 
-static uint32_t tee2sks_ec_attributes(struct sks_attrs_head **pub_head,
-				 struct sks_attrs_head **priv_head,
+static uint32_t tee2sks_ec_attributes(struct pkcs11_attrs_head **pub_head,
+				 struct pkcs11_attrs_head **priv_head,
 				 TEE_ObjectHandle tee_obj)
 {
 	uint32_t rv = 0;
@@ -1166,9 +1166,9 @@ bail:
 	return rv;
 }
 
-uint32_t generate_ec_keys(struct sks_attribute_head *proc_params,
-			  struct sks_attrs_head **pub_head,
-			  struct sks_attrs_head **priv_head)
+uint32_t generate_ec_keys(struct pkcs11_attribute_head *proc_params,
+			  struct pkcs11_attrs_head **pub_head,
+			  struct pkcs11_attrs_head **priv_head)
 {
 	uint32_t rv = 0;
 	void *a_ptr = NULL;

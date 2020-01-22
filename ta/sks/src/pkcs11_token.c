@@ -176,7 +176,7 @@ struct pkcs11_session *sks_handle2session(uint32_t handle,
  */
 int set_processing_state(struct pkcs11_session *session,
 			 enum processing_func function,
-			 struct sks_object *obj1, struct sks_object *obj2)
+			 struct pkcs11_object *obj1, struct pkcs11_object *obj2)
 {
 	enum pkcs11_proc_state state;
 	struct active_processing *proc = NULL;
@@ -425,7 +425,7 @@ uint32_t entry_ck_slot_info(TEE_Param *ctrl, TEE_Param *in, TEE_Param *out)
 	const char manuf[] = SKS_CRYPTOKI_SLOT_MANUFACTURER;
 	const char hwver[2] = SKS_CRYPTOKI_SLOT_HW_VERSION;
 	const char fwver[2] = SKS_CRYPTOKI_SLOT_FW_VERSION;
-	struct sks_slot_info info;
+	struct pkcs11_slot_info info;
 
 	TEE_MemFill(&ctrlargs, 0, sizeof(ctrlargs));
 	TEE_MemFill(&info, 0, sizeof(info));
@@ -433,8 +433,8 @@ uint32_t entry_ck_slot_info(TEE_Param *ctrl, TEE_Param *in, TEE_Param *out)
 	if (!ctrl || in || !out)
 		return SKS_BAD_PARAM;
 
-	if (out->memref.size < sizeof(struct sks_slot_info)) {
-		out->memref.size = sizeof(struct sks_slot_info);
+	if (out->memref.size < sizeof(struct pkcs11_slot_info)) {
+		out->memref.size = sizeof(struct pkcs11_slot_info);
 		return SKS_SHORT_BUFFER;
 	}
 
@@ -463,7 +463,7 @@ uint32_t entry_ck_slot_info(TEE_Param *ctrl, TEE_Param *in, TEE_Param *out)
 	TEE_MemMove(&info.hardwareVersion, &hwver, sizeof(hwver));
 	TEE_MemMove(&info.firmwareVersion, &fwver, sizeof(fwver));
 
-	out->memref.size = sizeof(struct sks_slot_info);
+	out->memref.size = sizeof(struct pkcs11_slot_info);
 	TEE_MemMove(out->memref.buffer, &info, out->memref.size);
 
 	return SKS_OK;
@@ -480,7 +480,7 @@ uint32_t entry_ck_token_info(TEE_Param *ctrl, TEE_Param *in, TEE_Param *out)
 	const char model[] = SKS_CRYPTOKI_TOKEN_MODEL;
 	const char hwver[] = SKS_CRYPTOKI_TOKEN_HW_VERSION;
 	const char fwver[] = SKS_CRYPTOKI_TOKEN_FW_VERSION;
-	struct sks_token_info info;
+	struct pkcs11_token_info info;
 
 	TEE_MemFill(&ctrlargs, 0, sizeof(ctrlargs));
 	TEE_MemFill(&info, 0, sizeof(info));
@@ -488,8 +488,8 @@ uint32_t entry_ck_token_info(TEE_Param *ctrl, TEE_Param *in, TEE_Param *out)
 	if (!ctrl || in || !out)
 		return SKS_BAD_PARAM;
 
-	if (out->memref.size < sizeof(struct sks_token_info)) {
-		out->memref.size = sizeof(struct sks_token_info);
+	if (out->memref.size < sizeof(struct pkcs11_token_info)) {
+		out->memref.size = sizeof(struct pkcs11_token_info);
 		return SKS_SHORT_BUFFER;
 	}
 
@@ -793,7 +793,7 @@ uint32_t entry_ck_token_mecha_info(TEE_Param *ctrl,
 	uint32_t token_id = 0;
 	uint32_t type = 0;
 	struct ck_token *token = NULL;
-	struct sks_mechanism_info *info = NULL;
+	struct pkcs11_mechanism_info *info = NULL;
 
 	TEE_MemFill(&ctrlargs, 0, sizeof(ctrlargs));
 
@@ -808,7 +808,7 @@ uint32_t entry_ck_token_mecha_info(TEE_Param *ctrl,
 	if ((uintptr_t)out->memref.buffer & 0x3UL)
 		return SKS_BAD_PARAM;
 
-	info = (struct sks_mechanism_info *)out->memref.buffer;
+	info = (struct pkcs11_mechanism_info *)out->memref.buffer;
 
 	serialargs_init(&ctrlargs, ctrl->memref.buffer, ctrl->memref.size);
 
@@ -832,7 +832,7 @@ uint32_t entry_ck_token_mecha_info(TEE_Param *ctrl,
 	supported_mechanism_key_size(type, &info->min_key_size,
 					&info->max_key_size, false);
 
-	out->memref.size = sizeof(struct sks_mechanism_info);
+	out->memref.size = sizeof(struct pkcs11_mechanism_info);
 
 	IMSG("SKSt%" PRIu32 ": mechanism 0x%" PRIx32 " info", token_id, type);
 
@@ -929,7 +929,7 @@ static void session_logout(struct pkcs11_session *session)
 {
 	struct pkcs11_client *client = tee_session2client(session->tee_session);
 	struct pkcs11_session *sess = NULL;
-	struct sks_object *obj = NULL;
+	struct pkcs11_object *obj = NULL;
 
 	TAILQ_FOREACH(sess, &client->session_list, link) {
 		if (sess->token != session->token)

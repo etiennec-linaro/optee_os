@@ -141,8 +141,8 @@ static inline uint32_t get_class(struct sks_attrs_head *head)
 	uint32_t class;
 	uint32_t size = sizeof(class);
 
-	if (get_attribute(head, SKS_CKA_CLASS, &class, &size))
-		return SKS_UNDEFINED_ID;
+	if (get_attribute(head, PKCS11_CKA_CLASS, &class, &size))
+		return PKCS11_CKO_UNDEFINED_ID;
 
 	return class;
 }
@@ -151,8 +151,8 @@ static inline uint32_t get_type(struct sks_attrs_head *head)
 	uint32_t type;
 	uint32_t size = sizeof(type);
 
-	if (get_attribute(head, SKS_CKA_KEY_TYPE, &type, &size))
-		return SKS_UNDEFINED_ID;
+	if (get_attribute(head, PKCS11_CKA_KEY_TYPE, &type, &size))
+		return PKCS11_CKK_UNDEFINED_ID;
 
 	return type;
 }

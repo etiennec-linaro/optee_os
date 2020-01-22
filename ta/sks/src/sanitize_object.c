@@ -30,19 +30,19 @@ bool sanitize_consistent_class_and_type(struct sks_attrs_head *attrs)
 	uint32_t type = get_type(attrs);
 
 	switch (class) {
-	case SKS_CKO_DATA:
+	case PKCS11_CKO_DATA:
 		return true;
-	case SKS_CKO_SECRET_KEY:
+	case PKCS11_CKO_SECRET_KEY:
 		return key_type_is_symm_key(type);
-	case SKS_CKO_MECHANISM:
+	case PKCS11_CKO_MECHANISM:
 		return mechanism_is_valid(type);
-	case SKS_CKO_PUBLIC_KEY:
-	case SKS_CKO_PRIVATE_KEY:
+	case PKCS11_CKO_PUBLIC_KEY:
+	case PKCS11_CKO_PRIVATE_KEY:
 		return key_type_is_asymm_key(type);
-	case SKS_CKO_OTP_KEY:
-	case SKS_CKO_CERTIFICATE:
-	case SKS_CKO_DOMAIN_PARAMETERS:
-	case SKS_CKO_HW_FEATURE:
+	case PKCS11_CKO_OTP_KEY:
+	case PKCS11_CKO_CERTIFICATE:
+	case PKCS11_CKO_DOMAIN_PARAMETERS:
+	case PKCS11_CKO_HW_FEATURE:
 	default:
 		return false;
 	}
@@ -69,8 +69,8 @@ static uint32_t sanitize_class_and_type(struct sks_attrs_head **dst,
 
 	src_size = sizeof(struct sks_object_head) + head.attrs_size;
 
-	class_found = SKS_UNDEFINED_ID;
-	type_found = SKS_UNDEFINED_ID;
+	class_found = PKCS11_CKO_UNDEFINED_ID;
+	type_found = PKCS11_CKK_UNDEFINED_ID;
 
 	cur = (char *)src + sizeof(struct sks_object_head);
 	end = cur + head.attrs_size;
@@ -84,16 +84,16 @@ static uint32_t sanitize_class_and_type(struct sks_attrs_head **dst,
 			uint32_t class;
 
 			if (cli_ref.size != sks_attr_is_class(cli_ref.id)) {
-				rc = SKS_CKR_TEMPLATE_INCONSISTENT;
+				rc = PKCS11_CKR_TEMPLATE_INCONSISTENT;
 				goto bail;
 			}
 
 			TEE_MemMove(&class, cur + sizeof(cli_ref), cli_ref.size);
 
-			if (class_found != SKS_UNDEFINED_ID &&
+			if (class_found != PKCS11_CKO_UNDEFINED_ID &&
 			    class_found != class) {
 				EMSG("Conflicting class value");
-				rc = SKS_CKR_TEMPLATE_INCONSISTENT;
+				rc = PKCS11_CKR_TEMPLATE_INCONSISTENT;
 				goto bail;
 			}
 
@@ -106,16 +106,16 @@ static uint32_t sanitize_class_and_type(struct sks_attrs_head **dst,
 			uint32_t type = 0;
 
 			if (cli_ref.size != sks_attr_is_type(cli_ref.id)) {
-				rc = SKS_CKR_TEMPLATE_INCONSISTENT;
+				rc = PKCS11_CKR_TEMPLATE_INCONSISTENT;
 				goto bail;
 			}
 
 			TEE_MemMove(&type, cur + sizeof(cli_ref), cli_ref.size);
 
-			if (type_found != SKS_UNDEFINED_ID &&
+			if (type_found != PKCS11_CKK_UNDEFINED_ID &&
 			    type_found != type) {
 				EMSG("Conflicting type-in-class value");
-				rc = SKS_CKR_TEMPLATE_INCONSISTENT;
+				rc = PKCS11_CKR_TEMPLATE_INCONSISTENT;
 				goto bail;
 			}
 
@@ -130,15 +130,15 @@ static uint32_t sanitize_class_and_type(struct sks_attrs_head **dst,
 		goto bail;
 	}
 
-	if (class_found != SKS_UNDEFINED_ID) {
-		rc = add_attribute(dst, SKS_CKA_CLASS,
+	if (class_found != PKCS11_CKO_UNDEFINED_ID) {
+		rc = add_attribute(dst, PKCS11_CKA_CLASS,
 				   &class_found, sizeof(uint32_t));
 		if (rc)
 			goto bail;
 	}
 
-	if (type_found != SKS_UNDEFINED_ID) {
-		rc = add_attribute(dst, SKS_CKA_KEY_TYPE,
+	if (type_found != PKCS11_CKK_UNDEFINED_ID) {
+		rc = add_attribute(dst, PKCS11_CKA_KEY_TYPE,
 				   &type_found, sizeof(uint32_t));
 	}
 
@@ -180,7 +180,7 @@ static uint32_t sanitize_boolprop(struct sks_attrs_head **dst,
 
 	/* Error if already set to a different boolean value */
 	if (*sanity_ptr & mask && value != (*boolprop_ptr & mask))
-		return SKS_CKR_TEMPLATE_INCONSISTENT;
+		return PKCS11_CKR_TEMPLATE_INCONSISTENT;
 
 	if (value)
 		*boolprop_ptr |= mask;
@@ -242,7 +242,7 @@ static uint32_t sanitize_indirect_attr(struct sks_attrs_head **dst,
 	uint32_t rc = 0;
 	uint32_t class = get_class(*dst);
 
-	if (class == SKS_UNDEFINED_ID)
+	if (class == PKCS11_CKO_UNDEFINED_ID)
 		return SKS_ERROR;
 
 	/*
@@ -250,16 +250,16 @@ static uint32_t sanitize_indirect_attr(struct sks_attrs_head **dst,
 	 * are tables of attributes.
 	 */
 	switch (cli_ref->id) {
-	case SKS_CKA_WRAP_TEMPLATE:
-	case SKS_CKA_UNWRAP_TEMPLATE:
-	case SKS_CKA_DERIVE_TEMPLATE:
+	case PKCS11_CKA_WRAP_TEMPLATE:
+	case PKCS11_CKA_UNWRAP_TEMPLATE:
+	case PKCS11_CKA_DERIVE_TEMPLATE:
 		break;
 	default:
 		return SKS_NOT_FOUND;
 	}
 	/* Such attributes are expected only for keys (and vendor defined) */
 	if (sks_attr_class_is_key(class))
-		return SKS_CKR_TEMPLATE_INCONSISTENT;
+		return PKCS11_CKR_TEMPLATE_INCONSISTENT;
 
 	init_attributes_head(&obj2);
 
@@ -324,7 +324,7 @@ uint32_t sanitize_client_object(struct sks_attrs_head **dst,
 
 		if (!valid_sks_attribute_id(cli_ref.id, cli_ref.size)) {
 			EMSG("Invalid attribute id 0x%" PRIx32, cli_ref.id);
-			rc = SKS_CKR_TEMPLATE_INCONSISTENT;
+			rc = PKCS11_CKR_TEMPLATE_INCONSISTENT;
 			goto bail;
 		}
 
@@ -409,9 +409,9 @@ static uint32_t __trace_attributes(char *prefix, void *src, void *end)
 		}
 
 		switch (sks_ref.id) {
-		case SKS_CKA_WRAP_TEMPLATE:
-		case SKS_CKA_UNWRAP_TEMPLATE:
-		case SKS_CKA_DERIVE_TEMPLATE:
+		case PKCS11_CKA_WRAP_TEMPLATE:
+		case PKCS11_CKA_UNWRAP_TEMPLATE:
+		case PKCS11_CKA_DERIVE_TEMPLATE:
 			rc = trace_attributes_from_api_head(prefix2,
 							cur + sizeof(sks_ref),
 							(char *)end - cur);

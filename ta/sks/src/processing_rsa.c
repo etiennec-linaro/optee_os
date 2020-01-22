@@ -79,24 +79,24 @@ uint32_t sks2tee_algo_rsa_pss(uint32_t *tee_id,
 
 	switch (*tee_id) {
 	case TEE_ALG_RSASSA_PKCS1_PSS_MGF1_SHA1:
-		if (hash != SKS_CKM_SHA_1 || mgf != SKS_CKG_MGF1_SHA1)
-			return SKS_CKR_MECHANISM_PARAM_INVALID;
+		if (hash != PKCS11_CKM_SHA_1 || mgf != PKCS11_CKG_MGF1_SHA1)
+			return PKCS11_CKR_MECHANISM_PARAM_INVALID;
 		break;
 	case TEE_ALG_RSASSA_PKCS1_PSS_MGF1_SHA224:
-		if (hash != SKS_CKM_SHA224 || mgf != SKS_CKG_MGF1_SHA224)
-			return SKS_CKR_MECHANISM_PARAM_INVALID;
+		if (hash != PKCS11_CKM_SHA224 || mgf != PKCS11_CKG_MGF1_SHA224)
+			return PKCS11_CKR_MECHANISM_PARAM_INVALID;
 		break;
 	case TEE_ALG_RSASSA_PKCS1_PSS_MGF1_SHA256:
-		if (hash != SKS_CKM_SHA256 || mgf != SKS_CKG_MGF1_SHA256)
-			return SKS_CKR_MECHANISM_PARAM_INVALID;
+		if (hash != PKCS11_CKM_SHA256 || mgf != PKCS11_CKG_MGF1_SHA256)
+			return PKCS11_CKR_MECHANISM_PARAM_INVALID;
 		break;
 	case TEE_ALG_RSASSA_PKCS1_PSS_MGF1_SHA384:
-		if (hash != SKS_CKM_SHA384 || mgf != SKS_CKG_MGF1_SHA384)
-			return SKS_CKR_MECHANISM_PARAM_INVALID;
+		if (hash != PKCS11_CKM_SHA384 || mgf != PKCS11_CKG_MGF1_SHA384)
+			return PKCS11_CKR_MECHANISM_PARAM_INVALID;
 		break;
 	case TEE_ALG_RSASSA_PKCS1_PSS_MGF1_SHA512:
-		if (hash != SKS_CKM_SHA512 || mgf != SKS_CKG_MGF1_SHA512)
-			return SKS_CKR_MECHANISM_PARAM_INVALID;
+		if (hash != PKCS11_CKM_SHA512 || mgf != PKCS11_CKG_MGF1_SHA512)
+			return PKCS11_CKR_MECHANISM_PARAM_INVALID;
 		break;
 	default:
 		return SKS_ERROR;
@@ -184,31 +184,31 @@ uint32_t sks2tee_algo_rsa_oaep(uint32_t *tee_id,
 		return rv;
 
 	switch (proc_params->id) {
-	case SKS_CKM_RSA_PKCS_OAEP:
+	case PKCS11_CKM_RSA_PKCS_OAEP:
 		switch (hash) {
-		case SKS_CKM_SHA_1:
-			if (mgf != SKS_CKG_MGF1_SHA1 || source_size)
-				return SKS_CKR_MECHANISM_PARAM_INVALID;
+		case PKCS11_CKM_SHA_1:
+			if (mgf != PKCS11_CKG_MGF1_SHA1 || source_size)
+				return PKCS11_CKR_MECHANISM_PARAM_INVALID;
 			*tee_id = TEE_ALG_RSAES_PKCS1_OAEP_MGF1_SHA1;
 			break;
-		case SKS_CKM_SHA224:
-			if (mgf != SKS_CKG_MGF1_SHA224 || source_size)
-				return SKS_CKR_MECHANISM_PARAM_INVALID;
+		case PKCS11_CKM_SHA224:
+			if (mgf != PKCS11_CKG_MGF1_SHA224 || source_size)
+				return PKCS11_CKR_MECHANISM_PARAM_INVALID;
 			*tee_id = TEE_ALG_RSAES_PKCS1_OAEP_MGF1_SHA224;
 			break;
-		case SKS_CKM_SHA256:
-			if (mgf != SKS_CKG_MGF1_SHA256 || source_size)
-				return SKS_CKR_MECHANISM_PARAM_INVALID;
+		case PKCS11_CKM_SHA256:
+			if (mgf != PKCS11_CKG_MGF1_SHA256 || source_size)
+				return PKCS11_CKR_MECHANISM_PARAM_INVALID;
 			*tee_id = TEE_ALG_RSAES_PKCS1_OAEP_MGF1_SHA256;
 			break;
-		case SKS_CKM_SHA384:
-			if (mgf != SKS_CKG_MGF1_SHA384 || source_size)
-				return SKS_CKR_MECHANISM_PARAM_INVALID;
+		case PKCS11_CKM_SHA384:
+			if (mgf != PKCS11_CKG_MGF1_SHA384 || source_size)
+				return PKCS11_CKR_MECHANISM_PARAM_INVALID;
 			*tee_id = TEE_ALG_RSAES_PKCS1_OAEP_MGF1_SHA384;
 			break;
-		case SKS_CKM_SHA512:
-			if (mgf != SKS_CKG_MGF1_SHA512 || source_size)
-				return SKS_CKR_MECHANISM_PARAM_INVALID;
+		case PKCS11_CKM_SHA512:
+			if (mgf != PKCS11_CKG_MGF1_SHA512 || source_size)
+				return PKCS11_CKR_MECHANISM_PARAM_INVALID;
 			*tee_id = TEE_ALG_RSAES_PKCS1_OAEP_MGF1_SHA512;
 			break;
 		default:
@@ -275,22 +275,22 @@ uint32_t load_tee_rsa_key_attrs(TEE_Attribute **tee_attrs, size_t *tee_count,
 	size_t count = 0;
 	uint32_t rv = SKS_ERROR;
 
-	assert(get_type(obj->attributes) == SKS_CKK_RSA);
+	assert(get_type(obj->attributes) == PKCS11_CKK_RSA);
 
 	switch (get_class(obj->attributes)) {
-	case SKS_CKO_PUBLIC_KEY:
+	case PKCS11_CKO_PUBLIC_KEY:
 		attrs = TEE_Malloc(3 * sizeof(TEE_Attribute),
 				   TEE_USER_MEM_HINT_NO_FILL_ZERO);
 		if (!attrs)
 			return SKS_MEMORY;
 
 		if (sks2tee_load_attr(&attrs[count], TEE_ATTR_RSA_MODULUS,
-					obj, SKS_CKA_MODULUS))
+					obj, PKCS11_CKA_MODULUS))
 			count++;
 
 		if (sks2tee_load_attr(&attrs[count],
 					TEE_ATTR_RSA_PUBLIC_EXPONENT,
-					obj, SKS_CKA_PUBLIC_EXPONENT))
+					obj, PKCS11_CKA_PUBLIC_EXPONENT))
 			count++;
 
 		if (count == 2)
@@ -298,30 +298,30 @@ uint32_t load_tee_rsa_key_attrs(TEE_Attribute **tee_attrs, size_t *tee_count,
 
 		break;
 
-	case SKS_CKO_PRIVATE_KEY:
+	case PKCS11_CKO_PRIVATE_KEY:
 		attrs = TEE_Malloc(8 * sizeof(TEE_Attribute),
 				   TEE_USER_MEM_HINT_NO_FILL_ZERO);
 		if (!attrs)
 			return SKS_MEMORY;
 
 		if (sks2tee_load_attr(&attrs[count], TEE_ATTR_RSA_MODULUS,
-					obj, SKS_CKA_MODULUS))
+					obj, PKCS11_CKA_MODULUS))
 			count++;
 
 		if (sks2tee_load_attr(&attrs[count],
 					TEE_ATTR_RSA_PUBLIC_EXPONENT,
-					obj, SKS_CKA_PUBLIC_EXPONENT))
+					obj, PKCS11_CKA_PUBLIC_EXPONENT))
 			count++;
 
 		if (sks2tee_load_attr(&attrs[count],
 					TEE_ATTR_RSA_PRIVATE_EXPONENT,
-					obj, SKS_CKA_PRIVATE_EXPONENT))
+					obj, PKCS11_CKA_PRIVATE_EXPONENT))
 			count++;
 
 		if (count != 3)
 			break;
 
-		if (get_attribute(obj->attributes, SKS_CKA_PRIME_1,
+		if (get_attribute(obj->attributes, PKCS11_CKA_PRIME_1,
 					   NULL, NULL)) {
 			rv = SKS_OK;
 			break;
@@ -329,27 +329,27 @@ uint32_t load_tee_rsa_key_attrs(TEE_Attribute **tee_attrs, size_t *tee_count,
 
 		if (sks2tee_load_attr(&attrs[count],
 					TEE_ATTR_RSA_PRIME1,
-					obj, SKS_CKA_PRIME_1))
+					obj, PKCS11_CKA_PRIME_1))
 			count++;
 
 		if (sks2tee_load_attr(&attrs[count],
 					TEE_ATTR_RSA_PRIME2,
-					obj, SKS_CKA_PRIME_2))
+					obj, PKCS11_CKA_PRIME_2))
 			count++;
 
 		if (sks2tee_load_attr(&attrs[count],
 					TEE_ATTR_RSA_EXPONENT1,
-					obj, SKS_CKA_EXPONENT_1))
+					obj, PKCS11_CKA_EXPONENT_1))
 			count++;
 
 		if (sks2tee_load_attr(&attrs[count],
 					TEE_ATTR_RSA_EXPONENT2,
-					obj, SKS_CKA_EXPONENT_2))
+					obj, PKCS11_CKA_EXPONENT_2))
 			count++;
 
 		if (sks2tee_load_attr(&attrs[count],
 					TEE_ATTR_RSA_COEFFICIENT,
-					obj, SKS_CKA_COEFFICIENT))
+					obj, PKCS11_CKA_COEFFICIENT))
 			count++;
 
 		if (count == 8)
@@ -376,56 +376,56 @@ static uint32_t tee2sks_rsa_attributes(struct sks_attrs_head **pub_head,
 {
 	uint32_t rv;
 
-	rv = tee2sks_add_attribute(pub_head, SKS_CKA_MODULUS,
+	rv = tee2sks_add_attribute(pub_head, PKCS11_CKA_MODULUS,
 				   tee_obj, TEE_ATTR_RSA_MODULUS);
 	if (rv)
 		goto bail;
 
-	if (get_attribute_ptr(*pub_head, SKS_CKA_PUBLIC_EXPONENT, NULL, NULL)) {
+	if (get_attribute_ptr(*pub_head, PKCS11_CKA_PUBLIC_EXPONENT, NULL, NULL)) {
 		rv = tee2sks_add_attribute(pub_head,
-					   SKS_CKA_PUBLIC_EXPONENT,
+					   PKCS11_CKA_PUBLIC_EXPONENT,
 					   tee_obj,
 					   TEE_ATTR_RSA_PUBLIC_EXPONENT);
 		if (rv)
 			goto bail;
 	}
 
-	rv = tee2sks_add_attribute(priv_head, SKS_CKA_MODULUS,
+	rv = tee2sks_add_attribute(priv_head, PKCS11_CKA_MODULUS,
 				   tee_obj, TEE_ATTR_RSA_MODULUS);
 	if (rv)
 		goto bail;
 
-	rv = tee2sks_add_attribute(priv_head, SKS_CKA_PUBLIC_EXPONENT,
+	rv = tee2sks_add_attribute(priv_head, PKCS11_CKA_PUBLIC_EXPONENT,
 				   tee_obj, TEE_ATTR_RSA_PUBLIC_EXPONENT);
 	if (rv)
 		goto bail;
 
-	rv = tee2sks_add_attribute(priv_head, SKS_CKA_PRIVATE_EXPONENT,
+	rv = tee2sks_add_attribute(priv_head, PKCS11_CKA_PRIVATE_EXPONENT,
 				   tee_obj, TEE_ATTR_RSA_PRIVATE_EXPONENT);
 	if (rv)
 		goto bail;
 
-	rv = tee2sks_add_attribute(priv_head, SKS_CKA_PRIME_1,
+	rv = tee2sks_add_attribute(priv_head, PKCS11_CKA_PRIME_1,
 				   tee_obj, TEE_ATTR_RSA_PRIME1);
 	if (rv)
 		goto bail;
 
-	rv = tee2sks_add_attribute(priv_head, SKS_CKA_PRIME_2,
+	rv = tee2sks_add_attribute(priv_head, PKCS11_CKA_PRIME_2,
 				   tee_obj, TEE_ATTR_RSA_PRIME2);
 	if (rv)
 		goto bail;
 
-	rv = tee2sks_add_attribute(priv_head, SKS_CKA_EXPONENT_1,
+	rv = tee2sks_add_attribute(priv_head, PKCS11_CKA_EXPONENT_1,
 				   tee_obj, TEE_ATTR_RSA_EXPONENT1);
 	if (rv)
 		goto bail;
 
-	rv = tee2sks_add_attribute(priv_head, SKS_CKA_EXPONENT_2,
+	rv = tee2sks_add_attribute(priv_head, PKCS11_CKA_EXPONENT_2,
 				   tee_obj, TEE_ATTR_RSA_EXPONENT2);
 	if (rv)
 		goto bail;
 
-	rv = tee2sks_add_attribute(priv_head, SKS_CKA_COEFFICIENT,
+	rv = tee2sks_add_attribute(priv_head, PKCS11_CKA_COEFFICIENT,
 				   tee_obj, TEE_ATTR_RSA_COEFFICIENT);
 bail:
 	return rv;
@@ -445,21 +445,21 @@ uint32_t generate_rsa_keys(struct sks_attribute_head *proc_params,
 	uint32_t tee_count = 0;
 
 	if (!proc_params || !*pub_head || !*priv_head) {
-		return SKS_CKR_TEMPLATE_INCONSISTENT;
+		return PKCS11_CKR_TEMPLATE_INCONSISTENT;
 	}
 
-	if (get_attribute_ptr(*pub_head, SKS_CKA_MODULUS_BITS,
+	if (get_attribute_ptr(*pub_head, PKCS11_CKA_MODULUS_BITS,
 				&a_ptr, &a_size)) {
-		return SKS_CKR_TEMPLATE_INCONSISTENT;
+		return PKCS11_CKR_TEMPLATE_INCONSISTENT;
 	}
 
 	if (a_size != sizeof(uint32_t)) {
-		return SKS_CKR_TEMPLATE_INCONSISTENT;
+		return PKCS11_CKR_TEMPLATE_INCONSISTENT;
 	}
 
 	TEE_MemMove(&tee_size, a_ptr, sizeof(uint32_t));
 
-	rv = get_attribute_ptr(*pub_head, SKS_CKA_PUBLIC_EXPONENT,
+	rv = get_attribute_ptr(*pub_head, PKCS11_CKA_PUBLIC_EXPONENT,
 				&a_ptr, &a_size);
 	if (rv == SKS_OK) {
 		TEE_InitRefAttribute(&tee_attrs[tee_count],
@@ -469,17 +469,17 @@ uint32_t generate_rsa_keys(struct sks_attribute_head *proc_params,
 		tee_count++;
 	}
 
-	if (!get_attribute(*pub_head, SKS_CKA_MODULUS, NULL, NULL) ||
-	    !get_attribute(*priv_head, SKS_CKA_MODULUS, NULL, NULL) ||
-	    !get_attribute(*priv_head, SKS_CKA_PUBLIC_EXPONENT, NULL, NULL) ||
-	    !get_attribute(*priv_head, SKS_CKA_PRIVATE_EXPONENT, NULL, NULL) ||
-	    !get_attribute(*priv_head, SKS_CKA_PRIME_1, NULL, NULL) ||
-	    !get_attribute(*priv_head, SKS_CKA_PRIME_2, NULL, NULL) ||
-	    !get_attribute(*priv_head, SKS_CKA_EXPONENT_1, NULL, NULL) ||
-	    !get_attribute(*priv_head, SKS_CKA_EXPONENT_2, NULL, NULL) ||
-	    !get_attribute(*priv_head, SKS_CKA_COEFFICIENT, NULL, NULL)) {
+	if (!get_attribute(*pub_head, PKCS11_CKA_MODULUS, NULL, NULL) ||
+	    !get_attribute(*priv_head, PKCS11_CKA_MODULUS, NULL, NULL) ||
+	    !get_attribute(*priv_head, PKCS11_CKA_PUBLIC_EXPONENT, NULL, NULL) ||
+	    !get_attribute(*priv_head, PKCS11_CKA_PRIVATE_EXPONENT, NULL, NULL) ||
+	    !get_attribute(*priv_head, PKCS11_CKA_PRIME_1, NULL, NULL) ||
+	    !get_attribute(*priv_head, PKCS11_CKA_PRIME_2, NULL, NULL) ||
+	    !get_attribute(*priv_head, PKCS11_CKA_EXPONENT_1, NULL, NULL) ||
+	    !get_attribute(*priv_head, PKCS11_CKA_EXPONENT_2, NULL, NULL) ||
+	    !get_attribute(*priv_head, PKCS11_CKA_COEFFICIENT, NULL, NULL)) {
 		EMSG("Unexpected attribute(s) found");
-		return SKS_CKR_TEMPLATE_INCONSISTENT;
+		return PKCS11_CKR_TEMPLATE_INCONSISTENT;
 	}
 
 	/* Create an ECDSA TEE key: will match PKCS11 ECDSA and ECDH */

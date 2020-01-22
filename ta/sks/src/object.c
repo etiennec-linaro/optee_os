@@ -132,7 +132,7 @@ void destroy_object(struct pkcs11_session *session,
 	}
 
 	/* Destroy target object (persistent or not) */
-	if (get_bool(obj->attributes, SKS_CKA_TOKEN)) {
+	if (get_bool(obj->attributes, PKCS11_CKA_TOKEN)) {
 		assert(obj->uuid);
 		/* Try twice otherwise panic! */
 		if (unregister_persistent_object(session->token, obj->uuid) &&
@@ -213,7 +213,7 @@ uint32_t create_object(void *sess, struct sks_attrs_head *head,
 		goto bail;
 	}
 
-	if (get_bool(obj->attributes, SKS_CKA_TOKEN)) {
+	if (get_bool(obj->attributes, PKCS11_CKA_TOKEN)) {
 		/*
 		 * Get an ID for the persistent object
 		 * Create the file
@@ -256,7 +256,7 @@ uint32_t create_object(void *sess, struct sks_attrs_head *head,
 bail:
 	if (rv) {
 		handle_put(&session->object_handle_db, obj_handle);
-		if (get_bool(obj->attributes, SKS_CKA_TOKEN))
+		if (get_bool(obj->attributes, PKCS11_CKA_TOKEN))
 			cleanup_persistent_object(obj, session->token);
 		else
 			cleanup_volatile_obj_ref(obj);
@@ -292,10 +292,10 @@ uint32_t entry_destroy_object(uintptr_t tee_session, TEE_Param *ctrl,
 
 	session = sks_handle2session(session_handle, tee_session);
 	if (!session)
-		return SKS_CKR_SESSION_HANDLE_INVALID;
+		return PKCS11_CKR_SESSION_HANDLE_INVALID;
 
 	if (session_is_active(session))
-		return SKS_CKR_OPERATION_ACTIVE;
+		return PKCS11_CKR_OPERATION_ACTIVE;
 
 	object = sks_handle2object(object_handle, session);
 	if (!object)
@@ -446,13 +446,13 @@ uint32_t entry_find_objects_init(uintptr_t tee_session, TEE_Param *ctrl,
 
 	session = sks_handle2session(session_handle, tee_session);
 	if (!session) {
-		rv = SKS_CKR_SESSION_HANDLE_INVALID;
+		rv = PKCS11_CKR_SESSION_HANDLE_INVALID;
 		goto bail;
 	}
 
 	/* Search objects only if no operation is on-going */
 	if (session_is_active(session)) {
-		rv = SKS_CKR_OPERATION_ACTIVE;
+		rv = PKCS11_CKR_OPERATION_ACTIVE;
 		goto bail;
 	}
 
@@ -478,18 +478,18 @@ uint32_t entry_find_objects_init(uintptr_t tee_session, TEE_Param *ctrl,
 	template = NULL;
 
 	switch (get_class(req_attrs)) {
-	case SKS_UNDEFINED_ID:
+	case PKCS11_CKO_UNDEFINED_ID:
 	/* Unspecified class searches among data objects */
-	case SKS_CKO_SECRET_KEY:
-	case SKS_CKO_PUBLIC_KEY:
-	case SKS_CKO_PRIVATE_KEY:
-	case SKS_CKO_DATA:
+	case PKCS11_CKO_SECRET_KEY:
+	case PKCS11_CKO_PUBLIC_KEY:
+	case PKCS11_CKO_PRIVATE_KEY:
+	case PKCS11_CKO_DATA:
 		break;
 	default:
 		EMSG("Find object of class %s (%u) is not supported",
 		     sks2str_class(get_class(req_attrs)),
 		     get_class(req_attrs));
-		rv = SKS_CKR_ARGUMENTS_BAD;
+		rv = PKCS11_CKR_ARGUMENTS_BAD;
 		goto bail;
 
 	}
@@ -622,7 +622,7 @@ uint32_t entry_find_objects(uintptr_t tee_session, TEE_Param *ctrl,
 
 	session = sks_handle2session(session_handle, tee_session);
 	if (!session)
-		return SKS_CKR_SESSION_HANDLE_INVALID;
+		return PKCS11_CKR_SESSION_HANDLE_INVALID;
 
 	ctx = session->find_ctx;
 
@@ -630,7 +630,7 @@ uint32_t entry_find_objects(uintptr_t tee_session, TEE_Param *ctrl,
 	 * TODO: should we check again if these handles are valid?
 	 */
 	if (!ctx)
-		return SKS_CKR_OPERATION_NOT_INITIALIZED;
+		return PKCS11_CKR_OPERATION_NOT_INITIALIZED;
 
 	for (count = 0, idx = ctx->next; idx < ctx->count; idx++, count++) {
 		struct sks_object *obj = NULL;
@@ -690,10 +690,10 @@ uint32_t entry_find_objects_final(uintptr_t tee_session, TEE_Param *ctrl,
 
 	session = sks_handle2session(session_handle, tee_session);
 	if (!session)
-		return SKS_CKR_SESSION_HANDLE_INVALID;
+		return PKCS11_CKR_SESSION_HANDLE_INVALID;
 
 	if (!session->find_ctx)
-		return SKS_CKR_OPERATION_NOT_INITIALIZED;
+		return PKCS11_CKR_OPERATION_NOT_INITIALIZED;
 
 	release_session_find_obj_context(session);
 
@@ -741,7 +741,7 @@ uint32_t entry_get_attribute_value(uintptr_t tee_session, TEE_Param *ctrl,
 
 	session = sks_handle2session(session_handle, tee_session);
 	if (!session) {
-		rv = SKS_CKR_SESSION_HANDLE_INVALID;
+		rv = PKCS11_CKR_SESSION_HANDLE_INVALID;
 		goto bail;
 	}
 
@@ -753,7 +753,7 @@ uint32_t entry_get_attribute_value(uintptr_t tee_session, TEE_Param *ctrl,
 
 	rv = check_access_attrs_against_token(session, obj->attributes);
 	if (rv) {
-		rv = SKS_CKR_OBJECT_HANDLE_INVALID;
+		rv = PKCS11_CKR_OBJECT_HANDLE_INVALID;
 		goto bail;
 	}
 
@@ -793,7 +793,7 @@ uint32_t entry_get_attribute_value(uintptr_t tee_session, TEE_Param *ctrl,
 
 		/* Check 1. */
 		if (!attribute_is_exportable(cli_ref, obj)) {
-			cli_ref->size = SKS_CK_UNAVAILABLE_INFORMATION;
+			cli_ref->size = PKCS11_CK_UNAVAILABLE_INFORMATION;
 			attr_sensitive = 1;
 			continue;
 		}
@@ -810,7 +810,7 @@ uint32_t entry_get_attribute_value(uintptr_t tee_session, TEE_Param *ctrl,
 		case SKS_OK:
 			break;
 		case SKS_NOT_FOUND:
-			cli_ref->size = SKS_CK_UNAVAILABLE_INFORMATION;
+			cli_ref->size = PKCS11_CK_UNAVAILABLE_INFORMATION;
 			attr_type_invalid = 1;
 			break;
 		case SKS_SHORT_BUFFER:
@@ -835,11 +835,11 @@ uint32_t entry_get_attribute_value(uintptr_t tee_session, TEE_Param *ctrl,
 
 	rv = SKS_OK;
 	if (attr_sensitive)
-		rv = SKS_CKR_ATTRIBUTE_SENSITIVE;
+		rv = PKCS11_CKR_ATTRIBUTE_SENSITIVE;
 	if (attr_type_invalid)
-		rv = SKS_CKR_ATTRIBUTE_TYPE_INVALID;
+		rv = PKCS11_CKR_ATTRIBUTE_TYPE_INVALID;
 	if (buffer_too_small)
-		rv = SKS_CKR_BUFFER_TOO_SMALL;
+		rv = PKCS11_CKR_BUFFER_TOO_SMALL;
 
 	/* Move updated template to out buffer */
 	TEE_MemMove(out->memref.buffer, template, out->memref.size);

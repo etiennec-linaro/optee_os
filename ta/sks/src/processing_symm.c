@@ -24,23 +24,23 @@ bool processing_is_tee_symm(uint32_t proc_id)
 {
 	switch (proc_id) {
 	/* Authentication */
-	case SKS_CKM_AES_CMAC_GENERAL:
-	case SKS_CKM_AES_CMAC:
-	case SKS_CKM_MD5_HMAC:
-	case SKS_CKM_SHA_1_HMAC:
-	case SKS_CKM_SHA224_HMAC:
-	case SKS_CKM_SHA256_HMAC:
-	case SKS_CKM_SHA384_HMAC:
-	case SKS_CKM_SHA512_HMAC:
-	case SKS_CKM_AES_XCBC_MAC:
+	case PKCS11_CKM_AES_CMAC_GENERAL:
+	case PKCS11_CKM_AES_CMAC:
+	case PKCS11_CKM_MD5_HMAC:
+	case PKCS11_CKM_SHA_1_HMAC:
+	case PKCS11_CKM_SHA224_HMAC:
+	case PKCS11_CKM_SHA256_HMAC:
+	case PKCS11_CKM_SHA384_HMAC:
+	case PKCS11_CKM_SHA512_HMAC:
+	case PKCS11_CKM_AES_XCBC_MAC:
 	/* Cipherering */
-	case SKS_CKM_AES_ECB:
-	case SKS_CKM_AES_CBC:
-	case SKS_CKM_AES_CBC_PAD:
-	case SKS_CKM_AES_CTS:
-	case SKS_CKM_AES_CTR:
-	case SKS_CKM_AES_CCM:
-	case SKS_CKM_AES_GCM:
+	case PKCS11_CKM_AES_ECB:
+	case PKCS11_CKM_AES_CBC:
+	case PKCS11_CKM_AES_CBC_PAD:
+	case PKCS11_CKM_AES_CTS:
+	case PKCS11_CKM_AES_CTR:
+	case PKCS11_CKM_AES_CCM:
+	case PKCS11_CKM_AES_GCM:
 		return true;
 	default:
 		return false;
@@ -52,23 +52,23 @@ static uint32_t sks2tee_algorithm(uint32_t *tee_id,
 {
 	static const uint32_t sks2tee_algo[][2] = {
 		/* AES flavors */
-		{ SKS_CKM_AES_ECB, TEE_ALG_AES_ECB_NOPAD },
-		{ SKS_CKM_AES_CBC, TEE_ALG_AES_CBC_NOPAD },
-		{ SKS_CKM_AES_CBC_PAD, TEE_ALG_AES_CBC_NOPAD }, // TODO
-		{ SKS_CKM_AES_CTR, TEE_ALG_AES_CTR },
-		{ SKS_CKM_AES_CTS, TEE_ALG_AES_CTS },
-		{ SKS_CKM_AES_CCM, TEE_ALG_AES_CCM },
-		{ SKS_CKM_AES_GCM, TEE_ALG_AES_GCM },
-		{ SKS_CKM_AES_CMAC, TEE_ALG_AES_CMAC },
-		{ SKS_CKM_AES_CMAC_GENERAL, TEE_ALG_AES_CMAC },
-		{ SKS_CKM_AES_XCBC_MAC, TEE_ALG_AES_CBC_MAC_NOPAD },
+		{ PKCS11_CKM_AES_ECB, TEE_ALG_AES_ECB_NOPAD },
+		{ PKCS11_CKM_AES_CBC, TEE_ALG_AES_CBC_NOPAD },
+		{ PKCS11_CKM_AES_CBC_PAD, TEE_ALG_AES_CBC_NOPAD }, // TODO
+		{ PKCS11_CKM_AES_CTR, TEE_ALG_AES_CTR },
+		{ PKCS11_CKM_AES_CTS, TEE_ALG_AES_CTS },
+		{ PKCS11_CKM_AES_CCM, TEE_ALG_AES_CCM },
+		{ PKCS11_CKM_AES_GCM, TEE_ALG_AES_GCM },
+		{ PKCS11_CKM_AES_CMAC, TEE_ALG_AES_CMAC },
+		{ PKCS11_CKM_AES_CMAC_GENERAL, TEE_ALG_AES_CMAC },
+		{ PKCS11_CKM_AES_XCBC_MAC, TEE_ALG_AES_CBC_MAC_NOPAD },
 		/* HMAC flavors */
-		{ SKS_CKM_MD5_HMAC, TEE_ALG_HMAC_MD5 },
-		{ SKS_CKM_SHA_1_HMAC, TEE_ALG_HMAC_SHA1 },
-		{ SKS_CKM_SHA224_HMAC, TEE_ALG_HMAC_SHA224 },
-		{ SKS_CKM_SHA256_HMAC, TEE_ALG_HMAC_SHA256 },
-		{ SKS_CKM_SHA384_HMAC, TEE_ALG_HMAC_SHA384 },
-		{ SKS_CKM_SHA512_HMAC, TEE_ALG_HMAC_SHA512 },
+		{ PKCS11_CKM_MD5_HMAC, TEE_ALG_HMAC_MD5 },
+		{ PKCS11_CKM_SHA_1_HMAC, TEE_ALG_HMAC_SHA1 },
+		{ PKCS11_CKM_SHA224_HMAC, TEE_ALG_HMAC_SHA224 },
+		{ PKCS11_CKM_SHA256_HMAC, TEE_ALG_HMAC_SHA256 },
+		{ PKCS11_CKM_SHA384_HMAC, TEE_ALG_HMAC_SHA384 },
+		{ PKCS11_CKM_SHA512_HMAC, TEE_ALG_HMAC_SHA512 },
 	};
 	size_t end = sizeof(sks2tee_algo) / (2 * sizeof(uint32_t));
 	size_t n = 0;
@@ -89,14 +89,14 @@ static uint32_t sks2tee_algorithm(uint32_t *tee_id,
 static uint32_t sks2tee_key_type(uint32_t *tee_type, struct sks_object *obj)
 {
 	static const uint32_t sks2tee_key_type[][2] = {
-		{ SKS_CKK_AES, TEE_TYPE_AES },
-		{ SKS_CKK_GENERIC_SECRET, TEE_TYPE_GENERIC_SECRET },
-		{ SKS_CKK_MD5_HMAC, TEE_TYPE_HMAC_MD5 },
-		{ SKS_CKK_SHA_1_HMAC, TEE_TYPE_HMAC_SHA1 },
-		{ SKS_CKK_SHA224_HMAC, TEE_TYPE_HMAC_SHA224 },
-		{ SKS_CKK_SHA256_HMAC, TEE_TYPE_HMAC_SHA256 },
-		{ SKS_CKK_SHA384_HMAC, TEE_TYPE_HMAC_SHA384 },
-		{ SKS_CKK_SHA512_HMAC, TEE_TYPE_HMAC_SHA512 },
+		{ PKCS11_CKK_AES, TEE_TYPE_AES },
+		{ PKCS11_CKK_GENERIC_SECRET, TEE_TYPE_GENERIC_SECRET },
+		{ PKCS11_CKK_MD5_HMAC, TEE_TYPE_HMAC_MD5 },
+		{ PKCS11_CKK_SHA_1_HMAC, TEE_TYPE_HMAC_SHA1 },
+		{ PKCS11_CKK_SHA224_HMAC, TEE_TYPE_HMAC_SHA224 },
+		{ PKCS11_CKK_SHA256_HMAC, TEE_TYPE_HMAC_SHA256 },
+		{ PKCS11_CKK_SHA384_HMAC, TEE_TYPE_HMAC_SHA384 },
+		{ PKCS11_CKK_SHA512_HMAC, TEE_TYPE_HMAC_SHA512 },
 	};
 	const size_t last = sizeof(sks2tee_key_type) / (2 * sizeof(uint32_t));
 	size_t n = 0;
@@ -104,7 +104,7 @@ static uint32_t sks2tee_key_type(uint32_t *tee_type, struct sks_object *obj)
 
 	type = get_type(obj->attributes);
 
-	assert(get_class(obj->attributes) == SKS_CKO_SECRET_KEY);
+	assert(get_class(obj->attributes) == PKCS11_CKO_SECRET_KEY);
 
 	for (n = 0; n < last; n++) {
 		if (sks2tee_key_type[n][0] == type) {
@@ -133,15 +133,15 @@ static uint32_t allocate_tee_operation(struct pkcs11_session *session,
 
 	/* Sign/Verify with AES or generic key relate to TEE MAC operation */
 	switch (proc_params->id) {
-	case SKS_CKM_AES_CMAC_GENERAL:
-	case SKS_CKM_AES_CMAC:
-	case SKS_CKM_MD5_HMAC:
-	case SKS_CKM_SHA_1_HMAC:
-	case SKS_CKM_SHA224_HMAC:
-	case SKS_CKM_SHA256_HMAC:
-	case SKS_CKM_SHA384_HMAC:
-	case SKS_CKM_SHA512_HMAC:
-	case SKS_CKM_AES_XCBC_MAC:
+	case PKCS11_CKM_AES_CMAC_GENERAL:
+	case PKCS11_CKM_AES_CMAC:
+	case PKCS11_CKM_MD5_HMAC:
+	case PKCS11_CKM_SHA_1_HMAC:
+	case PKCS11_CKM_SHA224_HMAC:
+	case PKCS11_CKM_SHA256_HMAC:
+	case PKCS11_CKM_SHA384_HMAC:
+	case PKCS11_CKM_SHA512_HMAC:
+	case PKCS11_CKM_AES_XCBC_MAC:
 		mode = TEE_MODE_MAC;
 		break;
 	default:
@@ -175,7 +175,7 @@ static uint32_t load_tee_key(struct pkcs11_session *session,
 	}
 
 	if (!sks2tee_load_attr(&tee_attr, TEE_ATTR_SECRET_VALUE,
-			       obj, SKS_CKA_VALUE)) {
+			       obj, PKCS11_CKA_VALUE)) {
 		EMSG("No secret found");
 		return SKS_FAILED;
 	}
@@ -224,49 +224,49 @@ static uint32_t init_tee_operation(struct pkcs11_session *session,
 	uint32_t rv = SKS_ERROR;
 
 	switch (proc_params->id) {
-	case SKS_CKM_AES_CMAC_GENERAL:
-	case SKS_CKM_AES_CMAC:
-	case SKS_CKM_MD5_HMAC:
-	case SKS_CKM_SHA_1_HMAC:
-	case SKS_CKM_SHA224_HMAC:
-	case SKS_CKM_SHA256_HMAC:
-	case SKS_CKM_SHA384_HMAC:
-	case SKS_CKM_SHA512_HMAC:
-	case SKS_CKM_AES_XCBC_MAC:
+	case PKCS11_CKM_AES_CMAC_GENERAL:
+	case PKCS11_CKM_AES_CMAC:
+	case PKCS11_CKM_MD5_HMAC:
+	case PKCS11_CKM_SHA_1_HMAC:
+	case PKCS11_CKM_SHA224_HMAC:
+	case PKCS11_CKM_SHA256_HMAC:
+	case PKCS11_CKM_SHA384_HMAC:
+	case PKCS11_CKM_SHA512_HMAC:
+	case PKCS11_CKM_AES_XCBC_MAC:
 		if (proc_params->size)
-			return SKS_CKR_MECHANISM_PARAM_INVALID;
+			return PKCS11_CKR_MECHANISM_PARAM_INVALID;
 
 		TEE_MACInit(session->processing->tee_op_handle, NULL, 0);
 		rv = SKS_OK;
 		break;
-	case SKS_CKM_AES_ECB:
+	case PKCS11_CKM_AES_ECB:
 		if (proc_params->size)
-			return SKS_CKR_MECHANISM_PARAM_INVALID;
+			return PKCS11_CKR_MECHANISM_PARAM_INVALID;
 
 		TEE_CipherInit(session->processing->tee_op_handle, NULL, 0);
 		rv = SKS_OK;
 		break;
-	case SKS_CKM_AES_CBC:
-	case SKS_CKM_AES_CBC_PAD:
-	case SKS_CKM_AES_CTS:
+	case PKCS11_CKM_AES_CBC:
+	case PKCS11_CKM_AES_CBC_PAD:
+	case PKCS11_CKM_AES_CTS:
 		if (proc_params->size != 16)
-			return SKS_CKR_MECHANISM_PARAM_INVALID;
+			return PKCS11_CKR_MECHANISM_PARAM_INVALID;
 
 		TEE_CipherInit(session->processing->tee_op_handle,
 			       proc_params->data, 16);
 		rv = SKS_OK;
 		break;
-	case SKS_CKM_AES_CTR:
+	case PKCS11_CKM_AES_CTR:
 		rv = tee_init_ctr_operation(session->processing,
 					    proc_params->data,
 					    proc_params->size);
 		break;
-	case SKS_CKM_AES_CCM:
+	case PKCS11_CKM_AES_CCM:
 		rv = tee_init_ccm_operation(session->processing,
 					    proc_params->data,
 					    proc_params->size);
 		break;
-	case SKS_CKM_AES_GCM:
+	case PKCS11_CKM_AES_GCM:
 		rv = tee_init_gcm_operation(session->processing,
 					    proc_params->data,
 					    proc_params->size);
@@ -339,15 +339,15 @@ uint32_t step_symm_operation(struct pkcs11_session *session,
 	 * (SKS_FUNC_STEP_UPDATE/_ONESHOT)
 	 */
 	switch (proc->mecha_type) {
-	case SKS_CKM_AES_CMAC_GENERAL:
-	case SKS_CKM_AES_CMAC:
-	case SKS_CKM_MD5_HMAC:
-	case SKS_CKM_SHA_1_HMAC:
-	case SKS_CKM_SHA224_HMAC:
-	case SKS_CKM_SHA256_HMAC:
-	case SKS_CKM_SHA384_HMAC:
-	case SKS_CKM_SHA512_HMAC:
-	case SKS_CKM_AES_XCBC_MAC:
+	case PKCS11_CKM_AES_CMAC_GENERAL:
+	case PKCS11_CKM_AES_CMAC:
+	case PKCS11_CKM_MD5_HMAC:
+	case PKCS11_CKM_SHA_1_HMAC:
+	case PKCS11_CKM_SHA224_HMAC:
+	case PKCS11_CKM_SHA256_HMAC:
+	case PKCS11_CKM_SHA384_HMAC:
+	case PKCS11_CKM_SHA512_HMAC:
+	case PKCS11_CKM_AES_XCBC_MAC:
 		if (step == SKS_FUNC_STEP_FINAL)
 			break;
 
@@ -368,11 +368,11 @@ uint32_t step_symm_operation(struct pkcs11_session *session,
 		}
 		break;
 
-	case SKS_CKM_AES_ECB:
-	case SKS_CKM_AES_CBC:
-	case SKS_CKM_AES_CBC_PAD:
-	case SKS_CKM_AES_CTS:
-	case SKS_CKM_AES_CTR:
+	case PKCS11_CKM_AES_ECB:
+	case PKCS11_CKM_AES_CBC:
+	case PKCS11_CKM_AES_CBC_PAD:
+	case PKCS11_CKM_AES_CTS:
+	case PKCS11_CKM_AES_CTR:
 		if (step == SKS_FUNC_STEP_FINAL ||
 		    step == SKS_FUNC_STEP_ONESHOT)
 			break;
@@ -392,8 +392,8 @@ uint32_t step_symm_operation(struct pkcs11_session *session,
 		}
 		break;
 
-	case SKS_CKM_AES_CCM:
-	case SKS_CKM_AES_GCM:
+	case PKCS11_CKM_AES_CCM:
+	case PKCS11_CKM_AES_GCM:
 		if (step == SKS_FUNC_STEP_FINAL)
 			break;
 
@@ -432,15 +432,15 @@ uint32_t step_symm_operation(struct pkcs11_session *session,
 	 * Finalize (SKS_FUNC_STEP_ONESHOT/_FINAL) operation
 	 */
 	switch (session->processing->mecha_type) {
-	case SKS_CKM_AES_CMAC_GENERAL:
-	case SKS_CKM_AES_CMAC:
-	case SKS_CKM_MD5_HMAC:
-	case SKS_CKM_SHA_1_HMAC:
-	case SKS_CKM_SHA224_HMAC:
-	case SKS_CKM_SHA256_HMAC:
-	case SKS_CKM_SHA384_HMAC:
-	case SKS_CKM_SHA512_HMAC:
-	case SKS_CKM_AES_XCBC_MAC:
+	case PKCS11_CKM_AES_CMAC_GENERAL:
+	case PKCS11_CKM_AES_CMAC:
+	case PKCS11_CKM_MD5_HMAC:
+	case PKCS11_CKM_SHA_1_HMAC:
+	case PKCS11_CKM_SHA224_HMAC:
+	case PKCS11_CKM_SHA256_HMAC:
+	case PKCS11_CKM_SHA384_HMAC:
+	case PKCS11_CKM_SHA512_HMAC:
+	case PKCS11_CKM_AES_XCBC_MAC:
 		switch (function) {
 		case SKS_FUNCTION_SIGN:
 			res = TEE_MACComputeFinal(proc->tee_op_handle,
@@ -459,11 +459,11 @@ uint32_t step_symm_operation(struct pkcs11_session *session,
 		}
 		break;
 
-	case SKS_CKM_AES_ECB:
-	case SKS_CKM_AES_CBC:
-	case SKS_CKM_AES_CBC_PAD:
-	case SKS_CKM_AES_CTS:
-	case SKS_CKM_AES_CTR:
+	case PKCS11_CKM_AES_ECB:
+	case PKCS11_CKM_AES_CBC:
+	case PKCS11_CKM_AES_CBC_PAD:
+	case PKCS11_CKM_AES_CTS:
+	case PKCS11_CKM_AES_CTR:
 		switch (function) {
 		case SKS_FUNCTION_ENCRYPT:
 		case SKS_FUNCTION_DECRYPT:
@@ -479,8 +479,8 @@ uint32_t step_symm_operation(struct pkcs11_session *session,
 		}
 		break;
 
-	case SKS_CKM_AES_CCM:
-	case SKS_CKM_AES_GCM:
+	case PKCS11_CKM_AES_CCM:
+	case PKCS11_CKM_AES_GCM:
 		switch (function) {
 		case SKS_FUNCTION_ENCRYPT:
 			rv = tee_ae_encrypt_final(proc, out_buf, &out_size2);

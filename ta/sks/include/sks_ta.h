@@ -66,11 +66,11 @@ struct sks_slot_info {
 
 /*
  * Values for sks_token_info::flags.
- * SKS_CKFS_<x> corresponds to cryptoki flag CKF_<x> related to slot flags.
+ * PKCS11_CKFS_<x> corresponds to cryptoki flag CKF_<x> related to slot flags.
  */
-#define SKS_CKFS_TOKEN_PRESENT		(1U << 0)
-#define SKS_CKFS_REMOVABLE_DEVICE	(1U << 1)
-#define SKS_CKFS_HW_SLOT		(1U << 2)
+#define PKCS11_CKFS_TOKEN_PRESENT		(1U << 0)
+#define PKCS11_CKFS_REMOVABLE_DEVICE		(1U << 1)
+#define PKCS11_CKFS_HW_SLOT			(1U << 2)
 
 /*
  * SKS_CMD_CK_TOKEN_INFO - Get cryptoki structured token information
@@ -113,26 +113,26 @@ struct sks_token_info {
 
 /*
  * Values for sks_token_info::flags.
- * SKS_CKFT_<x> corresponds to cryptoki CKF_<x> related to token flags.
+ * PKCS11_CKFT_<x> corresponds to cryptoki CKF_<x> related to token flags.
  */
-#define SKS_CKFT_RNG					(1U << 0)
-#define SKS_CKFT_WRITE_PROTECTED			(1U << 1)
-#define SKS_CKFT_LOGIN_REQUIRED				(1U << 2)
-#define SKS_CKFT_USER_PIN_INITIALIZED			(1U << 3)
-#define SKS_CKFT_RESTORE_KEY_NOT_NEEDED			(1U << 4)
-#define SKS_CKFT_CLOCK_ON_TOKEN				(1U << 5)
-#define SKS_CKFT_PROTECTED_AUTHENTICATION_PATH		(1U << 6)
-#define SKS_CKFT_DUAL_CRYPTO_OPERATIONS			(1U << 7)
-#define SKS_CKFT_TOKEN_INITIALIZED			(1U << 8)
-#define SKS_CKFT_USER_PIN_COUNT_LOW			(1U << 9)
-#define SKS_CKFT_USER_PIN_FINAL_TRY			(1U << 10)
-#define SKS_CKFT_USER_PIN_LOCKED			(1U << 11)
-#define SKS_CKFT_USER_PIN_TO_BE_CHANGED			(1U << 12)
-#define SKS_CKFT_SO_PIN_COUNT_LOW			(1U << 13)
-#define SKS_CKFT_SO_PIN_FINAL_TRY			(1U << 14)
-#define SKS_CKFT_SO_PIN_LOCKED				(1U << 15)
-#define SKS_CKFT_SO_PIN_TO_BE_CHANGED			(1U << 16)
-#define SKS_CKFT_ERROR_STATE				(1U << 17)
+#define PKCS11_CKFT_RNG					(1U << 0)
+#define PKCS11_CKFT_WRITE_PROTECTED			(1U << 1)
+#define PKCS11_CKFT_LOGIN_REQUIRED			(1U << 2)
+#define PKCS11_CKFT_USER_PIN_INITIALIZED		(1U << 3)
+#define PKCS11_CKFT_RESTORE_KEY_NOT_NEEDED		(1U << 4)
+#define PKCS11_CKFT_CLOCK_ON_TOKEN			(1U << 5)
+#define PKCS11_CKFT_PROTECTED_AUTHENTICATION_PATH	(1U << 6)
+#define PKCS11_CKFT_DUAL_CRYPTO_OPERATIONS		(1U << 7)
+#define PKCS11_CKFT_TOKEN_INITIALIZED			(1U << 8)
+#define PKCS11_CKFT_USER_PIN_COUNT_LOW			(1U << 9)
+#define PKCS11_CKFT_USER_PIN_FINAL_TRY			(1U << 10)
+#define PKCS11_CKFT_USER_PIN_LOCKED			(1U << 11)
+#define PKCS11_CKFT_USER_PIN_TO_BE_CHANGED		(1U << 12)
+#define PKCS11_CKFT_SO_PIN_COUNT_LOW			(1U << 13)
+#define PKCS11_CKFT_SO_PIN_FINAL_TRY			(1U << 14)
+#define PKCS11_CKFT_SO_PIN_LOCKED			(1U << 15)
+#define PKCS11_CKFT_SO_PIN_TO_BE_CHANGED		(1U << 16)
+#define PKCS11_CKFT_ERROR_STATE				(1U << 17)
 
 /*
  * SKS_CMD_CK_MECHANISM_IDS - Get list of the supported mechanisms
@@ -167,27 +167,27 @@ struct sks_mechanism_info {
 
 /*
  * Values for sks_mechanism_info::flags.
- * SKS_CKFM_<x> strictly matches cryptoki CKF_<x> related to mechanism flags.
+ * PKCS11_CKFM_<x> strictly matches cryptoki CKF_<x> related to mechanism flags.
  */
-#define SKS_CKFM_HW			(1U << 0)
-#define SKS_CKFM_ENCRYPT		(1U << 8)
-#define SKS_CKFM_DECRYPT		(1U << 9)
-#define SKS_CKFM_DIGEST			(1U << 10)
-#define SKS_CKFM_SIGN			(1U << 11)
-#define SKS_CKFM_SIGN_RECOVER		(1U << 12)
-#define SKS_CKFM_VERIFY			(1U << 13)
-#define SKS_CKFM_VERIFY_RECOVER		(1U << 14)
-#define SKS_CKFM_GENERATE		(1U << 15)
-#define SKS_CKFM_GENERATE_PAIR		(1U << 16)
-#define SKS_CKFM_WRAP			(1U << 17)
-#define SKS_CKFM_UNWRAP			(1U << 18)
-#define SKS_CKFM_DERIVE			(1U << 19)
-#define SKS_CKFM_EC_F_P			(1U << 20)
-#define SKS_CKFM_EC_F_2M		(1U << 21)
-#define SKS_CKFM_EC_ECPARAMETERS	(1U << 22)
-#define SKS_CKFM_EC_NAMEDCURVE		(1U << 23)
-#define SKS_CKFM_EC_UNCOMPRESS		(1U << 24)
-#define SKS_CKFM_EC_COMPRESS		(1U << 25)
+#define PKCS11_CKFM_HW			(1U << 0)
+#define PKCS11_CKFM_ENCRYPT		(1U << 8)
+#define PKCS11_CKFM_DECRYPT		(1U << 9)
+#define PKCS11_CKFM_DIGEST		(1U << 10)
+#define PKCS11_CKFM_SIGN		(1U << 11)
+#define PKCS11_CKFM_SIGN_RECOVER	(1U << 12)
+#define PKCS11_CKFM_VERIFY		(1U << 13)
+#define PKCS11_CKFM_VERIFY_RECOVER	(1U << 14)
+#define PKCS11_CKFM_GENERATE		(1U << 15)
+#define PKCS11_CKFM_GENERATE_PAIR	(1U << 16)
+#define PKCS11_CKFM_WRAP		(1U << 17)
+#define PKCS11_CKFM_UNWRAP		(1U << 18)
+#define PKCS11_CKFM_DERIVE		(1U << 19)
+#define PKCS11_CKFM_EC_F_P		(1U << 20)
+#define PKCS11_CKFM_EC_F_2M		(1U << 21)
+#define PKCS11_CKFM_EC_ECPARAMETERS	(1U << 22)
+#define PKCS11_CKFM_EC_NAMEDCURVE	(1U << 23)
+#define PKCS11_CKFM_EC_UNCOMPRESS	(1U << 24)
+#define PKCS11_CKFM_EC_COMPRESS		(1U << 25)
 
 /*
  * SKS_CMD_CK_INIT_TOKEN - Initialize PKCS#11 token
@@ -338,7 +338,7 @@ struct sks_object_head {
  * structure followed by the attribute value, its byte size being defined
  * in the attribute header.
  *
- * @id - the 32bit identifier of the attribute, see SKS_CKA_<x>
+ * @id - the 32bit identifier of the attribute, see PKCS11_CKA_<x>
  * @size - the 32bit value attribute byte size
  * @data - then starts the attribute value
  */
@@ -596,9 +596,9 @@ struct sks_attribute_head {
 /*
  * Values for user identifier parameter in SKS_CMD_LOGIN
  */
-#define SKS_CKU_SO			0x000
-#define SKS_CKU_USER			0x001
-#define SKS_CKU_CONTEXT_SPECIFIC	0x002
+#define PKCS11_CKU_SO			0x000
+#define PKCS11_CKU_USER			0x001
+#define PKCS11_CKU_CONTEXT_SPECIFIC	0x002
 
 /*
  * SKS_CMD_LOGOUT - Log out from token
@@ -662,61 +662,61 @@ struct sks_attribute_head {
 
 /*
  * Command return codes
- * SKS_CKR_<x> relates cryptoki CKR_<x> in meaning if not in value.
+ * PKCS11_CKR_<x> relates cryptoki CKR_<x> in meaning if not in value.
  */
-#define SKS_CKR_OK				0x00000000
-#define SKS_CKR_GENERAL_ERROR			0x00000001
-#define SKS_CKR_DEVICE_MEMORY			0x00000002
-#define SKS_CKR_ARGUMENTS_BAD			0x00000003
-#define SKS_CKR_BUFFER_TOO_SMALL		0x00000004
-#define SKS_CKR_FUNCTION_FAILED			0x00000005
-#define SKS_CKR_SIGNATURE_INVALID		0x00000007
-#define SKS_CKR_ATTRIBUTE_TYPE_INVALID		0x00000008
-#define SKS_CKR_ATTRIBUTE_VALUE_INVALID		0x00000009
-#define SKS_CKR_OBJECT_HANDLE_INVALID		0x0000000a
-#define SKS_CKR_KEY_HANDLE_INVALID		0x0000000b
-#define SKS_CKR_MECHANISM_INVALID		0x0000000c
-#define SKS_CKR_SESSION_HANDLE_INVALID		0x0000000d
-#define SKS_CKR_SLOT_ID_INVALID			0x0000000e
-#define SKS_CKR_MECHANISM_PARAM_INVALID		0x0000000f
-#define SKS_CKR_TEMPLATE_INCONSISTENT		0x00000010
-#define SKS_CKR_TEMPLATE_INCOMPLETE		0x00000011
-#define SKS_CKR_PIN_INCORRECT			0x00000012
-#define SKS_CKR_PIN_LOCKED			0x00000013
-#define SKS_CKR_PIN_EXPIRED			0x00000014
-#define SKS_CKR_PIN_INVALID			0x00000015
-#define SKS_CKR_PIN_LEN_RANGE			0x00000016
-#define SKS_CKR_SESSION_EXISTS			0x00000017
-#define SKS_CKR_SESSION_READ_ONLY		0x00000018
-#define SKS_CKR_SESSION_READ_WRITE_SO_EXISTS	0x00000019
-#define SKS_CKR_OPERATION_ACTIVE		0x0000001a
-#define SKS_CKR_KEY_FUNCTION_NOT_PERMITTED	0x0000001b
-#define SKS_CKR_OPERATION_NOT_INITIALIZED	0x0000001c
-#define SKS_CKR_TOKEN_WRITE_PROTECTED		0x0000001d
-#define SKS_CKR_TOKEN_NOT_PRESENT		0x0000001e
-#define SKS_CKR_TOKEN_NOT_RECOGNIZED		0x0000001f
-#define SKS_CKR_ACTION_PROHIBITED		0x00000020
-#define SKS_CKR_ATTRIBUTE_READ_ONLY		0x00000021
-#define SKS_CKR_PIN_TOO_WEAK			0x00000022
-#define SKS_CKR_CURVE_NOT_SUPPORTED		0x00000023
-#define SKS_CKR_DOMAIN_PARAMS_INVALID		0x00000024
-#define SKS_CKR_USER_ALREADY_LOGGED_IN		0x00000025
-#define SKS_CKR_USER_ANOTHER_ALREADY_LOGGED_IN	0x00000026
-#define SKS_CKR_USER_NOT_LOGGED_IN		0x00000027
-#define SKS_CKR_USER_PIN_NOT_INITIALIZED	0x00000028
-#define SKS_CKR_USER_TOO_MANY_TYPES		0x00000029
-#define SKS_CKR_USER_TYPE_INVALID		0x0000002a
-#define SKS_CKR_SESSION_READ_ONLY_EXISTS	0x0000002b
-#define SKS_CKR_KEY_SIZE_RANGE			0x0000002c
-#define SKS_CKR_ATTRIBUTE_SENSITIVE		0x0000002d
+#define PKCS11_CKR_OK					0x00000000
+#define PKCS11_CKR_GENERAL_ERROR			0x00000001
+#define PKCS11_CKR_DEVICE_MEMORY			0x00000002
+#define PKCS11_CKR_ARGUMENTS_BAD			0x00000003
+#define PKCS11_CKR_BUFFER_TOO_SMALL			0x00000004
+#define PKCS11_CKR_FUNCTION_FAILED			0x00000005
+#define PKCS11_CKR_SIGNATURE_INVALID			0x00000007
+#define PKCS11_CKR_ATTRIBUTE_TYPE_INVALID		0x00000008
+#define PKCS11_CKR_ATTRIBUTE_VALUE_INVALID		0x00000009
+#define PKCS11_CKR_OBJECT_HANDLE_INVALID		0x0000000a
+#define PKCS11_CKR_KEY_HANDLE_INVALID			0x0000000b
+#define PKCS11_CKR_MECHANISM_INVALID			0x0000000c
+#define PKCS11_CKR_SESSION_HANDLE_INVALID		0x0000000d
+#define PKCS11_CKR_SLOT_ID_INVALID			0x0000000e
+#define PKCS11_CKR_MECHANISM_PARAM_INVALID		0x0000000f
+#define PKCS11_CKR_TEMPLATE_INCONSISTENT		0x00000010
+#define PKCS11_CKR_TEMPLATE_INCOMPLETE			0x00000011
+#define PKCS11_CKR_PIN_INCORRECT			0x00000012
+#define PKCS11_CKR_PIN_LOCKED				0x00000013
+#define PKCS11_CKR_PIN_EXPIRED				0x00000014
+#define PKCS11_CKR_PIN_INVALID				0x00000015
+#define PKCS11_CKR_PIN_LEN_RANGE			0x00000016
+#define PKCS11_CKR_SESSION_EXISTS			0x00000017
+#define PKCS11_CKR_SESSION_READ_ONLY			0x00000018
+#define PKCS11_CKR_SESSION_READ_WRITE_SO_EXISTS		0x00000019
+#define PKCS11_CKR_OPERATION_ACTIVE			0x0000001a
+#define PKCS11_CKR_KEY_FUNCTION_NOT_PERMITTED		0x0000001b
+#define PKCS11_CKR_OPERATION_NOT_INITIALIZED		0x0000001c
+#define PKCS11_CKR_TOKEN_WRITE_PROTECTED		0x0000001d
+#define PKCS11_CKR_TOKEN_NOT_PRESENT			0x0000001e
+#define PKCS11_CKR_TOKEN_NOT_RECOGNIZED			0x0000001f
+#define PKCS11_CKR_ACTION_PROHIBITED			0x00000020
+#define PKCS11_CKR_ATTRIBUTE_READ_ONLY			0x00000021
+#define PKCS11_CKR_PIN_TOO_WEAK				0x00000022
+#define PKCS11_CKR_CURVE_NOT_SUPPORTED			0x00000023
+#define PKCS11_CKR_DOMAIN_PARAMS_INVALID		0x00000024
+#define PKCS11_CKR_USER_ALREADY_LOGGED_IN		0x00000025
+#define PKCS11_CKR_USER_ANOTHER_ALREADY_LOGGED_IN	0x00000026
+#define PKCS11_CKR_USER_NOT_LOGGED_IN			0x00000027
+#define PKCS11_CKR_USER_PIN_NOT_INITIALIZED		0x00000028
+#define PKCS11_CKR_USER_TOO_MANY_TYPES			0x00000029
+#define PKCS11_CKR_USER_TYPE_INVALID			0x0000002a
+#define PKCS11_CKR_SESSION_READ_ONLY_EXISTS		0x0000002b
+#define PKCS11_CKR_KEY_SIZE_RANGE			0x0000002c
+#define PKCS11_CKR_ATTRIBUTE_SENSITIVE			0x0000002d
 
 /* Status without strict equivalence in Cryptoki API */
 #define SKS_NOT_FOUND				0x00001000
 #define SKS_NOT_IMPLEMENTED			0x00001001
 
 /* Attribute specific values */
-#define SKS_CK_UNAVAILABLE_INFORMATION		((uint32_t)0xFFFFFFFF)
-#define SKS_UNDEFINED_ID			SKS_CK_UNAVAILABLE_INFORMATION
+#define PKCS11_CK_UNAVAILABLE_INFORMATION	((uint32_t)0xFFFFFFFF)
+#define SKS_UNDEFINED_ID			PKCS11_CK_UNAVAILABLE_INFORMATION
 #define SKS_FALSE				0
 #define SKS_TRUE				1
 
@@ -724,195 +724,206 @@ struct sks_attribute_head {
  * Attribute identifiers
  * Valid values for struct sks_attribute_head::id
  *
- * SKS_ATTR_<x> corresponds to cryptoki CKA_<x>.
+ * PKCS11_CKA_<x> relates to cryptoki CKA_<x>.
  * Value range [0 63] is reserved to boolean value attributes.
  */
-#define SKS_BOOLPROPS_BASE			0x00000000
-#define SKS_CKA_TOKEN				0x00000000
-#define SKS_CKA_PRIVATE				0x00000001
-#define SKS_CKA_TRUSTED				0x00000002
-#define SKS_CKA_SENSITIVE			0x00000003
-#define SKS_CKA_ENCRYPT				0x00000004
-#define SKS_CKA_DECRYPT				0x00000005
-#define SKS_CKA_WRAP				0x00000006
-#define SKS_CKA_UNWRAP				0x00000007
-#define SKS_CKA_SIGN				0x00000008
-#define SKS_CKA_SIGN_RECOVER			0x00000009
-#define SKS_CKA_VERIFY				0x0000000a
-#define SKS_CKA_VERIFY_RECOVER			0x0000000b
-#define SKS_CKA_DERIVE				0x0000000c
-#define SKS_CKA_EXTRACTABLE			0x0000000d
-#define SKS_CKA_LOCAL				0x0000000e
-#define SKS_CKA_NEVER_EXTRACTABLE		0x0000000f
-#define SKS_CKA_ALWAYS_SENSITIVE		0x00000010
-#define SKS_CKA_MODIFIABLE			0x00000011
-#define SKS_CKA_COPYABLE			0x00000012
-#define SKS_CKA_DESTROYABLE			0x00000013
-#define SKS_CKA_ALWAYS_AUTHENTICATE		0x00000014
-#define SKS_CKA_WRAP_WITH_TRUSTED		0x00000015
+#define SKS_BOOLPROPS_BASE				0x00000000
+#define PKCS11_CKA_TOKEN				0x00000000
+#define PKCS11_CKA_PRIVATE				0x00000001
+#define PKCS11_CKA_TRUSTED				0x00000002
+#define PKCS11_CKA_SENSITIVE				0x00000003
+#define PKCS11_CKA_ENCRYPT				0x00000004
+#define PKCS11_CKA_DECRYPT				0x00000005
+#define PKCS11_CKA_WRAP					0x00000006
+#define PKCS11_CKA_UNWRAP				0x00000007
+#define PKCS11_CKA_SIGN					0x00000008
+#define PKCS11_CKA_SIGN_RECOVER				0x00000009
+#define PKCS11_CKA_VERIFY				0x0000000a
+#define PKCS11_CKA_VERIFY_RECOVER			0x0000000b
+#define PKCS11_CKA_DERIVE				0x0000000c
+#define PKCS11_CKA_EXTRACTABLE				0x0000000d
+#define PKCS11_CKA_LOCAL				0x0000000e
+#define PKCS11_CKA_NEVER_EXTRACTABLE			0x0000000f
+#define PKCS11_CKA_ALWAYS_SENSITIVE			0x00000010
+#define PKCS11_CKA_MODIFIABLE				0x00000011
+#define PKCS11_CKA_COPYABLE				0x00000012
+#define PKCS11_CKA_DESTROYABLE				0x00000013
+#define PKCS11_CKA_ALWAYS_AUTHENTICATE			0x00000014
+#define PKCS11_CKA_WRAP_WITH_TRUSTED			0x00000015
 /* Last boolean property ID (value is 63) is reserved */
-#define SKS_BOOLPROPS_LAST			SKS_CKA_WRAP_WITH_TRUSTED
-#define SKS_BOOLPROPS_END			0x0000003F
-#define SKS_BOOLPROPH_FLAG			BIT(31)
+#define SKS_BOOLPROPS_LAST				PKCS11_CKA_WRAP_WITH_TRUSTED
+#define SKS_BOOLPROPS_END				0x0000003F
+#define SKS_BOOLPROPH_FLAG				BIT(31)
 
-#define SKS_CKA_LABEL				0x00000040
-#define SKS_CKA_VALUE				0x00000041
-#define SKS_CKA_VALUE_LEN			0x00000042
-#define SKS_CKA_WRAP_TEMPLATE			0x00000043
-#define SKS_CKA_UNWRAP_TEMPLATE			0x00000044
-#define SKS_CKA_DERIVE_TEMPLATE			0x00000045
-#define SKS_CKA_START_DATE			0x00000046
-#define SKS_CKA_END_DATE			0x00000047
-#define SKS_CKA_OBJECT_ID			0x00000048
-#define SKS_CKA_APPLICATION			0x00000049
-#define SKS_CKA_MECHANISM_TYPE			0x0000004a
-#define SKS_CKA_ID				0x0000004b
-#define SKS_CKA_ALLOWED_MECHANISMS		0x0000004c
-#define SKS_CKA_CLASS				0x0000004d
-#define SKS_CKA_KEY_TYPE			0x0000004e
-#define SKS_CKA_EC_POINT			0x0000004f
-#define SKS_CKA_EC_PARAMS			0x00000050
-#define SKS_CKA_MODULUS				0x00000051
-#define SKS_CKA_MODULUS_BITS			0x00000052
-#define SKS_CKA_PUBLIC_EXPONENT			0x00000053
-#define SKS_CKA_PRIVATE_EXPONENT		0x00000054
-#define SKS_CKA_PRIME_1				0x00000055
-#define SKS_CKA_PRIME_2				0x00000056
-#define SKS_CKA_EXPONENT_1			0x00000057
-#define SKS_CKA_EXPONENT_2			0x00000058
-#define SKS_CKA_COEFFICIENT			0x00000059
-#define SKS_CKA_SUBJECT				0x0000005a
-#define SKS_CKA_PUBLIC_KEY_INFO			0x0000005b
-
-// Temporary storage until DER/BigInt conversion is available
-#define SKS_CKA_EC_POINT_X			0x88800001
-#define SKS_CKA_EC_POINT_Y			0x88800002
-
-/*
- * Valid values for attribute SKS_CKA_CLASS
- * SKS_CKO_<x> corresponds to cryptoki CKO_<x>.
- */
-#define SKS_CKO_SECRET_KEY			0x000
-#define SKS_CKO_PUBLIC_KEY			0x001
-#define SKS_CKO_PRIVATE_KEY			0x002
-#define SKS_CKO_OTP_KEY				0x003
-#define SKS_CKO_CERTIFICATE			0x004
-#define SKS_CKO_DATA				0x005
-#define SKS_CKO_DOMAIN_PARAMETERS		0x006
-#define SKS_CKO_HW_FEATURE			0x007
-#define SKS_CKO_MECHANISM			0x008
+#define PKCS11_CKA_LABEL				0x00000040
+#define PKCS11_CKA_VALUE				0x00000041
+#define PKCS11_CKA_VALUE_LEN				0x00000042
+#define PKCS11_CKA_WRAP_TEMPLATE			0x00000043
+#define PKCS11_CKA_UNWRAP_TEMPLATE			0x00000044
+#define PKCS11_CKA_DERIVE_TEMPLATE			0x00000045
+#define PKCS11_CKA_START_DATE				0x00000046
+#define PKCS11_CKA_END_DATE				0x00000047
+#define PKCS11_CKA_OBJECT_ID				0x00000048
+#define PKCS11_CKA_APPLICATION				0x00000049
+#define PKCS11_CKA_MECHANISM_TYPE			0x0000004a
+#define PKCS11_CKA_ID					0x0000004b
+#define PKCS11_CKA_ALLOWED_MECHANISMS			0x0000004c
+#define PKCS11_CKA_CLASS				0x0000004d
+#define PKCS11_CKA_KEY_TYPE				0x0000004e
+#define PKCS11_CKA_EC_POINT				0x0000004f
+#define PKCS11_CKA_EC_PARAMS				0x00000050
+#define PKCS11_CKA_MODULUS				0x00000051
+#define PKCS11_CKA_MODULUS_BITS				0x00000052
+#define PKCS11_CKA_PUBLIC_EXPONENT			0x00000053
+#define PKCS11_CKA_PRIVATE_EXPONENT			0x00000054
+#define PKCS11_CKA_PRIME_1				0x00000055
+#define PKCS11_CKA_PRIME_2				0x00000056
+#define PKCS11_CKA_EXPONENT_1				0x00000057
+#define PKCS11_CKA_EXPONENT_2				0x00000058
+#define PKCS11_CKA_COEFFICIENT				0x00000059
+#define PKCS11_CKA_SUBJECT				0x0000005a
+#define PKCS11_CKA_PUBLIC_KEY_INFO			0x0000005b
+/* Temporary storage until DER/BigInt conversion is available */
+#define PKCS11_CKA_EC_POINT_X				0x88800001
+#define PKCS11_CKA_EC_POINT_Y				0x88800002
+/* Vendor extension: reserved for undefined ID (~0U) */
+#define PKCS11_CKA_UNDEFINED_ID				SKS_UNDEFINED_ID
 
 /*
- * Valid values for attribute SKS_CKA_KEY_TYPE
- * SKS_CKK_<x> corresponds to cryptoki CKK_<x> related to symmetric keys
+ * Valid values for attribute PKCS11_CKA_CLASS
+ * PKCS11_CKO_<x> corresponds to cryptoki CKO_<x>.
  */
-#define SKS_CKK_AES				0x000
-#define SKS_CKK_GENERIC_SECRET			0x001
-#define SKS_CKK_MD5_HMAC			0x002
-#define SKS_CKK_SHA_1_HMAC			0x003
-#define SKS_CKK_SHA224_HMAC			0x004
-#define SKS_CKK_SHA256_HMAC			0x005
-#define SKS_CKK_SHA384_HMAC			0x006
-#define SKS_CKK_SHA512_HMAC			0x007
-#define SKS_CKK_EC				0x008
-#define SKS_CKK_RSA				0x009
-#define SKS_CKK_DSA				0x00a
-#define SKS_CKK_DH				0x00b
+#define PKCS11_CKO_SECRET_KEY				0x000
+#define PKCS11_CKO_PUBLIC_KEY				0x001
+#define PKCS11_CKO_PRIVATE_KEY				0x002
+#define PKCS11_CKO_OTP_KEY				0x003
+#define PKCS11_CKO_CERTIFICATE				0x004
+#define PKCS11_CKO_DATA					0x005
+#define PKCS11_CKO_DOMAIN_PARAMETERS			0x006
+#define PKCS11_CKO_HW_FEATURE				0x007
+#define PKCS11_CKO_MECHANISM				0x008
+/* Vendor extension: reserved for undefined ID (~0U) */
+#define PKCS11_CKO_UNDEFINED_ID				SKS_UNDEFINED_ID
 
 /*
- * Valid values for attribute SKS_CKA_MECHANISM_TYPE
- * SKS_CKM_<x> corresponds to cryptoki CKM_<x>.
+ * Valid values for attribute PKCS11_CKA_KEY_TYPE
+ * PKCS11_CKK_<x> corresponds to cryptoki CKK_<x> related to symmetric keys
  */
-#define SKS_CKM_AES_ECB				0x000
-#define SKS_CKM_AES_CBC				0x001
-#define SKS_CKM_AES_CBC_PAD			0x002
-#define SKS_CKM_AES_CTS				0x003
-#define SKS_CKM_AES_CTR				0x004
-#define SKS_CKM_AES_GCM				0x005
-#define SKS_CKM_AES_CCM				0x006
-#define SKS_CKM_AES_GMAC			0x007
-#define SKS_CKM_AES_CMAC			0x008
-#define SKS_CKM_AES_CMAC_GENERAL		0x009
-#define SKS_CKM_AES_ECB_ENCRYPT_DATA		0x00a
-#define SKS_CKM_AES_CBC_ENCRYPT_DATA		0x00b
-#define SKS_CKM_AES_KEY_GEN			0x00c
-#define SKS_CKM_GENERIC_SECRET_KEY_GEN		0x00d
-#define SKS_CKM_MD5_HMAC			0x00e
-#define SKS_CKM_SHA_1_HMAC			0x00f
-#define SKS_CKM_SHA224_HMAC			0x010
-#define SKS_CKM_SHA256_HMAC			0x011
-#define SKS_CKM_SHA384_HMAC			0x012
-#define SKS_CKM_SHA512_HMAC			0x013
-#define SKS_CKM_AES_XCBC_MAC			0x014
-#define SKS_CKM_EC_KEY_PAIR_GEN			0x015
-#define SKS_CKM_ECDSA				0x016
-#define SKS_CKM_ECDSA_SHA1			0x017
-#define SKS_CKM_ECDSA_SHA224			0x018	/* /!\ CK !PKCS#11 */
-#define SKS_CKM_ECDSA_SHA256			0x019	/* /!\ CK !PKCS#11 */
-#define SKS_CKM_ECDSA_SHA384			0x01a	/* /!\ CK !PKCS#11 */
-#define SKS_CKM_ECDSA_SHA512			0x01b	/* /!\ CK !PKCS#11 */
-#define SKS_CKM_ECDH1_DERIVE			0x01c
-#define SKS_CKM_ECDH1_COFACTOR_DERIVE		0x01d
-#define SKS_CKM_ECMQV_DERIVE			0x01e
-#define SKS_CKM_ECDH_AES_KEY_WRAP		0x01f
-#define SKS_CKM_RSA_PKCS_KEY_PAIR_GEN		0x020
-#define SKS_CKM_RSA_PKCS			0x021
-#define SKS_CKM_RSA_9796			0x022
-#define SKS_CKM_RSA_X_509			0x023
-#define SKS_CKM_SHA1_RSA_PKCS			0x024
-#define SKS_CKM_RSA_PKCS_OAEP			0x025
-#define SKS_CKM_SHA1_RSA_PKCS_PSS		0x026
-#define SKS_CKM_SHA256_RSA_PKCS			0x027
-#define SKS_CKM_SHA384_RSA_PKCS			0x028
-#define SKS_CKM_SHA512_RSA_PKCS			0x029
-#define SKS_CKM_SHA256_RSA_PKCS_PSS		0x02a
-#define SKS_CKM_SHA384_RSA_PKCS_PSS		0x02b
-#define SKS_CKM_SHA512_RSA_PKCS_PSS		0x02c
-#define SKS_CKM_SHA224_RSA_PKCS			0x02d
-#define SKS_CKM_SHA224_RSA_PKCS_PSS		0x02e
-#define SKS_CKM_RSA_AES_KEY_WRAP		0x02f
-#define SKS_CKM_RSA_PKCS_PSS			0x030
-#define SKS_CKM_MD5				0x031
-#define SKS_CKM_SHA_1				0x032
-#define SKS_CKM_SHA224				0x033
-#define SKS_CKM_SHA256				0x034
-#define SKS_CKM_SHA384				0x035
-#define SKS_CKM_SHA512				0x036
-#define SKS_CKM_DH_PKCS_DERIVE			0x037
+#define PKCS11_CKK_AES					0x000
+#define PKCS11_CKK_GENERIC_SECRET			0x001
+#define PKCS11_CKK_MD5_HMAC				0x002
+#define PKCS11_CKK_SHA_1_HMAC				0x003
+#define PKCS11_CKK_SHA224_HMAC				0x004
+#define PKCS11_CKK_SHA256_HMAC				0x005
+#define PKCS11_CKK_SHA384_HMAC				0x006
+#define PKCS11_CKK_SHA512_HMAC				0x007
+#define PKCS11_CKK_EC					0x008
+#define PKCS11_CKK_RSA					0x009
+#define PKCS11_CKK_DSA					0x00a
+#define PKCS11_CKK_DH					0x00b
+/* Vendor extension: reserved for undefined ID (~0U) */
+#define PKCS11_CKK_UNDEFINED_ID				SKS_UNDEFINED_ID
 
-/* SKS added IDs for operation without cryptoki mechanism ID defined */
-#define SKS_PROCESSING_IMPORT			0x1000
-#define SKS_PROCESSING_COPY			0x1001
+/*
+ * Valid values for attribute PKCS11_CKA_MECHANISM_TYPE
+ * PKCS11_CKM_<x> corresponds to cryptoki CKM_<x>.
+ */
+#define PKCS11_CKM_AES_ECB				0x000
+#define PKCS11_CKM_AES_CBC				0x001
+#define PKCS11_CKM_AES_CBC_PAD				0x002
+#define PKCS11_CKM_AES_CTS				0x003
+#define PKCS11_CKM_AES_CTR				0x004
+#define PKCS11_CKM_AES_GCM				0x005
+#define PKCS11_CKM_AES_CCM				0x006
+#define PKCS11_CKM_AES_GMAC				0x007
+#define PKCS11_CKM_AES_CMAC				0x008
+#define PKCS11_CKM_AES_CMAC_GENERAL			0x009
+#define PKCS11_CKM_AES_ECB_ENCRYPT_DATA			0x00a
+#define PKCS11_CKM_AES_CBC_ENCRYPT_DATA			0x00b
+#define PKCS11_CKM_AES_KEY_GEN				0x00c
+#define PKCS11_CKM_GENERIC_SECRET_KEY_GEN		0x00d
+#define PKCS11_CKM_MD5_HMAC				0x00e
+#define PKCS11_CKM_SHA_1_HMAC				0x00f
+#define PKCS11_CKM_SHA224_HMAC				0x010
+#define PKCS11_CKM_SHA256_HMAC				0x011
+#define PKCS11_CKM_SHA384_HMAC				0x012
+#define PKCS11_CKM_SHA512_HMAC				0x013
+#define PKCS11_CKM_AES_XCBC_MAC				0x014
+#define PKCS11_CKM_EC_KEY_PAIR_GEN			0x015
+#define PKCS11_CKM_ECDSA				0x016
+#define PKCS11_CKM_ECDSA_SHA1				0x017
+#define PKCS11_CKM_ECDSA_SHA224				0x018	/* /!\ CK !PKCS#11 */
+#define PKCS11_CKM_ECDSA_SHA256				0x019	/* /!\ CK !PKCS#11 */
+#define PKCS11_CKM_ECDSA_SHA384				0x01a	/* /!\ CK !PKCS#11 */
+#define PKCS11_CKM_ECDSA_SHA512				0x01b	/* /!\ CK !PKCS#11 */
+#define PKCS11_CKM_ECDH1_DERIVE				0x01c
+#define PKCS11_CKM_ECDH1_COFACTOR_DERIVE		0x01d
+#define PKCS11_CKM_ECMQV_DERIVE				0x01e
+#define PKCS11_CKM_ECDH_AES_KEY_WRAP			0x01f
+#define PKCS11_CKM_RSA_PKCS_KEY_PAIR_GEN		0x020
+#define PKCS11_CKM_RSA_PKCS				0x021
+#define PKCS11_CKM_RSA_9796				0x022
+#define PKCS11_CKM_RSA_X_509				0x023
+#define PKCS11_CKM_SHA1_RSA_PKCS			0x024
+#define PKCS11_CKM_RSA_PKCS_OAEP			0x025
+#define PKCS11_CKM_SHA1_RSA_PKCS_PSS			0x026
+#define PKCS11_CKM_SHA256_RSA_PKCS			0x027
+#define PKCS11_CKM_SHA384_RSA_PKCS			0x028
+#define PKCS11_CKM_SHA512_RSA_PKCS			0x029
+#define PKCS11_CKM_SHA256_RSA_PKCS_PSS			0x02a
+#define PKCS11_CKM_SHA384_RSA_PKCS_PSS			0x02b
+#define PKCS11_CKM_SHA512_RSA_PKCS_PSS			0x02c
+#define PKCS11_CKM_SHA224_RSA_PKCS			0x02d
+#define PKCS11_CKM_SHA224_RSA_PKCS_PSS			0x02e
+#define PKCS11_CKM_RSA_AES_KEY_WRAP			0x02f
+#define PKCS11_CKM_RSA_PKCS_PSS				0x030
+#define PKCS11_CKM_MD5					0x031
+#define PKCS11_CKM_SHA_1				0x032
+#define PKCS11_CKM_SHA224				0x033
+#define PKCS11_CKM_SHA256				0x034
+#define PKCS11_CKM_SHA384				0x035
+#define PKCS11_CKM_SHA512				0x036
+#define PKCS11_CKM_DH_PKCS_DERIVE			0x037
+
+/* PKCS11 TA added IDs for operation without cryptoki mechanism ID defined */
+#define PKCS11_PROCESSING_IMPORT				0x1000
+#define PKCS11_PROCESSING_COPY				0x1001
+/* Vendor extension: reserved for undefined ID (~0U) */
+#define PKCS11_CKM_UNDEFINED_ID				SKS_UNDEFINED_ID
 
 /*
  * Valid values key differentiation function identifiers
- * SKS_CKD_<x> reltaes to cryptoki CKD_<x>.
+ * PKCS11_CKD_<x> reltaes to cryptoki CKD_<x>.
  */
-#define SKS_CKD_NULL				0x0000UL
-#define SKS_CKD_SHA1_KDF			0x0001UL
-#define SKS_CKD_SHA1_KDF_ASN1			0x0002UL
-#define SKS_CKD_SHA1_KDF_CONCATENATE		0x0003UL
-#define SKS_CKD_SHA224_KDF			0x0004UL
-#define SKS_CKD_SHA256_KDF			0x0005UL
-#define SKS_CKD_SHA384_KDF			0x0006UL
-#define SKS_CKD_SHA512_KDF			0x0007UL
-#define SKS_CKD_CPDIVERSIFY_KDF			0x0008UL
+#define PKCS11_CKD_NULL					0x0000UL
+#define PKCS11_CKD_SHA1_KDF				0x0001UL
+#define PKCS11_CKD_SHA1_KDF_ASN1			0x0002UL
+#define PKCS11_CKD_SHA1_KDF_CONCATENATE			0x0003UL
+#define PKCS11_CKD_SHA224_KDF				0x0004UL
+#define PKCS11_CKD_SHA256_KDF				0x0005UL
+#define PKCS11_CKD_SHA384_KDF				0x0006UL
+#define PKCS11_CKD_SHA512_KDF				0x0007UL
+#define PKCS11_CKD_CPDIVERSIFY_KDF			0x0008UL
+/* Vendor extension: reserved for undefined ID (~0U) */
+#define PKCS11_CKD_UNDEFINED_ID				SKS_UNDEFINED_ID
 
 /*
  * Valid values MG function identifiers
- * SKS_CKG_<x> reltaes to cryptoki CKG_<x>.
+ * PKCS11_CKG_<x> reltaes to cryptoki CKG_<x>.
  */
-#define SKS_CKG_MGF1_SHA1			0x0001UL
-#define SKS_CKG_MGF1_SHA224			0x0005UL
-#define SKS_CKG_MGF1_SHA256			0x0002UL
-#define SKS_CKG_MGF1_SHA384			0x0003UL
-#define SKS_CKG_MGF1_SHA512			0x0004UL
+#define PKCS11_CKG_MGF1_SHA1				0x0001UL
+#define PKCS11_CKG_MGF1_SHA224				0x0005UL
+#define PKCS11_CKG_MGF1_SHA256				0x0002UL
+#define PKCS11_CKG_MGF1_SHA384				0x0003UL
+#define PKCS11_CKG_MGF1_SHA512				0x0004UL
+/* Vendor extension: reserved for undefined ID (~0U) */
+#define PKCS11_CKG_UNDEFINED_ID				SKS_UNDEFINED_ID
 
 /*
  * Valid values for RSA PKCS/OAEP source type identifier
- * SKS_CKZ_<x> reltaes to cryptoki CKZ_<x>.
+ * PKCS11_CKZ_<x> reltaes to cryptoki CKZ_<x>.
  */
-#define SKS_CKZ_DATA_SPECIFIED			0x0001UL
+#define PKCS11_CKZ_DATA_SPECIFIED		0x0001
 
 /*
  * Processing parameters
@@ -931,24 +942,24 @@ struct sks_attribute_head {
  * processing/mechanism.
  *
  * AES ECB
- *   head:	32bit: type = SKS_CKM_AES_ECB
+ *   head:	32bit: type = PKCS11_CKM_AES_ECB
  *		32bit: params byte size = 0
  *
  * AES CBC, CBC_NOPAD and CTS
- *   head:	32bit: type = SKS_CKM_AES_CBC
- *			  or SKS_CKM_AES_CBC_PAD
- *			  or SKS_CKM_AES_CTS
+ *   head:	32bit: type = PKCS11_CKM_AES_CBC
+ *			  or PKCS11_CKM_AES_CBC_PAD
+ *			  or PKCS11_CKM_AES_CTS
  *		32bit: params byte size = 16
  *  params:	16byte: IV
  *
  * AES CTR, params relates to struct CK_AES_CTR_PARAMS.
- *   head:	32bit: type = SKS_CKM_AES_CTR
+ *   head:	32bit: type = PKCS11_CKM_AES_CTR
  *		32bit: params byte size = 20
  *  params:	32bit: counter bit increment
  *		16byte: IV
  *
  * AES GCM, params relates to struct CK_AES_GCM_PARAMS.
- *   head:	32bit: type = SKS_CKM_AES_GCM
+ *   head:	32bit: type = PKCS11_CKM_AES_GCM
  *		32bit: params byte size
  *  params:	32bit: IV_byte_size
  *		byte array: IV (IV_byte_size bytes)
@@ -957,7 +968,7 @@ struct sks_attribute_head {
  *		32bit: tag bit size
  *
  * AES CCM, params relates to struct CK_AES_CCM_PARAMS.
- *   head:	32bit: type = SKS_CKM_AES_CCM
+ *   head:	32bit: type = PKCS11_CKM_AES_CCM
  *		32bit: params byte size
  *  params:	32bit: data_byte_size
  *		32bit: nonce_byte_size
@@ -967,75 +978,75 @@ struct sks_attribute_head {
  *		32bit: MAC byte size
  *
  * AES GMAC
- *   head:	32bit: type = SKS_CKM_AES_GMAC
+ *   head:	32bit: type = PKCS11_CKM_AES_GMAC
  *		32bit: params byte size = 12
  *  params:	12byte: IV
  *
  * AES CMAC with general length, params relates to struct CK_MAC_GENERAL_PARAMS.
- *   head:	32bit: type = SKS_CKM_AES_CMAC_GENERAL
+ *   head:	32bit: type = PKCS11_CKM_AES_CMAC_GENERAL
  *		32bit: params byte size = 12
  *  params:	32bit: byte size of the output CMAC data
  *
  * AES CMAC fixed size (16byte CMAC)
- *   head:	32bit: type = SKS_CKM_AES_CMAC_GENERAL
+ *   head:	32bit: type = PKCS11_CKM_AES_CMAC_GENERAL
  *		32bit: size = 0
  *
  * AES derive by ECB, params relates to struct CK_KEY_DERIVATION_STRING_DATA.
- *   head:	32bit: type = SKS_CKM_AES_ECB_ENCRYPT_DATA
+ *   head:	32bit: type = PKCS11_CKM_AES_ECB_ENCRYPT_DATA
  *		32bit: params byte size
  *  params:	32bit: byte size of the data to encrypt
  *		byte array: data to encrypt
  *
  * AES derive by CBC, params relates to struct CK_AES_CBC_ENCRYPT_DATA_PARAMS.
- *   head:	32bit: type = SKS_CKM_AES_CBC_ENCRYPT_DATA
+ *   head:	32bit: type = PKCS11_CKM_AES_CBC_ENCRYPT_DATA
  *		32bit: params byte size
  *  params:	16byte: IV
  *		32bit: byte size of the data to encrypt
  *		byte array: data to encrypt
  *
  * AES and generic secret generation
- *   head:	32bit: type = SKS_CKM_AES_KEY_GEN
- *			   or SKS_CKM_GENERIC_SECRET_KEY_GEN
+ *   head:	32bit: type = PKCS11_CKM_AES_KEY_GEN
+ *			   or PKCS11_CKM_GENERIC_SECRET_KEY_GEN
  *		32bit: size = 0
  *
  * ECDH, params relates to struct CK_ECDH1_DERIVE_PARAMS.
- *   head:	32bit: type = SKS_CKM_ECDH1_DERIVE
- *			   or SKS_CKM_ECDH1_COFACTOR_DERIVE
+ *   head:	32bit: type = PKCS11_CKM_ECDH1_DERIVE
+ *			   or PKCS11_CKM_ECDH1_COFACTOR_DERIVE
  *		32bit: params byte size
- *  params:	32bit: key derivation function (SKS_CKD_xxx)
+ *  params:	32bit: key derivation function (PKCS11_CKD_xxx)
  *		32bit: byte size of the shared data
  *		byte array: shared data
  *		32bit: byte: size of the public data
  *		byte array: public data
  *
  * AES key wrap by ECDH, params relates to struct CK_ECDH_AES_KEY_WRAP_PARAMS.
- *   head:	32bit: type = SKS_CKM_ECDH_AES_KEY_WRAP
+ *   head:	32bit: type = PKCS11_CKM_ECDH_AES_KEY_WRAP
  *		32bit: params byte size
  *  params:	32bit: bit size of the AES key
- *		32bit: key derivation function (SKS_CKD_xxx)
+ *		32bit: key derivation function (PKCS11_CKD_xxx)
  *		32bit: byte size of the shared data
  *		byte array: shared data
  *
  * RSA_PKCS (pre-hashed payload)
- *   head:	32bit: type = SKS_CKM_RSA_PKCS
+ *   head:	32bit: type = PKCS11_CKM_RSA_PKCS
  *		32bit: size = 0
  *
  * RSA PKCS OAEP, params relates to struct CK_RSA_PKCS_OAEP_PARAMS.
- *   head:	32bit: type = SKS_CKM_RSA_PKCS_OAEP
+ *   head:	32bit: type = PKCS11_CKM_RSA_PKCS_OAEP
  *		32bit: params byte size
- *  params:	32bit: hash algorithm identifier (SKS_CK_M_xxx)
+ *  params:	32bit: hash algorithm identifier (PKCS11_CK_M_xxx)
  *		32bit: CK_RSA_PKCS_MGF_TYPE
  *		32bit: CK_RSA_PKCS_OAEP_SOURCE_TYPE
  *		32bit: byte size of the source data
  *		byte array: source data
  *
  * RSA PKCS PSS, params relates to struct CK_RSA_PKCS_PSS_PARAMS.
- *   head:	32bit: type = SKS_CKM_RSA_PKCS_PSS
- *			   or SKS_CKM_SHA256_RSA_PKCS_PSS
- *			   or SKS_CKM_SHA384_RSA_PKCS_PSS
- *			   or SKS_CKM_SHA512_RSA_PKCS_PSS
+ *   head:	32bit: type = PKCS11_CKM_RSA_PKCS_PSS
+ *			   or PKCS11_CKM_SHA256_RSA_PKCS_PSS
+ *			   or PKCS11_CKM_SHA384_RSA_PKCS_PSS
+ *			   or PKCS11_CKM_SHA512_RSA_PKCS_PSS
  *		32bit: params byte size
- *  params:	32bit: hash algorithm identifier (SKS_CK_M_xxx)
+ *  params:	32bit: hash algorithm identifier (PKCS11_CK_M_xxx)
  *		32bit: CK_RSA_PKCS_MGF_TYPE
  *		32bit: byte size of the salt in the PSS encoding
  *
@@ -1043,7 +1054,7 @@ struct sks_attribute_head {
  *   head:	32bit: type = CKM_RSA_AES_KEY_WRAP
  *		32bit: params byte size
  *  params:	32bit: bit size of the AES key
- *		32bit: hash algorithm identifier (SKS_CK_M_xxx)
+ *		32bit: hash algorithm identifier (PKCS11_CK_M_xxx)
  *		32bit: CK_RSA_PKCS_MGF_TYPE
  *		32bit: CK_RSA_PKCS_OAEP_SOURCE_TYPE
  *		32bit: byte size of the source data

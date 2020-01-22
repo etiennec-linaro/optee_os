@@ -25,7 +25,7 @@
 #include "sks_helpers.h"
 
 /* Byte size of CKA_ID attribute when generated locally */
-#define SKS_CKA_DEFAULT_SIZE		16
+#define PKCS11_CKA_DEFAULT_SIZE		16
 
 struct pkcs11_mechachism_modes {
 	uint32_t id;
@@ -35,33 +35,33 @@ struct pkcs11_mechachism_modes {
 };
 
 /*
- * SKS_CKFM_EC_F_P
- * SKS_CKFM_EC_F_2M
- * SKS_CKFM_EC_ECPARAMETERS
- * SKS_CKFM_EC_NAMEDCURVE
- * SKS_CKFM_EC_UNCOMPRESS
- * SKS_CKFM_EC_COMPRESS
+ * PKCS11_CKFM_EC_F_P
+ * PKCS11_CKFM_EC_F_2M
+ * PKCS11_CKFM_EC_ECPARAMETERS
+ * PKCS11_CKFM_EC_NAMEDCURVE
+ * PKCS11_CKFM_EC_UNCOMPRESS
+ * PKCS11_CKFM_EC_COMPRESS
  */
 #define SKS_ECM		0
 
-/* SKS_CKFM_HW: need to ask core one HW support of the mechanisms */
+/* PKCS11_CKFM_HW: need to ask core one HW support of the mechanisms */
 #define SKS_M(_label, _dig, _enc, _dec, _sig, _ver,		\
 		_sr, _vr, _der, _wra, _unw, _gen, _gpa, _1s)	\
 	{							\
-		.id = SKS_CKM_  ## _label,			\
+		.id = PKCS11_CKM_  ## _label,			\
 		.one_shot = _1s,				\
-		.flags = (_enc ? SKS_CKFM_ENCRYPT : 0) |	\
-			(_dec ? SKS_CKFM_DECRYPT : 0) |		\
-			(_dig ? SKS_CKFM_DIGEST : 0) |		\
-			(_sig ? SKS_CKFM_SIGN : 0) |		\
-			(_sr ? SKS_CKFM_SIGN_RECOVER : 0) |	\
-			(_ver ? SKS_CKFM_VERIFY : 0) |		\
-			(_vr ? SKS_CKFM_VERIFY_RECOVER : 0) |	\
-			(_gen ? SKS_CKFM_GENERATE : 0) |	\
-			(_gpa ? SKS_CKFM_GENERATE_PAIR : 0) |	\
-			(_wra ? SKS_CKFM_WRAP : 0) |		\
-			(_unw ? SKS_CKFM_UNWRAP : 0) |		\
-			(_der ? SKS_CKFM_DERIVE : 0) |		\
+		.flags = (_enc ? PKCS11_CKFM_ENCRYPT : 0) |	\
+			(_dec ? PKCS11_CKFM_DECRYPT : 0) |		\
+			(_dig ? PKCS11_CKFM_DIGEST : 0) |		\
+			(_sig ? PKCS11_CKFM_SIGN : 0) |		\
+			(_sr ? PKCS11_CKFM_SIGN_RECOVER : 0) |	\
+			(_ver ? PKCS11_CKFM_VERIFY : 0) |		\
+			(_vr ? PKCS11_CKFM_VERIFY_RECOVER : 0) |	\
+			(_gen ? PKCS11_CKFM_GENERATE : 0) |	\
+			(_gpa ? PKCS11_CKFM_GENERATE_PAIR : 0) |	\
+			(_wra ? PKCS11_CKFM_WRAP : 0) |		\
+			(_unw ? PKCS11_CKFM_UNWRAP : 0) |		\
+			(_der ? PKCS11_CKFM_DERIVE : 0) |		\
 			SKS_ECM,				\
 	}
 
@@ -159,29 +159,29 @@ static uint32_t sks_function2ckfm(enum processing_func function)
 {
 	switch (function) {
 	case SKS_FUNCTION_DIGEST:
-		return SKS_CKFM_DIGEST;
+		return PKCS11_CKFM_DIGEST;
 	case SKS_FUNCTION_GENERATE:
-		return SKS_CKFM_GENERATE;
+		return PKCS11_CKFM_GENERATE;
 	case SKS_FUNCTION_GENERATE_PAIR:
-		return SKS_CKFM_GENERATE_PAIR;
+		return PKCS11_CKFM_GENERATE_PAIR;
 	case SKS_FUNCTION_DERIVE:
-		return SKS_CKFM_DERIVE;
+		return PKCS11_CKFM_DERIVE;
 	case SKS_FUNCTION_WRAP:
-		return SKS_CKFM_WRAP;
+		return PKCS11_CKFM_WRAP;
 	case SKS_FUNCTION_UNWRAP:
-		return SKS_CKFM_UNWRAP;
+		return PKCS11_CKFM_UNWRAP;
 	case SKS_FUNCTION_ENCRYPT:
-		return SKS_CKFM_ENCRYPT;
+		return PKCS11_CKFM_ENCRYPT;
 	case SKS_FUNCTION_DECRYPT:
-		return SKS_CKFM_DECRYPT;
+		return PKCS11_CKFM_DECRYPT;
 	case SKS_FUNCTION_SIGN:
-		return SKS_CKFM_SIGN;
+		return PKCS11_CKFM_SIGN;
 	case SKS_FUNCTION_VERIFY:
-		return SKS_CKFM_VERIFY;
+		return PKCS11_CKFM_VERIFY;
 	case SKS_FUNCTION_SIGN_RECOVER:
-		return SKS_CKFM_SIGN_RECOVER;
+		return PKCS11_CKFM_SIGN_RECOVER;
 	case SKS_FUNCTION_VERIFY_RECOVER:
-		return SKS_CKFM_VERIFY_RECOVER;
+		return PKCS11_CKFM_VERIFY_RECOVER;
 	default:
 		return 0;
 	}
@@ -190,12 +190,12 @@ static uint32_t sks_function2ckfm(enum processing_func function)
 int check_pkcs11_mechanism_flags(uint32_t mechanism_type, uint32_t flags)
 {
 	size_t n = 0;
-	uint32_t test_flags = flags & (SKS_CKFM_ENCRYPT | SKS_CKFM_DECRYPT |
-				SKS_CKFM_DERIVE | SKS_CKFM_DIGEST |
-				SKS_CKFM_SIGN | SKS_CKFM_SIGN_RECOVER |
-				SKS_CKFM_VERIFY | SKS_CKFM_VERIFY_RECOVER |
-				SKS_CKFM_GENERATE | SKS_CKFM_GENERATE_PAIR |
-				SKS_CKFM_WRAP | SKS_CKFM_UNWRAP);
+	uint32_t test_flags = flags & (PKCS11_CKFM_ENCRYPT | PKCS11_CKFM_DECRYPT |
+				PKCS11_CKFM_DERIVE | PKCS11_CKFM_DIGEST |
+				PKCS11_CKFM_SIGN | PKCS11_CKFM_SIGN_RECOVER |
+				PKCS11_CKFM_VERIFY | PKCS11_CKFM_VERIFY_RECOVER |
+				PKCS11_CKFM_GENERATE | PKCS11_CKFM_GENERATE_PAIR |
+				PKCS11_CKFM_WRAP | PKCS11_CKFM_UNWRAP);
 
 	for (n = 0; n < ARRAY_SIZE(pkcs11_modes); n++) {
 		if (pkcs11_modes[n].id == mechanism_type) {
@@ -243,7 +243,7 @@ uint32_t check_mechanism_against_processing(struct pkcs11_session *session,
 	case SKS_FUNC_STEP_UPDATE:
 		if (session->processing->always_authen &&
 		    !session->processing->relogged)
-			return SKS_CKR_USER_NOT_LOGGED_IN;
+			return PKCS11_CKR_USER_NOT_LOGGED_IN;
 
 		if (!session->processing->updated) {
 			allowed = true;
@@ -260,7 +260,7 @@ uint32_t check_mechanism_against_processing(struct pkcs11_session *session,
 	case SKS_FUNC_STEP_FINAL:
 		if (session->processing->always_authen &&
 		    !session->processing->relogged)
-			return SKS_CKR_USER_NOT_LOGGED_IN;
+			return PKCS11_CKR_USER_NOT_LOGGED_IN;
 
 		return SKS_OK;
 
@@ -274,7 +274,7 @@ uint32_t check_mechanism_against_processing(struct pkcs11_session *session,
 			sks2str_proc(mechanism_type), mechanism_type,
 			function, step);
 
-	return allowed ? SKS_OK : SKS_CKR_KEY_FUNCTION_NOT_PERMITTED;
+	return allowed ? SKS_OK : PKCS11_CKR_KEY_FUNCTION_NOT_PERMITTED;
 }
 
 /*
@@ -287,27 +287,27 @@ static uint8_t *pkcs11_object_default_boolprop(uint32_t attribute)
 
 	switch (attribute) {
 	/* As per PKCS#11 default value */
-	case SKS_CKA_MODIFIABLE:
-	case SKS_CKA_COPYABLE:
-	case SKS_CKA_DESTROYABLE:
+	case PKCS11_CKA_MODIFIABLE:
+	case PKCS11_CKA_COPYABLE:
+	case PKCS11_CKA_DESTROYABLE:
 		return (uint8_t *)&bool_true;
-	case SKS_CKA_TOKEN:
-	case SKS_CKA_PRIVATE:
-	case SKS_CKA_SENSITIVE:  /* TODO: symkey false, privkey: token specific */
+	case PKCS11_CKA_TOKEN:
+	case PKCS11_CKA_PRIVATE:
+	case PKCS11_CKA_SENSITIVE:  /* TODO: symkey false, privkey: token specific */
 	/* Token specific default value */
-	case SKS_CKA_DERIVE:
-	case SKS_CKA_ENCRYPT:
-	case SKS_CKA_DECRYPT:
-	case SKS_CKA_SIGN:
-	case SKS_CKA_VERIFY:
-	case SKS_CKA_SIGN_RECOVER:
-	case SKS_CKA_VERIFY_RECOVER:
-	case SKS_CKA_WRAP:
-	case SKS_CKA_UNWRAP:
-	case SKS_CKA_EXTRACTABLE:
-	case SKS_CKA_WRAP_WITH_TRUSTED:
-	case SKS_CKA_ALWAYS_AUTHENTICATE:
-	case SKS_CKA_TRUSTED:
+	case PKCS11_CKA_DERIVE:
+	case PKCS11_CKA_ENCRYPT:
+	case PKCS11_CKA_DECRYPT:
+	case PKCS11_CKA_SIGN:
+	case PKCS11_CKA_VERIFY:
+	case PKCS11_CKA_SIGN_RECOVER:
+	case PKCS11_CKA_VERIFY_RECOVER:
+	case PKCS11_CKA_WRAP:
+	case PKCS11_CKA_UNWRAP:
+	case PKCS11_CKA_EXTRACTABLE:
+	case PKCS11_CKA_WRAP_WITH_TRUSTED:
+	case PKCS11_CKA_ALWAYS_AUTHENTICATE:
+	case PKCS11_CKA_TRUSTED:
 		return (uint8_t *)&bool_false;
 	default:
 		DMSG("No default for boolprop attribute 0x%" PRIx32, attribute);
@@ -408,93 +408,93 @@ static uint32_t set_optional_attributes(struct sks_attrs_head **out,
  * Below are listed the mandated or optional expected attributes for
  * PKCS#11 storage objects.
  *
- * Note: boolprops (mandated boolean attributes) SKS_CKA_ALWAYS_SENSITIVE,
- * and SKS_CKA_NEVER_EXTRACTABLE are set by the token, not provided
+ * Note: boolprops (mandated boolean attributes) PKCS11_CKA_ALWAYS_SENSITIVE,
+ * and PKCS11_CKA_NEVER_EXTRACTABLE are set by the token, not provided
  * in the client template.
  */
 
 /* PKCS#11 specification for any object (session/token) of the storage */
 static const uint32_t pkcs11_any_object_boolprops[] = {
-	SKS_CKA_TOKEN, SKS_CKA_PRIVATE,
-	SKS_CKA_MODIFIABLE, SKS_CKA_COPYABLE, SKS_CKA_DESTROYABLE,
+	PKCS11_CKA_TOKEN, PKCS11_CKA_PRIVATE,
+	PKCS11_CKA_MODIFIABLE, PKCS11_CKA_COPYABLE, PKCS11_CKA_DESTROYABLE,
 };
 static const uint32_t pkcs11_any_object_optional[] = {
-	SKS_CKA_LABEL,
+	PKCS11_CKA_LABEL,
 };
 /* PKCS#11 specification for raw data object (+pkcs11_any_object_xxx) */
 const uint32_t pkcs11_raw_data_optional[] = {
-	SKS_CKA_OBJECT_ID, SKS_CKA_APPLICATION, SKS_CKA_VALUE,
+	PKCS11_CKA_OBJECT_ID, PKCS11_CKA_APPLICATION, PKCS11_CKA_VALUE,
 };
 /* PKCS#11 specification for any key object (+pkcs11_any_object_xxx) */
 static const uint32_t pkcs11_any_key_boolprops[] = {
-	SKS_CKA_DERIVE,
+	PKCS11_CKA_DERIVE,
 };
 static const uint32_t pkcs11_any_key_optional[] = {
-	SKS_CKA_ID,
-	SKS_CKA_START_DATE, SKS_CKA_END_DATE,
-	SKS_CKA_ALLOWED_MECHANISMS,
+	PKCS11_CKA_ID,
+	PKCS11_CKA_START_DATE, PKCS11_CKA_END_DATE,
+	PKCS11_CKA_ALLOWED_MECHANISMS,
 };
 /* PKCS#11 specification for any symmetric key (+pkcs11_any_key_xxx) */
 static const uint32_t pkcs11_symm_key_boolprops[] = {
-	SKS_CKA_ENCRYPT, SKS_CKA_DECRYPT, SKS_CKA_SIGN, SKS_CKA_VERIFY,
-	SKS_CKA_WRAP, SKS_CKA_UNWRAP,
-	SKS_CKA_SENSITIVE, SKS_CKA_EXTRACTABLE,
-	SKS_CKA_WRAP_WITH_TRUSTED, SKS_CKA_TRUSTED,
+	PKCS11_CKA_ENCRYPT, PKCS11_CKA_DECRYPT, PKCS11_CKA_SIGN, PKCS11_CKA_VERIFY,
+	PKCS11_CKA_WRAP, PKCS11_CKA_UNWRAP,
+	PKCS11_CKA_SENSITIVE, PKCS11_CKA_EXTRACTABLE,
+	PKCS11_CKA_WRAP_WITH_TRUSTED, PKCS11_CKA_TRUSTED,
 };
 static const uint32_t pkcs11_symm_key_optional[] = {
-	SKS_CKA_WRAP_TEMPLATE, SKS_CKA_UNWRAP_TEMPLATE, SKS_CKA_DERIVE_TEMPLATE,
-	SKS_CKA_VALUE, SKS_CKA_VALUE_LEN,
+	PKCS11_CKA_WRAP_TEMPLATE, PKCS11_CKA_UNWRAP_TEMPLATE, PKCS11_CKA_DERIVE_TEMPLATE,
+	PKCS11_CKA_VALUE, PKCS11_CKA_VALUE_LEN,
 };
 /* PKCS#11 specification for any asymmetric public key (+pkcs11_any_key_xxx) */
 static const uint32_t pkcs11_public_key_boolprops[] = {
-	SKS_CKA_ENCRYPT, SKS_CKA_VERIFY, SKS_CKA_VERIFY_RECOVER, SKS_CKA_WRAP,
-	SKS_CKA_TRUSTED,
+	PKCS11_CKA_ENCRYPT, PKCS11_CKA_VERIFY, PKCS11_CKA_VERIFY_RECOVER, PKCS11_CKA_WRAP,
+	PKCS11_CKA_TRUSTED,
 };
 static const uint32_t pkcs11_public_key_mandated[] = {
-	SKS_CKA_SUBJECT
+	PKCS11_CKA_SUBJECT
 };
 static const uint32_t pkcs11_public_key_optional[] = {
-	SKS_CKA_WRAP_TEMPLATE, SKS_CKA_PUBLIC_KEY_INFO,
+	PKCS11_CKA_WRAP_TEMPLATE, PKCS11_CKA_PUBLIC_KEY_INFO,
 };
 /* PKCS#11 specification for any asymmetric private key (+pkcs11_any_key_xxx) */
 static const uint32_t pkcs11_private_key_boolprops[] = {
-	SKS_CKA_DECRYPT, SKS_CKA_SIGN, SKS_CKA_SIGN_RECOVER,
-	SKS_CKA_UNWRAP,
-	SKS_CKA_SENSITIVE, SKS_CKA_EXTRACTABLE,
-	SKS_CKA_WRAP_WITH_TRUSTED, SKS_CKA_ALWAYS_AUTHENTICATE,
+	PKCS11_CKA_DECRYPT, PKCS11_CKA_SIGN, PKCS11_CKA_SIGN_RECOVER,
+	PKCS11_CKA_UNWRAP,
+	PKCS11_CKA_SENSITIVE, PKCS11_CKA_EXTRACTABLE,
+	PKCS11_CKA_WRAP_WITH_TRUSTED, PKCS11_CKA_ALWAYS_AUTHENTICATE,
 };
 static const uint32_t pkcs11_private_key_mandated[] = {
-	SKS_CKA_SUBJECT
+	PKCS11_CKA_SUBJECT
 };
 static const uint32_t pkcs11_private_key_optional[] = {
-	SKS_CKA_UNWRAP_TEMPLATE, SKS_CKA_PUBLIC_KEY_INFO,
+	PKCS11_CKA_UNWRAP_TEMPLATE, PKCS11_CKA_PUBLIC_KEY_INFO,
 };
 /* PKCS#11 specification for any RSA key (+pkcs11_public/private_key_xxx) */
 static const uint32_t pkcs11_rsa_public_key_mandated[] = {
-	SKS_CKA_MODULUS_BITS,
+	PKCS11_CKA_MODULUS_BITS,
 };
 static const uint32_t pkcs11_rsa_public_key_optional[] = {
-	SKS_CKA_MODULUS, SKS_CKA_PUBLIC_EXPONENT,
+	PKCS11_CKA_MODULUS, PKCS11_CKA_PUBLIC_EXPONENT,
 };
 static const uint32_t pkcs11_rsa_private_key_optional[] = {
-	SKS_CKA_MODULUS, SKS_CKA_PUBLIC_EXPONENT, SKS_CKA_PRIVATE_EXPONENT,
-	SKS_CKA_PRIME_1, SKS_CKA_PRIME_2,
-	SKS_CKA_EXPONENT_1, SKS_CKA_EXPONENT_2,	SKS_CKA_COEFFICIENT,
+	PKCS11_CKA_MODULUS, PKCS11_CKA_PUBLIC_EXPONENT, PKCS11_CKA_PRIVATE_EXPONENT,
+	PKCS11_CKA_PRIME_1, PKCS11_CKA_PRIME_2,
+	PKCS11_CKA_EXPONENT_1, PKCS11_CKA_EXPONENT_2,	PKCS11_CKA_COEFFICIENT,
 };
 /* PKCS#11 specification for any EC key (+pkcs11_public/private_key_xxx) */
 static const uint32_t pkcs11_ec_public_key_mandated[] = {
-	SKS_CKA_EC_PARAMS,
+	PKCS11_CKA_EC_PARAMS,
 };
 static const uint32_t pkcs11_ec_public_key_optional[] = {
-	SKS_CKA_EC_POINT,
-	SKS_CKA_EC_POINT_X, SKS_CKA_EC_POINT_Y, // temporarily until DER support
+	PKCS11_CKA_EC_POINT,
+	PKCS11_CKA_EC_POINT_X, PKCS11_CKA_EC_POINT_Y, // temporarily until DER support
 };
 static const uint32_t pkcs11_ec_private_key_mandated[] = {
-	SKS_CKA_EC_PARAMS,
+	PKCS11_CKA_EC_PARAMS,
 };
 static const uint32_t pkcs11_ec_private_key_optional[] = {
-	SKS_CKA_VALUE,
-	SKS_CKA_EC_POINT_X, SKS_CKA_EC_POINT_Y, // temporarily until DER support
+	PKCS11_CKA_VALUE,
+	PKCS11_CKA_EC_POINT_X, PKCS11_CKA_EC_POINT_Y, // temporarily until DER support
 };
 
 static uint32_t create_pkcs11_storage_attributes(struct sks_attrs_head **out,
@@ -514,11 +514,11 @@ static uint32_t create_pkcs11_storage_attributes(struct sks_attrs_head **out,
 
 	/* Object class is mandatory */
 	class = get_class(temp);
-	if (class == SKS_UNDEFINED_ID) {
+	if (class == PKCS11_CKO_UNDEFINED_ID) {
 		EMSG("Class attribute not found");
-		return SKS_CKR_TEMPLATE_INCONSISTENT;
+		return PKCS11_CKR_TEMPLATE_INCONSISTENT;
 	}
-	rv = add_attribute(out, SKS_CKA_CLASS, &class, sizeof(uint32_t));
+	rv = add_attribute(out, PKCS11_CKA_CLASS, &class, sizeof(uint32_t));
 	if (rv)
 		return rv;
 
@@ -544,11 +544,11 @@ static uint32_t create_pkcs11_genkey_attributes(struct sks_attrs_head **out,
 		return rv;
 
 	type = get_type(temp);
-	if (type == SKS_UNDEFINED_ID) {
+	if (type == PKCS11_CKK_UNDEFINED_ID) {
 		EMSG("Key type attribute not found");
-		return SKS_CKR_TEMPLATE_INCONSISTENT;
+		return PKCS11_CKR_TEMPLATE_INCONSISTENT;
 	}
-	rv = add_attribute(out, SKS_CKA_KEY_TYPE, &type, sizeof(uint32_t));
+	rv = add_attribute(out, PKCS11_CKA_KEY_TYPE, &type, sizeof(uint32_t));
 	if (rv)
 		return rv;
 
@@ -568,28 +568,28 @@ static uint32_t create_pkcs11_symm_key_attributes(struct sks_attrs_head **out,
 	size_t optional_count = ARRAY_SIZE(pkcs11_symm_key_optional);
 	uint32_t rv = 0;
 
-	assert(get_class(temp) == SKS_CKO_SECRET_KEY);
+	assert(get_class(temp) == PKCS11_CKO_SECRET_KEY);
 
 	rv = create_pkcs11_genkey_attributes(out, temp);
 	if (rv)
 		return rv;
 
-	assert(get_class(*out) == SKS_CKO_SECRET_KEY);
+	assert(get_class(*out) == PKCS11_CKO_SECRET_KEY);
 
 	switch (get_type(*out)) {
-	case SKS_CKK_GENERIC_SECRET:
-	case SKS_CKK_AES:
-	case SKS_CKK_MD5_HMAC:
-	case SKS_CKK_SHA_1_HMAC:
-	case SKS_CKK_SHA256_HMAC:
-	case SKS_CKK_SHA384_HMAC:
-	case SKS_CKK_SHA512_HMAC:
-	case SKS_CKK_SHA224_HMAC:
+	case PKCS11_CKK_GENERIC_SECRET:
+	case PKCS11_CKK_AES:
+	case PKCS11_CKK_MD5_HMAC:
+	case PKCS11_CKK_SHA_1_HMAC:
+	case PKCS11_CKK_SHA256_HMAC:
+	case PKCS11_CKK_SHA384_HMAC:
+	case PKCS11_CKK_SHA512_HMAC:
+	case PKCS11_CKK_SHA224_HMAC:
 		break;
 	default:
 		EMSG("Invalid key type (0x%" PRIx32 ", %s)",
 			get_type(*out), sks2str_key_type(get_type(*out)));
-		return SKS_CKR_TEMPLATE_INCONSISTENT;
+		return PKCS11_CKR_TEMPLATE_INCONSISTENT;
 	}
 
 	rv = set_mandatory_boolprops(out, temp, boolprops, boolprops_count);
@@ -604,13 +604,13 @@ static uint32_t create_pkcs11_data_attributes(struct sks_attrs_head **out,
 {
 	uint32_t rv = 0;
 
-	assert(get_class(temp) == SKS_CKO_DATA);
+	assert(get_class(temp) == PKCS11_CKO_DATA);
 
 	rv = create_pkcs11_storage_attributes(out, temp);
 	if (rv)
 		return rv;
 
-	assert(get_class(*out) == SKS_CKO_DATA);
+	assert(get_class(*out) == PKCS11_CKO_DATA);
 
 	rv = set_optional_attributes(out, temp,
 				     &pkcs11_raw_data_optional[0],
@@ -630,13 +630,13 @@ static uint32_t create_pkcs11_pub_key_attributes(struct sks_attrs_head **out,
 	size_t mandated_count = ARRAY_SIZE(pkcs11_public_key_mandated);
 	size_t optional_count = ARRAY_SIZE(pkcs11_public_key_optional);
 
-	assert(get_class(temp) == SKS_CKO_PUBLIC_KEY);
+	assert(get_class(temp) == PKCS11_CKO_PUBLIC_KEY);
 
 	rv = create_pkcs11_genkey_attributes(out, temp);
 	if (rv)
 		return rv;
 
-	assert(get_class(*out) == SKS_CKO_PUBLIC_KEY);
+	assert(get_class(*out) == PKCS11_CKO_PUBLIC_KEY);
 
 	rv = set_mandatory_boolprops(out, temp, boolprops, boolprops_count);
 	if (rv)
@@ -651,7 +651,7 @@ static uint32_t create_pkcs11_pub_key_attributes(struct sks_attrs_head **out,
 		return rv;
 
 	switch (get_type(*out)) {
-	case SKS_CKK_RSA:
+	case PKCS11_CKK_RSA:
 		boolprops = NULL;
 		mandated = &pkcs11_rsa_public_key_mandated[0];
 		optional = &pkcs11_rsa_public_key_optional[0];
@@ -659,7 +659,7 @@ static uint32_t create_pkcs11_pub_key_attributes(struct sks_attrs_head **out,
 		mandated_count = ARRAY_SIZE(pkcs11_rsa_public_key_mandated);
 		optional_count = ARRAY_SIZE(pkcs11_rsa_public_key_optional);
 		break;
-	case SKS_CKK_EC:
+	case PKCS11_CKK_EC:
 		boolprops = NULL;
 		mandated = &pkcs11_ec_public_key_mandated[0];
 		optional = &pkcs11_ec_public_key_optional[0];
@@ -670,7 +670,7 @@ static uint32_t create_pkcs11_pub_key_attributes(struct sks_attrs_head **out,
 	default:
 		EMSG("Invalid key type (0x%" PRIx32 ", %s)",
 			get_type(*out), sks2str_key_type(get_type(*out)));
-		return SKS_CKR_TEMPLATE_INCONSISTENT;
+		return PKCS11_CKR_TEMPLATE_INCONSISTENT;
 	}
 
 	rv = set_mandatory_boolprops(out, temp, boolprops, boolprops_count);
@@ -695,13 +695,13 @@ static uint32_t create_pkcs11_priv_key_attributes(struct sks_attrs_head **out,
 	size_t optional_count = ARRAY_SIZE(pkcs11_private_key_optional);
 	uint32_t rv = 0;
 
-	assert(get_class(temp) == SKS_CKO_PRIVATE_KEY);
+	assert(get_class(temp) == PKCS11_CKO_PRIVATE_KEY);
 
 	rv = create_pkcs11_genkey_attributes(out, temp);
 	if (rv)
 		return rv;
 
-	assert(get_class(*out) == SKS_CKO_PRIVATE_KEY);
+	assert(get_class(*out) == PKCS11_CKO_PRIVATE_KEY);
 
 	rv = set_mandatory_boolprops(out, temp, boolprops, boolprops_count);
 	if (rv)
@@ -716,7 +716,7 @@ static uint32_t create_pkcs11_priv_key_attributes(struct sks_attrs_head **out,
 		return rv;
 
 	switch (get_type(*out)) {
-	case SKS_CKK_RSA:
+	case PKCS11_CKK_RSA:
 		boolprops = NULL;
 		mandated = NULL;
 		optional = &pkcs11_rsa_private_key_optional[0];
@@ -724,7 +724,7 @@ static uint32_t create_pkcs11_priv_key_attributes(struct sks_attrs_head **out,
 		mandated_count = 0;
 		optional_count = ARRAY_SIZE(pkcs11_rsa_private_key_optional);
 		break;
-	case SKS_CKK_EC:
+	case PKCS11_CKK_EC:
 		boolprops = NULL;
 		mandated = &pkcs11_ec_private_key_mandated[0];
 		optional = &pkcs11_ec_private_key_optional[0];
@@ -735,7 +735,7 @@ static uint32_t create_pkcs11_priv_key_attributes(struct sks_attrs_head **out,
 	default:
 		EMSG("Invalid key type (0x%" PRIx32 ", %s)",
 			get_type(*out), sks2str_key_type(get_type(*out)));
-		return SKS_CKR_TEMPLATE_INCONSISTENT;
+		return PKCS11_CKR_TEMPLATE_INCONSISTENT;
 	}
 
 	rv = set_mandatory_boolprops(out, temp, boolprops, boolprops_count);
@@ -761,9 +761,9 @@ static uint32_t create_pkcs11_priv_key_attributes(struct sks_attrs_head **out,
  * - template+default+parent => still miss an attribute: return TEMPLATE_INCONSISTENT
  *
  * INFO on SKS_CMD_COPY_OBJECT:
- * - parent SKS_CKA_COPYIABLE=false => return ACTION_PROHIBITED.
- * - template can specify SKS_CKA_TOKEN, SKS_CKA_PRIVATE, SKS_CKA_MODIFIABLE,
- *   SKS_CKA_DESTROYABLE.
+ * - parent PKCS11_CKA_COPYIABLE=false => return ACTION_PROHIBITED.
+ * - template can specify PKCS11_CKA_TOKEN, PKCS11_CKA_PRIVATE, PKCS11_CKA_MODIFIABLE,
+ *   PKCS11_CKA_DESTROYABLE.
  * - SENSITIVE can change from false to true, not from true to false.
  * - LOCAL is the parent LOCAL
  */
@@ -800,33 +800,33 @@ uint32_t create_attributes_from_template(struct sks_attrs_head **out,
 
 	if (!sanitize_consistent_class_and_type(temp)) {
 		EMSG("inconsistent class/type");
-		rv = SKS_CKR_TEMPLATE_INCONSISTENT;
+		rv = PKCS11_CKR_TEMPLATE_INCONSISTENT;
 		goto bail;
 	}
 
 	switch (get_class(temp)) {
-	case SKS_CKO_DATA:
+	case PKCS11_CKO_DATA:
 		rv = create_pkcs11_data_attributes(&attrs, temp);
 		break;
-	case SKS_CKO_SECRET_KEY:
+	case PKCS11_CKO_SECRET_KEY:
 		rv = create_pkcs11_symm_key_attributes(&attrs, temp);
 		break;
-	case SKS_CKO_PUBLIC_KEY:
+	case PKCS11_CKO_PUBLIC_KEY:
 		rv = create_pkcs11_pub_key_attributes(&attrs, temp);
 		break;
-	case SKS_CKO_PRIVATE_KEY:
+	case PKCS11_CKO_PRIVATE_KEY:
 		rv = create_pkcs11_priv_key_attributes(&attrs, temp);
 		break;
 	default:
 		DMSG("Invalid object class 0x%" PRIx32 "/%s",
 			get_class(temp), sks2str_class(get_class(temp)));
-		rv = SKS_CKR_TEMPLATE_INCONSISTENT;
+		rv = PKCS11_CKR_TEMPLATE_INCONSISTENT;
 		break;
 	}
 	if (rv)
 		goto bail;
 
-	assert(get_attribute(attrs, SKS_CKA_LOCAL, NULL, NULL) ==
+	assert(get_attribute(attrs, PKCS11_CKA_LOCAL, NULL, NULL) ==
 		SKS_NOT_FOUND);
 
 	switch (function) {
@@ -835,21 +835,21 @@ uint32_t create_attributes_from_template(struct sks_attrs_head **out,
 		local = SKS_TRUE;
 		break;
 	case SKS_FUNCTION_COPY:
-		local = get_bool(parent, SKS_CKA_LOCAL);
+		local = get_bool(parent, PKCS11_CKA_LOCAL);
 		break;
 	case SKS_FUNCTION_DERIVE:
 	default:
 		local = SKS_FALSE;
 		break;
 	}
-	rv = add_attribute(&attrs, SKS_CKA_LOCAL, &local, sizeof(local));
+	rv = add_attribute(&attrs, PKCS11_CKA_LOCAL, &local, sizeof(local));
 	if (rv)
 		goto bail;
 
 	switch (get_class(attrs)) {
-	case SKS_CKO_SECRET_KEY:
-	case SKS_CKO_PRIVATE_KEY:
-	case SKS_CKO_PUBLIC_KEY:
+	case PKCS11_CKO_SECRET_KEY:
+	case PKCS11_CKO_PRIVATE_KEY:
+	case PKCS11_CKO_PUBLIC_KEY:
 		always_sensitive = SKS_FALSE;
 		never_extract = SKS_FALSE;
 
@@ -857,26 +857,26 @@ uint32_t create_attributes_from_template(struct sks_attrs_head **out,
 		case SKS_FUNCTION_DERIVE:
 		case SKS_FUNCTION_COPY:
 			always_sensitive =
-				get_bool(parent, SKS_CKA_ALWAYS_SENSITIVE) &&
-				get_bool(attrs, SKS_CKA_SENSITIVE);
+				get_bool(parent, PKCS11_CKA_ALWAYS_SENSITIVE) &&
+				get_bool(attrs, PKCS11_CKA_SENSITIVE);
 			never_extract =
-				get_bool(parent, SKS_CKA_NEVER_EXTRACTABLE) &&
-				!get_bool(attrs, SKS_CKA_EXTRACTABLE);
+				get_bool(parent, PKCS11_CKA_NEVER_EXTRACTABLE) &&
+				!get_bool(attrs, PKCS11_CKA_EXTRACTABLE);
 			break;
 		case SKS_FUNCTION_GENERATE:
-			always_sensitive = get_bool(attrs, SKS_CKA_SENSITIVE);
-			never_extract = !get_bool(attrs, SKS_CKA_EXTRACTABLE);
+			always_sensitive = get_bool(attrs, PKCS11_CKA_SENSITIVE);
+			never_extract = !get_bool(attrs, PKCS11_CKA_EXTRACTABLE);
 			break;
 		default:
 			break;
 		}
 
-		rv = add_attribute(&attrs, SKS_CKA_ALWAYS_SENSITIVE,
+		rv = add_attribute(&attrs, PKCS11_CKA_ALWAYS_SENSITIVE,
 				   &always_sensitive, sizeof(always_sensitive));
 		if (rv)
 			goto bail;
 
-		rv = add_attribute(&attrs, SKS_CKA_NEVER_EXTRACTABLE,
+		rv = add_attribute(&attrs, PKCS11_CKA_NEVER_EXTRACTABLE,
 				   &never_extract, sizeof(never_extract));
 		if (rv)
 			goto bail;
@@ -904,20 +904,20 @@ bail:
 static uint32_t check_attrs_misc_integrity(struct sks_attrs_head *head)
 {
 	/* FIXME: is it useful? */
-	if (get_bool(head, SKS_CKA_NEVER_EXTRACTABLE) &&
-	    get_bool(head, SKS_CKA_EXTRACTABLE)) {
+	if (get_bool(head, PKCS11_CKA_NEVER_EXTRACTABLE) &&
+	    get_bool(head, PKCS11_CKA_EXTRACTABLE)) {
 		DMSG("Never/Extractable attributes mismatch %d/%d",
-			get_bool(head, SKS_CKA_NEVER_EXTRACTABLE),
-			get_bool(head, SKS_CKA_EXTRACTABLE));
-		return SKS_CKR_TEMPLATE_INCONSISTENT;
+			get_bool(head, PKCS11_CKA_NEVER_EXTRACTABLE),
+			get_bool(head, PKCS11_CKA_EXTRACTABLE));
+		return PKCS11_CKR_TEMPLATE_INCONSISTENT;
 	}
 
-	if (get_bool(head, SKS_CKA_ALWAYS_SENSITIVE) &&
-	    !get_bool(head, SKS_CKA_SENSITIVE)) {
+	if (get_bool(head, PKCS11_CKA_ALWAYS_SENSITIVE) &&
+	    !get_bool(head, PKCS11_CKA_SENSITIVE)) {
 		DMSG("Sensitive/always attributes mismatch %d/%d",
-			get_bool(head, SKS_CKA_SENSITIVE),
-			get_bool(head, SKS_CKA_ALWAYS_SENSITIVE));
-		return SKS_CKR_TEMPLATE_INCONSISTENT;
+			get_bool(head, PKCS11_CKA_SENSITIVE),
+			get_bool(head, PKCS11_CKA_ALWAYS_SENSITIVE));
+		return PKCS11_CKR_TEMPLATE_INCONSISTENT;
 	}
 
 	return SKS_OK;
@@ -932,21 +932,21 @@ uint32_t check_access_attrs_against_token(struct pkcs11_session *session,
 	bool private = true;
 
 	switch(get_class(head)) {
-	case SKS_CKO_SECRET_KEY:
-	case SKS_CKO_PUBLIC_KEY:
-	case SKS_CKO_DATA:
-		if (!get_bool(head, SKS_CKA_PRIVATE))
+	case PKCS11_CKO_SECRET_KEY:
+	case PKCS11_CKO_PUBLIC_KEY:
+	case PKCS11_CKO_DATA:
+		if (!get_bool(head, PKCS11_CKA_PRIVATE))
 			private = false;
 		break;
-	case SKS_CKO_PRIVATE_KEY:
+	case PKCS11_CKO_PRIVATE_KEY:
 		break;
 	default:
-		return SKS_CKR_KEY_FUNCTION_NOT_PERMITTED;
+		return PKCS11_CKR_KEY_FUNCTION_NOT_PERMITTED;
 	}
 
 	if (private && pkcs11_session_is_public(session)) {
 		DMSG("Private object access from a public session");
-		return SKS_CKR_KEY_FUNCTION_NOT_PERMITTED;
+		return PKCS11_CKR_KEY_FUNCTION_NOT_PERMITTED;
 	}
 
 	/*
@@ -967,16 +967,16 @@ uint32_t check_created_attrs_against_token(struct pkcs11_session *session,
 	if (rc)
 		return rc;
 
-	if (get_bool(head, SKS_CKA_TRUSTED) &&
+	if (get_bool(head, PKCS11_CKA_TRUSTED) &&
 	    !pkcs11_session_is_security_officer(session)) {
 		DMSG("Can't create trusted object");
-		return SKS_CKR_KEY_FUNCTION_NOT_PERMITTED;
+		return PKCS11_CKR_KEY_FUNCTION_NOT_PERMITTED;
 	}
 
-	if (get_bool(head, SKS_CKA_TOKEN) &&
+	if (get_bool(head, PKCS11_CKA_TOKEN) &&
 	    !pkcs11_session_is_read_write(session)) {
 		DMSG("Can't create persistent object");
-		return SKS_CKR_SESSION_READ_ONLY;
+		return PKCS11_CKR_SESSION_READ_ONLY;
 	}
 
 	/*
@@ -1019,7 +1019,7 @@ uint32_t check_created_attrs_against_parent_key(
  * Check the attributes of a new secret match the processing/mechanism
  * used to create it.
  *
- * @proc_id - SKS_CKM__xxx
+ * @proc_id - PKCS11_CKM__xxx
  * @subproc_id - boolean attribute id as encrypt/decrypt/sign/verify,
  *		 if applicable to proc_id.
  * @head - head of the attributes of the to-be-created object.
@@ -1038,24 +1038,24 @@ uint32_t check_created_attrs_against_processing(uint32_t proc_id,
 	 * create_attributes_from_template().
 	 */
 	switch (proc_id) {
-	case SKS_PROCESSING_IMPORT:
-	case SKS_CKM_ECDH1_DERIVE:
-	case SKS_CKM_ECDH1_COFACTOR_DERIVE:
-	case SKS_CKM_DH_PKCS_DERIVE:
-		if (get_attribute(head, SKS_CKA_LOCAL, &bbool, NULL) ||
+	case PKCS11_PROCESSING_IMPORT:
+	case PKCS11_CKM_ECDH1_DERIVE:
+	case PKCS11_CKM_ECDH1_COFACTOR_DERIVE:
+	case PKCS11_CKM_DH_PKCS_DERIVE:
+		if (get_attribute(head, PKCS11_CKA_LOCAL, &bbool, NULL) ||
 		    bbool) {
-			DMSG_BAD_BBOOL(SKS_CKA_LOCAL, proc_id, head);
-			return SKS_CKR_TEMPLATE_INCONSISTENT;
+			DMSG_BAD_BBOOL(PKCS11_CKA_LOCAL, proc_id, head);
+			return PKCS11_CKR_TEMPLATE_INCONSISTENT;
 		}
 		break;
-	case SKS_CKM_GENERIC_SECRET_KEY_GEN:
-	case SKS_CKM_AES_KEY_GEN:
-	case SKS_CKM_EC_KEY_PAIR_GEN:
-	case SKS_CKM_RSA_PKCS_KEY_PAIR_GEN:
-		if (get_attribute(head, SKS_CKA_LOCAL, &bbool, NULL) ||
+	case PKCS11_CKM_GENERIC_SECRET_KEY_GEN:
+	case PKCS11_CKM_AES_KEY_GEN:
+	case PKCS11_CKM_EC_KEY_PAIR_GEN:
+	case PKCS11_CKM_RSA_PKCS_KEY_PAIR_GEN:
+		if (get_attribute(head, PKCS11_CKA_LOCAL, &bbool, NULL) ||
 		    !bbool) {
-			DMSG_BAD_BBOOL(SKS_CKA_LOCAL, proc_id, head);
-			return SKS_CKR_TEMPLATE_INCONSISTENT;
+			DMSG_BAD_BBOOL(PKCS11_CKA_LOCAL, proc_id, head);
+			return PKCS11_CKR_TEMPLATE_INCONSISTENT;
 		}
 		break;
 	default:
@@ -1064,29 +1064,29 @@ uint32_t check_created_attrs_against_processing(uint32_t proc_id,
 	}
 
 	switch (proc_id) {
-	case SKS_CKM_GENERIC_SECRET_KEY_GEN:
-		if (get_type(head) != SKS_CKK_GENERIC_SECRET)
-			return SKS_CKR_TEMPLATE_INCONSISTENT;
+	case PKCS11_CKM_GENERIC_SECRET_KEY_GEN:
+		if (get_type(head) != PKCS11_CKK_GENERIC_SECRET)
+			return PKCS11_CKR_TEMPLATE_INCONSISTENT;
 		break;
-	case SKS_CKM_AES_KEY_GEN:
-		if (get_type(head) != SKS_CKK_AES)
-			return SKS_CKR_TEMPLATE_INCONSISTENT;
+	case PKCS11_CKM_AES_KEY_GEN:
+		if (get_type(head) != PKCS11_CKK_AES)
+			return PKCS11_CKR_TEMPLATE_INCONSISTENT;
 		break;
-	case SKS_CKM_EC_KEY_PAIR_GEN:
-		if (get_type(head) != SKS_CKK_EC)
-			return SKS_CKR_TEMPLATE_INCONSISTENT;
+	case PKCS11_CKM_EC_KEY_PAIR_GEN:
+		if (get_type(head) != PKCS11_CKK_EC)
+			return PKCS11_CKR_TEMPLATE_INCONSISTENT;
 		break;
-	case SKS_CKM_RSA_PKCS_KEY_PAIR_GEN:
-		if (get_type(head) != SKS_CKK_RSA)
-			return SKS_CKR_TEMPLATE_INCONSISTENT;
+	case PKCS11_CKM_RSA_PKCS_KEY_PAIR_GEN:
+		if (get_type(head) != PKCS11_CKK_RSA)
+			return PKCS11_CKR_TEMPLATE_INCONSISTENT;
 		break;
-	case SKS_CKM_ECDH1_DERIVE:
-	case SKS_CKM_ECDH1_COFACTOR_DERIVE:
-	case SKS_CKM_DH_PKCS_DERIVE:
-		if (get_class(head) != SKS_CKO_SECRET_KEY)
-			return SKS_CKR_TEMPLATE_INCONSISTENT;
+	case PKCS11_CKM_ECDH1_DERIVE:
+	case PKCS11_CKM_ECDH1_COFACTOR_DERIVE:
+	case PKCS11_CKM_DH_PKCS_DERIVE:
+		if (get_class(head) != PKCS11_CKO_SECRET_KEY)
+			return PKCS11_CKR_TEMPLATE_INCONSISTENT;
 		break;
-	case SKS_PROCESSING_IMPORT:
+	case PKCS11_PROCESSING_IMPORT:
 	default:
 		break;
 	}
@@ -1100,45 +1100,45 @@ void pkcs11_max_min_key_size(uint32_t key_type, uint32_t *max_key_size,
 	uint32_t mult = bit_size_only ? 8 : 1;
 
 	switch (key_type) {
-	case SKS_CKK_GENERIC_SECRET:
+	case PKCS11_CKK_GENERIC_SECRET:
 		*min_key_size = 1;	/* in bits */
 		*max_key_size = 4096;	/* in bits */
 		break;
-	case SKS_CKK_MD5_HMAC:
+	case PKCS11_CKK_MD5_HMAC:
 		*min_key_size = 16 * mult;
 		*max_key_size = 16 * mult;
 		break;
-	case SKS_CKK_SHA_1_HMAC:
+	case PKCS11_CKK_SHA_1_HMAC:
 		*min_key_size = 20 * mult;
 		*max_key_size = 20 * mult;
 		break;
-	case SKS_CKK_SHA224_HMAC:
+	case PKCS11_CKK_SHA224_HMAC:
 		*min_key_size = 28 * mult;
 		*max_key_size = 28 * mult;
 		break;
-	case SKS_CKK_SHA256_HMAC:
+	case PKCS11_CKK_SHA256_HMAC:
 		*min_key_size = 32 * mult;
 		*max_key_size = 32 * mult;
 		break;
-	case SKS_CKK_SHA384_HMAC:
+	case PKCS11_CKK_SHA384_HMAC:
 		*min_key_size = 48 * mult;
 		*max_key_size = 48 * mult;
 		break;
-	case SKS_CKK_SHA512_HMAC:
+	case PKCS11_CKK_SHA512_HMAC:
 		*min_key_size = 64 * mult;
 		*max_key_size = 64 * mult;
 		break;
-	case SKS_CKK_AES:
+	case PKCS11_CKK_AES:
 		*min_key_size = 16 * mult;
 		*max_key_size = 32 * mult;
 		break;
-	case SKS_CKK_EC:
+	case PKCS11_CKK_EC:
 		*min_key_size = 192;	/* in bits */
 		*max_key_size = 521;	/* in bits */
 		break;
-	case SKS_CKK_RSA:
-	case SKS_CKK_DSA:
-	case SKS_CKK_DH:
+	case PKCS11_CKK_RSA:
+	case PKCS11_CKK_DSA:
+	case PKCS11_CKK_DH:
 		*min_key_size = 256;	/* in bits */
 		*max_key_size = 4096;	/* in bits */
 		break;
@@ -1160,97 +1160,97 @@ uint32_t check_created_attrs(struct sks_attrs_head *key1,
 	uint32_t rv = 0;
 
 	switch (get_class(key1)) {
-	case SKS_CKO_SECRET_KEY:
+	case PKCS11_CKO_SECRET_KEY:
 		secret = key1;
 		break;
-	case SKS_CKO_PUBLIC_KEY:
+	case PKCS11_CKO_PUBLIC_KEY:
 		public = key1;
 		break;
-	case SKS_CKO_PRIVATE_KEY:
+	case PKCS11_CKO_PRIVATE_KEY:
 		private = key1;
 		break;
 	default:
-		return SKS_CKR_ATTRIBUTE_VALUE_INVALID;
+		return PKCS11_CKR_ATTRIBUTE_VALUE_INVALID;
 	}
 
 	if (key2) {
 		switch (get_class(key2)) {
-		case SKS_CKO_PUBLIC_KEY:
+		case PKCS11_CKO_PUBLIC_KEY:
 			public = key2;
 			if (private == key1)
 				break;
 
-			return SKS_CKR_TEMPLATE_INCONSISTENT;
-		case SKS_CKO_PRIVATE_KEY:
+			return PKCS11_CKR_TEMPLATE_INCONSISTENT;
+		case PKCS11_CKO_PRIVATE_KEY:
 			private = key2;
 			if (public == key1)
 				break;
 
-			return SKS_CKR_TEMPLATE_INCONSISTENT;
+			return PKCS11_CKR_TEMPLATE_INCONSISTENT;
 		default:
-			return SKS_CKR_ATTRIBUTE_VALUE_INVALID;
+			return PKCS11_CKR_ATTRIBUTE_VALUE_INVALID;
 		}
 
 		if (get_type(private) != get_type(public))
-			return SKS_CKR_TEMPLATE_INCONSISTENT;
+			return PKCS11_CKR_TEMPLATE_INCONSISTENT;
 	}
 
 	if (secret) {
 		switch (get_type(secret)) {
-		case SKS_CKK_AES:
-		case SKS_CKK_GENERIC_SECRET:
-		case SKS_CKK_MD5_HMAC:
-		case SKS_CKK_SHA_1_HMAC:
-		case SKS_CKK_SHA224_HMAC:
-		case SKS_CKK_SHA256_HMAC:
-		case SKS_CKK_SHA384_HMAC:
-		case SKS_CKK_SHA512_HMAC:
+		case PKCS11_CKK_AES:
+		case PKCS11_CKK_GENERIC_SECRET:
+		case PKCS11_CKK_MD5_HMAC:
+		case PKCS11_CKK_SHA_1_HMAC:
+		case PKCS11_CKK_SHA224_HMAC:
+		case PKCS11_CKK_SHA256_HMAC:
+		case PKCS11_CKK_SHA384_HMAC:
+		case PKCS11_CKK_SHA512_HMAC:
 			break;
 		default:
-			return SKS_CKR_TEMPLATE_INCONSISTENT;
+			return PKCS11_CKR_TEMPLATE_INCONSISTENT;
 		}
 
 		/* Get key size */
-		rv = get_u32_attribute(secret, SKS_CKA_VALUE_LEN, &key_length);
+		rv = get_u32_attribute(secret, PKCS11_CKA_VALUE_LEN, &key_length);
 		if (rv)
 			return rv;
 	}
 	if (public) {
 		switch (get_type(public)) {
-		case SKS_CKK_RSA:
-		case SKS_CKK_DSA:
-		case SKS_CKK_DH:
+		case PKCS11_CKK_RSA:
+		case PKCS11_CKK_DSA:
+		case PKCS11_CKK_DH:
 			/* Get key size */
-			rv = get_u32_attribute(public, SKS_CKA_MODULUS_BITS,
+			rv = get_u32_attribute(public, PKCS11_CKA_MODULUS_BITS,
 						&key_length);
 			if (rv)
 				return rv;
 			break;
-		case SKS_CKK_EC:
+		case PKCS11_CKK_EC:
 			break;
 		default:
-			return SKS_CKR_TEMPLATE_INCONSISTENT;
+			return PKCS11_CKR_TEMPLATE_INCONSISTENT;
 		}
 	}
 	if (private) {
 		switch (get_type(private)) {
-		case SKS_CKK_RSA:
-		case SKS_CKK_DSA:
-		case SKS_CKK_DH:
+		case PKCS11_CKK_RSA:
+		case PKCS11_CKK_DSA:
+		case PKCS11_CKK_DH:
 			/* Get key size, if key pair public carries bit size */
 			if (public)
 				break;
 
-			rv = get_u32_attribute(private, SKS_CKA_MODULUS_BITS,
+			rv = get_u32_attribute(private, PKCS11_CKA_MODULUS_BITS,
 						&key_length);
 			if (rv)
 				return rv;
 			break;
-		case SKS_CKK_EC:
+		case PKCS11_CKK_EC:
 			/* No need to get key size */
 			break;
 		default:
-			return SKS_CKR_TEMPLATE_INCONSISTENT;
+			return PKCS11_CKR_TEMPLATE_INCONSISTENT;
 		}
 	}
 
@@ -1259,7 +1259,7 @@ uint32_t check_created_attrs(struct sks_attrs_head *key1,
 	 * EC is bound to domains, no need to check here.
 	 */
 	switch (get_type(key1)) {
-	case SKS_CKK_EC:
+	case PKCS11_CKK_EC:
 		return SKS_OK;
 	default:
 		break;
@@ -1271,7 +1271,7 @@ uint32_t check_created_attrs(struct sks_attrs_head *key1,
 	if (key_length < min_key_size || key_length > max_key_size) {
 		EMSG("Length %" PRIu32 " vs range [%" PRIu32 " %" PRIu32 "]",
 			key_length, min_key_size, max_key_size);
-		return SKS_CKR_KEY_SIZE_RANGE;
+		return PKCS11_CKR_KEY_SIZE_RANGE;
 	}
 
 	return SKS_OK;
@@ -1287,7 +1287,7 @@ static bool parent_key_complies_allowed_processings(uint32_t proc_id,
 	size_t count = 0;
 
 	/* Check only if restricted allowed mechanisms list is defined */
-	if (get_attribute_ptr(head, SKS_CKA_ALLOWED_MECHANISMS,
+	if (get_attribute_ptr(head, PKCS11_CKA_ALLOWED_MECHANISMS,
 			      (void *)&attr, &size) != SKS_OK) {
 		return true;
 	}
@@ -1308,7 +1308,7 @@ static bool parent_key_complies_allowed_processings(uint32_t proc_id,
  * Check the attributes of the parent secret (key) used in the processing
  * do match the target processing.
  *
- * @proc_id - SKS_CKM_xxx
+ * @proc_id - PKCS11_CKM_xxx
  * @subproc_id - boolean attribute encrypt or decrypt or sign or verify, if
  *		 applicable to proc_id.
  * @head - head of the attributes of parent object.
@@ -1322,158 +1322,158 @@ uint32_t check_parent_attrs_against_processing(uint32_t proc_id,
 	uint32_t key_type = get_type(head);
 
 	if (function == SKS_FUNCTION_ENCRYPT &&
-	    !get_bool(head, SKS_CKA_ENCRYPT)) {
+	    !get_bool(head, PKCS11_CKA_ENCRYPT)) {
 		DMSG("encrypt not permitted");
-		return SKS_CKR_KEY_FUNCTION_NOT_PERMITTED;
+		return PKCS11_CKR_KEY_FUNCTION_NOT_PERMITTED;
 	}
 	if (function == SKS_FUNCTION_DECRYPT &&
-	    !get_bool(head, SKS_CKA_DECRYPT)) {
+	    !get_bool(head, PKCS11_CKA_DECRYPT)) {
 		DMSG("decrypt not permitted");
-		return SKS_CKR_KEY_FUNCTION_NOT_PERMITTED;
+		return PKCS11_CKR_KEY_FUNCTION_NOT_PERMITTED;
 	}
 	if (function == SKS_FUNCTION_SIGN &&
-	    !get_bool(head, SKS_CKA_SIGN)) {
+	    !get_bool(head, PKCS11_CKA_SIGN)) {
 		DMSG("sign not permitted");
-		return SKS_CKR_KEY_FUNCTION_NOT_PERMITTED;
+		return PKCS11_CKR_KEY_FUNCTION_NOT_PERMITTED;
 	}
 	if (function == SKS_FUNCTION_VERIFY &&
-	    !get_bool(head, SKS_CKA_VERIFY)) {
+	    !get_bool(head, PKCS11_CKA_VERIFY)) {
 		DMSG("verify not permitted");
-		return SKS_CKR_KEY_FUNCTION_NOT_PERMITTED;
+		return PKCS11_CKR_KEY_FUNCTION_NOT_PERMITTED;
 	}
 	if (function == SKS_FUNCTION_WRAP &&
-	    !get_bool(head, SKS_CKA_WRAP)) {
+	    !get_bool(head, PKCS11_CKA_WRAP)) {
 		DMSG("wrap not permitted");
-		return SKS_CKR_KEY_FUNCTION_NOT_PERMITTED;
+		return PKCS11_CKR_KEY_FUNCTION_NOT_PERMITTED;
 	}
 	if (function == SKS_FUNCTION_UNWRAP &&
-	    !get_bool(head, SKS_CKA_UNWRAP)) {
+	    !get_bool(head, PKCS11_CKA_UNWRAP)) {
 		DMSG("unwrap not permitted");
-		return SKS_CKR_KEY_FUNCTION_NOT_PERMITTED;
+		return PKCS11_CKR_KEY_FUNCTION_NOT_PERMITTED;
 	}
 	if (function == SKS_FUNCTION_DERIVE &&
-	    !get_bool(head, SKS_CKA_DERIVE)) {
+	    !get_bool(head, PKCS11_CKA_DERIVE)) {
 		DMSG("derive not permitted");
-		return SKS_CKR_KEY_FUNCTION_NOT_PERMITTED;
+		return PKCS11_CKR_KEY_FUNCTION_NOT_PERMITTED;
 	}
 
 	/* Check processing complies for parent key family */
 	switch (proc_id) {
-	case SKS_CKM_AES_ECB:
-	case SKS_CKM_AES_CBC:
-	case SKS_CKM_AES_CBC_PAD:
-	case SKS_CKM_AES_CTS:
-	case SKS_CKM_AES_CTR:
-	case SKS_CKM_AES_GCM:
-	case SKS_CKM_AES_CCM:
-	case SKS_CKM_AES_CMAC:
-	case SKS_CKM_AES_CMAC_GENERAL:
-	case SKS_CKM_AES_XCBC_MAC:
-		if (key_class == SKS_CKO_SECRET_KEY &&
-		    key_type == SKS_CKK_AES)
+	case PKCS11_CKM_AES_ECB:
+	case PKCS11_CKM_AES_CBC:
+	case PKCS11_CKM_AES_CBC_PAD:
+	case PKCS11_CKM_AES_CTS:
+	case PKCS11_CKM_AES_CTR:
+	case PKCS11_CKM_AES_GCM:
+	case PKCS11_CKM_AES_CCM:
+	case PKCS11_CKM_AES_CMAC:
+	case PKCS11_CKM_AES_CMAC_GENERAL:
+	case PKCS11_CKM_AES_XCBC_MAC:
+		if (key_class == PKCS11_CKO_SECRET_KEY &&
+		    key_type == PKCS11_CKK_AES)
 			break;
 
 		DMSG("%s invalid key %s/%s", sks2str_proc(proc_id),
 			sks2str_class(key_class), sks2str_key_type(key_type));
-		return SKS_CKR_KEY_FUNCTION_NOT_PERMITTED;
+		return PKCS11_CKR_KEY_FUNCTION_NOT_PERMITTED;
 
-	case SKS_CKM_MD5_HMAC:
-	case SKS_CKM_SHA_1_HMAC:
-	case SKS_CKM_SHA224_HMAC:
-	case SKS_CKM_SHA256_HMAC:
-	case SKS_CKM_SHA384_HMAC:
-	case SKS_CKM_SHA512_HMAC:
-		if (key_class != SKS_CKO_SECRET_KEY)
-			return SKS_CKR_KEY_FUNCTION_NOT_PERMITTED;
+	case PKCS11_CKM_MD5_HMAC:
+	case PKCS11_CKM_SHA_1_HMAC:
+	case PKCS11_CKM_SHA224_HMAC:
+	case PKCS11_CKM_SHA256_HMAC:
+	case PKCS11_CKM_SHA384_HMAC:
+	case PKCS11_CKM_SHA512_HMAC:
+		if (key_class != PKCS11_CKO_SECRET_KEY)
+			return PKCS11_CKR_KEY_FUNCTION_NOT_PERMITTED;
 
-		if (key_type == SKS_CKK_GENERIC_SECRET)
+		if (key_type == PKCS11_CKK_GENERIC_SECRET)
 			break;
 
 		switch (proc_id) {
-		case SKS_CKM_MD5_HMAC:
-			if (key_type == SKS_CKK_MD5_HMAC)
+		case PKCS11_CKM_MD5_HMAC:
+			if (key_type == PKCS11_CKK_MD5_HMAC)
 				break;
-			return SKS_CKR_KEY_FUNCTION_NOT_PERMITTED;
+			return PKCS11_CKR_KEY_FUNCTION_NOT_PERMITTED;
 
-		case SKS_CKM_SHA_1_HMAC:
-			if (key_type == SKS_CKK_SHA_1_HMAC)
+		case PKCS11_CKM_SHA_1_HMAC:
+			if (key_type == PKCS11_CKK_SHA_1_HMAC)
 				break;
-			return SKS_CKR_KEY_FUNCTION_NOT_PERMITTED;
-		case SKS_CKM_SHA224_HMAC:
-			if (key_type == SKS_CKK_SHA224_HMAC)
+			return PKCS11_CKR_KEY_FUNCTION_NOT_PERMITTED;
+		case PKCS11_CKM_SHA224_HMAC:
+			if (key_type == PKCS11_CKK_SHA224_HMAC)
 				break;
-			return SKS_CKR_KEY_FUNCTION_NOT_PERMITTED;
-		case SKS_CKM_SHA256_HMAC:
-			if (key_type == SKS_CKK_SHA256_HMAC)
+			return PKCS11_CKR_KEY_FUNCTION_NOT_PERMITTED;
+		case PKCS11_CKM_SHA256_HMAC:
+			if (key_type == PKCS11_CKK_SHA256_HMAC)
 				break;
-			return SKS_CKR_KEY_FUNCTION_NOT_PERMITTED;
-		case SKS_CKM_SHA384_HMAC:
-			if (key_type == SKS_CKK_SHA384_HMAC)
+			return PKCS11_CKR_KEY_FUNCTION_NOT_PERMITTED;
+		case PKCS11_CKM_SHA384_HMAC:
+			if (key_type == PKCS11_CKK_SHA384_HMAC)
 				break;
-			return SKS_CKR_KEY_FUNCTION_NOT_PERMITTED;
-		case SKS_CKM_SHA512_HMAC:
-			if (key_type == SKS_CKK_SHA512_HMAC)
+			return PKCS11_CKR_KEY_FUNCTION_NOT_PERMITTED;
+		case PKCS11_CKM_SHA512_HMAC:
+			if (key_type == PKCS11_CKK_SHA512_HMAC)
 				break;
-			return SKS_CKR_KEY_FUNCTION_NOT_PERMITTED;
+			return PKCS11_CKR_KEY_FUNCTION_NOT_PERMITTED;
 		default:
-			return SKS_CKR_KEY_FUNCTION_NOT_PERMITTED;
+			return PKCS11_CKR_KEY_FUNCTION_NOT_PERMITTED;
 		}
 		break;
 
-	case SKS_CKM_ECDSA:
-	case SKS_CKM_ECDSA_SHA1:
-	case SKS_CKM_ECDSA_SHA224:
-	case SKS_CKM_ECDSA_SHA256:
-	case SKS_CKM_ECDSA_SHA384:
-	case SKS_CKM_ECDSA_SHA512:
-	case SKS_CKM_ECDH1_DERIVE:
-	case SKS_CKM_ECDH1_COFACTOR_DERIVE:
-	case SKS_CKM_ECMQV_DERIVE:
-	case SKS_CKM_ECDH_AES_KEY_WRAP:
-		if (key_type != SKS_CKK_EC ||
-		    (key_class != SKS_CKO_PUBLIC_KEY &&
-		     key_class != SKS_CKO_PRIVATE_KEY)) {
+	case PKCS11_CKM_ECDSA:
+	case PKCS11_CKM_ECDSA_SHA1:
+	case PKCS11_CKM_ECDSA_SHA224:
+	case PKCS11_CKM_ECDSA_SHA256:
+	case PKCS11_CKM_ECDSA_SHA384:
+	case PKCS11_CKM_ECDSA_SHA512:
+	case PKCS11_CKM_ECDH1_DERIVE:
+	case PKCS11_CKM_ECDH1_COFACTOR_DERIVE:
+	case PKCS11_CKM_ECMQV_DERIVE:
+	case PKCS11_CKM_ECDH_AES_KEY_WRAP:
+		if (key_type != PKCS11_CKK_EC ||
+		    (key_class != PKCS11_CKO_PUBLIC_KEY &&
+		     key_class != PKCS11_CKO_PRIVATE_KEY)) {
 			EMSG("Invalid key %s for mechanism %s",
 				sks2str_type(key_type, key_class),
 				sks2str_proc(proc_id));
-			return SKS_CKR_KEY_FUNCTION_NOT_PERMITTED;
+			return PKCS11_CKR_KEY_FUNCTION_NOT_PERMITTED;
 		}
 		break;
 
-	case SKS_CKM_RSA_PKCS:
-	case SKS_CKM_RSA_9796:
-	case SKS_CKM_RSA_X_509:
-	case SKS_CKM_SHA1_RSA_PKCS:
-	case SKS_CKM_RSA_PKCS_OAEP:
-	case SKS_CKM_SHA1_RSA_PKCS_PSS:
-	case SKS_CKM_SHA256_RSA_PKCS:
-	case SKS_CKM_SHA384_RSA_PKCS:
-	case SKS_CKM_SHA512_RSA_PKCS:
-	case SKS_CKM_SHA256_RSA_PKCS_PSS:
-	case SKS_CKM_SHA384_RSA_PKCS_PSS:
-	case SKS_CKM_SHA512_RSA_PKCS_PSS:
-	case SKS_CKM_SHA224_RSA_PKCS:
-	case SKS_CKM_SHA224_RSA_PKCS_PSS:
-	case SKS_CKM_RSA_AES_KEY_WRAP:
-		if (key_type != SKS_CKK_RSA ||
-		    (key_class != SKS_CKO_PUBLIC_KEY &&
-		     key_class != SKS_CKO_PRIVATE_KEY)) {
+	case PKCS11_CKM_RSA_PKCS:
+	case PKCS11_CKM_RSA_9796:
+	case PKCS11_CKM_RSA_X_509:
+	case PKCS11_CKM_SHA1_RSA_PKCS:
+	case PKCS11_CKM_RSA_PKCS_OAEP:
+	case PKCS11_CKM_SHA1_RSA_PKCS_PSS:
+	case PKCS11_CKM_SHA256_RSA_PKCS:
+	case PKCS11_CKM_SHA384_RSA_PKCS:
+	case PKCS11_CKM_SHA512_RSA_PKCS:
+	case PKCS11_CKM_SHA256_RSA_PKCS_PSS:
+	case PKCS11_CKM_SHA384_RSA_PKCS_PSS:
+	case PKCS11_CKM_SHA512_RSA_PKCS_PSS:
+	case PKCS11_CKM_SHA224_RSA_PKCS:
+	case PKCS11_CKM_SHA224_RSA_PKCS_PSS:
+	case PKCS11_CKM_RSA_AES_KEY_WRAP:
+		if (key_type != PKCS11_CKK_RSA ||
+		    (key_class != PKCS11_CKO_PUBLIC_KEY &&
+		     key_class != PKCS11_CKO_PRIVATE_KEY)) {
 			EMSG("Invalid key %s for mechanism %s",
 				sks2str_type(key_type, key_class),
 				sks2str_proc(proc_id));
-			return SKS_CKR_KEY_FUNCTION_NOT_PERMITTED;
+			return PKCS11_CKR_KEY_FUNCTION_NOT_PERMITTED;
 		}
 		break;
 
 	default:
 		DMSG("Invalid processing 0x%" PRIx32 " (%s)", proc_id,
 			sks2str_proc(proc_id));
-		return SKS_CKR_MECHANISM_INVALID;
+		return PKCS11_CKR_MECHANISM_INVALID;
 	}
 
 	if (!parent_key_complies_allowed_processings(proc_id, head)) {
 		DMSG("Allowed mechanism failed");
-		return SKS_CKR_KEY_FUNCTION_NOT_PERMITTED;
+		return PKCS11_CKR_KEY_FUNCTION_NOT_PERMITTED;
 	}
 
 	return SKS_OK;
@@ -1481,10 +1481,10 @@ uint32_t check_parent_attrs_against_processing(uint32_t proc_id,
 
 bool object_is_private(struct sks_attrs_head *head)
 {
-	if (get_class(head) == SKS_CKO_PRIVATE_KEY)
+	if (get_class(head) == PKCS11_CKO_PRIVATE_KEY)
 		return true;
 
-	if (get_bool(head, SKS_CKA_PRIVATE))
+	if (get_bool(head, PKCS11_CKA_PRIVATE))
 		return true;
 
 	return false;
@@ -1508,7 +1508,7 @@ uint32_t add_missing_attribute_id(struct sks_attrs_head **attrs1,
 	void *id2 = NULL;
 	uint32_t id2_size = 0;
 
-	rv = get_attribute_ptr(*attrs1, SKS_CKA_ID, &id1, &id1_size);
+	rv = get_attribute_ptr(*attrs1, PKCS11_CKA_ID, &id1, &id1_size);
 	if (rv) {
 		if (rv != SKS_NOT_FOUND)
 			return rv;
@@ -1516,7 +1516,7 @@ uint32_t add_missing_attribute_id(struct sks_attrs_head **attrs1,
 	}
 
 	if (attrs2) {
-		rv = get_attribute_ptr(*attrs2, SKS_CKA_ID, &id2, &id2_size);
+		rv = get_attribute_ptr(*attrs2, PKCS11_CKA_ID, &id2, &id2_size);
 		if (rv) {
 			if (rv != SKS_NOT_FOUND)
 				return rv;
@@ -1527,25 +1527,25 @@ uint32_t add_missing_attribute_id(struct sks_attrs_head **attrs1,
 			return SKS_OK;
 
 		if (id1 && !id2)
-			return add_attribute(attrs2, SKS_CKA_ID, id1, id1_size);
+			return add_attribute(attrs2, PKCS11_CKA_ID, id1, id1_size);
 
 		if (!id1 && id2)
-			return add_attribute(attrs1, SKS_CKA_ID, id2, id2_size);
+			return add_attribute(attrs1, PKCS11_CKA_ID, id2, id2_size);
 	} else {
 		if (id1)
 			return SKS_OK;
 	}
 
-	id1_size = SKS_CKA_DEFAULT_SIZE;
+	id1_size = PKCS11_CKA_DEFAULT_SIZE;
 	id1 = TEE_Malloc(id1_size, 0);
 	if (!id1)
 		return SKS_MEMORY;
 
 	TEE_GenerateRandom(id1, (uint32_t)id1_size);
 
-	rv = add_attribute(attrs1, SKS_CKA_ID, id1, id1_size);
+	rv = add_attribute(attrs1, PKCS11_CKA_ID, id1, id1_size);
 	if (rv == SKS_OK && attrs2)
-		rv = add_attribute(attrs2, SKS_CKA_ID, id1, id1_size);
+		rv = add_attribute(attrs2, PKCS11_CKA_ID, id1, id1_size);
 
 	TEE_Free(id1);
 
@@ -1560,20 +1560,20 @@ bool attribute_is_exportable(struct sks_attribute_head *req_attr,
 	uint32_t rv = 0;
 
 	switch (req_attr->id) {
-	case SKS_CKA_PRIVATE_EXPONENT:
-	case SKS_CKA_PRIME_1:
-	case SKS_CKA_PRIME_2:
-	case SKS_CKA_EXPONENT_1:
-	case SKS_CKA_EXPONENT_2:
-	case SKS_CKA_COEFFICIENT:
+	case PKCS11_CKA_PRIVATE_EXPONENT:
+	case PKCS11_CKA_PRIME_1:
+	case PKCS11_CKA_PRIME_2:
+	case PKCS11_CKA_EXPONENT_1:
+	case PKCS11_CKA_EXPONENT_2:
+	case PKCS11_CKA_COEFFICIENT:
 		boolsize = sizeof(boolval);
-		rv = get_attribute(obj->attributes, SKS_CKA_EXTRACTABLE,
+		rv = get_attribute(obj->attributes, PKCS11_CKA_EXTRACTABLE,
 				   &boolval, &boolsize);
 		if (rv || boolval == SKS_FALSE)
 			return false;
 
 		boolsize = sizeof(boolval);
-		rv = get_attribute(obj->attributes, SKS_CKA_SENSITIVE,
+		rv = get_attribute(obj->attributes, PKCS11_CKA_SENSITIVE,
 				   &boolval, &boolsize);
 		if (rv || boolval == SKS_TRUE)
 			return false;

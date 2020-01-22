@@ -184,7 +184,7 @@ int set_processing_state(struct pkcs11_session *session,
 	TEE_MemFill(&state, 0, sizeof(state));
 
 	if (session->processing)
-		return SKS_CKR_OPERATION_ACTIVE;
+		return PKCS11_CKR_OPERATION_ACTIVE;
 
 	switch (function) {
 	case SKS_FUNCTION_ENCRYPT:
@@ -218,10 +218,10 @@ int set_processing_state(struct pkcs11_session *session,
 	proc->state = state;
 	proc->tee_op_handle = TEE_HANDLE_NULL;
 
-	if (obj1 && get_bool(obj1->attributes, SKS_CKA_ALWAYS_AUTHENTICATE))
+	if (obj1 && get_bool(obj1->attributes, PKCS11_CKA_ALWAYS_AUTHENTICATE))
 		proc->always_authen = true;
 
-	if (obj2 && get_bool(obj2->attributes, SKS_CKA_ALWAYS_AUTHENTICATE))
+	if (obj2 && get_bool(obj2->attributes, PKCS11_CKA_ALWAYS_AUTHENTICATE))
 		proc->always_authen = true;
 
 	session->processing = proc;
@@ -286,7 +286,7 @@ uint32_t entry_ck_token_initialize(TEE_Param *ctrl,
 		return rv;
 
 	if (pin_size < 8 || pin_size > SKS_TOKEN_PIN_SIZE)
-		return SKS_CKR_PIN_LEN_RANGE;
+		return PKCS11_CKR_PIN_LEN_RANGE;
 
 	rv = serialargs_get_ptr(&ctrlargs, &pin, pin_size);
 	if (rv)
@@ -298,16 +298,16 @@ uint32_t entry_ck_token_initialize(TEE_Param *ctrl,
 
 	token = get_token(token_id);
 	if (!token)
-		return SKS_CKR_SLOT_ID_INVALID;
+		return PKCS11_CKR_SLOT_ID_INVALID;
 
-	if (token->db_main->flags & SKS_CKFT_SO_PIN_LOCKED) {
+	if (token->db_main->flags & PKCS11_CKFT_SO_PIN_LOCKED) {
 		IMSG("SKSt%u: SO PIN locked", token_id);
-		return SKS_CKR_PIN_LOCKED;
+		return PKCS11_CKR_PIN_LOCKED;
 	}
 
 	TAILQ_FOREACH(client, &pkcs11_client_list, link) {
 		if (!TAILQ_EMPTY(&client->session_list)) {
-			return SKS_CKR_SESSION_EXISTS;
+			return PKCS11_CKR_SESSION_EXISTS;
 		}
 	}
 
@@ -342,13 +342,13 @@ uint32_t entry_ck_token_initialize(TEE_Param *ctrl,
 		pin_rc = 1;
 
 	if (pin_rc) {
-		token->db_main->flags |= SKS_CKFT_SO_PIN_COUNT_LOW;
+		token->db_main->flags |= PKCS11_CKFT_SO_PIN_COUNT_LOW;
 		token->db_main->so_pin_count++;
 
 		if (token->db_main->so_pin_count == 6)
-			token->db_main->flags |= SKS_CKFT_SO_PIN_FINAL_TRY;
+			token->db_main->flags |= PKCS11_CKFT_SO_PIN_FINAL_TRY;
 		if (token->db_main->so_pin_count == 7)
-			token->db_main->flags |= SKS_CKFT_SO_PIN_LOCKED;
+			token->db_main->flags |= PKCS11_CKFT_SO_PIN_LOCKED;
 
 		update_persistent_db(token,
 				     offsetof(struct token_persistent_main,
@@ -361,23 +361,23 @@ uint32_t entry_ck_token_initialize(TEE_Param *ctrl,
 				     sizeof(token->db_main->so_pin_count));
 
 		TEE_Free(cpin);
-		return SKS_CKR_PIN_INCORRECT;
+		return PKCS11_CKR_PIN_INCORRECT;
 	}
 
-	token->db_main->flags &= ~(SKS_CKFT_SO_PIN_COUNT_LOW |
-				   SKS_CKFT_SO_PIN_FINAL_TRY);
+	token->db_main->flags &= ~(PKCS11_CKFT_SO_PIN_COUNT_LOW |
+				   PKCS11_CKFT_SO_PIN_FINAL_TRY);
 	token->db_main->so_pin_count = 0;
 
 inited:
 	TEE_MemMove(token->db_main->label, label, SKS_TOKEN_LABEL_SIZE);
-	token->db_main->flags |= SKS_CKFT_TOKEN_INITIALIZED;
+	token->db_main->flags |= PKCS11_CKFT_TOKEN_INITIALIZED;
 	/* Reset user PIN */
 	token->db_main->user_pin_size = 0;
-	token->db_main->flags &= ~(SKS_CKFT_USER_PIN_INITIALIZED |
-				   SKS_CKFT_USER_PIN_COUNT_LOW |
-				   SKS_CKFT_USER_PIN_FINAL_TRY |
-				   SKS_CKFT_USER_PIN_LOCKED |
-				   SKS_CKFT_USER_PIN_TO_BE_CHANGED);
+	token->db_main->flags &= ~(PKCS11_CKFT_USER_PIN_INITIALIZED |
+				   PKCS11_CKFT_USER_PIN_COUNT_LOW |
+				   PKCS11_CKFT_USER_PIN_FINAL_TRY |
+				   PKCS11_CKFT_USER_PIN_LOCKED |
+				   PKCS11_CKFT_USER_PIN_TO_BE_CHANGED);
 
 	update_persistent_db(token, 0, sizeof(*token->db_main));
 
@@ -449,16 +449,16 @@ uint32_t entry_ck_slot_info(TEE_Param *ctrl, TEE_Param *in, TEE_Param *out)
 
 	token = get_token(token_id);
 	if (!token)
-		return SKS_CKR_SLOT_ID_INVALID;
+		return PKCS11_CKR_SLOT_ID_INVALID;
 
 	TEE_MemFill(&info, 0, sizeof(info));
 
 	PADDED_STRING_COPY(info.slotDescription, desc);
 	PADDED_STRING_COPY(info.manufacturerID, manuf);
 
-	info.flags |= SKS_CKFS_TOKEN_PRESENT;
-	info.flags |= SKS_CKFS_REMOVABLE_DEVICE;
-	info.flags &= ~SKS_CKFS_HW_SLOT;
+	info.flags |= PKCS11_CKFS_TOKEN_PRESENT;
+	info.flags |= PKCS11_CKFS_REMOVABLE_DEVICE;
+	info.flags &= ~PKCS11_CKFS_HW_SLOT;
 
 	TEE_MemMove(&info.hardwareVersion, &hwver, sizeof(hwver));
 	TEE_MemMove(&info.firmwareVersion, &fwver, sizeof(fwver));
@@ -504,7 +504,7 @@ uint32_t entry_ck_token_info(TEE_Param *ctrl, TEE_Param *in, TEE_Param *out)
 
 	token = get_token(token_id);
 	if (!token)
-		return SKS_CKR_SLOT_ID_INVALID;
+		return PKCS11_CKR_SLOT_ID_INVALID;
 
 	TEE_MemFill(&info, 0, sizeof(info));
 
@@ -572,7 +572,7 @@ uint32_t entry_ck_token_mecha_ids(TEE_Param *ctrl,
 
 	token = get_token(token_id);
 	if (!token)
-		return SKS_CKR_SLOT_ID_INVALID;
+		return PKCS11_CKR_SLOT_ID_INVALID;
 
 	out->memref.size = sizeof(uint32_t) *
 		get_supported_mechanisms(out->memref.buffer, mechanisms_count);
@@ -595,92 +595,92 @@ static uint32_t supported_mechanism_info_flag(uint32_t proc_id)
 	uint32_t flags = 0;
 
 	switch (proc_id) {
-	case SKS_CKM_GENERIC_SECRET_KEY_GEN:
-	case SKS_CKM_AES_KEY_GEN:
-		flags = SKS_CKFM_GENERATE;
+	case PKCS11_CKM_GENERIC_SECRET_KEY_GEN:
+	case PKCS11_CKM_AES_KEY_GEN:
+		flags = PKCS11_CKFM_GENERATE;
 		break;
-	case SKS_CKM_AES_ECB:
-	case SKS_CKM_AES_CBC:
-	case SKS_CKM_AES_CBC_PAD:
-		flags = SKS_CKFM_ENCRYPT | SKS_CKFM_DECRYPT |
-			SKS_CKFM_WRAP | SKS_CKFM_UNWRAP | SKS_CKFM_DERIVE;
+	case PKCS11_CKM_AES_ECB:
+	case PKCS11_CKM_AES_CBC:
+	case PKCS11_CKM_AES_CBC_PAD:
+		flags = PKCS11_CKFM_ENCRYPT | PKCS11_CKFM_DECRYPT |
+			PKCS11_CKFM_WRAP | PKCS11_CKFM_UNWRAP | PKCS11_CKFM_DERIVE;
 		break;
-	case SKS_CKM_AES_CTR:
-	case SKS_CKM_AES_CTS:
-	case SKS_CKM_AES_GCM:
-	case SKS_CKM_AES_CCM:
-		flags = SKS_CKFM_ENCRYPT | SKS_CKFM_DECRYPT |
-			SKS_CKFM_WRAP | SKS_CKFM_UNWRAP;
+	case PKCS11_CKM_AES_CTR:
+	case PKCS11_CKM_AES_CTS:
+	case PKCS11_CKM_AES_GCM:
+	case PKCS11_CKM_AES_CCM:
+		flags = PKCS11_CKFM_ENCRYPT | PKCS11_CKFM_DECRYPT |
+			PKCS11_CKFM_WRAP | PKCS11_CKFM_UNWRAP;
 		break;
-	case SKS_CKM_AES_GMAC:
-		flags = SKS_CKFM_SIGN | SKS_CKFM_VERIFY | SKS_CKFM_DERIVE;
+	case PKCS11_CKM_AES_GMAC:
+		flags = PKCS11_CKFM_SIGN | PKCS11_CKFM_VERIFY | PKCS11_CKFM_DERIVE;
 		break;
-	case SKS_CKM_AES_CMAC:
-	case SKS_CKM_AES_CMAC_GENERAL:
-	case SKS_CKM_MD5_HMAC:
-	case SKS_CKM_SHA_1_HMAC:
-	case SKS_CKM_SHA224_HMAC:
-	case SKS_CKM_SHA256_HMAC:
-	case SKS_CKM_SHA384_HMAC:
-	case SKS_CKM_SHA512_HMAC:
-	case SKS_CKM_AES_XCBC_MAC:
-		flags = SKS_CKFM_SIGN | SKS_CKFM_VERIFY;
+	case PKCS11_CKM_AES_CMAC:
+	case PKCS11_CKM_AES_CMAC_GENERAL:
+	case PKCS11_CKM_MD5_HMAC:
+	case PKCS11_CKM_SHA_1_HMAC:
+	case PKCS11_CKM_SHA224_HMAC:
+	case PKCS11_CKM_SHA256_HMAC:
+	case PKCS11_CKM_SHA384_HMAC:
+	case PKCS11_CKM_SHA512_HMAC:
+	case PKCS11_CKM_AES_XCBC_MAC:
+		flags = PKCS11_CKFM_SIGN | PKCS11_CKFM_VERIFY;
 		break;
-	case SKS_CKM_AES_ECB_ENCRYPT_DATA:
-	case SKS_CKM_AES_CBC_ENCRYPT_DATA:
-		flags = SKS_CKFM_DERIVE;
+	case PKCS11_CKM_AES_ECB_ENCRYPT_DATA:
+	case PKCS11_CKM_AES_CBC_ENCRYPT_DATA:
+		flags = PKCS11_CKFM_DERIVE;
 		break;
-	case SKS_CKM_EC_KEY_PAIR_GEN:
-	case SKS_CKM_RSA_PKCS_KEY_PAIR_GEN:
-		flags = SKS_CKFM_GENERATE_PAIR;
+	case PKCS11_CKM_EC_KEY_PAIR_GEN:
+	case PKCS11_CKM_RSA_PKCS_KEY_PAIR_GEN:
+		flags = PKCS11_CKFM_GENERATE_PAIR;
 		break;
-	case SKS_CKM_ECDSA:
-	case SKS_CKM_ECDSA_SHA1:
-	case SKS_CKM_ECDSA_SHA224:
-	case SKS_CKM_ECDSA_SHA256:
-	case SKS_CKM_ECDSA_SHA384:
-	case SKS_CKM_ECDSA_SHA512:
-		flags = SKS_CKFM_SIGN | SKS_CKFM_VERIFY;
+	case PKCS11_CKM_ECDSA:
+	case PKCS11_CKM_ECDSA_SHA1:
+	case PKCS11_CKM_ECDSA_SHA224:
+	case PKCS11_CKM_ECDSA_SHA256:
+	case PKCS11_CKM_ECDSA_SHA384:
+	case PKCS11_CKM_ECDSA_SHA512:
+		flags = PKCS11_CKFM_SIGN | PKCS11_CKFM_VERIFY;
 		break;
-	case SKS_CKM_ECDH1_DERIVE:
-	case SKS_CKM_ECDH1_COFACTOR_DERIVE:
-	case SKS_CKM_ECMQV_DERIVE:
-		flags = SKS_CKFM_DERIVE;
+	case PKCS11_CKM_ECDH1_DERIVE:
+	case PKCS11_CKM_ECDH1_COFACTOR_DERIVE:
+	case PKCS11_CKM_ECMQV_DERIVE:
+		flags = PKCS11_CKFM_DERIVE;
 		break;
-	case SKS_CKM_ECDH_AES_KEY_WRAP:
-		flags = SKS_CKFM_WRAP | SKS_CKFM_UNWRAP;
+	case PKCS11_CKM_ECDH_AES_KEY_WRAP:
+		flags = PKCS11_CKFM_WRAP | PKCS11_CKFM_UNWRAP;
 		break;
-	case SKS_CKM_RSA_PKCS:
-	case SKS_CKM_RSA_X_509:
-		flags = SKS_CKFM_ENCRYPT | SKS_CKFM_DECRYPT |
-			SKS_CKFM_SIGN | SKS_CKFM_VERIFY |
-			SKS_CKFM_SIGN_RECOVER | SKS_CKFM_VERIFY_RECOVER |
-			SKS_CKFM_WRAP | SKS_CKFM_UNWRAP;
+	case PKCS11_CKM_RSA_PKCS:
+	case PKCS11_CKM_RSA_X_509:
+		flags = PKCS11_CKFM_ENCRYPT | PKCS11_CKFM_DECRYPT |
+			PKCS11_CKFM_SIGN | PKCS11_CKFM_VERIFY |
+			PKCS11_CKFM_SIGN_RECOVER | PKCS11_CKFM_VERIFY_RECOVER |
+			PKCS11_CKFM_WRAP | PKCS11_CKFM_UNWRAP;
 		break;
-	case SKS_CKM_RSA_9796:
-		flags = SKS_CKFM_SIGN | SKS_CKFM_VERIFY |
-			SKS_CKFM_SIGN_RECOVER | SKS_CKFM_VERIFY_RECOVER;
+	case PKCS11_CKM_RSA_9796:
+		flags = PKCS11_CKFM_SIGN | PKCS11_CKFM_VERIFY |
+			PKCS11_CKFM_SIGN_RECOVER | PKCS11_CKFM_VERIFY_RECOVER;
 		break;
 
-	case SKS_CKM_RSA_PKCS_OAEP:
-		flags = SKS_CKFM_ENCRYPT | SKS_CKFM_DECRYPT |
-			SKS_CKFM_WRAP | SKS_CKFM_UNWRAP;
+	case PKCS11_CKM_RSA_PKCS_OAEP:
+		flags = PKCS11_CKFM_ENCRYPT | PKCS11_CKFM_DECRYPT |
+			PKCS11_CKFM_WRAP | PKCS11_CKFM_UNWRAP;
 		break;
-	case SKS_CKM_RSA_PKCS_PSS:
-	case SKS_CKM_SHA1_RSA_PKCS:
-	case SKS_CKM_SHA224_RSA_PKCS:
-	case SKS_CKM_SHA256_RSA_PKCS:
-	case SKS_CKM_SHA384_RSA_PKCS:
-	case SKS_CKM_SHA512_RSA_PKCS:
-	case SKS_CKM_SHA1_RSA_PKCS_PSS:
-	case SKS_CKM_SHA224_RSA_PKCS_PSS:
-	case SKS_CKM_SHA256_RSA_PKCS_PSS:
-	case SKS_CKM_SHA384_RSA_PKCS_PSS:
-	case SKS_CKM_SHA512_RSA_PKCS_PSS:
-		flags = SKS_CKFM_SIGN | SKS_CKFM_VERIFY;
+	case PKCS11_CKM_RSA_PKCS_PSS:
+	case PKCS11_CKM_SHA1_RSA_PKCS:
+	case PKCS11_CKM_SHA224_RSA_PKCS:
+	case PKCS11_CKM_SHA256_RSA_PKCS:
+	case PKCS11_CKM_SHA384_RSA_PKCS:
+	case PKCS11_CKM_SHA512_RSA_PKCS:
+	case PKCS11_CKM_SHA1_RSA_PKCS_PSS:
+	case PKCS11_CKM_SHA224_RSA_PKCS_PSS:
+	case PKCS11_CKM_SHA256_RSA_PKCS_PSS:
+	case PKCS11_CKM_SHA384_RSA_PKCS_PSS:
+	case PKCS11_CKM_SHA512_RSA_PKCS_PSS:
+		flags = PKCS11_CKFM_SIGN | PKCS11_CKFM_VERIFY;
 		break;
-	case SKS_CKM_RSA_AES_KEY_WRAP:
-		flags = SKS_CKFM_WRAP | SKS_CKFM_UNWRAP;
+	case PKCS11_CKM_RSA_AES_KEY_WRAP:
+		flags = PKCS11_CKFM_WRAP | PKCS11_CKFM_UNWRAP;
 		break;
 	default:
 		TEE_Panic(proc_id);
@@ -700,81 +700,81 @@ static void supported_mechanism_key_size(uint32_t proc_id,
 	uint32_t mult = bit_size_only ? 8 : 1;
 
 	switch (proc_id) {
-	case SKS_CKM_GENERIC_SECRET_KEY_GEN:
+	case PKCS11_CKM_GENERIC_SECRET_KEY_GEN:
 		*min_key_size = 1;		/* in bits */
 		*max_key_size = 4096;		/* in bits */
 		break;
-	case SKS_CKM_MD5_HMAC:
+	case PKCS11_CKM_MD5_HMAC:
 		*min_key_size = 16 * mult;
 		*max_key_size = 16 * mult;
 		break;
-	case SKS_CKM_SHA_1_HMAC:
+	case PKCS11_CKM_SHA_1_HMAC:
 		*min_key_size = 20 * mult;
 		*max_key_size = 20 * mult;
 		break;
-	case SKS_CKM_SHA224_HMAC:
+	case PKCS11_CKM_SHA224_HMAC:
 		*min_key_size = 28 * mult;
 		*max_key_size = 28 * mult;
 		break;
-	case SKS_CKM_SHA256_HMAC:
+	case PKCS11_CKM_SHA256_HMAC:
 		*min_key_size = 32 * mult;
 		*max_key_size = 32 * mult;
 		break;
-	case SKS_CKM_SHA384_HMAC:
+	case PKCS11_CKM_SHA384_HMAC:
 		*min_key_size = 48 * mult;
 		*max_key_size = 48 * mult;
 		break;
-	case SKS_CKM_SHA512_HMAC:
+	case PKCS11_CKM_SHA512_HMAC:
 		*min_key_size = 64 * mult;
 		*max_key_size = 64 * mult;
 		break;
-	case SKS_CKM_AES_XCBC_MAC:
+	case PKCS11_CKM_AES_XCBC_MAC:
 		*min_key_size = 28 * mult;
 		*max_key_size = 28 * mult;
 		break;
-	case SKS_CKM_AES_KEY_GEN:
-	case SKS_CKM_AES_ECB:
-	case SKS_CKM_AES_CBC:
-	case SKS_CKM_AES_CBC_PAD:
-	case SKS_CKM_AES_CTR:
-	case SKS_CKM_AES_CTS:
-	case SKS_CKM_AES_GCM:
-	case SKS_CKM_AES_CCM:
-	case SKS_CKM_AES_GMAC:
-	case SKS_CKM_AES_CMAC:
-	case SKS_CKM_AES_CMAC_GENERAL:
+	case PKCS11_CKM_AES_KEY_GEN:
+	case PKCS11_CKM_AES_ECB:
+	case PKCS11_CKM_AES_CBC:
+	case PKCS11_CKM_AES_CBC_PAD:
+	case PKCS11_CKM_AES_CTR:
+	case PKCS11_CKM_AES_CTS:
+	case PKCS11_CKM_AES_GCM:
+	case PKCS11_CKM_AES_CCM:
+	case PKCS11_CKM_AES_GMAC:
+	case PKCS11_CKM_AES_CMAC:
+	case PKCS11_CKM_AES_CMAC_GENERAL:
 		*min_key_size = 16 * mult;
 		*max_key_size = 32 * mult;
 		break;
-	case SKS_CKM_EC_KEY_PAIR_GEN:
-	case SKS_CKM_ECDSA:
-	case SKS_CKM_ECDSA_SHA1:
-	case SKS_CKM_ECDSA_SHA224:
-	case SKS_CKM_ECDSA_SHA256:
-	case SKS_CKM_ECDSA_SHA384:
-	case SKS_CKM_ECDSA_SHA512:
-	case SKS_CKM_ECDH1_DERIVE:
-	case SKS_CKM_ECDH1_COFACTOR_DERIVE:
-	case SKS_CKM_ECMQV_DERIVE:
-	case SKS_CKM_ECDH_AES_KEY_WRAP:
+	case PKCS11_CKM_EC_KEY_PAIR_GEN:
+	case PKCS11_CKM_ECDSA:
+	case PKCS11_CKM_ECDSA_SHA1:
+	case PKCS11_CKM_ECDSA_SHA224:
+	case PKCS11_CKM_ECDSA_SHA256:
+	case PKCS11_CKM_ECDSA_SHA384:
+	case PKCS11_CKM_ECDSA_SHA512:
+	case PKCS11_CKM_ECDH1_DERIVE:
+	case PKCS11_CKM_ECDH1_COFACTOR_DERIVE:
+	case PKCS11_CKM_ECMQV_DERIVE:
+	case PKCS11_CKM_ECDH_AES_KEY_WRAP:
 		*min_key_size = 160;	/* in bits */
 		*max_key_size = 521;	/* in bits */
 		break;
-	case SKS_CKM_RSA_PKCS_KEY_PAIR_GEN:
-	case SKS_CKM_RSA_PKCS:
-	case SKS_CKM_RSA_9796:
-	case SKS_CKM_RSA_X_509:
-	case SKS_CKM_SHA1_RSA_PKCS:
-	case SKS_CKM_RSA_PKCS_OAEP:
-	case SKS_CKM_SHA1_RSA_PKCS_PSS:
-	case SKS_CKM_SHA256_RSA_PKCS:
-	case SKS_CKM_SHA384_RSA_PKCS:
-	case SKS_CKM_SHA512_RSA_PKCS:
-	case SKS_CKM_SHA256_RSA_PKCS_PSS:
-	case SKS_CKM_SHA384_RSA_PKCS_PSS:
-	case SKS_CKM_SHA512_RSA_PKCS_PSS:
-	case SKS_CKM_SHA224_RSA_PKCS:
-	case SKS_CKM_SHA224_RSA_PKCS_PSS:
+	case PKCS11_CKM_RSA_PKCS_KEY_PAIR_GEN:
+	case PKCS11_CKM_RSA_PKCS:
+	case PKCS11_CKM_RSA_9796:
+	case PKCS11_CKM_RSA_X_509:
+	case PKCS11_CKM_SHA1_RSA_PKCS:
+	case PKCS11_CKM_RSA_PKCS_OAEP:
+	case PKCS11_CKM_SHA1_RSA_PKCS_PSS:
+	case PKCS11_CKM_SHA256_RSA_PKCS:
+	case PKCS11_CKM_SHA384_RSA_PKCS:
+	case PKCS11_CKM_SHA512_RSA_PKCS:
+	case PKCS11_CKM_SHA256_RSA_PKCS_PSS:
+	case PKCS11_CKM_SHA384_RSA_PKCS_PSS:
+	case PKCS11_CKM_SHA512_RSA_PKCS_PSS:
+	case PKCS11_CKM_SHA224_RSA_PKCS:
+	case PKCS11_CKM_SHA224_RSA_PKCS_PSS:
 		*min_key_size = 256;	/* in bits */
 		*max_key_size = 4096;	/* in bits */
 		break;
@@ -822,10 +822,10 @@ uint32_t entry_ck_token_mecha_info(TEE_Param *ctrl,
 
 	token = get_token(token_id);
 	if (!token)
-		return SKS_CKR_SLOT_ID_INVALID;
+		return PKCS11_CKR_SLOT_ID_INVALID;
 
 	if (!mechanism_is_supported(type))
-		return SKS_CKR_MECHANISM_INVALID;
+		return PKCS11_CKR_MECHANISM_INVALID;
 
 	info->flags = supported_mechanism_info_flag(type);
 
@@ -983,10 +983,10 @@ static uint32_t open_ck_session(uintptr_t tee_session, TEE_Param *ctrl,
 
 	token = get_token(token_id);
 	if (!token)
-		return SKS_CKR_SLOT_ID_INVALID;
+		return PKCS11_CKR_SLOT_ID_INVALID;
 
 	if (!readonly && token->state == PKCS11_TOKEN_READ_ONLY) {
-		return SKS_CKR_TOKEN_WRITE_PROTECTED;
+		return PKCS11_CKR_TOKEN_WRITE_PROTECTED;
 	}
 
 	client = tee_session2client(tee_session);
@@ -998,7 +998,7 @@ static uint32_t open_ck_session(uintptr_t tee_session, TEE_Param *ctrl,
 	if (readonly) {
 		TAILQ_FOREACH(session, &client->session_list, link) {
 			if (session->state == PKCS11_SESSION_SO_READ_WRITE) {
-				return SKS_CKR_SESSION_READ_WRITE_SO_EXISTS;
+				return PKCS11_CKR_SESSION_READ_WRITE_SO_EXISTS;
 			}
 		}
 	}
@@ -1099,7 +1099,7 @@ uint32_t entry_ck_token_close_session(uintptr_t tee_session, TEE_Param *ctrl,
 
 	session = sks_handle2session(session_handle, tee_session);
 	if (!session)
-		return SKS_CKR_SESSION_HANDLE_INVALID;
+		return PKCS11_CKR_SESSION_HANDLE_INVALID;
 
 	close_ck_session(session);
 
@@ -1130,7 +1130,7 @@ uint32_t entry_ck_token_close_all(uintptr_t tee_session, TEE_Param *ctrl,
 
 	token = get_token(token_id);
 	if (!token)
-		return SKS_CKR_SLOT_ID_INVALID;
+		return PKCS11_CKR_SLOT_ID_INVALID;
 
 	IMSG("SKSt%" PRIu32 ": close sessions", token_id);
 
@@ -1155,35 +1155,35 @@ static uint32_t set_pin(struct pkcs11_session *session,
 
 	TEE_MemFill(&pin_key_hdl, 0, sizeof(pin_key_hdl));
 
-	if (session->token->db_main->flags & SKS_CKFT_WRITE_PROTECTED)
-		return SKS_CKR_TOKEN_WRITE_PROTECTED;
+	if (session->token->db_main->flags & PKCS11_CKFT_WRITE_PROTECTED)
+		return PKCS11_CKR_TOKEN_WRITE_PROTECTED;
 
 	if (!pkcs11_session_is_read_write(session))
-		return SKS_CKR_SESSION_READ_ONLY;
+		return PKCS11_CKR_SESSION_READ_ONLY;
 
 	if (new_pin_size < 8 || new_pin_size > SKS_TOKEN_PIN_SIZE)
-		return SKS_CKR_PIN_LEN_RANGE;
+		return PKCS11_CKR_PIN_LEN_RANGE;
 
 	switch (user_type) {
-	case SKS_CKU_SO:
+	case PKCS11_CKU_SO:
 		pin = session->token->db_main->so_pin;
 		pin_size = &session->token->db_main->so_pin_size;
 		pin_count = &session->token->db_main->so_pin_count;
 		pin_key_hdl = session->token->pin_hdl[0];
-		flag_mask = SKS_CKFT_SO_PIN_COUNT_LOW |
-				SKS_CKFT_SO_PIN_FINAL_TRY |
-				SKS_CKFT_SO_PIN_LOCKED |
-				SKS_CKFT_SO_PIN_TO_BE_CHANGED;
+		flag_mask = PKCS11_CKFT_SO_PIN_COUNT_LOW |
+				PKCS11_CKFT_SO_PIN_FINAL_TRY |
+				PKCS11_CKFT_SO_PIN_LOCKED |
+				PKCS11_CKFT_SO_PIN_TO_BE_CHANGED;
 		break;
-	case SKS_CKU_USER:
+	case PKCS11_CKU_USER:
 		pin = session->token->db_main->user_pin;
 		pin_size = &session->token->db_main->user_pin_size;
 		pin_count = &session->token->db_main->user_pin_count;
 		pin_key_hdl = session->token->pin_hdl[1];
-		flag_mask = SKS_CKFT_USER_PIN_COUNT_LOW |
-				SKS_CKFT_USER_PIN_FINAL_TRY |
-				SKS_CKFT_USER_PIN_LOCKED |
-				SKS_CKFT_USER_PIN_TO_BE_CHANGED;
+		flag_mask = PKCS11_CKFT_USER_PIN_COUNT_LOW |
+				PKCS11_CKFT_USER_PIN_FINAL_TRY |
+				PKCS11_CKFT_USER_PIN_LOCKED |
+				PKCS11_CKFT_USER_PIN_TO_BE_CHANGED;
 		break;
 	default:
 		return SKS_FAILED;
@@ -1203,8 +1203,8 @@ static uint32_t set_pin(struct pkcs11_session *session,
 
 	session->token->db_main->flags &= ~flag_mask;
 
-	if (user_type == SKS_CKU_USER)
-		session->token->db_main->flags |= SKS_CKFT_USER_PIN_INITIALIZED;
+	if (user_type == PKCS11_CKU_USER)
+		session->token->db_main->flags |= PKCS11_CKFT_USER_PIN_INITIALIZED;
 
 	// Paranoia: Check unmodified old content is still valid
 	update_persistent_db(session->token,
@@ -1239,10 +1239,10 @@ uint32_t entry_init_pin(uintptr_t tee_session, TEE_Param *ctrl,
 
 	session = sks_handle2session(session_handle, tee_session);
 	if (!session)
-		return SKS_CKR_SESSION_HANDLE_INVALID;
+		return PKCS11_CKR_SESSION_HANDLE_INVALID;
 
 	if (!pkcs11_session_is_security_officer(session))
-		return SKS_CKR_USER_NOT_LOGGED_IN;
+		return PKCS11_CKR_USER_NOT_LOGGED_IN;
 
 	rv = serialargs_get(&ctrlargs, &pin_size, sizeof(uint32_t));
 	if (rv)
@@ -1252,11 +1252,11 @@ uint32_t entry_init_pin(uintptr_t tee_session, TEE_Param *ctrl,
 	if (rv)
 		return rv;
 
-	assert(session->token->db_main->flags & SKS_CKFT_TOKEN_INITIALIZED);
+	assert(session->token->db_main->flags & PKCS11_CKFT_TOKEN_INITIALIZED);
 
 	IMSG("SKSs%" PRIu32 ": init PIN", session_handle);
 
-	return set_pin(session, pin, pin_size, SKS_CKU_USER);
+	return set_pin(session, pin, pin_size, PKCS11_CKU_USER);
 }
 
 static uint32_t check_so_pin(struct pkcs11_session *session,
@@ -1268,11 +1268,11 @@ static uint32_t check_so_pin(struct pkcs11_session *session,
 
 	/* Note: intentional return code USER_PIN_NOT_INITIALIZED */
 	if (!token->db_main->so_pin_size ||
-	    !(token->db_main->flags & SKS_CKFT_TOKEN_INITIALIZED))
-		return SKS_CKR_USER_PIN_NOT_INITIALIZED;
+	    !(token->db_main->flags & PKCS11_CKFT_TOKEN_INITIALIZED))
+		return PKCS11_CKR_USER_PIN_NOT_INITIALIZED;
 
-	if (token->db_main->flags & SKS_CKFT_SO_PIN_LOCKED)
-		return SKS_CKR_PIN_LOCKED;
+	if (token->db_main->flags & PKCS11_CKFT_SO_PIN_LOCKED)
+		return PKCS11_CKR_PIN_LOCKED;
 
 	cpin = TEE_Malloc(SKS_TOKEN_PIN_SIZE, TEE_MALLOC_FILL_ZERO);
 	if (!cpin)
@@ -1292,13 +1292,13 @@ static uint32_t check_so_pin(struct pkcs11_session *session,
 	TEE_Free(cpin);
 
 	if (pin_rc) {
-		token->db_main->flags |= SKS_CKFT_SO_PIN_COUNT_LOW;
+		token->db_main->flags |= PKCS11_CKFT_SO_PIN_COUNT_LOW;
 		token->db_main->so_pin_count++;
 
 		if (token->db_main->so_pin_count == 6)
-			token->db_main->flags |= SKS_CKFT_SO_PIN_FINAL_TRY;
+			token->db_main->flags |= PKCS11_CKFT_SO_PIN_FINAL_TRY;
 		if (token->db_main->so_pin_count == 7)
-			token->db_main->flags |= SKS_CKFT_SO_PIN_LOCKED;
+			token->db_main->flags |= PKCS11_CKFT_SO_PIN_LOCKED;
 
 		update_persistent_db(token,
 				     offsetof(struct token_persistent_main,
@@ -1310,10 +1310,10 @@ static uint32_t check_so_pin(struct pkcs11_session *session,
 					      so_pin_count),
 				     sizeof(token->db_main->so_pin_count));
 
-		if (token->db_main->flags & SKS_CKFT_SO_PIN_LOCKED)
-			return SKS_CKR_PIN_LOCKED;
+		if (token->db_main->flags & PKCS11_CKFT_SO_PIN_LOCKED)
+			return PKCS11_CKR_PIN_LOCKED;
 
-		return SKS_CKR_PIN_INCORRECT;
+		return PKCS11_CKR_PIN_INCORRECT;
 	}
 
 	if (token->db_main->so_pin_count) {
@@ -1325,10 +1325,10 @@ static uint32_t check_so_pin(struct pkcs11_session *session,
 				     sizeof(token->db_main->so_pin_count));
 	}
 
-	if (token->db_main->flags & (SKS_CKFT_SO_PIN_COUNT_LOW |
-					SKS_CKFT_SO_PIN_FINAL_TRY)) {
-		token->db_main->flags &= ~(SKS_CKFT_SO_PIN_COUNT_LOW |
-					   SKS_CKFT_SO_PIN_FINAL_TRY);
+	if (token->db_main->flags & (PKCS11_CKFT_SO_PIN_COUNT_LOW |
+					PKCS11_CKFT_SO_PIN_FINAL_TRY)) {
+		token->db_main->flags &= ~(PKCS11_CKFT_SO_PIN_COUNT_LOW |
+					   PKCS11_CKFT_SO_PIN_FINAL_TRY);
 
 		update_persistent_db(token,
 				     offsetof(struct token_persistent_main,
@@ -1347,11 +1347,11 @@ static uint32_t check_user_pin(struct pkcs11_session *session,
 	int pin_rc = 0;
 
 	if (!token->db_main->user_pin_size ||
-	    !(token->db_main->flags & SKS_CKFT_USER_PIN_INITIALIZED))
-		return SKS_CKR_USER_PIN_NOT_INITIALIZED;
+	    !(token->db_main->flags & PKCS11_CKFT_USER_PIN_INITIALIZED))
+		return PKCS11_CKR_USER_PIN_NOT_INITIALIZED;
 
-	if (token->db_main->flags & SKS_CKFT_USER_PIN_LOCKED)
-		return SKS_CKR_PIN_LOCKED;
+	if (token->db_main->flags & PKCS11_CKFT_USER_PIN_LOCKED)
+		return PKCS11_CKR_PIN_LOCKED;
 
 	cpin = TEE_Malloc(SKS_TOKEN_PIN_SIZE, TEE_MALLOC_FILL_ZERO);
 	if (!cpin)
@@ -1371,13 +1371,13 @@ static uint32_t check_user_pin(struct pkcs11_session *session,
 	TEE_Free(cpin);
 
 	if (pin_rc) {
-		token->db_main->flags |= SKS_CKFT_USER_PIN_COUNT_LOW;
+		token->db_main->flags |= PKCS11_CKFT_USER_PIN_COUNT_LOW;
 		token->db_main->user_pin_count++;
 
 		if (token->db_main->user_pin_count == 6)
-			token->db_main->flags |= SKS_CKFT_USER_PIN_FINAL_TRY;
+			token->db_main->flags |= PKCS11_CKFT_USER_PIN_FINAL_TRY;
 		if (token->db_main->user_pin_count == 7)
-			token->db_main->flags |= SKS_CKFT_USER_PIN_LOCKED;
+			token->db_main->flags |= PKCS11_CKFT_USER_PIN_LOCKED;
 
 		update_persistent_db(token,
 				     offsetof(struct token_persistent_main,
@@ -1389,10 +1389,10 @@ static uint32_t check_user_pin(struct pkcs11_session *session,
 					      user_pin_count),
 				     sizeof(token->db_main->user_pin_count));
 
-		if (token->db_main->flags & SKS_CKFT_USER_PIN_LOCKED)
-			return SKS_CKR_PIN_LOCKED;
+		if (token->db_main->flags & PKCS11_CKFT_USER_PIN_LOCKED)
+			return PKCS11_CKR_PIN_LOCKED;
 
-		return SKS_CKR_PIN_INCORRECT;
+		return PKCS11_CKR_PIN_INCORRECT;
 	}
 
 	if (token->db_main->user_pin_count) {
@@ -1404,10 +1404,10 @@ static uint32_t check_user_pin(struct pkcs11_session *session,
 				     sizeof(token->db_main->user_pin_count));
 	}
 
-	if (token->db_main->flags & (SKS_CKFT_USER_PIN_COUNT_LOW |
-					SKS_CKFT_USER_PIN_FINAL_TRY)) {
-		token->db_main->flags &= ~(SKS_CKFT_USER_PIN_COUNT_LOW |
-				   SKS_CKFT_USER_PIN_FINAL_TRY);
+	if (token->db_main->flags & (PKCS11_CKFT_USER_PIN_COUNT_LOW |
+					PKCS11_CKFT_USER_PIN_FINAL_TRY)) {
+		token->db_main->flags &= ~(PKCS11_CKFT_USER_PIN_COUNT_LOW |
+				   PKCS11_CKFT_USER_PIN_FINAL_TRY);
 
 		update_persistent_db(token,
 				     offsetof(struct token_persistent_main,
@@ -1460,24 +1460,24 @@ uint32_t entry_set_pin(uintptr_t tee_session, TEE_Param *ctrl,
 
 	session = sks_handle2session(session_handle, tee_session);
 	if (!session)
-		return SKS_CKR_SESSION_HANDLE_INVALID;
+		return PKCS11_CKR_SESSION_HANDLE_INVALID;
 
 	if (!pkcs11_session_is_read_write(session))
-		return SKS_CKR_SESSION_READ_ONLY;
+		return PKCS11_CKR_SESSION_READ_ONLY;
 
 	if (pkcs11_session_is_security_officer(session)) {
 		if (!(session->token->db_main->flags &
-		      SKS_CKFT_TOKEN_INITIALIZED))
+		      PKCS11_CKFT_TOKEN_INITIALIZED))
 			return SKS_ERROR;
 
 		rv = check_so_pin(session, old_pin, old_pin_size);
 		if (rv)
 			return rv;
 
-		return set_pin(session, pin, pin_size, SKS_CKU_SO);
+		return set_pin(session, pin, pin_size, PKCS11_CKU_SO);
 	}
 
-	if (!(session->token->db_main->flags & SKS_CKFT_USER_PIN_INITIALIZED))
+	if (!(session->token->db_main->flags & PKCS11_CKFT_USER_PIN_INITIALIZED))
 		return SKS_ERROR;
 
 	rv = check_user_pin(session, old_pin, old_pin_size);
@@ -1486,7 +1486,7 @@ uint32_t entry_set_pin(uintptr_t tee_session, TEE_Param *ctrl,
 
 	IMSG("SKSs%" PRIu32 ": set PIN", session_handle);
 
-	return set_pin(session, pin, pin_size, SKS_CKU_USER);
+	return set_pin(session, pin, pin_size, PKCS11_CKU_USER);
 }
 
 /* ctrl=[session][user_type][pin-size]{pin], in=unused, out=unused */
@@ -1516,7 +1516,7 @@ uint32_t entry_login(uintptr_t tee_session, TEE_Param *ctrl,
 
 	session = sks_handle2session(session_handle, tee_session);
 	if (!session)
-		return SKS_CKR_SESSION_HANDLE_INVALID;
+		return PKCS11_CKR_SESSION_HANDLE_INVALID;
 
 	rv = serialargs_get(&ctrlargs, &user_type, sizeof(uint32_t));
 	if (rv)
@@ -1533,23 +1533,23 @@ uint32_t entry_login(uintptr_t tee_session, TEE_Param *ctrl,
 	client = tee_session2client(tee_session);
 
 	switch (user_type) {
-	case SKS_CKU_SO:
+	case PKCS11_CKU_SO:
 		if (pkcs11_session_is_security_officer(session))
-			return SKS_CKR_USER_ALREADY_LOGGED_IN;
+			return PKCS11_CKR_USER_ALREADY_LOGGED_IN;
 
 		if (pkcs11_session_is_user(session))
-			return SKS_CKR_USER_ANOTHER_ALREADY_LOGGED_IN;
+			return PKCS11_CKR_USER_ANOTHER_ALREADY_LOGGED_IN;
 
 		TAILQ_FOREACH(sess, &client->session_list, link)
 			if (sess->token == session->token &&
 			    !pkcs11_session_is_read_write(sess))
-				return SKS_CKR_SESSION_READ_ONLY_EXISTS;
+				return PKCS11_CKR_SESSION_READ_ONLY_EXISTS;
 
 		TAILQ_FOREACH(client, &pkcs11_client_list, link) {
 			TAILQ_FOREACH(sess, &client->session_list, link) {
 				if (sess->token == session->token &&
 				    !pkcs11_session_is_public(sess))
-					return SKS_CKR_USER_TOO_MANY_TYPES;
+					return PKCS11_CKR_USER_TOO_MANY_TYPES;
 			}
 		}
 
@@ -1559,12 +1559,12 @@ uint32_t entry_login(uintptr_t tee_session, TEE_Param *ctrl,
 
 		break;
 
-	case SKS_CKU_USER:
+	case PKCS11_CKU_USER:
 		if (pkcs11_session_is_security_officer(session))
-			return SKS_CKR_USER_ANOTHER_ALREADY_LOGGED_IN;
+			return PKCS11_CKR_USER_ANOTHER_ALREADY_LOGGED_IN;
 
 		if (pkcs11_session_is_user(session))
-			return SKS_CKR_USER_ALREADY_LOGGED_IN;
+			return PKCS11_CKR_USER_ALREADY_LOGGED_IN;
 
 		// TODO: check all client: if SO or user logged, we can return
 		// CKR_USER_TOO_MANY_TYPES.
@@ -1575,13 +1575,13 @@ uint32_t entry_login(uintptr_t tee_session, TEE_Param *ctrl,
 
 		break;
 
-	case SKS_CKU_CONTEXT_SPECIFIC:
+	case PKCS11_CKU_CONTEXT_SPECIFIC:
 		if (!session_is_active(session) ||
 		    !session->processing->always_authen)
-			return SKS_CKR_OPERATION_NOT_INITIALIZED;
+			return PKCS11_CKR_OPERATION_NOT_INITIALIZED;
 
 		if (pkcs11_session_is_public(session))
-			return SKS_CKR_FUNCTION_FAILED;
+			return PKCS11_CKR_FUNCTION_FAILED;
 
 		assert(pkcs11_session_is_user(session) ||
 			pkcs11_session_is_security_officer(session));
@@ -1593,13 +1593,13 @@ uint32_t entry_login(uintptr_t tee_session, TEE_Param *ctrl,
 
 		session->processing->relogged = (rv == SKS_OK);
 
-		if (rv == SKS_CKR_PIN_LOCKED)
+		if (rv == PKCS11_CKR_PIN_LOCKED)
 			session_logout(session);
 
 		break;
 
 	default:
-		return SKS_CKR_USER_TYPE_INVALID;
+		return PKCS11_CKR_USER_TYPE_INVALID;
 	}
 
 	if (!rv)
@@ -1630,10 +1630,10 @@ uint32_t entry_logout(uintptr_t tee_session, TEE_Param *ctrl,
 
 	session = sks_handle2session(session_handle, tee_session);
 	if (!session)
-		return SKS_CKR_SESSION_HANDLE_INVALID;
+		return PKCS11_CKR_SESSION_HANDLE_INVALID;
 
 	if (pkcs11_session_is_public(session))
-		return SKS_CKR_USER_NOT_LOGGED_IN;
+		return PKCS11_CKR_USER_NOT_LOGGED_IN;
 
 	session_logout(session);
 

@@ -28,10 +28,10 @@ static uint32_t get_ready_session(struct pkcs11_session **sess,
 
 	session = sks_handle2session(session_handle, tee_session);
 	if (!session)
-		return SKS_CKR_SESSION_HANDLE_INVALID;
+		return PKCS11_CKR_SESSION_HANDLE_INVALID;
 
 	if (session_is_active(session))
-		return SKS_CKR_OPERATION_ACTIVE;
+		return PKCS11_CKR_OPERATION_ACTIVE;
 
 	*sess = session;
 
@@ -75,11 +75,11 @@ static uint32_t get_active_session(struct pkcs11_session **sess,
 				  enum processing_func function)
 {
 	struct pkcs11_session *session = NULL;
-	uint32_t rv = SKS_CKR_OPERATION_NOT_INITIALIZED;
+	uint32_t rv = PKCS11_CKR_OPERATION_NOT_INITIALIZED;
 
 	session = sks_handle2session(session_handle, tee_session);
 	if (!session)
-		return SKS_CKR_SESSION_HANDLE_INVALID;
+		return PKCS11_CKR_SESSION_HANDLE_INVALID;
 
 	if (session->processing &&
 	    func_matches_state(function, session->processing->state)) {
@@ -96,20 +96,20 @@ void release_active_processing(struct pkcs11_session *session)
 		return;
 
 	switch (session->processing->mecha_type) {
-	case SKS_CKM_AES_CTR:
+	case PKCS11_CKM_AES_CTR:
 		tee_release_ctr_operation(session->processing);
 		break;
-	case SKS_CKM_AES_GCM:
+	case PKCS11_CKM_AES_GCM:
 		tee_release_gcm_operation(session->processing);
 		break;
-	case SKS_CKM_AES_CCM:
+	case PKCS11_CKM_AES_CCM:
 		tee_release_ccm_operation(session->processing);
 		break;
-	case SKS_CKM_SHA1_RSA_PKCS_PSS:
-	case SKS_CKM_SHA256_RSA_PKCS_PSS:
-	case SKS_CKM_SHA384_RSA_PKCS_PSS:
-	case SKS_CKM_SHA512_RSA_PKCS_PSS:
-	case SKS_CKM_SHA224_RSA_PKCS_PSS:
+	case PKCS11_CKM_SHA1_RSA_PKCS_PSS:
+	case PKCS11_CKM_SHA256_RSA_PKCS_PSS:
+	case PKCS11_CKM_SHA384_RSA_PKCS_PSS:
+	case PKCS11_CKM_SHA512_RSA_PKCS_PSS:
+	case PKCS11_CKM_SHA224_RSA_PKCS_PSS:
 		tee_release_rsa_pss_operation(session->processing);
 		break;
 	default:
@@ -185,7 +185,7 @@ uint32_t entry_import_object(uintptr_t tee_session,
 	 * Check target object attributes match target processing
 	 * Check target object attributes match token state
 	 */
-	rv = check_created_attrs_against_processing(SKS_PROCESSING_IMPORT,
+	rv = check_created_attrs_against_processing(PKCS11_PROCESSING_IMPORT,
 						    head);
 	if (rv)
 		goto bail;
@@ -235,27 +235,27 @@ size_t get_object_key_bit_size(struct sks_object *obj)
 	struct sks_attrs_head *attrs = obj->attributes;
 
 	switch (get_type(attrs)) {
-	case SKS_CKK_AES:
-	case SKS_CKK_GENERIC_SECRET:
-	case SKS_CKK_MD5_HMAC:
-	case SKS_CKK_SHA_1_HMAC:
-	case SKS_CKK_SHA224_HMAC:
-	case SKS_CKK_SHA256_HMAC:
-	case SKS_CKK_SHA384_HMAC:
-	case SKS_CKK_SHA512_HMAC:
-		if (get_attribute_ptr(attrs, SKS_CKA_VALUE, NULL, &a_size))
+	case PKCS11_CKK_AES:
+	case PKCS11_CKK_GENERIC_SECRET:
+	case PKCS11_CKK_MD5_HMAC:
+	case PKCS11_CKK_SHA_1_HMAC:
+	case PKCS11_CKK_SHA224_HMAC:
+	case PKCS11_CKK_SHA256_HMAC:
+	case PKCS11_CKK_SHA384_HMAC:
+	case PKCS11_CKK_SHA512_HMAC:
+		if (get_attribute_ptr(attrs, PKCS11_CKA_VALUE, NULL, &a_size))
 			return 0;
 
 		return a_size * 8;
 
-	case SKS_CKK_RSA:
-		if (get_attribute_ptr(attrs, SKS_CKA_MODULUS, NULL, &a_size))
+	case PKCS11_CKK_RSA:
+		if (get_attribute_ptr(attrs, PKCS11_CKA_MODULUS, NULL, &a_size))
 			return 0;
 
 		return a_size * 8;
 
-	case SKS_CKK_EC:
-		if (get_attribute_ptr(attrs, SKS_CKA_EC_PARAMS,
+	case PKCS11_CKK_EC:
+		if (get_attribute_ptr(attrs, PKCS11_CKA_EC_PARAMS,
 					&a_ptr, &a_size))
 			return 0;
 
@@ -276,17 +276,17 @@ static uint32_t generate_random_key_value(struct sks_attrs_head **head)
 	void *value;
 
 	if (!*head)
-		return SKS_CKR_TEMPLATE_INCONSISTENT;
+		return PKCS11_CKR_TEMPLATE_INCONSISTENT;
 
-	rv = get_attribute_ptr(*head, SKS_CKA_VALUE_LEN, &data, &data_size);
+	rv = get_attribute_ptr(*head, PKCS11_CKA_VALUE_LEN, &data, &data_size);
 	if (rv || data_size != sizeof(uint32_t)) {
 		DMSG("%s", rv ? "No attribute value_len found" :
 			"Invalid size for attribute VALUE_LEN");
-		return SKS_CKR_ATTRIBUTE_VALUE_INVALID;
+		return PKCS11_CKR_ATTRIBUTE_VALUE_INVALID;
 	}
 	TEE_MemMove(&value_len, data, data_size);
 
-	if (get_type(*head) == SKS_CKK_GENERIC_SECRET)
+	if (get_type(*head) == PKCS11_CKK_GENERIC_SECRET)
 		value_len = (value_len + 7) / 8;
 
 	value = TEE_Malloc(value_len, TEE_USER_MEM_HINT_NO_FILL_ZERO);
@@ -295,7 +295,7 @@ static uint32_t generate_random_key_value(struct sks_attrs_head **head)
 
 	TEE_GenerateRandom(value, value_len);
 
-	rv = add_attribute(head, SKS_CKA_VALUE, value, value_len);
+	rv = add_attribute(head, PKCS11_CKA_VALUE, value, value_len);
 
 	TEE_Free(value);
 
@@ -379,12 +379,12 @@ uint32_t entry_generate_secret(uintptr_t tee_session,
 		goto bail;
 
 	/*
-	 * Execute target processing and add value as attribute SKS_CKA_VALUE.
+	 * Execute target processing and add value as attribute PKCS11_CKA_VALUE.
 	 * Symm key generation: depends on target processing to be used.
 	 */
 	switch (proc_params->id) {
-	case SKS_CKM_GENERIC_SECRET_KEY_GEN:
-	case SKS_CKM_AES_KEY_GEN:
+	case PKCS11_CKM_GENERIC_SECRET_KEY_GEN:
+	case PKCS11_CKM_AES_KEY_GEN:
 		/* Generate random of size specified by attribute VALUE_LEN */
 		rv = generate_random_key_value(&head);
 		if (rv)
@@ -392,7 +392,7 @@ uint32_t entry_generate_secret(uintptr_t tee_session,
 		break;
 
 	default:
-		rv = SKS_CKR_MECHANISM_INVALID;
+		rv = PKCS11_CKR_MECHANISM_INVALID;
 		goto bail;
 	}
 
@@ -583,15 +583,15 @@ uint32_t entry_generate_key_pair(uintptr_t teesess,
 
 	/* Generate key pair */
 	switch (proc_params->id) {
-	case SKS_CKM_EC_KEY_PAIR_GEN:
+	case PKCS11_CKM_EC_KEY_PAIR_GEN:
 		rv = generate_ec_keys(proc_params, &pub_head, &priv_head);
 		break;
 
-	case SKS_CKM_RSA_PKCS_KEY_PAIR_GEN:
+	case PKCS11_CKM_RSA_PKCS_KEY_PAIR_GEN:
 		rv = generate_rsa_keys(proc_params, &pub_head, &priv_head);
 		break;
 	default:
-		rv = SKS_CKR_MECHANISM_INVALID;
+		rv = PKCS11_CKR_MECHANISM_INVALID;
 		break;
 	}
 	if (rv)
@@ -681,7 +681,7 @@ uint32_t entry_processing_init(uintptr_t tee_session, TEE_Param *ctrl,
 
 	obj = sks_handle2object(key_handle, session);
 	if (!obj)
-		return SKS_CKR_KEY_HANDLE_INVALID;
+		return PKCS11_CKR_KEY_HANDLE_INVALID;
 
 	rv = set_processing_state(session, function, obj, NULL);
 	if (rv)
@@ -705,7 +705,7 @@ uint32_t entry_processing_init(uintptr_t tee_session, TEE_Param *ctrl,
 	if (rv)
 		goto bail;
 
-	rv = SKS_CKR_MECHANISM_INVALID;
+	rv = PKCS11_CKR_MECHANISM_INVALID;
 	if (processing_is_tee_symm(proc_params->id)) {
 		rv = init_symm_operation(session, function, proc_params, obj);
 	}
@@ -774,7 +774,7 @@ uint32_t entry_processing_step(uintptr_t tee_session, TEE_Param *ctrl,
 	if (rv)
 		goto bail;
 
-	rv = SKS_CKR_MECHANISM_INVALID;
+	rv = PKCS11_CKR_MECHANISM_INVALID;
 	if (processing_is_tee_symm(mecha_type)) {
 		rv = step_symm_operation(session, function, step, in, out);
 	}
@@ -852,7 +852,7 @@ uint32_t entry_verify_oneshot(uintptr_t tee_session, TEE_Param *ctrl,
 	if (rv)
 		goto bail;
 
-	rv = SKS_CKR_MECHANISM_INVALID;
+	rv = PKCS11_CKR_MECHANISM_INVALID;
 	if (processing_is_tee_symm(mecha_type)) {
 		rv = step_symm_operation(session, function, step, in, in2);
 	}
@@ -920,7 +920,7 @@ uint32_t entry_derive_key(uintptr_t tee_session, TEE_Param *ctrl,
 
 	parent_obj = sks_handle2object(parent_handle, session);
 	if (!parent_obj) {
-		rv = SKS_CKR_KEY_HANDLE_INVALID;
+		rv = PKCS11_CKR_KEY_HANDLE_INVALID;
 		goto bail;
 	}
 
@@ -965,7 +965,7 @@ uint32_t entry_derive_key(uintptr_t tee_session, TEE_Param *ctrl,
 	// TODO: check_created_against_parent(session, parent, child);
 	// This can handle DERVIE_TEMPLATE attributes from the parent key.
 
-	rv = SKS_CKR_MECHANISM_INVALID;
+	rv = PKCS11_CKR_MECHANISM_INVALID;
 	if (processing_is_tee_symm(proc_params->id)) {
 		rv = init_symm_operation(session, SKS_FUNCTION_DERIVE,
 					 proc_params, parent_obj);
@@ -989,26 +989,26 @@ uint32_t entry_derive_key(uintptr_t tee_session, TEE_Param *ctrl,
 #if 0
 	/* Exaustive list */
 	switch (proc_params->id) {
-	case SKS_CKM_ECDH1_DERIVE:	<--------------------------- TODO
-	//case SKS_CKM_ECDH1_COFACTOR_DERIVE:
-	case SKS_CKM_DH_PKCS_DERIVE:	<--------------------------- TODO
-	case SKS_CKM_X9_42_DH_DERIVE:
-	case SKS_CKM_X9_42_DH_HYBRID_DERIVE:
-	case SKS_CKM_X9_42_MQV_DERIVE:
-	case SKS_CKM_AES_GMAC
-	case SKS_CKM_AES_ECB_ENCRYPT_DATA	<------------------- TODO
-	case SKS_CKM_AES_CBC_ENCRYPT_DATA	<------------------- TODO
-	case SKS_CKM_SHA1_KEY_DERIVATION
-	case SKS_CKM_SHA224_KEY_DERIVATION
-	case SKS_CKM_SHA256_KEY_DERIVATION
-	case SKS_CKM_SHA384_KEY_DERIVATION
-	case SKS_CKM_SHA512_KEY_DERIVATION
-	case SKS_CKM_SHA512_224_KEY_DERIVATION
-	case SKS_CKM_SHA512_256_KEY_DERIVATION
-	case SKS_CKM_SHA512_T_KEY_DERIVATION
+	case PKCS11_CKM_ECDH1_DERIVE:	<--------------------------- TODO
+	//case PKCS11_CKM_ECDH1_COFACTOR_DERIVE:
+	case PKCS11_CKM_DH_PKCS_DERIVE:	<--------------------------- TODO
+	case PKCS11_CKM_X9_42_DH_DERIVE:
+	case PKCS11_CKM_X9_42_DH_HYBRID_DERIVE:
+	case PKCS11_CKM_X9_42_MQV_DERIVE:
+	case PKCS11_CKM_AES_GMAC
+	case PKCS11_CKM_AES_ECB_ENCRYPT_DATA	<------------------- TODO
+	case PKCS11_CKM_AES_CBC_ENCRYPT_DATA	<------------------- TODO
+	case PKCS11_CKM_SHA1_KEY_DERIVATION
+	case PKCS11_CKM_SHA224_KEY_DERIVATION
+	case PKCS11_CKM_SHA256_KEY_DERIVATION
+	case PKCS11_CKM_SHA384_KEY_DERIVATION
+	case PKCS11_CKM_SHA512_KEY_DERIVATION
+	case PKCS11_CKM_SHA512_224_KEY_DERIVATION
+	case PKCS11_CKM_SHA512_256_KEY_DERIVATION
+	case PKCS11_CKM_SHA512_T_KEY_DERIVATION
 	// Exhaustive list is made of Camelia, Aria, Seed, KIP, GOSTR3410,
 	// DES, 3DES, SSL3, TLS12, TLS-KDF, WTLS and concatenate  mechanisms.
-	case SKS_CKM_ECMQV_DERIVE:
+	case PKCS11_CKM_ECMQV_DERIVE:
 	}
 #endif
 

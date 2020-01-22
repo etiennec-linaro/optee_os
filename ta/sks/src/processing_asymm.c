@@ -19,27 +19,27 @@ bool processing_is_tee_asymm(uint32_t proc_id)
 {
 	switch (proc_id) {
 	/* RSA flavors */
-	case SKS_CKM_RSA_PKCS:
-	case SKS_CKM_RSA_PKCS_OAEP:
-	case SKS_CKM_SHA1_RSA_PKCS:
-	case SKS_CKM_SHA224_RSA_PKCS:
-	case SKS_CKM_SHA256_RSA_PKCS:
-	case SKS_CKM_SHA384_RSA_PKCS:
-	case SKS_CKM_SHA512_RSA_PKCS:
-	case SKS_CKM_SHA1_RSA_PKCS_PSS:
-	case SKS_CKM_SHA224_RSA_PKCS_PSS:
-	case SKS_CKM_SHA256_RSA_PKCS_PSS:
-	case SKS_CKM_SHA384_RSA_PKCS_PSS:
-	case SKS_CKM_SHA512_RSA_PKCS_PSS:
+	case PKCS11_CKM_RSA_PKCS:
+	case PKCS11_CKM_RSA_PKCS_OAEP:
+	case PKCS11_CKM_SHA1_RSA_PKCS:
+	case PKCS11_CKM_SHA224_RSA_PKCS:
+	case PKCS11_CKM_SHA256_RSA_PKCS:
+	case PKCS11_CKM_SHA384_RSA_PKCS:
+	case PKCS11_CKM_SHA512_RSA_PKCS:
+	case PKCS11_CKM_SHA1_RSA_PKCS_PSS:
+	case PKCS11_CKM_SHA224_RSA_PKCS_PSS:
+	case PKCS11_CKM_SHA256_RSA_PKCS_PSS:
+	case PKCS11_CKM_SHA384_RSA_PKCS_PSS:
+	case PKCS11_CKM_SHA512_RSA_PKCS_PSS:
 	/* EC flavors */
-	case SKS_CKM_ECDSA:
-	case SKS_CKM_ECDSA_SHA1:
-	case SKS_CKM_ECDSA_SHA224:
-	case SKS_CKM_ECDSA_SHA256:
-	case SKS_CKM_ECDSA_SHA384:
-	case SKS_CKM_ECDSA_SHA512:
-	case SKS_CKM_ECDH1_DERIVE:
-	case SKS_CKM_ECDH1_COFACTOR_DERIVE:
+	case PKCS11_CKM_ECDSA:
+	case PKCS11_CKM_ECDSA_SHA1:
+	case PKCS11_CKM_ECDSA_SHA224:
+	case PKCS11_CKM_ECDSA_SHA256:
+	case PKCS11_CKM_ECDSA_SHA384:
+	case PKCS11_CKM_ECDSA_SHA512:
+	case PKCS11_CKM_ECDH1_DERIVE:
+	case PKCS11_CKM_ECDH1_COFACTOR_DERIVE:
 		return true;
 	default:
 		return false;
@@ -53,33 +53,33 @@ static uint32_t sks2tee_algorithm(uint32_t *tee_id,
 {
 	static const uint32_t sks2tee_algo[][2] = {
 		/* RSA flavors */
-		{ SKS_CKM_RSA_PKCS, TEE_ALG_RSAES_PKCS1_V1_5
+		{ PKCS11_CKM_RSA_PKCS, TEE_ALG_RSAES_PKCS1_V1_5
 				/* TEE_ALG_RSASSA_PKCS1_V1_5 on signatures */ },
-		{ SKS_CKM_RSA_PKCS_OAEP, 1 }, /* Need to look into params */
-		{ SKS_CKM_SHA1_RSA_PKCS, TEE_ALG_RSASSA_PKCS1_V1_5_SHA1 },
-		{ SKS_CKM_SHA224_RSA_PKCS, TEE_ALG_RSASSA_PKCS1_V1_5_SHA224 },
-		{ SKS_CKM_SHA256_RSA_PKCS, TEE_ALG_RSASSA_PKCS1_V1_5_SHA256 },
-		{ SKS_CKM_SHA384_RSA_PKCS, TEE_ALG_RSASSA_PKCS1_V1_5_SHA384 },
-		{ SKS_CKM_SHA512_RSA_PKCS, TEE_ALG_RSASSA_PKCS1_V1_5_SHA512 },
-		{ SKS_CKM_SHA1_RSA_PKCS_PSS,
+		{ PKCS11_CKM_RSA_PKCS_OAEP, 1 }, /* Need to look into params */
+		{ PKCS11_CKM_SHA1_RSA_PKCS, TEE_ALG_RSASSA_PKCS1_V1_5_SHA1 },
+		{ PKCS11_CKM_SHA224_RSA_PKCS, TEE_ALG_RSASSA_PKCS1_V1_5_SHA224 },
+		{ PKCS11_CKM_SHA256_RSA_PKCS, TEE_ALG_RSASSA_PKCS1_V1_5_SHA256 },
+		{ PKCS11_CKM_SHA384_RSA_PKCS, TEE_ALG_RSASSA_PKCS1_V1_5_SHA384 },
+		{ PKCS11_CKM_SHA512_RSA_PKCS, TEE_ALG_RSASSA_PKCS1_V1_5_SHA512 },
+		{ PKCS11_CKM_SHA1_RSA_PKCS_PSS,
 					TEE_ALG_RSASSA_PKCS1_PSS_MGF1_SHA1 },
-		{ SKS_CKM_SHA224_RSA_PKCS_PSS,
+		{ PKCS11_CKM_SHA224_RSA_PKCS_PSS,
 					TEE_ALG_RSASSA_PKCS1_PSS_MGF1_SHA224 },
-		{ SKS_CKM_SHA256_RSA_PKCS_PSS,
+		{ PKCS11_CKM_SHA256_RSA_PKCS_PSS,
 					TEE_ALG_RSASSA_PKCS1_PSS_MGF1_SHA256 },
-		{ SKS_CKM_SHA384_RSA_PKCS_PSS,
+		{ PKCS11_CKM_SHA384_RSA_PKCS_PSS,
 					TEE_ALG_RSASSA_PKCS1_PSS_MGF1_SHA384 },
-		{ SKS_CKM_SHA512_RSA_PKCS_PSS,
+		{ PKCS11_CKM_SHA512_RSA_PKCS_PSS,
 					TEE_ALG_RSASSA_PKCS1_PSS_MGF1_SHA512 },
 		/* EC flavors (Must find key size from the object) */
-		{ SKS_CKM_ECDSA, 1 },
-		{ SKS_CKM_ECDSA_SHA1, 1 },
-		{ SKS_CKM_ECDSA_SHA224, 1 },
-		{ SKS_CKM_ECDSA_SHA256, 1 },
-		{ SKS_CKM_ECDSA_SHA384, 1 },
-		{ SKS_CKM_ECDSA_SHA512, 1 },
-		{ SKS_CKM_ECDH1_DERIVE, 1 },
-		{ SKS_CKM_ECDH1_COFACTOR_DERIVE, 1 },
+		{ PKCS11_CKM_ECDSA, 1 },
+		{ PKCS11_CKM_ECDSA_SHA1, 1 },
+		{ PKCS11_CKM_ECDSA_SHA224, 1 },
+		{ PKCS11_CKM_ECDSA_SHA256, 1 },
+		{ PKCS11_CKM_ECDSA_SHA384, 1 },
+		{ PKCS11_CKM_ECDSA_SHA512, 1 },
+		{ PKCS11_CKM_ECDH1_DERIVE, 1 },
+		{ PKCS11_CKM_ECDH1_COFACTOR_DERIVE, 1 },
 	};
 	size_t end = sizeof(sks2tee_algo) / (2 * sizeof(uint32_t));
 	size_t n = 0;
@@ -93,9 +93,9 @@ static uint32_t sks2tee_algorithm(uint32_t *tee_id,
 	}
 
 	switch (proc_params->id) {
-	case SKS_CKM_RSA_X_509:
-	case SKS_CKM_RSA_9796:
-	case SKS_CKM_RSA_PKCS_PSS:
+	case PKCS11_CKM_RSA_X_509:
+	case PKCS11_CKM_RSA_9796:
+	case PKCS11_CKM_RSA_PKCS_PSS:
 		EMSG("%s not supported by GPD TEE, need an alternative...",
 			sks2str_proc(proc_params->id));
 		break;
@@ -107,27 +107,27 @@ static uint32_t sks2tee_algorithm(uint32_t *tee_id,
 		return SKS_NOT_IMPLEMENTED;
 
 	switch (proc_params->id) {
-	case SKS_CKM_SHA1_RSA_PKCS_PSS:
-	case SKS_CKM_SHA224_RSA_PKCS_PSS:
-	case SKS_CKM_SHA256_RSA_PKCS_PSS:
-	case SKS_CKM_SHA384_RSA_PKCS_PSS:
-	case SKS_CKM_SHA512_RSA_PKCS_PSS:
+	case PKCS11_CKM_SHA1_RSA_PKCS_PSS:
+	case PKCS11_CKM_SHA224_RSA_PKCS_PSS:
+	case PKCS11_CKM_SHA256_RSA_PKCS_PSS:
+	case PKCS11_CKM_SHA384_RSA_PKCS_PSS:
+	case PKCS11_CKM_SHA512_RSA_PKCS_PSS:
 		rv = sks2tee_algo_rsa_pss(tee_id, proc_params);
 		break;
-	case SKS_CKM_RSA_PKCS_OAEP:
+	case PKCS11_CKM_RSA_PKCS_OAEP:
 		rv = sks2tee_algo_rsa_oaep(tee_id, proc_params);
 		break;
-	case SKS_CKM_ECDH1_DERIVE:
+	case PKCS11_CKM_ECDH1_DERIVE:
 		rv = sks2tee_algo_ecdh(tee_id, proc_params, obj);
 		break;
-	case SKS_CKM_ECDH1_COFACTOR_DERIVE:
+	case PKCS11_CKM_ECDH1_COFACTOR_DERIVE:
 		return SKS_NOT_IMPLEMENTED;
-	case SKS_CKM_ECDSA:
-	case SKS_CKM_ECDSA_SHA1:
-	case SKS_CKM_ECDSA_SHA224:
-	case SKS_CKM_ECDSA_SHA256:
-	case SKS_CKM_ECDSA_SHA384:
-	case SKS_CKM_ECDSA_SHA512:
+	case PKCS11_CKM_ECDSA:
+	case PKCS11_CKM_ECDSA_SHA1:
+	case PKCS11_CKM_ECDSA_SHA224:
+	case PKCS11_CKM_ECDSA_SHA256:
+	case PKCS11_CKM_ECDSA_SHA384:
+	case PKCS11_CKM_ECDSA_SHA512:
 		rv = sks2tee_algo_ecdsa(tee_id, proc_params, obj);
 		break;
 	default:
@@ -149,8 +149,8 @@ static uint32_t sks2tee_key_type(uint32_t *tee_type, struct sks_object *obj,
 	uint32_t type = get_type(obj->attributes);
 
 	switch (class) {
-	case SKS_CKO_PUBLIC_KEY:
-	case SKS_CKO_PRIVATE_KEY:
+	case PKCS11_CKO_PUBLIC_KEY:
+	case PKCS11_CKO_PRIVATE_KEY:
 		break;
 	default:
 		TEE_Panic(class);
@@ -158,8 +158,8 @@ static uint32_t sks2tee_key_type(uint32_t *tee_type, struct sks_object *obj,
 	}
 
 	switch (type) {
-	case SKS_CKK_EC:
-		if (class == SKS_CKO_PRIVATE_KEY) {
+	case PKCS11_CKK_EC:
+		if (class == PKCS11_CKO_PRIVATE_KEY) {
 			*tee_type = (function == SKS_FUNCTION_DERIVE) ?
 					TEE_TYPE_ECDH_KEYPAIR :
 					TEE_TYPE_ECDSA_KEYPAIR;
@@ -169,8 +169,8 @@ static uint32_t sks2tee_key_type(uint32_t *tee_type, struct sks_object *obj,
 					TEE_TYPE_ECDSA_PUBLIC_KEY;
 		}
 		break;
-	case SKS_CKK_RSA:
-		if (class == SKS_CKO_PRIVATE_KEY) {
+	case PKCS11_CKK_RSA:
+		if (class == PKCS11_CKO_PRIVATE_KEY) {
 			*tee_type = TEE_TYPE_RSA_KEYPAIR;
 		} else {
 			*tee_type = TEE_TYPE_RSA_PUBLIC_KEY;
@@ -223,18 +223,18 @@ static uint32_t load_tee_key(struct pkcs11_session *session,
 	uint32_t __maybe_unused class = get_class(obj->attributes);
 	uint32_t type = get_type(obj->attributes);
 
-	assert(class == SKS_CKO_PUBLIC_KEY || class == SKS_CKO_PRIVATE_KEY);
+	assert(class == PKCS11_CKO_PUBLIC_KEY || class == PKCS11_CKO_PRIVATE_KEY);
 
 	if (obj->key_handle != TEE_HANDLE_NULL) {
 		switch (type) {
-		case SKS_CKK_RSA:
+		case PKCS11_CKK_RSA:
 			/* RSA loaded keys can be reused */
 			assert((obj->key_type == TEE_TYPE_RSA_PUBLIC_KEY &&
-				class == SKS_CKO_PUBLIC_KEY) ||
+				class == PKCS11_CKO_PUBLIC_KEY) ||
 			       (obj->key_type == TEE_TYPE_RSA_KEYPAIR &&
-				class == SKS_CKO_PRIVATE_KEY));
+				class == PKCS11_CKO_PRIVATE_KEY));
 			goto key_ready;
-		case SKS_CKK_EC:
+		case PKCS11_CKK_EC:
 			/* Reuse EC TEE key only if already DSA or DH */
 			switch (obj->key_type) {
 			case TEE_TYPE_ECDSA_PUBLIC_KEY:
@@ -270,10 +270,10 @@ static uint32_t load_tee_key(struct pkcs11_session *session,
 		return SKS_ERROR;
 
 	switch (type) {
-	case SKS_CKK_RSA:
+	case PKCS11_CKK_RSA:
 		rv = load_tee_rsa_key_attrs(&tee_attrs, &tee_attrs_count, obj);
 		break;
-	case SKS_CKK_EC:
+	case PKCS11_CKK_EC:
 		rv = load_tee_ec_key_attrs(&tee_attrs, &tee_attrs_count, obj);
 		break;
 	default:
@@ -321,11 +321,11 @@ static uint32_t init_tee_operation(struct pkcs11_session *session,
 	uint32_t rv = SKS_OK;
 
 	switch (proc_params->id) {
-	case SKS_CKM_SHA1_RSA_PKCS_PSS:
-	case SKS_CKM_SHA256_RSA_PKCS_PSS:
-	case SKS_CKM_SHA384_RSA_PKCS_PSS:
-	case SKS_CKM_SHA512_RSA_PKCS_PSS:
-	case SKS_CKM_SHA224_RSA_PKCS_PSS:
+	case PKCS11_CKM_SHA1_RSA_PKCS_PSS:
+	case PKCS11_CKM_SHA256_RSA_PKCS_PSS:
+	case PKCS11_CKM_SHA384_RSA_PKCS_PSS:
+	case PKCS11_CKM_SHA512_RSA_PKCS_PSS:
+	case PKCS11_CKM_SHA224_RSA_PKCS_PSS:
 		rv = sks2tee_proc_params_rsa_pss(session->processing,
 						 proc_params);
 		break;
@@ -395,11 +395,11 @@ uint32_t step_asymm_operation(struct pkcs11_session *session,
 
 	/* TEE attribute(s) required by the operation */
 	switch (proc->mecha_type) {
-	case SKS_CKM_SHA1_RSA_PKCS_PSS:
-	case SKS_CKM_SHA256_RSA_PKCS_PSS:
-	case SKS_CKM_SHA384_RSA_PKCS_PSS:
-	case SKS_CKM_SHA512_RSA_PKCS_PSS:
-	case SKS_CKM_SHA224_RSA_PKCS_PSS:
+	case PKCS11_CKM_SHA1_RSA_PKCS_PSS:
+	case PKCS11_CKM_SHA256_RSA_PKCS_PSS:
+	case PKCS11_CKM_SHA384_RSA_PKCS_PSS:
+	case PKCS11_CKM_SHA512_RSA_PKCS_PSS:
+	case PKCS11_CKM_SHA224_RSA_PKCS_PSS:
 		tee_attrs = TEE_Malloc(sizeof(TEE_Attribute),
 					TEE_USER_MEM_HINT_NO_FILL_ZERO);
 		if (!tee_attrs) {
@@ -419,11 +419,11 @@ uint32_t step_asymm_operation(struct pkcs11_session *session,
 
 	/* TEE attribute(s) required by the operation */
 	switch (proc->mecha_type) {
-	case SKS_CKM_ECDSA_SHA1:
-	case SKS_CKM_ECDSA_SHA224:
-	case SKS_CKM_ECDSA_SHA256:
-	case SKS_CKM_ECDSA_SHA384:
-	case SKS_CKM_ECDSA_SHA512:
+	case PKCS11_CKM_ECDSA_SHA1:
+	case PKCS11_CKM_ECDSA_SHA224:
+	case PKCS11_CKM_ECDSA_SHA256:
+	case PKCS11_CKM_ECDSA_SHA384:
+	case PKCS11_CKM_ECDSA_SHA512:
 		if (step == SKS_FUNC_STEP_FINAL)
 			break;
 
@@ -445,30 +445,30 @@ uint32_t step_asymm_operation(struct pkcs11_session *session,
 
 	/* These ECDSA need to use the computed hash as input data */
 	switch (proc->mecha_type) {
-	case SKS_CKM_ECDSA:
+	case PKCS11_CKM_ECDSA:
 		// TODO: check input size is enough
 		if (!in_size) {
 			rv = SKS_FAILED;
 			goto bail;
 		}
 		break;
-	case SKS_CKM_ECDSA_SHA1:
+	case PKCS11_CKM_ECDSA_SHA1:
 		in_buf = proc->extra_ctx;
 		in_size = 192;
 		break;
-	case SKS_CKM_ECDSA_SHA224:
+	case PKCS11_CKM_ECDSA_SHA224:
 		in_buf = proc->extra_ctx;
 		in_size = 224;
 		break;
-	case SKS_CKM_ECDSA_SHA256:
+	case PKCS11_CKM_ECDSA_SHA256:
 		in_buf = proc->extra_ctx;
 		in_size = 256;
 		break;
-	case SKS_CKM_ECDSA_SHA384:
+	case PKCS11_CKM_ECDSA_SHA384:
 		in_buf = proc->extra_ctx;
 		in_size = 384;
 		break;
-	case SKS_CKM_ECDSA_SHA512:
+	case PKCS11_CKM_ECDSA_SHA512:
 		in_buf = proc->extra_ctx;
 		in_size = 512;
 		break;
@@ -481,27 +481,27 @@ uint32_t step_asymm_operation(struct pkcs11_session *session,
 	}
 
 	switch (proc->mecha_type) {
-	case SKS_CKM_ECDSA:
-	case SKS_CKM_ECDSA_SHA1:
-	case SKS_CKM_ECDSA_SHA224:
-	case SKS_CKM_ECDSA_SHA256:
-	case SKS_CKM_ECDSA_SHA384:
-	case SKS_CKM_ECDSA_SHA512:
-	case SKS_CKM_RSA_PKCS:
-	case SKS_CKM_RSA_9796:
-	case SKS_CKM_RSA_X_509:
-	case SKS_CKM_SHA1_RSA_PKCS:
-	case SKS_CKM_RSA_PKCS_OAEP:
-	case SKS_CKM_RSA_PKCS_PSS:
-	case SKS_CKM_SHA1_RSA_PKCS_PSS:
-	case SKS_CKM_SHA256_RSA_PKCS_PSS:
-	case SKS_CKM_SHA384_RSA_PKCS_PSS:
-	case SKS_CKM_SHA512_RSA_PKCS_PSS:
-	case SKS_CKM_SHA224_RSA_PKCS_PSS:
-	case SKS_CKM_SHA224_RSA_PKCS:
-	case SKS_CKM_SHA256_RSA_PKCS:
-	case SKS_CKM_SHA384_RSA_PKCS:
-	case SKS_CKM_SHA512_RSA_PKCS:
+	case PKCS11_CKM_ECDSA:
+	case PKCS11_CKM_ECDSA_SHA1:
+	case PKCS11_CKM_ECDSA_SHA224:
+	case PKCS11_CKM_ECDSA_SHA256:
+	case PKCS11_CKM_ECDSA_SHA384:
+	case PKCS11_CKM_ECDSA_SHA512:
+	case PKCS11_CKM_RSA_PKCS:
+	case PKCS11_CKM_RSA_9796:
+	case PKCS11_CKM_RSA_X_509:
+	case PKCS11_CKM_SHA1_RSA_PKCS:
+	case PKCS11_CKM_RSA_PKCS_OAEP:
+	case PKCS11_CKM_RSA_PKCS_PSS:
+	case PKCS11_CKM_SHA1_RSA_PKCS_PSS:
+	case PKCS11_CKM_SHA256_RSA_PKCS_PSS:
+	case PKCS11_CKM_SHA384_RSA_PKCS_PSS:
+	case PKCS11_CKM_SHA512_RSA_PKCS_PSS:
+	case PKCS11_CKM_SHA224_RSA_PKCS_PSS:
+	case PKCS11_CKM_SHA224_RSA_PKCS:
+	case PKCS11_CKM_SHA256_RSA_PKCS:
+	case PKCS11_CKM_SHA384_RSA_PKCS:
+	case PKCS11_CKM_SHA512_RSA_PKCS:
 		switch (function) {
 		case SKS_FUNCTION_ENCRYPT:
 			// TODO: TEE_ALG_RSAES_PKCS1_OAEP_MGF1_xxx takes an
@@ -580,11 +580,11 @@ uint32_t do_asymm_derivation(struct pkcs11_session *session,
 
 	TEE_MemFill(tee_attrs, 0, sizeof(tee_attrs));
 
-	rv = get_u32_attribute(*head, SKS_CKA_VALUE_LEN, &key_bit_size);
+	rv = get_u32_attribute(*head, PKCS11_CKA_VALUE_LEN, &key_bit_size);
 	if (rv)
 		return rv;
 
-	if (get_type(*head) != SKS_CKK_GENERIC_SECRET)
+	if (get_type(*head) != PKCS11_CKK_GENERIC_SECRET)
 		key_bit_size *= 8;
 
 	key_byte_size = (key_bit_size + 7) / 8;
@@ -597,8 +597,8 @@ uint32_t do_asymm_derivation(struct pkcs11_session *session,
 	}
 
 	switch (proc_params->id) {
-	case SKS_CKM_ECDH1_DERIVE:
-	case SKS_CKM_ECDH1_COFACTOR_DERIVE:
+	case PKCS11_CKM_ECDH1_DERIVE:
+	case PKCS11_CKM_ECDH1_COFACTOR_DERIVE:
 		rv = sks2tee_ecdh_param_pub(proc_params, &a_ptr, &a_size);
 		if (rv)
 			goto bail;
@@ -615,7 +615,7 @@ uint32_t do_asymm_derivation(struct pkcs11_session *session,
 						a_size / 2);
 		tee_attrs_count++;
 		break;
-	case SKS_CKM_DH_PKCS_DERIVE:
+	case PKCS11_CKM_DH_PKCS_DERIVE:
 		TEE_InitRefAttribute(&tee_attrs[tee_attrs_count],
 						TEE_ATTR_DH_PUBLIC_VALUE,
 						proc_params->data,
@@ -636,9 +636,9 @@ uint32_t do_asymm_derivation(struct pkcs11_session *session,
 		goto bail;
 
 	if (a_size * 8 < key_bit_size) {
-		rv = SKS_CKR_KEY_SIZE_RANGE;
+		rv = PKCS11_CKR_KEY_SIZE_RANGE;
 	} else {
-		rv = add_attribute(head, SKS_CKA_VALUE, a_ptr, key_byte_size);
+		rv = add_attribute(head, PKCS11_CKA_VALUE, a_ptr, key_byte_size);
 	}
 
 	TEE_Free(a_ptr);

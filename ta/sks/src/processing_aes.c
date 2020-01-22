@@ -42,7 +42,7 @@ uint32_t tee_init_ctr_operation(struct active_processing *processing,
 	if (incr_counter != 1) {
 		DMSG("Supports only 1 bit increment counter: %d",
 						incr_counter);
-		rv = SKS_CKR_MECHANISM_PARAM_INVALID;
+		rv = PKCS11_CKR_MECHANISM_PARAM_INVALID;
 		goto bail;
 	}
 
@@ -494,7 +494,7 @@ uint32_t tee_init_ccm_operation(struct active_processing *processing,
 			", nonce_len %" PRIu32 ", aad_len %" PRIu32
 			", mac_len %" PRIu32, data_len, nonce_len,
 			aad_len, mac_len);
-		rv = SKS_CKR_MECHANISM_PARAM_INVALID;
+		rv = PKCS11_CKR_MECHANISM_PARAM_INVALID;
 		goto bail;
 	}
 
@@ -601,7 +601,7 @@ uint32_t tee_init_gcm_operation(struct active_processing *processing,
 	    !iv_len || iv_len > 256) {
 		DMSG("Invalid parameters: tag_bit_len %" PRIu32
 			", iv_len %" PRIu32, tag_bitlen, iv_len);
-		rv = SKS_CKR_MECHANISM_PARAM_INVALID;
+		rv = PKCS11_CKR_MECHANISM_PARAM_INVALID;
 		goto bail;
 	}
 

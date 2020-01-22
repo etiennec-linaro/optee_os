@@ -938,29 +938,29 @@ uint32_t load_tee_ec_key_attrs(TEE_Attribute **tee_attrs, size_t *tee_count,
 	size_t count = 0;
 	uint32_t rv = SKS_ERROR;
 
-	assert(get_type(obj->attributes) == SKS_CKK_EC);
+	assert(get_type(obj->attributes) == PKCS11_CKK_EC);
 
 	switch (get_class(obj->attributes)) {
-	case SKS_CKO_PUBLIC_KEY:
+	case PKCS11_CKO_PUBLIC_KEY:
 		attrs = TEE_Malloc(3 * sizeof(TEE_Attribute),
 				   TEE_USER_MEM_HINT_NO_FILL_ZERO);
 		if (!attrs)
 			return SKS_MEMORY;
 
 		if (sks2tee_load_attr(&attrs[count], TEE_ATTR_ECC_CURVE,
-					obj, SKS_CKA_EC_PARAMS))
+					obj, PKCS11_CKA_EC_PARAMS))
 			count++;
 
-		/* FIXME: get attribute from SKS_CKA_EC_POINT (DER format) */
+		/* FIXME: get attribute from PKCS11_CKA_EC_POINT (DER format) */
 		if (sks2tee_load_attr(&attrs[count],
 					TEE_ATTR_ECC_PUBLIC_VALUE_X,
-					obj, SKS_CKA_EC_POINT_X))
+					obj, PKCS11_CKA_EC_POINT_X))
 			count++;
 
-		/* FIXME: get attribute from SKS_CKA_EC_POINT (DER format) */
+		/* FIXME: get attribute from PKCS11_CKA_EC_POINT (DER format) */
 		if (sks2tee_load_attr(&attrs[count],
 					TEE_ATTR_ECC_PUBLIC_VALUE_Y,
-					obj, SKS_CKA_EC_POINT_Y))
+					obj, PKCS11_CKA_EC_POINT_Y))
 			count++;
 
 		if (count == 3)
@@ -968,33 +968,33 @@ uint32_t load_tee_ec_key_attrs(TEE_Attribute **tee_attrs, size_t *tee_count,
 
 		break;
 
-	case SKS_CKO_PRIVATE_KEY:
+	case PKCS11_CKO_PRIVATE_KEY:
 		attrs = TEE_Malloc(4 * sizeof(TEE_Attribute),
 				   TEE_USER_MEM_HINT_NO_FILL_ZERO);
 		if (!attrs)
 			return SKS_MEMORY;
 
 		if (sks2tee_load_attr(&attrs[count], TEE_ATTR_ECC_CURVE,
-					obj, SKS_CKA_EC_PARAMS))
+					obj, PKCS11_CKA_EC_PARAMS))
 			count++;
 
 
 		if (sks2tee_load_attr(&attrs[count],
 					TEE_ATTR_ECC_PRIVATE_VALUE,
-					obj, SKS_CKA_VALUE))
+					obj, PKCS11_CKA_VALUE))
 			count++;
 
 
-		/* FIXME: get attribute from SKS_CKA_EC_POINT (DER format) */
+		/* FIXME: get attribute from PKCS11_CKA_EC_POINT (DER format) */
 		if (sks2tee_load_attr(&attrs[count],
 					TEE_ATTR_ECC_PUBLIC_VALUE_X,
-					obj, SKS_CKA_EC_POINT_X))
+					obj, PKCS11_CKA_EC_POINT_X))
 			count++;
 
-		/* FIXME: get attribute from SKS_CKA_EC_POINT (DER format) */
+		/* FIXME: get attribute from PKCS11_CKA_EC_POINT (DER format) */
 		if (sks2tee_load_attr(&attrs[count],
 					TEE_ATTR_ECC_PUBLIC_VALUE_Y,
-					obj, SKS_CKA_EC_POINT_Y))
+					obj, PKCS11_CKA_EC_POINT_Y))
 			count++;
 
 		if (count == 4)
@@ -1031,9 +1031,9 @@ uint32_t sks2tee_algo_ecdh(uint32_t *tee_id,
 	if (rv)
 		return rv;
 
-	if (kdf != SKS_CKD_NULL) {
+	if (kdf != PKCS11_CKD_NULL) {
 		EMSG("Currently no support for hashed shared data");
-		return SKS_CKR_MECHANISM_PARAM_INVALID;
+		return PKCS11_CKR_MECHANISM_PARAM_INVALID;
 	}
 
 	switch (get_object_key_bit_size(obj)) {
@@ -1096,12 +1096,12 @@ uint32_t sks2tee_algo_ecdsa(uint32_t *tee_id,
 			   struct sks_object *obj)
 {
 	switch (proc_params->id) {
-	case SKS_CKM_ECDSA:
-	case SKS_CKM_ECDSA_SHA1:
-	case SKS_CKM_ECDSA_SHA224:
-	case SKS_CKM_ECDSA_SHA256:
-	case SKS_CKM_ECDSA_SHA384:
-	case SKS_CKM_ECDSA_SHA512:
+	case PKCS11_CKM_ECDSA:
+	case PKCS11_CKM_ECDSA_SHA1:
+	case PKCS11_CKM_ECDSA_SHA224:
+	case PKCS11_CKM_ECDSA_SHA256:
+	case PKCS11_CKM_ECDSA_SHA384:
+	case PKCS11_CKM_ECDSA_SHA512:
 		break;
 	default:
 		return SKS_ERROR;
@@ -1137,29 +1137,29 @@ static uint32_t tee2sks_ec_attributes(struct sks_attrs_head **pub_head,
 {
 	uint32_t rv = 0;
 
-	rv = tee2sks_add_attribute(priv_head, SKS_CKA_VALUE,
+	rv = tee2sks_add_attribute(priv_head, PKCS11_CKA_VALUE,
 				   tee_obj, TEE_ATTR_ECC_PRIVATE_VALUE);
 	if (rv)
 		goto bail;
 
 	// FIXME: 1 DER formatted x/y point instead of 2 CKA_EC_POINT attributes
-	rv = tee2sks_add_attribute(priv_head, SKS_CKA_EC_POINT_X,
+	rv = tee2sks_add_attribute(priv_head, PKCS11_CKA_EC_POINT_X,
 				   tee_obj, TEE_ATTR_ECC_PUBLIC_VALUE_X);
 	if (rv)
 		goto bail;
 
-	rv = tee2sks_add_attribute(priv_head, SKS_CKA_EC_POINT_Y,
+	rv = tee2sks_add_attribute(priv_head, PKCS11_CKA_EC_POINT_Y,
 				   tee_obj, TEE_ATTR_ECC_PUBLIC_VALUE_Y);
 	if (rv)
 		goto bail;
 
 	// FIXME: 1 DER formatted x/y point instead of 2 CKA_EC_POINT attributes
-	rv = tee2sks_add_attribute(pub_head, SKS_CKA_EC_POINT_X,
+	rv = tee2sks_add_attribute(pub_head, PKCS11_CKA_EC_POINT_X,
 				   tee_obj, TEE_ATTR_ECC_PUBLIC_VALUE_X);
 	if (rv)
 		goto bail;
 
-	rv = tee2sks_add_attribute(pub_head, SKS_CKA_EC_POINT_Y,
+	rv = tee2sks_add_attribute(pub_head, PKCS11_CKA_EC_POINT_Y,
 				   tee_obj, TEE_ATTR_ECC_PUBLIC_VALUE_Y);
 
 bail:
@@ -1182,41 +1182,41 @@ uint32_t generate_ec_keys(struct sks_attribute_head *proc_params,
 	TEE_MemFill(tee_key_attr, 0, sizeof(tee_key_attr));
 
 	if (!proc_params || !*pub_head || !*priv_head)
-		return SKS_CKR_TEMPLATE_INCONSISTENT;
+		return PKCS11_CKR_TEMPLATE_INCONSISTENT;
 
-	if (!get_attribute_ptr(*pub_head, SKS_CKA_EC_POINT, NULL, NULL) ||
-	    !get_attribute_ptr(*pub_head, SKS_CKA_EC_POINT_X, NULL, NULL) ||
-	    !get_attribute_ptr(*pub_head, SKS_CKA_EC_POINT_Y, NULL, NULL) ||
-	    !get_attribute_ptr(*priv_head, SKS_CKA_VALUE, NULL, NULL) ||
-	    !get_attribute_ptr(*priv_head, SKS_CKA_EC_POINT_X, NULL, NULL) ||
-	    !get_attribute_ptr(*priv_head, SKS_CKA_EC_POINT_X, NULL, NULL) ||
-	    !get_attribute_ptr(*priv_head, SKS_CKA_EC_POINT, NULL, NULL)) {
+	if (!get_attribute_ptr(*pub_head, PKCS11_CKA_EC_POINT, NULL, NULL) ||
+	    !get_attribute_ptr(*pub_head, PKCS11_CKA_EC_POINT_X, NULL, NULL) ||
+	    !get_attribute_ptr(*pub_head, PKCS11_CKA_EC_POINT_Y, NULL, NULL) ||
+	    !get_attribute_ptr(*priv_head, PKCS11_CKA_VALUE, NULL, NULL) ||
+	    !get_attribute_ptr(*priv_head, PKCS11_CKA_EC_POINT_X, NULL, NULL) ||
+	    !get_attribute_ptr(*priv_head, PKCS11_CKA_EC_POINT_X, NULL, NULL) ||
+	    !get_attribute_ptr(*priv_head, PKCS11_CKA_EC_POINT, NULL, NULL)) {
 		EMSG("Unexpected attribute(s) found");
 		trace_attributes("public-key", *pub_head);
 		trace_attributes("privat-key", *priv_head);
-		return SKS_CKR_TEMPLATE_INCONSISTENT;
+		return PKCS11_CKR_TEMPLATE_INCONSISTENT;
 	}
 
-	if (get_attribute_ptr(*pub_head, SKS_CKA_EC_PARAMS, &a_ptr, &a_size)) {
+	if (get_attribute_ptr(*pub_head, PKCS11_CKA_EC_PARAMS, &a_ptr, &a_size)) {
 		EMSG("Not EC_PARAMS attribute found");
-		return SKS_CKR_ATTRIBUTE_TYPE_INVALID;
+		return PKCS11_CKR_ATTRIBUTE_TYPE_INVALID;
 	}
 
 	tee_size = ec_params2tee_keysize(a_ptr, a_size);
 	if (!tee_size)
-		return SKS_CKR_ATTRIBUTE_TYPE_INVALID;
+		return PKCS11_CKR_ATTRIBUTE_TYPE_INVALID;
 
 	tee_curve = ec_params2tee_curve(a_ptr, a_size);
 
-	if (get_attribute_ptr(*priv_head, SKS_CKA_EC_PARAMS, &a_ptr, &a_size)) {
+	if (get_attribute_ptr(*priv_head, PKCS11_CKA_EC_PARAMS, &a_ptr, &a_size)) {
 		EMSG("Not EC_PARAMS attribute found");
-		return SKS_CKR_ATTRIBUTE_TYPE_INVALID;
+		return PKCS11_CKR_ATTRIBUTE_TYPE_INVALID;
 	}
 
 	if (tee_size != ec_params2tee_keysize(a_ptr, a_size) ||
 	    tee_curve != ec_params2tee_curve(a_ptr, a_size)) {
 		EMSG("Incompatible EC curves");
-		return SKS_CKR_TEMPLATE_INCONSISTENT;
+		return PKCS11_CKR_TEMPLATE_INCONSISTENT;
 	}
 
 	TEE_InitValueAttribute(&tee_key_attr[0], TEE_ATTR_ECC_CURVE,

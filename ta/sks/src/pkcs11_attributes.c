@@ -201,7 +201,7 @@ int check_pkcs11_mechanism_flags(uint32_t mechanism_type, uint32_t flags)
 		if (pkcs11_modes[n].id == mechanism_type) {
 			if (test_flags & ~pkcs11_modes[n].flags) {
 				EMSG("%s flags: 0x%" PRIx32 " vs 0x%" PRIx32,
-					sks2str_proc(mechanism_type),
+					id2str_proc(mechanism_type),
 					test_flags, pkcs11_modes[n].flags);
 			}
 			return test_flags & ~pkcs11_modes[n].flags;
@@ -271,7 +271,7 @@ uint32_t check_mechanism_against_processing(struct pkcs11_session *session,
 
 	if (!allowed)
 		EMSG("Processing %s (%" PRIx32 ") not permitted (%u/%u)",
-			sks2str_proc(mechanism_type), mechanism_type,
+			id2str_proc(mechanism_type), mechanism_type,
 			function, step);
 
 	return allowed ? SKS_OK : PKCS11_CKR_KEY_FUNCTION_NOT_PERMITTED;
@@ -588,7 +588,7 @@ static uint32_t create_pkcs11_symm_key_attributes(struct pkcs11_attrs_head **out
 		break;
 	default:
 		EMSG("Invalid key type (0x%" PRIx32 ", %s)",
-			get_type(*out), sks2str_key_type(get_type(*out)));
+			get_type(*out), id2str_key_type(get_type(*out)));
 		return PKCS11_CKR_TEMPLATE_INCONSISTENT;
 	}
 
@@ -669,7 +669,7 @@ static uint32_t create_pkcs11_pub_key_attributes(struct pkcs11_attrs_head **out,
 		break;
 	default:
 		EMSG("Invalid key type (0x%" PRIx32 ", %s)",
-			get_type(*out), sks2str_key_type(get_type(*out)));
+			get_type(*out), id2str_key_type(get_type(*out)));
 		return PKCS11_CKR_TEMPLATE_INCONSISTENT;
 	}
 
@@ -734,7 +734,7 @@ static uint32_t create_pkcs11_priv_key_attributes(struct pkcs11_attrs_head **out
 		break;
 	default:
 		EMSG("Invalid key type (0x%" PRIx32 ", %s)",
-			get_type(*out), sks2str_key_type(get_type(*out)));
+			get_type(*out), id2str_key_type(get_type(*out)));
 		return PKCS11_CKR_TEMPLATE_INCONSISTENT;
 	}
 
@@ -819,7 +819,7 @@ uint32_t create_attributes_from_template(struct pkcs11_attrs_head **out,
 		break;
 	default:
 		DMSG("Invalid object class 0x%" PRIx32 "/%s",
-			get_class(temp), sks2str_class(get_class(temp)));
+			get_class(temp), id2str_class(get_class(temp)));
 		rv = PKCS11_CKR_TEMPLATE_INCONSISTENT;
 		break;
 	}
@@ -1008,8 +1008,8 @@ uint32_t check_created_attrs_against_parent_key(
 		uint8_t __maybe_unused bvalue = 0;		\
 								\
 		DMSG("%s issue for %s: %sfound, value %d",	\
-			sks2str_attr(attr),			\
-			sks2str_proc(proc),			\
+			id2str_attr(attr),			\
+			id2str_proc(proc),			\
 			get_attribute(head, attr, &bvalue, NULL) ? \
 			"not " : "",				\
 			bvalue);				\
@@ -1300,7 +1300,7 @@ static bool parent_key_complies_allowed_processings(uint32_t proc_id,
 			return true;
 	}
 
-	DMSG("can't find %s in allowed list", sks2str_proc(proc_id));
+	DMSG("can't find %s in allowed list", id2str_proc(proc_id));
 	return false;
 }
 
@@ -1373,8 +1373,8 @@ uint32_t check_parent_attrs_against_processing(uint32_t proc_id,
 		    key_type == PKCS11_CKK_AES)
 			break;
 
-		DMSG("%s invalid key %s/%s", sks2str_proc(proc_id),
-			sks2str_class(key_class), sks2str_key_type(key_type));
+		DMSG("%s invalid key %s/%s", id2str_proc(proc_id),
+			id2str_class(key_class), id2str_key_type(key_type));
 		return PKCS11_CKR_KEY_FUNCTION_NOT_PERMITTED;
 
 	case PKCS11_CKM_MD5_HMAC:
@@ -1434,8 +1434,8 @@ uint32_t check_parent_attrs_against_processing(uint32_t proc_id,
 		    (key_class != PKCS11_CKO_PUBLIC_KEY &&
 		     key_class != PKCS11_CKO_PRIVATE_KEY)) {
 			EMSG("Invalid key %s for mechanism %s",
-				sks2str_type(key_type, key_class),
-				sks2str_proc(proc_id));
+				id2str_type(key_type, key_class),
+				id2str_proc(proc_id));
 			return PKCS11_CKR_KEY_FUNCTION_NOT_PERMITTED;
 		}
 		break;
@@ -1459,15 +1459,15 @@ uint32_t check_parent_attrs_against_processing(uint32_t proc_id,
 		    (key_class != PKCS11_CKO_PUBLIC_KEY &&
 		     key_class != PKCS11_CKO_PRIVATE_KEY)) {
 			EMSG("Invalid key %s for mechanism %s",
-				sks2str_type(key_type, key_class),
-				sks2str_proc(proc_id));
+				id2str_type(key_type, key_class),
+				id2str_proc(proc_id));
 			return PKCS11_CKR_KEY_FUNCTION_NOT_PERMITTED;
 		}
 		break;
 
 	default:
 		DMSG("Invalid processing 0x%" PRIx32 " (%s)", proc_id,
-			sks2str_proc(proc_id));
+			id2str_proc(proc_id));
 		return PKCS11_CKR_MECHANISM_INVALID;
 	}
 

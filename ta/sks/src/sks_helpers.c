@@ -661,7 +661,7 @@ void sks2tee_mode(uint32_t *tee_id, uint32_t function)
 /*
  * Convert a SKS ID into its label string
  */
-const char *sks2str_attr(uint32_t id)
+const char *id2str_attr(uint32_t id)
 {
 	size_t n = 0;
 
@@ -676,7 +676,7 @@ const char *sks2str_attr(uint32_t id)
 	return unknown;
 }
 
-static const char *sks2str_mechanism_type(uint32_t id)
+static const char *id2str_mechanism_type(uint32_t id)
 {
 	size_t n = 0;
 
@@ -716,36 +716,36 @@ static const char *id2str(uint32_t id, const struct string_id *table,
 #define ID2STR(id, table, prefix)	\
 	id2str(id, table, ARRAY_SIZE(table), prefix)
 
-const char *sks2str_class(uint32_t id)
+const char *id2str_class(uint32_t id)
 {
 	return ID2STR(id, string_class, "PKCS11_CKO_");
 }
 
-const char *sks2str_type(uint32_t id, uint32_t class)
+const char *id2str_type(uint32_t id, uint32_t class)
 {
 	switch (class) {
 	case PKCS11_CKO_SECRET_KEY:
 	case PKCS11_CKO_PUBLIC_KEY:
 	case PKCS11_CKO_PRIVATE_KEY:
-		return sks2str_key_type(id);
+		return id2str_key_type(id);
 	default:
 		return unknown;
 	}
 }
-const char *sks2str_key_type(uint32_t id)
+const char *id2str_key_type(uint32_t id)
 {
 	return ID2STR(id, string_key_type, "PKCS11_CKK_");
 }
 
-const char *sks2str_boolprop(uint32_t id)
+const char *id2str_boolprop(uint32_t id)
 {
 	if (id < 64)
-		return sks2str_attr(id);
+		return id2str_attr(id);
 
 	return unknown;
 }
 
-const char *sks2str_proc(uint32_t id)
+const char *id2str_proc(uint32_t id)
 {
 	const char *str = ID2STR(id, string_internal_processing,
 				 "PKCS11_PROCESSING_");
@@ -753,35 +753,35 @@ const char *sks2str_proc(uint32_t id)
 	if (str != unknown)
 		return str;
 
-	return sks2str_mechanism_type(id);
+	return id2str_mechanism_type(id);
 }
 
-const char *sks2str_proc_flag(uint32_t id)
+const char *id2str_proc_flag(uint32_t id)
 {
 	return ID2STR(id, string_proc_flags, "PKCS11_CKFM_");
 }
 
-const char *sks2str_rc(uint32_t id)
+const char *id2str_rc(uint32_t id)
 {
 	return ID2STR(id, string_rc, "PKCS11_CKR_");
 }
 
-const char *sks2str_skscmd(uint32_t id)
+const char *id2str_skscmd(uint32_t id)
 {
 	return ID2STR(id, string_cmd, NULL);
 }
 
-const char *sks2str_slot_flag(uint32_t id)
+const char *id2str_slot_flag(uint32_t id)
 {
 	return ID2STR(id, string_slot_flags, "PKCS11_CKFS_");
 }
 
-const char *sks2str_token_flag(uint32_t id)
+const char *id2str_token_flag(uint32_t id)
 {
 	return ID2STR(id, string_token_flags, "PKCS11_CKFT_");
 }
 
-const char *sks2str_attr_value(uint32_t id, size_t size, void *value)
+const char *id2str_attr_value(uint32_t id, size_t size, void *value)
 {
 	static const char str_true[] = "TRUE";
 	static const char str_false[] = "FALSE";
@@ -797,18 +797,18 @@ const char *sks2str_attr_value(uint32_t id, size_t size, void *value)
 	TEE_MemMove(&type, value, sizeof(uint32_t));
 
 	if (sks_attr_is_class(id))
-		return sks2str_class(type);
+		return id2str_class(type);
 
 	if (id == PKCS11_CKA_KEY_TYPE)
-		return sks2str_key_type(type);
+		return id2str_key_type(type);
 
 	if (id == PKCS11_CKA_MECHANISM_TYPE)
-		return sks2str_mechanism_type(type);
+		return id2str_mechanism_type(type);
 
 	return str_unkwon;
 }
 
-const char *sks2str_function(uint32_t id)
+const char *id2str_function(uint32_t id)
 {
 	return ID2STR(id, string_functions, "PKCS11_FUNCTION_");
 }

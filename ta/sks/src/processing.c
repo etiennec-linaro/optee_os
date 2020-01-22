@@ -473,7 +473,7 @@ uint32_t tee2sks_add_attribute(struct pkcs11_attrs_head **head, uint32_t sks_id,
 bail:
 	if (rv)
 		EMSG("Failed TEE attribute 0x%" PRIx32 "for %s (0x%" PRIx32 ")",
-				tee_id, sks2str_attr(sks_id), sks_id);
+				tee_id, id2str_attr(sks_id), sks_id);
 	return rv;
 }
 
@@ -715,8 +715,8 @@ uint32_t entry_processing_init(uintptr_t tee_session, TEE_Param *ctrl,
 	if (rv == SKS_OK) {
 		session->processing->mecha_type = proc_params->id;
 		IMSG("SKSs%" PRIu32 ": init processing %s %s",
-		     session_handle, sks2str_proc(proc_params->id),
-		     sks2str_function(function));
+		     session_handle, id2str_proc(proc_params->id),
+		     id2str_function(function));
 	}
 
 bail:
@@ -784,8 +784,8 @@ uint32_t entry_processing_step(uintptr_t tee_session, TEE_Param *ctrl,
 	if (rv == SKS_OK) {
 		session->processing->updated = true;
 		IMSG("SKSs%" PRIu32 ": processing %s %s",
-		     session_handle, sks2str_proc(mecha_type),
-		     sks2str_function(function));
+		     session_handle, id2str_proc(mecha_type),
+		     id2str_function(function));
 	}
 
 bail:
@@ -861,8 +861,8 @@ uint32_t entry_verify_oneshot(uintptr_t tee_session, TEE_Param *ctrl,
 	}
 
 	IMSG("SKSs%" PRIu32 ": verify %s %s: %s", session_handle,
-	     sks2str_proc(mecha_type), sks2str_function(function),
-	     sks2str_rc(rv));
+	     id2str_proc(mecha_type), id2str_function(function),
+	     id2str_rc(rv));
 
 bail:
 	if (rv != SKS_SHORT_BUFFER)
@@ -1035,7 +1035,7 @@ uint32_t entry_derive_key(uintptr_t tee_session, TEE_Param *ctrl,
 	out->memref.size = sizeof(uint32_t);
 
 	IMSG("SKSs%" PRIu32 ": derive key Ox%" PRIx32 ", %s",
-	     session_handle, out_handle, sks2str_proc(mecha_id));
+	     session_handle, out_handle, id2str_proc(mecha_id));
 
 bail:
 	release_active_processing(session);

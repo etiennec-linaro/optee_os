@@ -484,43 +484,43 @@ static uint32_t __trace_attributes(char *prefix, void *src, void *end)
 		switch (pkcs11_ref.size) {
 		case 0:
 			IMSG_RAW(ATTR_FMT_0BYTE,
-				 prefix, sks2str_attr(pkcs11_ref.id), "*",
+				 prefix, id2str_attr(pkcs11_ref.id), "*",
 				 pkcs11_ref.id, pkcs11_ref.size);
 			break;
 		case 1:
 			IMSG_RAW(ATTR_FMT_1BYTE,
-				 prefix, sks2str_attr(pkcs11_ref.id),
-				 sks2str_attr_value(pkcs11_ref.id, pkcs11_ref.size,
+				 prefix, id2str_attr(pkcs11_ref.id),
+				 id2str_attr_value(pkcs11_ref.id, pkcs11_ref.size,
 						    cur + sizeof(pkcs11_ref)),
 				 pkcs11_ref.id, pkcs11_ref.size, data[0]);
 			break;
 		case 2:
 			IMSG_RAW(ATTR_FMT_2BYTE,
-				 prefix, sks2str_attr(pkcs11_ref.id),
-				 sks2str_attr_value(pkcs11_ref.id, pkcs11_ref.size,
+				 prefix, id2str_attr(pkcs11_ref.id),
+				 id2str_attr_value(pkcs11_ref.id, pkcs11_ref.size,
 						    cur + sizeof(pkcs11_ref)),
 				 pkcs11_ref.id, pkcs11_ref.size, data[0], data[1]);
 			break;
 		case 3:
 			IMSG_RAW(ATTR_FMT_3BYTE,
-				 prefix, sks2str_attr(pkcs11_ref.id),
-				 sks2str_attr_value(pkcs11_ref.id, pkcs11_ref.size,
+				 prefix, id2str_attr(pkcs11_ref.id),
+				 id2str_attr_value(pkcs11_ref.id, pkcs11_ref.size,
 						    cur + sizeof(pkcs11_ref)),
 				 pkcs11_ref.id, pkcs11_ref.size,
 				 data[0], data[1], data[2]);
 			break;
 		case 4:
 			IMSG_RAW(ATTR_FMT_4BYTE,
-				 prefix, sks2str_attr(pkcs11_ref.id),
-				 sks2str_attr_value(pkcs11_ref.id, pkcs11_ref.size,
+				 prefix, id2str_attr(pkcs11_ref.id),
+				 id2str_attr_value(pkcs11_ref.id, pkcs11_ref.size,
 						    cur + sizeof(pkcs11_ref)),
 				 pkcs11_ref.id, pkcs11_ref.size,
 				 data[0], data[1], data[2], data[3]);
 			break;
 		default:
 			IMSG_RAW(ATTR_FMT_ARRAY,
-				 prefix, sks2str_attr(pkcs11_ref.id),
-				 sks2str_attr_value(pkcs11_ref.id, pkcs11_ref.size,
+				 prefix, id2str_attr(pkcs11_ref.id),
+				 id2str_attr_value(pkcs11_ref.id, pkcs11_ref.size,
 						    cur + sizeof(pkcs11_ref)),
 				 pkcs11_ref.id, pkcs11_ref.size,
 				 data[0], data[1], data[2], data[3]);
@@ -558,7 +558,7 @@ static void trace_boolprops(const char *prefix, struct pkcs11_attrs_head *head)
 				 !!(head->boolproph & BIT(n - 32));
 
 		IMSG_RAW("%s| attr %s / %s (0x%" PRIx32 ")",
-			 prefix, sks2str_attr(n), bp ? "TRUE" : "FALSE", n);
+			 prefix, id2str_attr(n), bp ? "TRUE" : "FALSE", n);
 	}
 }
 #endif
@@ -583,8 +583,8 @@ uint32_t trace_attributes(const char *prefix, void *ref)
 		pre, head.attrs_count, head.attrs_size);
 #ifdef SKS_SHEAD_WITH_TYPE
 	IMSG_RAW("%s| class (0x%" PRIx32 ") %s type (0x%" PRIx32 ") %s",
-		 pre, head.class, sks2str_class(head.class),
-		 head.type, sks2str_type(head.type, head.class));
+		 pre, head.class, id2str_class(head.class),
+		 head.type, id2str_type(head.type, head.class));
 #endif
 
 #ifdef SKS_SHEAD_WITH_BOOLPROPS

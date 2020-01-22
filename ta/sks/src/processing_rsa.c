@@ -213,13 +213,13 @@ uint32_t sks2tee_algo_rsa_oaep(uint32_t *tee_id,
 			break;
 		default:
 			EMSG("Unexpected %s (0x%" PRIx32 ")",
-				sks2str_proc(hash), hash);
+				id2str_proc(hash), hash);
 			return SKS_ERROR;
 		}
 		break;
 	default:
 		EMSG("Unexpected %s (0x%" PRIx32 ")",
-			sks2str_proc(proc_params->id), proc_params->id);
+			id2str_proc(proc_params->id), proc_params->id);
 		return SKS_ERROR;
 	}
 

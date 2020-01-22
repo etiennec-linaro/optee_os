@@ -583,7 +583,7 @@ uint32_t entry_ck_token_mecha_ids(TEE_Param *ctrl,
 	for (count = 0; count < mechanisms_count; count++) {
 		IMSG("SKSt%" PRIu32 ": mechanism 0x%04" PRIx32 ": %s",
 			token_id, ((uint32_t *)out->memref.buffer)[count],
-			sks2str_proc(((uint32_t *)out->memref.buffer)[count]));
+			id2str_proc(((uint32_t *)out->memref.buffer)[count]));
 	}
 #endif
 

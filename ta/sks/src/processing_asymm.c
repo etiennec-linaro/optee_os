@@ -97,7 +97,7 @@ static uint32_t sks2tee_algorithm(uint32_t *tee_id,
 	case PKCS11_CKM_RSA_9796:
 	case PKCS11_CKM_RSA_PKCS_PSS:
 		EMSG("%s not supported by GPD TEE, need an alternative...",
-			sks2str_proc(proc_params->id));
+			id2str_proc(proc_params->id));
 		break;
 	default:
 		break;

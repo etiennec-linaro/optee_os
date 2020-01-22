@@ -487,7 +487,7 @@ uint32_t entry_find_objects_init(uintptr_t tee_session, TEE_Param *ctrl,
 		break;
 	default:
 		EMSG("Find object of class %s (%u) is not supported",
-		     sks2str_class(get_class(req_attrs)),
+		     id2str_class(get_class(req_attrs)),
 		     get_class(req_attrs));
 		rv = PKCS11_CKR_ARGUMENTS_BAD;
 		goto bail;

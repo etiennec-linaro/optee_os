@@ -379,8 +379,8 @@ static uint32_t __trace_attributes(char *prefix, void *src, void *end)
 		next = sizeof(pkcs11_ref) + pkcs11_ref.size;
 
 		IMSG_RAW("%s Attr %s / %s (0x%04" PRIx32 " %" PRIu32 "-byte)",
-			prefix, sks2str_attr(pkcs11_ref.id),
-			sks2str_attr_value(pkcs11_ref.id, pkcs11_ref.size,
+			prefix, id2str_attr(pkcs11_ref.id),
+			id2str_attr_value(pkcs11_ref.id, pkcs11_ref.size,
 					   cur + sizeof(pkcs11_ref)),
 			pkcs11_ref.id, pkcs11_ref.size);
 

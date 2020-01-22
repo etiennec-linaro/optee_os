@@ -158,7 +158,7 @@ TEE_Result TA_InvokeCommandEntryPoint(void *tee_session, uint32_t cmd,
 	}
 
 	DMSG("%s ctrl %" PRIu32 "@%p, %s %" PRIu32 "@%p, %s %" PRIu32 "@%p",
-		sks2str_skscmd(cmd),
+		id2str_skscmd(cmd),
 		ctrl ? ctrl->memref.size : 0, ctrl ? ctrl->memref.buffer : 0,
 		p1_out ? "out" : (p1_in ? "in" : "---"),
 		p1_out ? p1_out->memref.size : (p1_in ? p1_in->memref.size : 0),
@@ -348,11 +348,11 @@ TEE_Result TA_InvokeCommandEntryPoint(void *tee_session, uint32_t cmd,
 		res = sks2tee_noerr(rc);
 
 		DMSG("SKS TA exit: %s rc 0x%08" PRIx32 "/%s",
-			sks2str_skscmd(cmd), rc, sks2str_rc(rc));
+			id2str_skscmd(cmd), rc, id2str_rc(rc));
 	} else {
 		res = sks2tee_error(rc);
 		DMSG("SKS TA exit: %s rc 0x%08" PRIx32 "/%s, TEE rc %" PRIx32,
-			sks2str_skscmd(cmd), rc, sks2str_rc(rc), res);
+			id2str_skscmd(cmd), rc, id2str_rc(rc), res);
 	}
 
 	return res;

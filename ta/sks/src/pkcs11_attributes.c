@@ -158,29 +158,29 @@ static const __maybe_unused struct pkcs11_mechachism_modes pkcs11_modes[] = {
 static uint32_t sks_function2ckfm(enum processing_func function)
 {
 	switch (function) {
-	case SKS_FUNCTION_DIGEST:
+	case PKCS11_FUNCTION_DIGEST:
 		return PKCS11_CKFM_DIGEST;
-	case SKS_FUNCTION_GENERATE:
+	case PKCS11_FUNCTION_GENERATE:
 		return PKCS11_CKFM_GENERATE;
-	case SKS_FUNCTION_GENERATE_PAIR:
+	case PKCS11_FUNCTION_GENERATE_PAIR:
 		return PKCS11_CKFM_GENERATE_PAIR;
-	case SKS_FUNCTION_DERIVE:
+	case PKCS11_FUNCTION_DERIVE:
 		return PKCS11_CKFM_DERIVE;
-	case SKS_FUNCTION_WRAP:
+	case PKCS11_FUNCTION_WRAP:
 		return PKCS11_CKFM_WRAP;
-	case SKS_FUNCTION_UNWRAP:
+	case PKCS11_FUNCTION_UNWRAP:
 		return PKCS11_CKFM_UNWRAP;
-	case SKS_FUNCTION_ENCRYPT:
+	case PKCS11_FUNCTION_ENCRYPT:
 		return PKCS11_CKFM_ENCRYPT;
-	case SKS_FUNCTION_DECRYPT:
+	case PKCS11_FUNCTION_DECRYPT:
 		return PKCS11_CKFM_DECRYPT;
-	case SKS_FUNCTION_SIGN:
+	case PKCS11_FUNCTION_SIGN:
 		return PKCS11_CKFM_SIGN;
-	case SKS_FUNCTION_VERIFY:
+	case PKCS11_FUNCTION_VERIFY:
 		return PKCS11_CKFM_VERIFY;
-	case SKS_FUNCTION_SIGN_RECOVER:
+	case PKCS11_FUNCTION_SIGN_RECOVER:
 		return PKCS11_CKFM_SIGN_RECOVER;
-	case SKS_FUNCTION_VERIFY_RECOVER:
+	case PKCS11_FUNCTION_VERIFY_RECOVER:
 		return PKCS11_CKFM_VERIFY_RECOVER;
 	default:
 		return 0;
@@ -220,12 +220,12 @@ uint32_t check_mechanism_against_processing(struct pkcs11_session *session,
 	bool allowed = false;
 
 	switch (step) {
-	case SKS_FUNC_STEP_INIT:
+	case PKCS11_FUNC_STEP_INIT:
 		switch (function) {
-		case SKS_FUNCTION_IMPORT:
-		case SKS_FUNCTION_COPY:
-		case SKS_FUNCTION_MODIFY:
-		case SKS_FUNCTION_DESTROY:
+		case PKCS11_FUNCTION_IMPORT:
+		case PKCS11_FUNCTION_COPY:
+		case PKCS11_FUNCTION_MODIFY:
+		case PKCS11_FUNCTION_DESTROY:
 			return SKS_OK;
 		default:
 			for (n = 0; n < ARRAY_SIZE(pkcs11_modes); n++) {
@@ -239,8 +239,8 @@ uint32_t check_mechanism_against_processing(struct pkcs11_session *session,
 		}
 		break;
 
-	case SKS_FUNC_STEP_ONESHOT:
-	case SKS_FUNC_STEP_UPDATE:
+	case PKCS11_FUNC_STEP_ONESHOT:
+	case PKCS11_FUNC_STEP_UPDATE:
 		if (session->processing->always_authen &&
 		    !session->processing->relogged)
 			return PKCS11_CKR_USER_NOT_LOGGED_IN;
@@ -257,7 +257,7 @@ uint32_t check_mechanism_against_processing(struct pkcs11_session *session,
 		}
 		break;
 
-	case SKS_FUNC_STEP_FINAL:
+	case PKCS11_FUNC_STEP_FINAL:
 		if (session->processing->always_authen &&
 		    !session->processing->relogged)
 			return PKCS11_CKR_USER_NOT_LOGGED_IN;
@@ -782,11 +782,11 @@ uint32_t create_attributes_from_template(struct sks_attrs_head **out,
 #ifdef DEBUG	/* Sanity: check function argument */
 	trace_attributes_from_api_head("template", template, template_size);
 	switch (function) {
-	case SKS_FUNCTION_GENERATE:
-	case SKS_FUNCTION_GENERATE_PAIR:
-	case SKS_FUNCTION_IMPORT:
+	case PKCS11_FUNCTION_GENERATE:
+	case PKCS11_FUNCTION_GENERATE_PAIR:
+	case PKCS11_FUNCTION_IMPORT:
 		break;
-	case SKS_FUNCTION_DERIVE:
+	case PKCS11_FUNCTION_DERIVE:
 		trace_attributes("parent", parent);
 		break;
 	default:
@@ -830,14 +830,14 @@ uint32_t create_attributes_from_template(struct sks_attrs_head **out,
 		SKS_NOT_FOUND);
 
 	switch (function) {
-	case SKS_FUNCTION_GENERATE:
-	case SKS_FUNCTION_GENERATE_PAIR:
+	case PKCS11_FUNCTION_GENERATE:
+	case PKCS11_FUNCTION_GENERATE_PAIR:
 		local = SKS_TRUE;
 		break;
-	case SKS_FUNCTION_COPY:
+	case PKCS11_FUNCTION_COPY:
 		local = get_bool(parent, PKCS11_CKA_LOCAL);
 		break;
-	case SKS_FUNCTION_DERIVE:
+	case PKCS11_FUNCTION_DERIVE:
 	default:
 		local = SKS_FALSE;
 		break;
@@ -854,8 +854,8 @@ uint32_t create_attributes_from_template(struct sks_attrs_head **out,
 		never_extract = SKS_FALSE;
 
 		switch (function) {
-		case SKS_FUNCTION_DERIVE:
-		case SKS_FUNCTION_COPY:
+		case PKCS11_FUNCTION_DERIVE:
+		case PKCS11_FUNCTION_COPY:
 			always_sensitive =
 				get_bool(parent, PKCS11_CKA_ALWAYS_SENSITIVE) &&
 				get_bool(attrs, PKCS11_CKA_SENSITIVE);
@@ -863,7 +863,7 @@ uint32_t create_attributes_from_template(struct sks_attrs_head **out,
 				get_bool(parent, PKCS11_CKA_NEVER_EXTRACTABLE) &&
 				!get_bool(attrs, PKCS11_CKA_EXTRACTABLE);
 			break;
-		case SKS_FUNCTION_GENERATE:
+		case PKCS11_FUNCTION_GENERATE:
 			always_sensitive = get_bool(attrs, PKCS11_CKA_SENSITIVE);
 			never_extract = !get_bool(attrs, PKCS11_CKA_EXTRACTABLE);
 			break;
@@ -1321,37 +1321,37 @@ uint32_t check_parent_attrs_against_processing(uint32_t proc_id,
 	uint32_t key_class = get_class(head);
 	uint32_t key_type = get_type(head);
 
-	if (function == SKS_FUNCTION_ENCRYPT &&
+	if (function == PKCS11_FUNCTION_ENCRYPT &&
 	    !get_bool(head, PKCS11_CKA_ENCRYPT)) {
 		DMSG("encrypt not permitted");
 		return PKCS11_CKR_KEY_FUNCTION_NOT_PERMITTED;
 	}
-	if (function == SKS_FUNCTION_DECRYPT &&
+	if (function == PKCS11_FUNCTION_DECRYPT &&
 	    !get_bool(head, PKCS11_CKA_DECRYPT)) {
 		DMSG("decrypt not permitted");
 		return PKCS11_CKR_KEY_FUNCTION_NOT_PERMITTED;
 	}
-	if (function == SKS_FUNCTION_SIGN &&
+	if (function == PKCS11_FUNCTION_SIGN &&
 	    !get_bool(head, PKCS11_CKA_SIGN)) {
 		DMSG("sign not permitted");
 		return PKCS11_CKR_KEY_FUNCTION_NOT_PERMITTED;
 	}
-	if (function == SKS_FUNCTION_VERIFY &&
+	if (function == PKCS11_FUNCTION_VERIFY &&
 	    !get_bool(head, PKCS11_CKA_VERIFY)) {
 		DMSG("verify not permitted");
 		return PKCS11_CKR_KEY_FUNCTION_NOT_PERMITTED;
 	}
-	if (function == SKS_FUNCTION_WRAP &&
+	if (function == PKCS11_FUNCTION_WRAP &&
 	    !get_bool(head, PKCS11_CKA_WRAP)) {
 		DMSG("wrap not permitted");
 		return PKCS11_CKR_KEY_FUNCTION_NOT_PERMITTED;
 	}
-	if (function == SKS_FUNCTION_UNWRAP &&
+	if (function == PKCS11_FUNCTION_UNWRAP &&
 	    !get_bool(head, PKCS11_CKA_UNWRAP)) {
 		DMSG("unwrap not permitted");
 		return PKCS11_CKR_KEY_FUNCTION_NOT_PERMITTED;
 	}
-	if (function == SKS_FUNCTION_DERIVE &&
+	if (function == PKCS11_FUNCTION_DERIVE &&
 	    !get_bool(head, PKCS11_CKA_DERIVE)) {
 		DMSG("derive not permitted");
 		return PKCS11_CKR_KEY_FUNCTION_NOT_PERMITTED;

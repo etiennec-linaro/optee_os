@@ -361,11 +361,11 @@ static const struct string_id __maybe_unused string_proc_flags[] = {
 };
 
 static const struct string_id __maybe_unused string_functions[] = {
-	SKS_ID(SKS_FUNCTION_ENCRYPT),
-	SKS_ID(SKS_FUNCTION_DECRYPT),
-	SKS_ID(SKS_FUNCTION_SIGN),
-	SKS_ID(SKS_FUNCTION_VERIFY),
-	SKS_ID(SKS_FUNCTION_DERIVE),
+	SKS_ID(PKCS11_FUNCTION_ENCRYPT),
+	SKS_ID(PKCS11_FUNCTION_DECRYPT),
+	SKS_ID(PKCS11_FUNCTION_SIGN),
+	SKS_ID(PKCS11_FUNCTION_VERIFY),
+	SKS_ID(PKCS11_FUNCTION_DERIVE),
 };
 
 /*
@@ -634,19 +634,19 @@ bool sks2tee_load_attr(TEE_Attribute *tee_ref, uint32_t tee_id,
 void sks2tee_mode(uint32_t *tee_id, uint32_t function)
 {
 	switch (function) {
-	case SKS_FUNCTION_ENCRYPT:
+	case PKCS11_FUNCTION_ENCRYPT:
 		*tee_id = TEE_MODE_ENCRYPT;
 		break;
-	case SKS_FUNCTION_DECRYPT:
+	case PKCS11_FUNCTION_DECRYPT:
 		*tee_id = TEE_MODE_DECRYPT;
 		break;
-	case SKS_FUNCTION_SIGN:
+	case PKCS11_FUNCTION_SIGN:
 		*tee_id = TEE_MODE_SIGN;
 		break;
-	case SKS_FUNCTION_VERIFY:
+	case PKCS11_FUNCTION_VERIFY:
 		*tee_id = TEE_MODE_VERIFY;
 		break;
-	case SKS_FUNCTION_DERIVE:
+	case PKCS11_FUNCTION_DERIVE:
 		*tee_id = TEE_MODE_DERIVE;
 		break;
 	default:
@@ -807,6 +807,6 @@ const char *sks2str_attr_value(uint32_t id, size_t size, void *value)
 
 const char *sks2str_function(uint32_t id)
 {
-	return ID2STR(id, string_functions, "SKS_FUNCTION_");
+	return ID2STR(id, string_functions, "PKCS11_FUNCTION_");
 }
 #endif /*CFG_TEE_TA_LOG_LEVEL*/

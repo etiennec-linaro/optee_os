@@ -187,22 +187,22 @@ int set_processing_state(struct pkcs11_session *session,
 		return PKCS11_CKR_OPERATION_ACTIVE;
 
 	switch (function) {
-	case SKS_FUNCTION_ENCRYPT:
+	case PKCS11_FUNCTION_ENCRYPT:
 		state = PKCS11_SESSION_ENCRYPTING;
 		break;
-	case SKS_FUNCTION_DECRYPT:
+	case PKCS11_FUNCTION_DECRYPT:
 		state = PKCS11_SESSION_DECRYPTING;
 		break;
-	case SKS_FUNCTION_SIGN:
+	case PKCS11_FUNCTION_SIGN:
 		state = PKCS11_SESSION_SIGNING;
 		break;
-	case SKS_FUNCTION_VERIFY:
+	case PKCS11_FUNCTION_VERIFY:
 		state = PKCS11_SESSION_VERIFYING;
 		break;
-	case SKS_FUNCTION_DIGEST:
+	case PKCS11_FUNCTION_DIGEST:
 		state = PKCS11_SESSION_DIGESTING;
 		break;
-	case SKS_FUNCTION_DERIVE:
+	case PKCS11_FUNCTION_DERIVE:
 		state = PKCS11_SESSION_READY;
 		break;
 	default:

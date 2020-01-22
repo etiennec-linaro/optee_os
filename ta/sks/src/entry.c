@@ -216,41 +216,41 @@ TEE_Result TA_InvokeCommandEntryPoint(void *tee_session, uint32_t cmd,
 
 	case SKS_CMD_ENCRYPT_INIT:
 		rc = entry_processing_init(teesess, ctrl, p1_in, p2_out,
-					   SKS_FUNCTION_ENCRYPT);
+					   PKCS11_FUNCTION_ENCRYPT);
 		break;
 	case SKS_CMD_DECRYPT_INIT:
 		rc = entry_processing_init(teesess, ctrl, p1_in, p2_out,
-					   SKS_FUNCTION_DECRYPT);
+					   PKCS11_FUNCTION_DECRYPT);
 		break;
 	case SKS_CMD_ENCRYPT_UPDATE:
 		rc = entry_processing_step(teesess, ctrl, p1_in, p2_out,
-					   SKS_FUNCTION_ENCRYPT,
-					   SKS_FUNC_STEP_UPDATE);
+					   PKCS11_FUNCTION_ENCRYPT,
+					   PKCS11_FUNC_STEP_UPDATE);
 		break;
 	case SKS_CMD_DECRYPT_UPDATE:
 		rc = entry_processing_step(teesess, ctrl, p1_in, p2_out,
-					   SKS_FUNCTION_DECRYPT,
-					   SKS_FUNC_STEP_UPDATE);
+					   PKCS11_FUNCTION_DECRYPT,
+					   PKCS11_FUNC_STEP_UPDATE);
 		break;
 	case SKS_CMD_ENCRYPT_ONESHOT:
 		rc = entry_processing_step(teesess, ctrl, p1_in, p2_out,
-					   SKS_FUNCTION_ENCRYPT,
-					   SKS_FUNC_STEP_ONESHOT);
+					   PKCS11_FUNCTION_ENCRYPT,
+					   PKCS11_FUNC_STEP_ONESHOT);
 		break;
 	case SKS_CMD_DECRYPT_ONESHOT:
 		rc = entry_processing_step(teesess, ctrl, p1_in, p2_out,
-					   SKS_FUNCTION_DECRYPT,
-					   SKS_FUNC_STEP_ONESHOT);
+					   PKCS11_FUNCTION_DECRYPT,
+					   PKCS11_FUNC_STEP_ONESHOT);
 		break;
 	case SKS_CMD_ENCRYPT_FINAL:
 		rc = entry_processing_step(teesess, ctrl, p1_in, p2_out,
-					   SKS_FUNCTION_ENCRYPT,
-					   SKS_FUNC_STEP_FINAL);
+					   PKCS11_FUNCTION_ENCRYPT,
+					   PKCS11_FUNC_STEP_FINAL);
 		break;
 	case SKS_CMD_DECRYPT_FINAL:
 		rc = entry_processing_step(teesess, ctrl, p1_in, p2_out,
-					   SKS_FUNCTION_DECRYPT,
-					   SKS_FUNC_STEP_FINAL);
+					   PKCS11_FUNCTION_DECRYPT,
+					   PKCS11_FUNC_STEP_FINAL);
 		break;
 
 	case SKS_CMD_GENERATE_SYMM_KEY:
@@ -259,41 +259,41 @@ TEE_Result TA_InvokeCommandEntryPoint(void *tee_session, uint32_t cmd,
 
 	case SKS_CMD_SIGN_INIT:
 		rc = entry_processing_init(teesess, ctrl, p1_in, p2_out,
-					   SKS_FUNCTION_SIGN);
+					   PKCS11_FUNCTION_SIGN);
 		break;
 	case SKS_CMD_VERIFY_INIT:
 		rc = entry_processing_init(teesess, ctrl, p1_in, p2_out,
-					   SKS_FUNCTION_VERIFY);
+					   PKCS11_FUNCTION_VERIFY);
 		break;
 	case SKS_CMD_SIGN_ONESHOT:
 		rc = entry_processing_step(teesess, ctrl, p1_in, p2_out,
-					   SKS_FUNCTION_SIGN,
-					   SKS_FUNC_STEP_ONESHOT);
+					   PKCS11_FUNCTION_SIGN,
+					   PKCS11_FUNC_STEP_ONESHOT);
 		break;
 	case SKS_CMD_VERIFY_ONESHOT:
 		rc = entry_verify_oneshot(teesess, ctrl, p1_in, p2_in,
-					   SKS_FUNCTION_VERIFY,
-					   SKS_FUNC_STEP_ONESHOT);
+					   PKCS11_FUNCTION_VERIFY,
+					   PKCS11_FUNC_STEP_ONESHOT);
 		break;
 	case SKS_CMD_SIGN_UPDATE:
 		rc = entry_processing_step(teesess, ctrl, p1_in, p2_out,
-					   SKS_FUNCTION_SIGN,
-					   SKS_FUNC_STEP_UPDATE);
+					   PKCS11_FUNCTION_SIGN,
+					   PKCS11_FUNC_STEP_UPDATE);
 		break;
 	case SKS_CMD_VERIFY_UPDATE:
 		rc = entry_processing_step(teesess, ctrl, p1_in, p2_out,
-					   SKS_FUNCTION_VERIFY,
-					   SKS_FUNC_STEP_UPDATE);
+					   PKCS11_FUNCTION_VERIFY,
+					   PKCS11_FUNC_STEP_UPDATE);
 		break;
 	case SKS_CMD_SIGN_FINAL:
 		rc = entry_processing_step(teesess, ctrl, p1_in, p2_out,
-					   SKS_FUNCTION_SIGN,
-					   SKS_FUNC_STEP_FINAL);
+					   PKCS11_FUNCTION_SIGN,
+					   PKCS11_FUNC_STEP_FINAL);
 		break;
 	case SKS_CMD_VERIFY_FINAL:
 		rc = entry_processing_step(teesess, ctrl, p1_in, p2_out,
-					   SKS_FUNCTION_VERIFY,
-					   SKS_FUNC_STEP_FINAL);
+					   PKCS11_FUNCTION_VERIFY,
+					   PKCS11_FUNC_STEP_FINAL);
 		break;
 
 	case SKS_CMD_FIND_OBJECTS_INIT:

@@ -136,7 +136,7 @@ static uint32_t sks2tee_algorithm(uint32_t *tee_id,
 	}
 
 	if (*tee_id == TEE_ALG_RSAES_PKCS1_V1_5 &&
-	    (function == SKS_FUNCTION_SIGN || function == SKS_FUNCTION_VERIFY))
+	    (function == PKCS11_FUNCTION_SIGN || function == PKCS11_FUNCTION_VERIFY))
 		*tee_id = TEE_ALG_RSASSA_PKCS1_V1_5;
 
 	return rv;
@@ -160,11 +160,11 @@ static uint32_t sks2tee_key_type(uint32_t *tee_type, struct sks_object *obj,
 	switch (type) {
 	case PKCS11_CKK_EC:
 		if (class == PKCS11_CKO_PRIVATE_KEY) {
-			*tee_type = (function == SKS_FUNCTION_DERIVE) ?
+			*tee_type = (function == PKCS11_FUNCTION_DERIVE) ?
 					TEE_TYPE_ECDH_KEYPAIR :
 					TEE_TYPE_ECDSA_KEYPAIR;
 		} else {
-			*tee_type = (function == SKS_FUNCTION_DERIVE) ?
+			*tee_type = (function == PKCS11_FUNCTION_DERIVE) ?
 					TEE_TYPE_ECDH_PUBLIC_KEY :
 					TEE_TYPE_ECDSA_PUBLIC_KEY;
 		}
@@ -239,12 +239,12 @@ static uint32_t load_tee_key(struct pkcs11_session *session,
 			switch (obj->key_type) {
 			case TEE_TYPE_ECDSA_PUBLIC_KEY:
 			case TEE_TYPE_ECDSA_KEYPAIR:
-				if (function != SKS_FUNCTION_DERIVE)
+				if (function != PKCS11_FUNCTION_DERIVE)
 					goto key_ready;
 				break;
 			case TEE_TYPE_ECDH_PUBLIC_KEY:
 			case TEE_TYPE_ECDH_KEYPAIR:
-				if (function == SKS_FUNCTION_DERIVE)
+				if (function == PKCS11_FUNCTION_DERIVE)
 					goto key_ready;
 				break;
 			default:
@@ -385,9 +385,9 @@ uint32_t step_asymm_operation(struct pkcs11_session *session,
 	struct active_processing *proc = session->processing;
 
 	switch (step) {
-	case SKS_FUNC_STEP_ONESHOT:
-	case SKS_FUNC_STEP_UPDATE:
-	case SKS_FUNC_STEP_FINAL:
+	case PKCS11_FUNC_STEP_ONESHOT:
+	case PKCS11_FUNC_STEP_UPDATE:
+	case PKCS11_FUNC_STEP_FINAL:
 		break;
 	default:
 		return SKS_ERROR;
@@ -424,7 +424,7 @@ uint32_t step_asymm_operation(struct pkcs11_session *session,
 	case PKCS11_CKM_ECDSA_SHA256:
 	case PKCS11_CKM_ECDSA_SHA384:
 	case PKCS11_CKM_ECDSA_SHA512:
-		if (step == SKS_FUNC_STEP_FINAL)
+		if (step == PKCS11_FUNC_STEP_FINAL)
 			break;
 
 		EMSG("TODO: compute hash for later authentication");
@@ -436,7 +436,7 @@ uint32_t step_asymm_operation(struct pkcs11_session *session,
 		break;
 	}
 
-	if (step == SKS_FUNC_STEP_UPDATE)
+	if (step == PKCS11_FUNC_STEP_UPDATE)
 		goto bail;
 
 	/*
@@ -473,7 +473,7 @@ uint32_t step_asymm_operation(struct pkcs11_session *session,
 		in_size = 512;
 		break;
 	default:
-		if (step != SKS_FUNC_STEP_ONESHOT) {
+		if (step != PKCS11_FUNC_STEP_ONESHOT) {
 			rv = SKS_ERROR;
 			goto bail;
 		}
@@ -503,7 +503,7 @@ uint32_t step_asymm_operation(struct pkcs11_session *session,
 	case PKCS11_CKM_SHA384_RSA_PKCS:
 	case PKCS11_CKM_SHA512_RSA_PKCS:
 		switch (function) {
-		case SKS_FUNCTION_ENCRYPT:
+		case PKCS11_FUNCTION_ENCRYPT:
 			// TODO: TEE_ALG_RSAES_PKCS1_OAEP_MGF1_xxx takes an
 			// optional argument TEE_ATTR_RSA_OAEP_LABEL.
 			res = TEE_AsymmetricEncrypt(proc->tee_op_handle,
@@ -514,7 +514,7 @@ uint32_t step_asymm_operation(struct pkcs11_session *session,
 			rv = tee2sks_error(res);
 			break;
 
-		case SKS_FUNCTION_DECRYPT:
+		case PKCS11_FUNCTION_DECRYPT:
 			res = TEE_AsymmetricDecrypt(proc->tee_op_handle,
 						    tee_attrs, tee_attrs_count,
 						    in_buf, in_size,
@@ -523,7 +523,7 @@ uint32_t step_asymm_operation(struct pkcs11_session *session,
 			rv = tee2sks_error(res);
 			break;
 
-		case SKS_FUNCTION_SIGN:
+		case PKCS11_FUNCTION_SIGN:
 			res = TEE_AsymmetricSignDigest(proc->tee_op_handle,
 							tee_attrs,
 							tee_attrs_count,
@@ -533,7 +533,7 @@ uint32_t step_asymm_operation(struct pkcs11_session *session,
 			rv = tee2sks_error(res);
 			break;
 
-		case SKS_FUNCTION_VERIFY:
+		case PKCS11_FUNCTION_VERIFY:
 			res = TEE_AsymmetricVerifyDigest(proc->tee_op_handle,
 							 tee_attrs,
 							 tee_attrs_count,

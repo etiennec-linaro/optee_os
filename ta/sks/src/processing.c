@@ -42,26 +42,26 @@ static bool func_matches_state(enum processing_func function,
 				enum pkcs11_proc_state state)
 {
 	switch (function) {
-	case SKS_FUNCTION_ENCRYPT:
+	case PKCS11_FUNCTION_ENCRYPT:
 		return (state == PKCS11_SESSION_ENCRYPTING ||
 			state == PKCS11_SESSION_DIGESTING_ENCRYPTING ||
 			state == PKCS11_SESSION_SIGNING_ENCRYPTING);
-	case SKS_FUNCTION_DECRYPT:
+	case PKCS11_FUNCTION_DECRYPT:
 		return (state == PKCS11_SESSION_DECRYPTING ||
 			state == PKCS11_SESSION_DECRYPTING_DIGESTING ||
 			state == PKCS11_SESSION_DECRYPTING_VERIFYING);
-	case SKS_FUNCTION_DIGEST:
+	case PKCS11_FUNCTION_DIGEST:
 		return (state == PKCS11_SESSION_DIGESTING ||
 			state == PKCS11_SESSION_DIGESTING_ENCRYPTING);
-	case SKS_FUNCTION_SIGN:
+	case PKCS11_FUNCTION_SIGN:
 		return (state == PKCS11_SESSION_SIGNING ||
 			state == PKCS11_SESSION_SIGNING_ENCRYPTING);
-	case SKS_FUNCTION_VERIFY:
+	case PKCS11_FUNCTION_VERIFY:
 		return (state == PKCS11_SESSION_VERIFYING ||
 			state == PKCS11_SESSION_DECRYPTING_VERIFYING);
-	case SKS_FUNCTION_SIGN_RECOVER:
+	case PKCS11_FUNCTION_SIGN_RECOVER:
 		return state == PKCS11_SESSION_SIGNING_RECOVER;
-	case SKS_FUNCTION_VERIFY_RECOVER:
+	case PKCS11_FUNCTION_VERIFY_RECOVER:
 		return state == PKCS11_SESSION_SIGNING_RECOVER;
 	default:
 		TEE_Panic(function);
@@ -175,7 +175,7 @@ uint32_t entry_import_object(uintptr_t tee_session,
 	 * Free temporary template once done.
 	 */
 	rv = create_attributes_from_template(&head, template, template_size,
-					     NULL, SKS_FUNCTION_IMPORT);
+					     NULL, PKCS11_FUNCTION_IMPORT);
 	TEE_Free(template);
 	template = NULL;
 	if (rv)
@@ -349,8 +349,8 @@ uint32_t entry_generate_secret(uintptr_t tee_session,
 	template_size = sizeof(*template) + template->attrs_size;
 
 	rv = check_mechanism_against_processing(session, proc_params->id,
-						SKS_FUNCTION_GENERATE,
-						SKS_FUNC_STEP_INIT);
+						PKCS11_FUNCTION_GENERATE,
+						PKCS11_FUNC_STEP_INIT);
 	if (rv)
 		goto bail;
 
@@ -359,7 +359,7 @@ uint32_t entry_generate_secret(uintptr_t tee_session,
 	 * Free temporary template once done.
 	 */
 	rv = create_attributes_from_template(&head, template, template_size,
-					     NULL, SKS_FUNCTION_GENERATE);
+					     NULL, PKCS11_FUNCTION_GENERATE);
 	if (rv)
 		goto bail;
 
@@ -521,8 +521,8 @@ uint32_t entry_generate_key_pair(uintptr_t teesess,
 		goto bail;
 
 	rv = check_mechanism_against_processing(session, proc_params->id,
-						SKS_FUNCTION_GENERATE_PAIR,
-						SKS_FUNC_STEP_INIT);
+						PKCS11_FUNCTION_GENERATE_PAIR,
+						PKCS11_FUNC_STEP_INIT);
 	if (rv)
 		goto bail;
 
@@ -534,7 +534,7 @@ uint32_t entry_generate_key_pair(uintptr_t teesess,
 	template_size = sizeof(*template) + template->attrs_size;
 
 	rv = create_attributes_from_template(&pub_head, template, template_size,
-					     NULL, SKS_FUNCTION_GENERATE_PAIR);
+					     NULL, PKCS11_FUNCTION_GENERATE_PAIR);
 	if (rv)
 		goto bail;
 
@@ -548,7 +548,7 @@ uint32_t entry_generate_key_pair(uintptr_t teesess,
 	template_size = sizeof(*template) + template->attrs_size;
 
 	rv = create_attributes_from_template(&priv_head, template, template_size,
-					     NULL, SKS_FUNCTION_GENERATE_PAIR);
+					     NULL, PKCS11_FUNCTION_GENERATE_PAIR);
 	if (rv)
 		goto bail;
 
@@ -692,7 +692,7 @@ uint32_t entry_processing_init(uintptr_t tee_session, TEE_Param *ctrl,
 		goto bail;
 
 	rv = check_mechanism_against_processing(session, proc_params->id,
-						function, SKS_FUNC_STEP_INIT);
+						function, PKCS11_FUNC_STEP_INIT);
 	if (rv)
 		goto bail;
 
@@ -790,7 +790,7 @@ uint32_t entry_processing_step(uintptr_t tee_session, TEE_Param *ctrl,
 
 bail:
 	switch (step) {
-	case SKS_FUNC_STEP_UPDATE:
+	case PKCS11_FUNC_STEP_UPDATE:
 		if (rv != SKS_OK && rv != SKS_SHORT_BUFFER)
 			release_active_processing(session);
 		break;
@@ -830,7 +830,7 @@ uint32_t entry_verify_oneshot(uintptr_t tee_session, TEE_Param *ctrl,
 
 	TEE_MemFill(&ctrlargs, 0, sizeof(ctrlargs));
 
-	assert(function == SKS_FUNCTION_VERIFY);
+	assert(function == PKCS11_FUNCTION_VERIFY);
 	if (!ctrl)
 		return SKS_BAD_PARAM;
 
@@ -924,7 +924,7 @@ uint32_t entry_derive_key(uintptr_t tee_session, TEE_Param *ctrl,
 		goto bail;
 	}
 
-	rv = set_processing_state(session, SKS_FUNCTION_DERIVE,
+	rv = set_processing_state(session, PKCS11_FUNCTION_DERIVE,
 				  parent_obj, NULL);
 	if (rv)
 		goto bail;
@@ -936,14 +936,14 @@ uint32_t entry_derive_key(uintptr_t tee_session, TEE_Param *ctrl,
 	template_size = sizeof(*template) + template->attrs_size;
 
 	rv = check_mechanism_against_processing(session, proc_params->id,
-						SKS_FUNCTION_DERIVE,
-						SKS_FUNC_STEP_INIT);
+						PKCS11_FUNCTION_DERIVE,
+						PKCS11_FUNC_STEP_INIT);
 	if (rv)
 		goto bail;
 
 	rv = create_attributes_from_template(&head, template, template_size,
 					     parent_obj->attributes,
-					     SKS_FUNCTION_DERIVE);
+					     PKCS11_FUNCTION_DERIVE);
 	if (rv)
 		goto bail;
 
@@ -967,7 +967,7 @@ uint32_t entry_derive_key(uintptr_t tee_session, TEE_Param *ctrl,
 
 	rv = PKCS11_CKR_MECHANISM_INVALID;
 	if (processing_is_tee_symm(proc_params->id)) {
-		rv = init_symm_operation(session, SKS_FUNCTION_DERIVE,
+		rv = init_symm_operation(session, PKCS11_FUNCTION_DERIVE,
 					 proc_params, parent_obj);
 		if (rv)
 			goto bail;
@@ -976,7 +976,7 @@ uint32_t entry_derive_key(uintptr_t tee_session, TEE_Param *ctrl,
 					parent_obj, &head);
 	}
 	if (processing_is_tee_asymm(proc_params->id)) {
-		rv = init_asymm_operation(session, SKS_FUNCTION_DERIVE,
+		rv = init_asymm_operation(session, PKCS11_FUNCTION_DERIVE,
 					  proc_params, parent_obj);
 		if (rv)
 			goto bail;

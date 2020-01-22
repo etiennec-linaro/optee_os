@@ -326,9 +326,9 @@ uint32_t step_symm_operation(struct pkcs11_session *session,
 	struct active_processing *proc = session->processing;
 
 	switch (step) {
-	case SKS_FUNC_STEP_ONESHOT:
-	case SKS_FUNC_STEP_UPDATE:
-	case SKS_FUNC_STEP_FINAL:
+	case PKCS11_FUNC_STEP_ONESHOT:
+	case PKCS11_FUNC_STEP_UPDATE:
+	case PKCS11_FUNC_STEP_FINAL:
 		break;
 	default:
 		return SKS_ERROR;
@@ -336,7 +336,7 @@ uint32_t step_symm_operation(struct pkcs11_session *session,
 
 	/*
 	 * Feed active operation with with data
-	 * (SKS_FUNC_STEP_UPDATE/_ONESHOT)
+	 * (PKCS11_FUNC_STEP_UPDATE/_ONESHOT)
 	 */
 	switch (proc->mecha_type) {
 	case PKCS11_CKM_AES_CMAC_GENERAL:
@@ -348,7 +348,7 @@ uint32_t step_symm_operation(struct pkcs11_session *session,
 	case PKCS11_CKM_SHA384_HMAC:
 	case PKCS11_CKM_SHA512_HMAC:
 	case PKCS11_CKM_AES_XCBC_MAC:
-		if (step == SKS_FUNC_STEP_FINAL)
+		if (step == PKCS11_FUNC_STEP_FINAL)
 			break;
 
 		if (!in) {
@@ -357,8 +357,8 @@ uint32_t step_symm_operation(struct pkcs11_session *session,
 		}
 
 		switch (function) {
-		case SKS_FUNCTION_SIGN:
-		case SKS_FUNCTION_VERIFY:
+		case PKCS11_FUNCTION_SIGN:
+		case PKCS11_FUNCTION_VERIFY:
 			TEE_MACUpdate(proc->tee_op_handle, in_buf, in_size);
 			rv = SKS_OK;
 			break;
@@ -373,13 +373,13 @@ uint32_t step_symm_operation(struct pkcs11_session *session,
 	case PKCS11_CKM_AES_CBC_PAD:
 	case PKCS11_CKM_AES_CTS:
 	case PKCS11_CKM_AES_CTR:
-		if (step == SKS_FUNC_STEP_FINAL ||
-		    step == SKS_FUNC_STEP_ONESHOT)
+		if (step == PKCS11_FUNC_STEP_FINAL ||
+		    step == PKCS11_FUNC_STEP_ONESHOT)
 			break;
 
 		switch (function) {
-		case SKS_FUNCTION_ENCRYPT:
-		case SKS_FUNCTION_DECRYPT:
+		case PKCS11_FUNCTION_ENCRYPT:
+		case PKCS11_FUNCTION_DECRYPT:
 			res = TEE_CipherUpdate(proc->tee_op_handle,
 						in_buf, in_size,
 						out_buf, &out_size);
@@ -394,23 +394,23 @@ uint32_t step_symm_operation(struct pkcs11_session *session,
 
 	case PKCS11_CKM_AES_CCM:
 	case PKCS11_CKM_AES_GCM:
-		if (step == SKS_FUNC_STEP_FINAL)
+		if (step == PKCS11_FUNC_STEP_FINAL)
 			break;
 
 		switch (function) {
-		case SKS_FUNCTION_ENCRYPT:
+		case PKCS11_FUNCTION_ENCRYPT:
 			res = TEE_AEUpdate(proc->tee_op_handle,
 					   in_buf, in_size, out_buf, &out_size);
 			output_data = true;
 			rv = tee2sks_error(res);
 
-			if (step == SKS_FUNC_STEP_ONESHOT &&
+			if (step == PKCS11_FUNC_STEP_ONESHOT &&
 			    (rv == SKS_OK || rv == SKS_SHORT_BUFFER)) {
 				out_buf = (char *)out_buf + out_size;
 				out_size2 -= out_size;
 			}
 			break;
-		case SKS_FUNCTION_DECRYPT:
+		case PKCS11_FUNCTION_DECRYPT:
 			rv = tee_ae_decrypt_update(proc, in_buf, in_size);
 			out_size = 0;
 			output_data = true;
@@ -425,11 +425,11 @@ uint32_t step_symm_operation(struct pkcs11_session *session,
 		break;
 	}
 
-	if (step == SKS_FUNC_STEP_UPDATE)
+	if (step == PKCS11_FUNC_STEP_UPDATE)
 		goto bail;
 
 	/*
-	 * Finalize (SKS_FUNC_STEP_ONESHOT/_FINAL) operation
+	 * Finalize (PKCS11_FUNC_STEP_ONESHOT/_FINAL) operation
 	 */
 	switch (session->processing->mecha_type) {
 	case PKCS11_CKM_AES_CMAC_GENERAL:
@@ -442,13 +442,13 @@ uint32_t step_symm_operation(struct pkcs11_session *session,
 	case PKCS11_CKM_SHA512_HMAC:
 	case PKCS11_CKM_AES_XCBC_MAC:
 		switch (function) {
-		case SKS_FUNCTION_SIGN:
+		case PKCS11_FUNCTION_SIGN:
 			res = TEE_MACComputeFinal(proc->tee_op_handle,
 						  NULL, 0, out_buf, &out_size);
 			output_data = true;
 			rv = tee2sks_error(res);
 			break;
-		case SKS_FUNCTION_VERIFY:
+		case PKCS11_FUNCTION_VERIFY:
 			res = TEE_MACCompareFinal(proc->tee_op_handle,
 						  NULL, 0, in2_buf, in2_size);
 			rv = tee2sks_error(res);
@@ -465,8 +465,8 @@ uint32_t step_symm_operation(struct pkcs11_session *session,
 	case PKCS11_CKM_AES_CTS:
 	case PKCS11_CKM_AES_CTR:
 		switch (function) {
-		case SKS_FUNCTION_ENCRYPT:
-		case SKS_FUNCTION_DECRYPT:
+		case PKCS11_FUNCTION_ENCRYPT:
+		case PKCS11_FUNCTION_DECRYPT:
 			res = TEE_CipherDoFinal(proc->tee_op_handle,
 						in_buf, in_size,
 						out_buf, &out_size);
@@ -482,7 +482,7 @@ uint32_t step_symm_operation(struct pkcs11_session *session,
 	case PKCS11_CKM_AES_CCM:
 	case PKCS11_CKM_AES_GCM:
 		switch (function) {
-		case SKS_FUNCTION_ENCRYPT:
+		case PKCS11_FUNCTION_ENCRYPT:
 			rv = tee_ae_encrypt_final(proc, out_buf, &out_size2);
 			output_data = true;
 
@@ -490,13 +490,13 @@ uint32_t step_symm_operation(struct pkcs11_session *session,
 			 * FIXME: on failure & ONESHOT, restore operation state
 			 * before TEE_AEUpdate() was called
 			 */
-			if (step == SKS_FUNC_STEP_ONESHOT) {
+			if (step == PKCS11_FUNC_STEP_ONESHOT) {
 				out_size += out_size2;
 			} else {
 				out_size = out_size2;
 			}
 			break;
-		case SKS_FUNCTION_DECRYPT:
+		case PKCS11_FUNCTION_DECRYPT:
 			rv = tee_ae_decrypt_final(proc, out_buf, &out_size);
 			output_data = true;
 			break;

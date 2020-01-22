@@ -22,7 +22,7 @@
  * Functions to generate a serialized object.
  * References are pointers to struct serializer.
  */
-#define SKS_ID(sks)			case sks:
+#define PKCS11_ID(sks)			case sks:
 
 bool sanitize_consistent_class_and_type(struct sks_attrs_head *attrs)
 {

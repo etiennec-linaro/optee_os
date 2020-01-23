@@ -30,7 +30,7 @@ void close_persistent_db(struct ck_token *token)
 {
 	int n = 0;
 
-	for (n = 0; n < SKS_MAX_USERS; n++) {
+	for (n = 0; n < PKCS11_MAX_USERS; n++) {
 		TEE_CloseObject(token->pin_hdl[n]);
 		token->pin_hdl[n] = TEE_HANDLE_NULL;
 	}
@@ -294,7 +294,7 @@ struct ck_token *init_token_db(unsigned int token_id)
 	if (!token)
 		return NULL;
 
-	for (n = 0; n < SKS_MAX_USERS; n++)
+	for (n = 0; n < PKCS11_MAX_USERS; n++)
 		init_pin_keys(token, n);
 
 	LIST_INIT(&token->object_list);

@@ -50,7 +50,7 @@ enum pkcs11_session_state {
 TAILQ_HEAD(client_list, pkcs11_client);
 TAILQ_HEAD(session_list, pkcs11_session);
 
-#define SKS_MAX_USERS			2
+#define PKCS11_MAX_USERS			2
 #define PKCS11_TOKEN_PIN_SIZE		128
 
 /*
@@ -112,7 +112,7 @@ struct ck_token {
 	struct object_list object_list;
 
 	TEE_ObjectHandle db_hdl;	/* Opened handle to persistent database */
-	TEE_ObjectHandle pin_hdl[SKS_MAX_USERS];	/* Opened handle to PIN keys */
+	TEE_ObjectHandle pin_hdl[PKCS11_MAX_USERS];	/* Opened handle to PIN keys */
 	struct token_persistent_main *db_main;		/* Copy persistent database */
 	struct token_persistent_objs *db_objs;		/* Copy persistent database */
 };

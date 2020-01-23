@@ -287,11 +287,11 @@ uint32_t entry_ck_token_initialize(TEE_Param *ctrl,
 	if (pin_size < 8 || pin_size > PKCS11_TOKEN_PIN_SIZE)
 		return PKCS11_CKR_PIN_LEN_RANGE;
 
-	rv = serialargs_get_ptr(&ctrlargs, &pin, pin_size);
+	rv = serialargs_get(&ctrlargs, &label, PKCS11_TOKEN_LABEL_SIZE);
 	if (rv)
 		return rv;
 
-	rv = serialargs_get(&ctrlargs, &label, PKCS11_TOKEN_LABEL_SIZE);
+	rv = serialargs_get_ptr(&ctrlargs, &pin, pin_size);
 	if (rv)
 		return rv;
 
@@ -1442,11 +1442,11 @@ uint32_t entry_set_pin(uintptr_t tee_session, TEE_Param *ctrl,
 	if (rv)
 		return rv;
 
-	rv = serialargs_get_ptr(&ctrlargs, &old_pin, old_pin_size);
+	rv = serialargs_get(&ctrlargs, &pin_size, sizeof(uint32_t));
 	if (rv)
 		return rv;
 
-	rv = serialargs_get(&ctrlargs, &pin_size, sizeof(uint32_t));
+	rv = serialargs_get_ptr(&ctrlargs, &old_pin, old_pin_size);
 	if (rv)
 		return rv;
 

@@ -229,8 +229,8 @@ struct pkcs11_mechanism_info {
  * [in]		memref[0] = [
  *			32bit slot ID,
  *			32bit PIN length,
- *			8bit array PIN[PIN length],
- *			8bit array label[32]
+ *			byte array label[32]
+ *			byte array PIN[PIN length],
  *		]
  * [out]	memref[0] = 32bit fine grain return code
  *
@@ -243,8 +243,8 @@ struct pkcs11_mechanism_info {
  *
  * [in]		memref[0] = [
  *			32bit session handle,
- *			32bit PIN length,
- *			8bit array PIN[PIN length]
+ *			32bit PIN byte size,
+ *			byte array: PIN data
  *		]
  * [out]	memref[0] = 32bit fine grain return code
  *
@@ -257,10 +257,10 @@ struct pkcs11_mechanism_info {
  *
  * [in]		memref[0] = [
  *			32bit session handle,
- *			32bit old_pin_length,
- *			8bit array old_pin[old_pin_length],
- *			32bit new_pin_length,
- *			8bit array new_pin[new_pin_length]
+ *			32bit old PIN byte size,
+ *			32bit new PIN byte size,
+ *			byte array: PIN data,
+ *			byte array: new PIN data,
  *		]
  * [out]	memref[0] = 32bit fine grain return code
  *

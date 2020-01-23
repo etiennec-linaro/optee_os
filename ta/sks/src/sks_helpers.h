@@ -27,19 +27,17 @@ struct pkcs11_object;
  * Helper functions to analyse CK fields
  */
 bool valid_sks_attribute_id(uint32_t id, uint32_t size);
-
 size_t sks_attr_is_class(uint32_t attribute_id);
 size_t sks_attr_is_type(uint32_t attribute_id);
 bool sks_class_has_boolprop(uint32_t class);
 bool sks_class_has_type(uint32_t class);
 bool sks_attr_class_is_key(uint32_t class);
-int sks_attr2boolprop_shift(uint32_t attr);
-
 bool key_type_is_symm_key(uint32_t id);
 bool key_type_is_asymm_key(uint32_t id);
+int sks_attr2boolprop_shift(uint32_t attr);
 bool mechanism_is_valid(uint32_t id);
-size_t get_supported_mechanisms(uint32_t *array, size_t array_count);
 bool mechanism_is_supported(uint32_t id);
+size_t get_supported_mechanisms(uint32_t *array, size_t array_count);
 
 void sks2tee_mode(uint32_t *tee_id, uint32_t function);
 bool sks2tee_load_attr(TEE_Attribute *tee_ref, uint32_t tee_id,
@@ -54,18 +52,18 @@ TEE_Result sks2tee_error(uint32_t rv);
 uint32_t tee2sks_error(TEE_Result res);
 
 /* Id-to-string conversions when CFG_TEE_TA_LOG_LEVEL > 0 */
+const char *id2str_attr_value(uint32_t id, size_t size, void *value);
 const char *id2str_attr(uint32_t id);
 const char *id2str_class(uint32_t id);
 const char *id2str_type(uint32_t id, uint32_t class);
 const char *id2str_key_type(uint32_t id);
 const char *id2str_boolprop(uint32_t id);
-const char *id2str_proc(uint32_t id);
+const char *id2str_skscmd(uint32_t id);
+const char *id2str_rc(uint32_t id);
 const char *id2str_proc_flag(uint32_t id);
 const char *id2str_slot_flag(uint32_t id);
 const char *id2str_token_flag(uint32_t id);
-const char *id2str_rc(uint32_t id);
-const char *id2str_skscmd(uint32_t id);
-const char *id2str_attr_value(uint32_t id, size_t size, void *value);
+const char *id2str_proc(uint32_t id);
 const char *id2str_function(uint32_t id);
 
 #endif /*PKCS11_TA_PKCS11_HELPERS_H*/

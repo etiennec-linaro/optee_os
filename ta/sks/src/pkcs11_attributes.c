@@ -41,27 +41,27 @@ struct pkcs11_mechachism_modes {
  * PKCS11_CKFM_EC_UNCOMPRESS
  * PKCS11_CKFM_EC_COMPRESS
  */
-#define SKS_ECM		0
+#define PKCS11_ECM		0
 
 /* PKCS11_CKFM_HW: need to ask core one HW support of the mechanisms */
-#define SKS_M(_label, _dig, _enc, _dec, _sig, _ver,		\
-		_sr, _vr, _der, _wra, _unw, _gen, _gpa, _1s)	\
-	{							\
-		.id = PKCS11_CKM_  ## _label,			\
-		.one_shot = _1s,				\
-		.flags = (_enc ? PKCS11_CKFM_ENCRYPT : 0) |	\
-			(_dec ? PKCS11_CKFM_DECRYPT : 0) |		\
-			(_dig ? PKCS11_CKFM_DIGEST : 0) |		\
-			(_sig ? PKCS11_CKFM_SIGN : 0) |		\
-			(_sr ? PKCS11_CKFM_SIGN_RECOVER : 0) |	\
-			(_ver ? PKCS11_CKFM_VERIFY : 0) |		\
-			(_vr ? PKCS11_CKFM_VERIFY_RECOVER : 0) |	\
-			(_gen ? PKCS11_CKFM_GENERATE : 0) |	\
-			(_gpa ? PKCS11_CKFM_GENERATE_PAIR : 0) |	\
-			(_wra ? PKCS11_CKFM_WRAP : 0) |		\
-			(_unw ? PKCS11_CKFM_UNWRAP : 0) |		\
-			(_der ? PKCS11_CKFM_DERIVE : 0) |		\
-			SKS_ECM,				\
+#define MECHA(_label, _dig, _enc, _dec, _sig, _ver,			\
+	      _sr, _vr, _der, _wra, _unw, _gen, _gpa, _1s)		\
+	{								\
+		.id = PKCS11_CKM_  ## _label,				\
+		.one_shot = _1s,					\
+		.flags = (_enc ? PKCS11_CKFM_ENCRYPT : 0) |		\
+			 (_dec ? PKCS11_CKFM_DECRYPT : 0) |		\
+			 (_dig ? PKCS11_CKFM_DIGEST : 0) |		\
+			 (_sig ? PKCS11_CKFM_SIGN : 0) |		\
+			 (_sr ? PKCS11_CKFM_SIGN_RECOVER : 0) |		\
+			 (_ver ? PKCS11_CKFM_VERIFY : 0) |		\
+			 (_vr ? PKCS11_CKFM_VERIFY_RECOVER : 0) |	\
+			 (_gen ? PKCS11_CKFM_GENERATE : 0) |		\
+			 (_gpa ? PKCS11_CKFM_GENERATE_PAIR : 0) |	\
+			 (_wra ? PKCS11_CKFM_WRAP : 0) |		\
+			 (_unw ? PKCS11_CKFM_UNWRAP : 0) |		\
+			 (_der ? PKCS11_CKFM_DERIVE : 0) |		\
+			 PKCS11_ECM,					\
 	}
 
 static const __maybe_unused struct pkcs11_mechachism_modes pkcs11_modes[] = {
@@ -80,77 +80,77 @@ static const __maybe_unused struct pkcs11_mechachism_modes pkcs11_modes[] = {
 	 *				|   / \   / \   / \  |   / \  |  |  |
 	 * Mechanism			Di|En|De|Si|Ve|Sr|Vr|Dr|Wr|Uw|Ge|Gp|1
 	 */
-	SKS_M(AES_ECB,			0, 1, 1, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0),
-	SKS_M(AES_CBC,			0, 1, 1, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0),
-	SKS_M(AES_CBC_PAD,		0, 1, 1, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0),
-	SKS_M(AES_CTS,			0, 1, 1, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0),
-	SKS_M(AES_CTR,			0, 1, 1, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0),
-	SKS_M(AES_GCM,			0, 1, 1, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0),
-	SKS_M(AES_CCM,			0, 1, 1, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0),
-	SKS_M(AES_GMAC,			0, 0, 0, 1, 1, 0, 0, 1, 0, 0, 0, 0, 0),
-	SKS_M(AES_CMAC,			0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0),
-	SKS_M(AES_CMAC_GENERAL,		0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0),
-	SKS_M(AES_ECB_ENCRYPT_DATA,	0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0),
-	SKS_M(AES_CBC_ENCRYPT_DATA,	0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0),
-	SKS_M(AES_KEY_GEN,		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0),
+	MECHA(AES_ECB,			0, 1, 1, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0),
+	MECHA(AES_CBC,			0, 1, 1, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0),
+	MECHA(AES_CBC_PAD,		0, 1, 1, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0),
+	MECHA(AES_CTS,			0, 1, 1, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0),
+	MECHA(AES_CTR,			0, 1, 1, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0),
+	MECHA(AES_GCM,			0, 1, 1, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0),
+	MECHA(AES_CCM,			0, 1, 1, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0),
+	MECHA(AES_GMAC,			0, 0, 0, 1, 1, 0, 0, 1, 0, 0, 0, 0, 0),
+	MECHA(AES_CMAC,			0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0),
+	MECHA(AES_CMAC_GENERAL,		0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0),
+	MECHA(AES_ECB_ENCRYPT_DATA,	0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0),
+	MECHA(AES_CBC_ENCRYPT_DATA,	0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0),
+	MECHA(AES_KEY_GEN,		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0),
 	/* Mechanism			Di|En|De|Si|Ve|Sr|Vr|Dr|Wr|Uw|Ge|Gp|1 */
-	SKS_M(GENERIC_SECRET_KEY_GEN,	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0),
-	SKS_M(MD5_HMAC,			0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0),
-	SKS_M(SHA_1_HMAC,		0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0),
-	SKS_M(SHA224_HMAC,		0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0),
-	SKS_M(SHA256_HMAC,		0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0),
-	SKS_M(SHA384_HMAC,		0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0),
-	SKS_M(SHA512_HMAC,		0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0),
-	SKS_M(AES_XCBC_MAC,		0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0),
+	MECHA(GENERIC_SECRET_KEY_GEN,	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0),
+	MECHA(MD5_HMAC,			0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0),
+	MECHA(SHA_1_HMAC,		0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0),
+	MECHA(SHA224_HMAC,		0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0),
+	MECHA(SHA256_HMAC,		0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0),
+	MECHA(SHA384_HMAC,		0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0),
+	MECHA(SHA512_HMAC,		0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0),
+	MECHA(AES_XCBC_MAC,		0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0),
 	/* Mechanism			Di|En|De|Si|Ve|Sr|Vr|Dr|Wr|Uw|Ge|Gp|1 */
-	SKS_M(EC_KEY_PAIR_GEN,		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0),
-	SKS_M(ECDSA,			0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1),
-	SKS_M(ECDSA_SHA1,		0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0),
-	SKS_M(ECDSA_SHA224,		0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0),
-	SKS_M(ECDSA_SHA256,		0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0),
-	SKS_M(ECDSA_SHA384,		0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0),
-	SKS_M(ECDSA_SHA512,		0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0),
-	SKS_M(ECDH1_DERIVE,		0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0),
-	SKS_M(ECDH1_COFACTOR_DERIVE,	0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0),
-	SKS_M(ECMQV_DERIVE,		0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0),
-	SKS_M(ECDH_AES_KEY_WRAP,	0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0),
+	MECHA(EC_KEY_PAIR_GEN,		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0),
+	MECHA(ECDSA,			0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1),
+	MECHA(ECDSA_SHA1,		0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0),
+	MECHA(ECDSA_SHA224,		0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0),
+	MECHA(ECDSA_SHA256,		0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0),
+	MECHA(ECDSA_SHA384,		0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0),
+	MECHA(ECDSA_SHA512,		0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0),
+	MECHA(ECDH1_DERIVE,		0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0),
+	MECHA(ECDH1_COFACTOR_DERIVE,	0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0),
+	MECHA(ECMQV_DERIVE,		0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0),
+	MECHA(ECDH_AES_KEY_WRAP,	0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0),
 	/* Mechanism			Di|En|De|Si|Ve|Sr|Vr|Dr|Wr|Uw|Ge|Gp|1 */
-	SKS_M(RSA_PKCS_KEY_PAIR_GEN,	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0),
-	SKS_M(RSA_PKCS,			0, 1, 1, 1, 1, 1, 1, 0, 1, 1, 0, 0, 1),
-	SKS_M(RSA_PKCS_PSS,		0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1),
-	SKS_M(RSA_PKCS_OAEP,		0, 1, 1, 0, 0, 0, 0, 0, 1, 1, 0, 0, 1),
-	SKS_M(RSA_9796,			0, 0, 0, 1, 1, 1, 1, 0, 1, 1, 0, 0, 1),
-	SKS_M(RSA_X_509,		0, 1, 1, 1, 1, 1, 1, 0, 1, 1, 0, 0, 1),
-	SKS_M(SHA1_RSA_PKCS,		0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 1, 0, 0),
-	SKS_M(SHA1_RSA_PKCS_PSS,	0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0),
-	SKS_M(SHA256_RSA_PKCS,		0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0),
-	SKS_M(SHA384_RSA_PKCS,		0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0),
-	SKS_M(SHA512_RSA_PKCS,		0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0),
-	SKS_M(SHA256_RSA_PKCS_PSS,	0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0),
-	SKS_M(SHA384_RSA_PKCS_PSS,	0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0),
-	SKS_M(SHA512_RSA_PKCS_PSS,	0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0),
-	SKS_M(SHA224_RSA_PKCS,		0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0),
-	SKS_M(SHA224_RSA_PKCS_PSS,	0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0),
-	SKS_M(RSA_AES_KEY_WRAP,		0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0),
+	MECHA(RSA_PKCS_KEY_PAIR_GEN,	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0),
+	MECHA(RSA_PKCS,			0, 1, 1, 1, 1, 1, 1, 0, 1, 1, 0, 0, 1),
+	MECHA(RSA_PKCS_PSS,		0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1),
+	MECHA(RSA_PKCS_OAEP,		0, 1, 1, 0, 0, 0, 0, 0, 1, 1, 0, 0, 1),
+	MECHA(RSA_9796,			0, 0, 0, 1, 1, 1, 1, 0, 1, 1, 0, 0, 1),
+	MECHA(RSA_X_509,		0, 1, 1, 1, 1, 1, 1, 0, 1, 1, 0, 0, 1),
+	MECHA(SHA1_RSA_PKCS,		0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 1, 0, 0),
+	MECHA(SHA1_RSA_PKCS_PSS,	0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0),
+	MECHA(SHA256_RSA_PKCS,		0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0),
+	MECHA(SHA384_RSA_PKCS,		0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0),
+	MECHA(SHA512_RSA_PKCS,		0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0),
+	MECHA(SHA256_RSA_PKCS_PSS,	0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0),
+	MECHA(SHA384_RSA_PKCS_PSS,	0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0),
+	MECHA(SHA512_RSA_PKCS_PSS,	0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0),
+	MECHA(SHA224_RSA_PKCS,		0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0),
+	MECHA(SHA224_RSA_PKCS_PSS,	0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0),
+	MECHA(RSA_AES_KEY_WRAP,		0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0),
 	/* Mechanism			Di|En|De|Si|Ve|Sr|Vr|Dr|Wr|Uw|Ge|Gp|1 */
-	SKS_M(MD5,			1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
-	SKS_M(SHA_1,			1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
-	SKS_M(SHA224,			1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
-	SKS_M(SHA256,			1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
-	SKS_M(SHA384,			1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
-	SKS_M(SHA512,			1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+	MECHA(MD5,			1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+	MECHA(SHA_1,			1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+	MECHA(SHA224,			1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+	MECHA(SHA256,			1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+	MECHA(SHA384,			1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+	MECHA(SHA512,			1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
 	/*
-	 * Mechanism			Di|En|De|Si|Ve|Sr|Vr|Dr|Wr|Uw|Ge|Gp|1
-	 *                              |   \_/   \_/   \_/  |   \_/  |  |  |
-	 *		Di: Digest -----'    |     |     |   |    |   |  |  |
-	 *		En|De: Encrypt/Decrypt     |     |   |    |   |  |  |
-	 *		Si|Ve: Sign/Verify --------'     |   |    |   |  |  |
-	 *		Sr|Vr: SignUpdate/VerifyRecover -'   |    |   |  |  |
-	 *				Dr: Derive ----------'    |   |  |  |
-	 *				Wr|Uw: Wrap/Unwrap -------'   |  |  |
-	 *				Ge: Generate secret value ----'  |  |
-	 *				Gp: Generate secret pair --------'  |
-	 *				1: One shot processing only --------'
+	 * Mechanism			 Di|En|De|Si|Ve|Sr|Vr|Dr|Wr|Uw|Ge|Gp|1
+	 *                               |   \_/   \_/   \_/  |   \_/  |  |  |
+	 *		Di: Digest ------'    |     |     |   |    |   |  |  |
+	 *		En|De: Encrypt/Decrypt'     |     |   |    |   |  |  |
+	 *		Si|Ve: Sign/Verify ---------'     |   |    |   |  |  |
+	 *		Sr|Vr: SignUpdate/VerifyRecover --'   |    |   |  |  |
+	 *				Dr: Derive -----------'    |   |  |  |
+	 *				Wr|Uw: Wrap/Unwrap --------'   |  |  |
+	 *				Ge: Generate secret value -----'  |  |
+	 *				Gp: Generate secret pair ---------'  |
+	 *				1: One shot processing only ---------'
 	 */
 };
 

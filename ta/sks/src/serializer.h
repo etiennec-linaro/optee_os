@@ -6,7 +6,7 @@
 #ifndef PKCS11_TA_SERIALIZER_H
 #define PKCS11_TA_SERIALIZER_H
 
-#include <sks_internal_abi.h>
+#include <pkcs11_internal_abi.h>
 #include <stdint.h>
 #include <stddef.h>
 #include <tee_internal_api.h>

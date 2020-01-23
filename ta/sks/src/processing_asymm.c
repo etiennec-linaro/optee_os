@@ -13,7 +13,7 @@
 #include "pkcs11_token.h"
 #include "processing.h"
 #include "serializer.h"
-#include "sks_helpers.h"
+#include "pkcs11_helpers.h"
 
 bool processing_is_tee_asymm(uint32_t proc_id)
 {

@@ -4,7 +4,7 @@
  */
 
 #include <assert.h>
-#include <sks_ta.h>
+#include <pkcs11_ta.h>
 #include <string.h>
 #include <string_ext.h>
 #include <sys/queue.h>
@@ -17,7 +17,7 @@
 #include "pkcs11_attributes.h"
 #include "processing.h"
 #include "serializer.h"
-#include "sks_helpers.h"
+#include "pkcs11_helpers.h"
 
 /* Provide 3 slots/tokens, ID is token index */
 #define TOKEN_COUNT	3

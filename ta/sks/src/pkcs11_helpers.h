@@ -6,7 +6,7 @@
 #ifndef PKCS11_TA_PKCS11_HELPERS_H
 #define PKCS11_TA_PKCS11_HELPERS_H
 
-#include <sks_ta.h>
+#include <pkcs11_ta.h>
 #include <stdint.h>
 #include <stddef.h>
 #include <tee_internal_api.h>

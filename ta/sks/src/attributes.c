@@ -4,7 +4,7 @@
  */
 
 #include <compiler.h>
-#include <sks_internal_abi.h>
+#include <pkcs11_internal_abi.h>
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
@@ -15,7 +15,7 @@
 #include <util.h>
 
 #include "attributes.h"
-#include "sks_helpers.h"
+#include "pkcs11_helpers.h"
 #include "serializer.h"
 
 uint32_t init_attributes_head(struct pkcs11_attrs_head **head)

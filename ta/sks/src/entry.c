@@ -4,7 +4,7 @@
  */
 
 #include <compiler.h>
-#include <sks_ta.h>
+#include <pkcs11_ta.h>
 #include <tee_internal_api.h>
 #include <tee_internal_api_extensions.h>
 #include <util.h>
@@ -13,7 +13,7 @@
 #include "object.h"
 #include "pkcs11_token.h"
 #include "processing.h"
-#include "sks_helpers.h"
+#include "pkcs11_helpers.h"
 
 /* Client session context: currently only use the allocated address */
 struct tee_session {

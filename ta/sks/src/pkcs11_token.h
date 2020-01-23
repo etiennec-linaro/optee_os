@@ -184,8 +184,6 @@ struct pkcs11_find_objects {
 /*
  * Structure tracking client applications
  *
- * TODO: rename pkcs11_client into sks_client
- *
  * @link - chained list of registered client applications
  * @sessions - list of the PKCS11 sessions opened by the client application
  */

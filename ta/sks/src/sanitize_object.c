@@ -3,8 +3,8 @@
  * Copyright (c) 2017-2020, Linaro Limited
  */
 
-#include <sks_internal_abi.h>
-#include <sks_ta.h>
+#include <pkcs11_internal_abi.h>
+#include <pkcs11_ta.h>
 #include <stdlib.h>
 #include <string.h>
 #include <util.h>
@@ -15,7 +15,7 @@
 #include "attributes.h"
 #include "sanitize_object.h"
 #include "serializer.h"
-#include "sks_helpers.h"
+#include "pkcs11_helpers.h"
 
 /*
  * Functions to generate a serialized object.

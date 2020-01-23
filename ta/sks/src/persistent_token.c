@@ -4,14 +4,14 @@
  */
 
 #include <assert.h>
-#include <sks_ta.h>
+#include <pkcs11_ta.h>
 #include <string.h>
 #include <string_ext.h>
 #include <tee_internal_api_extensions.h>
 #include <util.h>
 
 #include "pkcs11_token.h"
-#include "sks_helpers.h"
+#include "pkcs11_helpers.h"
 
 /*
  * Token persistent objects

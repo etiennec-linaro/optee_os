@@ -4,8 +4,8 @@
  */
 
 #include <assert.h>
-#include <sks_internal_abi.h>
-#include <sks_ta.h>
+#include <pkcs11_internal_abi.h>
+#include <pkcs11_ta.h>
 #include <string.h>
 #include <util.h>
 #include <tee_internal_api.h>
@@ -14,7 +14,7 @@
 #include "object.h"
 #include "pkcs11_attributes.h"
 #include "processing.h"
-#include "sks_helpers.h"
+#include "pkcs11_helpers.h"
 
 static const char __maybe_unused unknown[] = "<unknown-identifier>";
 

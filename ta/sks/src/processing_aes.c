@@ -12,7 +12,7 @@
 #include "pkcs11_token.h"
 #include "processing.h"
 #include "serializer.h"
-#include "sks_helpers.h"
+#include "pkcs11_helpers.h"
 
 uint32_t tee_init_ctr_operation(struct active_processing *processing,
 				    void *proc_params, size_t params_size)

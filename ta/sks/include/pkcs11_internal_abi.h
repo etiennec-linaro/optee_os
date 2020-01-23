@@ -8,7 +8,7 @@
 #define PKCS11_INTERNAL_ABI_H
 
 /* Internal format is based on the API IDs */
-#include <sks_ta.h>
+#include <pkcs11_ta.h>
 #include <stddef.h>
 
 

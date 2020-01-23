@@ -6,8 +6,8 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <inttypes.h>
-#include <sks_internal_abi.h>
-#include <sks_ta.h>
+#include <pkcs11_internal_abi.h>
+#include <pkcs11_ta.h>
 #include <string_ext.h>
 #include <tee_internal_api.h>
 #include <tee_internal_api_extensions.h>
@@ -21,7 +21,7 @@
 #include "processing.h"
 #include "sanitize_object.h"
 #include "serializer.h"
-#include "sks_helpers.h"
+#include "pkcs11_helpers.h"
 
 /* Byte size of CKA_ID attribute when generated locally */
 #define PKCS11_CKA_DEFAULT_SIZE		16

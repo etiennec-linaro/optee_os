@@ -7,11 +7,11 @@
 #define PKCS11_TA_ATTRIBUTES_H
 
 #include <assert.h>
-#include <sks_internal_abi.h>
+#include <pkcs11_internal_abi.h>
 #include <stdint.h>
 #include <stddef.h>
 
-#include "sks_helpers.h"
+#include "pkcs11_helpers.h"
 
 #ifdef PKCS11_SHEAD_WITH_BOOLPROPS
 static inline void set_attributes_in_head(struct pkcs11_attrs_head *head)

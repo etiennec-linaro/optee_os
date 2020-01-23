@@ -3,7 +3,7 @@
  * Copyright (c) 2017-2020, Linaro Limited
  */
 
-#include <sks_internal_abi.h>
+#include <pkcs11_internal_abi.h>
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
@@ -13,7 +13,7 @@
 #include <trace.h>
 
 #include "serializer.h"
-#include "sks_helpers.h"
+#include "pkcs11_helpers.h"
 
 /*
  * Util routines for serializes unformatted arguments in a client memref

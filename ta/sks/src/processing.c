@@ -4,8 +4,8 @@
  */
 
 #include <assert.h>
-#include <sks_internal_abi.h>
-#include <sks_ta.h>
+#include <pkcs11_internal_abi.h>
+#include <pkcs11_ta.h>
 #include <string.h>
 #include <tee_api_defines.h>
 #include <tee_internal_api.h>
@@ -18,7 +18,7 @@
 #include "pkcs11_attributes.h"
 #include "processing.h"
 #include "serializer.h"
-#include "sks_helpers.h"
+#include "pkcs11_helpers.h"
 
 static uint32_t get_ready_session(struct pkcs11_session **sess,
 				  uint32_t session_handle,

@@ -4,7 +4,7 @@
  */
 
 #include <inttypes.h>
-#include <sks_internal_abi.h>
+#include <pkcs11_internal_abi.h>
 #include <string_ext.h>
 #include <tee_internal_api.h>
 #include <tee_internal_api_extensions.h>
@@ -17,7 +17,7 @@
 #include "processing.h"
 #include "sanitize_object.h"
 #include "serializer.h"
-#include "sks_helpers.h"
+#include "pkcs11_helpers.h"
 
 struct pkcs11_object *pkcs11_handle2object(uint32_t handle,
 				     struct pkcs11_session *session)

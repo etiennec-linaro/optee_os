@@ -14,7 +14,7 @@
 
 #include "sks_helpers.h"
 
-#ifdef SKS_SHEAD_WITH_BOOLPROPS
+#ifdef PKCS11_SHEAD_WITH_BOOLPROPS
 static inline void set_attributes_in_head(struct pkcs11_attrs_head *head)
 {
 	head->boolproph |= SKS_BOOLPROPH_FLAG;
@@ -125,7 +125,7 @@ static inline size_t attributes_size(struct pkcs11_attrs_head *head)
 	return sizeof(struct pkcs11_attrs_head) + head->attrs_size;
 }
 
-#ifdef SKS_SHEAD_WITH_TYPE
+#ifdef PKCS11_SHEAD_WITH_TYPE
 static inline uint32_t get_class(struct pkcs11_attrs_head *head)
 {
 	return head->class;

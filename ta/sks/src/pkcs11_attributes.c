@@ -508,7 +508,7 @@ static uint32_t create_pkcs11_storage_attributes(struct pkcs11_attrs_head **out,
 	uint32_t rv = 0;
 
 	init_attributes_head(out);
-#ifdef SKS_SHEAD_WITH_BOOLPROPS
+#ifdef PKCS11_SHEAD_WITH_BOOLPROPS
 	set_attributes_in_head(*out);
 #endif
 

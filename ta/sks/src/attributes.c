@@ -25,7 +25,7 @@ uint32_t init_attributes_head(struct pkcs11_attrs_head **head)
 	if (!*head)
 		return PKCS11_MEMORY;
 
-#ifdef SKS_SHEAD_WITH_TYPE
+#ifdef PKCS11_SHEAD_WITH_TYPE
 	(*head)->class = PKCS11_CKO_UNDEFINED_ID;
 	(*head)->type = PKCS11_CKK_UNDEFINED_ID;
 #endif
@@ -33,15 +33,15 @@ uint32_t init_attributes_head(struct pkcs11_attrs_head **head)
 	return PKCS11_OK;
 }
 
-#if defined(SKS_SHEAD_WITH_TYPE) || defined(SKS_SHEAD_WITH_BOOLPROPS)
+#if defined(PKCS11_SHEAD_WITH_TYPE) || defined(PKCS11_SHEAD_WITH_BOOLPROPS)
 static bool attribute_is_in_head(uint32_t attribute)
 {
-#ifdef SKS_SHEAD_WITH_TYPE
+#ifdef PKCS11_SHEAD_WITH_TYPE
 	if (attribute == PKCS11_CKA_CLASS || sks_attr_is_type(attribute))
 		return true;
 #endif
 
-#ifdef SKS_SHEAD_WITH_BOOLPROPS
+#ifdef PKCS11_SHEAD_WITH_BOOLPROPS
 	if (sks_attr2boolprop_shift(attribute) >= 0)
 		return true;
 #endif
@@ -59,7 +59,7 @@ uint32_t add_attribute(struct pkcs11_attrs_head **head,
 	char **bstart = (void *)head;
 	int __maybe_unused shift = 0;
 
-#ifdef SKS_SHEAD_WITH_TYPE
+#ifdef PKCS11_SHEAD_WITH_TYPE
 	if (attribute == PKCS11_CKA_CLASS || sks_attr_is_type(attribute)) {
 		assert(size == sizeof(uint32_t));
 
@@ -71,7 +71,7 @@ uint32_t add_attribute(struct pkcs11_attrs_head **head,
 	}
 #endif
 
-#ifdef SKS_SHEAD_WITH_BOOLPROPS
+#ifdef PKCS11_SHEAD_WITH_BOOLPROPS
 	shift = sks_attr2boolprop_shift(attribute);
 	if (head_contains_boolprops(*head) && shift >= 0) {
 		uint32_t mask = shift < 32 ? BIT(shift) : BIT(shift - 32);
@@ -120,7 +120,7 @@ uint32_t remove_attribute(struct pkcs11_attrs_head **head, uint32_t attribute)
 	char *end = NULL;
 	size_t next_off = 0;
 
-#ifdef SKS_SHEAD_WITH_BOOLPROPS
+#ifdef PKCS11_SHEAD_WITH_BOOLPROPS
 	/* Can't remove an attribute that is defined in the head */
 	if (head_contains_boolprops(*head) && attribute_is_in_head(attribute)) {
 		EMSG("Can't remove attribute from the head");
@@ -162,7 +162,7 @@ uint32_t remove_attribute_check(struct pkcs11_attrs_head **head, uint32_t attrib
 	size_t next_off = 0;
 	size_t found = 0;
 
-#ifdef SKS_SHEAD_WITH_BOOLPROPS
+#ifdef PKCS11_SHEAD_WITH_BOOLPROPS
 	/* Can't remove an attribute that is defined in the head */
 	if (head_contains_boolprops(*head) && attribute_is_in_head(attribute)) {
 		EMSG("Can't remove attribute from the head");
@@ -222,7 +222,7 @@ void get_attribute_ptrs(struct pkcs11_attrs_head *head, uint32_t attribute,
 	void **attr_ptr = attr;
 	uint32_t *attr_size_ptr = attr_size;
 
-#ifdef SKS_SHEAD_WITH_BOOLPROPS
+#ifdef PKCS11_SHEAD_WITH_BOOLPROPS
 	/* Can't return a pointer to a boolprop attribute */
 	if (head_contains_boolprops(head) && attribute_is_in_head(attribute)) {
 		EMSG("Can't get pointer to an attribute in the head");
@@ -269,7 +269,7 @@ uint32_t get_attribute_ptr(struct pkcs11_attrs_head *head, uint32_t attribute,
 {
 	size_t count = 1;
 
-#ifdef SKS_SHEAD_WITH_TYPE
+#ifdef PKCS11_SHEAD_WITH_TYPE
 	if (attribute == PKCS11_CKA_CLASS) {
 		if (attr_size)
 			*attr_size = sizeof(uint32_t);
@@ -287,7 +287,7 @@ uint32_t get_attribute_ptr(struct pkcs11_attrs_head *head, uint32_t attribute,
 		return PKCS11_OK;
 	}
 #endif
-#ifdef SKS_SHEAD_WITH_BOOLPROPS
+#ifdef PKCS11_SHEAD_WITH_BOOLPROPS
 	if (head_contains_boolprops(head) &&
 	    sks_attr2boolprop_shift(attribute) >= 0)
 		TEE_Panic(0);
@@ -313,7 +313,7 @@ uint32_t get_attribute(struct pkcs11_attrs_head *head, uint32_t attribute,
 	uint8_t __maybe_unused bbool = 0;
 	int __maybe_unused shift = 0;
 
-#ifdef SKS_SHEAD_WITH_TYPE
+#ifdef PKCS11_SHEAD_WITH_TYPE
 	if (attribute == PKCS11_CKA_CLASS) {
 		size = sizeof(uint32_t);
 		attr_ptr = &head->class;
@@ -327,7 +327,7 @@ uint32_t get_attribute(struct pkcs11_attrs_head *head, uint32_t attribute,
 	}
 #endif
 
-#ifdef SKS_SHEAD_WITH_BOOLPROPS
+#ifdef PKCS11_SHEAD_WITH_BOOLPROPS
 	shift = sks_attr2boolprop_shift(attribute);
 	if (head_contains_boolprops(head) && shift >= 0) {
 		uint32_t *boolprop = NULL;
@@ -369,7 +369,7 @@ bool get_bool(struct pkcs11_attrs_head *head, uint32_t attribute)
 	uint32_t size = sizeof(bbool);
 	int __maybe_unused shift = 0;
 
-#ifdef SKS_SHEAD_WITH_BOOLPROPS
+#ifdef PKCS11_SHEAD_WITH_BOOLPROPS
 	shift = sks_attr2boolprop_shift(attribute);
 	if (shift < 0)
 		TEE_Panic(PKCS11_NOT_FOUND);
@@ -403,7 +403,7 @@ bool attributes_match_reference(struct pkcs11_attrs_head *candidate,
 		return false;
 	}
 
-#ifdef SKS_SHEAD_WITH_BOOLPROPS
+#ifdef PKCS11_SHEAD_WITH_BOOLPROPS
 	/*
 	 * All boolprops attributes must be explicitly defined
 	 * as an attribute reference in the reference object.
@@ -548,7 +548,7 @@ static uint32_t __trace_attributes(char *prefix, void *src, void *end)
 	return PKCS11_OK;
 }
 
-#ifdef SKS_SHEAD_WITH_BOOLPROPS
+#ifdef PKCS11_SHEAD_WITH_BOOLPROPS
 static void trace_boolprops(const char *prefix, struct pkcs11_attrs_head *head)
 {
 	size_t __maybe_unused n = 0;
@@ -581,13 +581,13 @@ uint32_t trace_attributes(const char *prefix, void *ref)
 	IMSG_RAW("%s,--- (serial object) Attributes list --------", pre);
 	IMSG_RAW("%s| %" PRIu32 " item(s) - %" PRIu32 " bytes",
 		pre, head.attrs_count, head.attrs_size);
-#ifdef SKS_SHEAD_WITH_TYPE
+#ifdef PKCS11_SHEAD_WITH_TYPE
 	IMSG_RAW("%s| class (0x%" PRIx32 ") %s type (0x%" PRIx32 ") %s",
 		 pre, head.class, id2str_class(head.class),
 		 head.type, id2str_type(head.type, head.class));
 #endif
 
-#ifdef SKS_SHEAD_WITH_BOOLPROPS
+#ifdef PKCS11_SHEAD_WITH_BOOLPROPS
 	if (head_contains_boolprops(&head))
 		trace_boolprops(pre, &head);
 #endif

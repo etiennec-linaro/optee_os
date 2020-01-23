@@ -47,11 +47,11 @@ struct pkcs11_ref {
 struct pkcs11_attrs_head {
 	uint32_t attrs_size;
 	uint32_t attrs_count;
-#ifdef SKS_SHEAD_WITH_TYPE
+#ifdef PKCS11_SHEAD_WITH_TYPE
 	uint32_t class;
 	uint32_t type;
 #endif
-#ifdef SKS_SHEAD_WITH_BOOLPROPS
+#ifdef PKCS11_SHEAD_WITH_BOOLPROPS
 	uint32_t boolpropl;
 	uint32_t boolproph;
 #endif

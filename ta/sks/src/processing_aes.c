@@ -61,7 +61,7 @@ void tee_release_ctr_operation(struct active_processing *processing __unused)
  * Authenticated ciphering: (CCM / GCM)
  *
  * As per PKCS#11, CCM/GCM decrypt shall not revealed the data until the
- * decryption is completed and the mac verified. The SKS TA must retain the
+ * decryption is completed and the mac verified. The PKCS11 TA must retain the
  * ciphered data until the CCM finalization. To do so, arrays of decrypted
  * data are allocated during AE update processing and copied into client
  * buffer at AE finalization.

@@ -316,7 +316,7 @@ struct ck_token *init_token_db(unsigned int token_id)
 		uint32_t size = 0;
 		size_t idx = 0;
 
-		IMSG("SKSt%u: load db", token_id);
+		IMSG("PKCS11 token %u: load db", token_id);
 
 		size = sizeof(*db_main);
 		res = TEE_ReadObjectData(db_hdl, db_main, size, &size);
@@ -360,7 +360,7 @@ struct ck_token *init_token_db(unsigned int token_id)
 
 	} else if (res == TEE_ERROR_ITEM_NOT_FOUND) {
 
-		IMSG("SKSt%u: init db", token_id);
+		IMSG("PKCS11 token %u: init db", token_id);
 
 		TEE_MemFill(db_main, 0, sizeof(*db_main));
 		TEE_MemFill(db_main->label, '*', sizeof(db_main->label));

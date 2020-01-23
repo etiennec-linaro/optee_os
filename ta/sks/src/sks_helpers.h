@@ -44,7 +44,7 @@ bool pkcs2tee_load_attr(TEE_Attribute *tee_ref, uint32_t tee_id,
 			struct pkcs11_object *obj, uint32_t pkcs11_id);
 
 /*
- * Convert SKS return code into a GPD TEE result ID when matching.
+ * Convert PKCS11 TA return code into a GPD TEE result ID when matching.
  * If not, return a TEE success (_noerr) or generic error (_error).
  */
 TEE_Result pkcs2tee_noerr(uint32_t rv);

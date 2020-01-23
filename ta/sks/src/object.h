@@ -42,7 +42,7 @@ void destroy_object(struct pkcs11_session *session, struct pkcs11_object *object
 		    bool session_object_only);
 
 /*
- * Entry function called from the SKS command parser
+ * Entry function called from the PKCS11 command parser
  */
 uint32_t entry_destroy_object(uintptr_t teesess, TEE_Param *ctrl,
 			      TEE_Param *in, TEE_Param *out);

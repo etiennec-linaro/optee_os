@@ -301,7 +301,7 @@ uint32_t entry_ck_token_initialize(TEE_Param *ctrl,
 		return PKCS11_CKR_SLOT_ID_INVALID;
 
 	if (token->db_main->flags & PKCS11_CKFT_SO_PIN_LOCKED) {
-		IMSG("SKSt%u: SO PIN locked", token_id);
+		IMSG("Token %"PRIu32": SO PIN locked", token_id);
 		return PKCS11_CKR_PIN_LOCKED;
 	}
 
@@ -382,7 +382,7 @@ inited:
 	update_persistent_db(token, 0, sizeof(*token->db_main));
 
 	label[PKCS11_TOKEN_LABEL_SIZE] = '\0';
-	IMSG("SKSt%" PRIu32 ": initialized \"%s\"", token_id, label);
+	IMSG("PKCS11 token %"PRIu32": initialized \"%s\"", token_id, label);
 
 	TEE_Free(cpin);
 
@@ -581,9 +581,9 @@ uint32_t entry_ck_token_mecha_ids(TEE_Param *ctrl,
 
 #ifdef DEBUG
 	for (count = 0; count < mechanisms_count; count++) {
-		IMSG("SKSt%" PRIu32 ": mechanism 0x%04" PRIx32 ": %s",
-			token_id, ((uint32_t *)out->memref.buffer)[count],
-			id2str_proc(((uint32_t *)out->memref.buffer)[count]));
+		IMSG("PKCS11 token %"PRIu32": mechanism 0x%04"PRIx32": %s",
+		     token_id, ((uint32_t *)out->memref.buffer)[count],
+		     id2str_proc(((uint32_t *)out->memref.buffer)[count]));
 	}
 #endif
 
@@ -834,7 +834,7 @@ uint32_t entry_ck_token_mecha_info(TEE_Param *ctrl,
 
 	out->memref.size = sizeof(struct pkcs11_mechanism_info);
 
-	IMSG("SKSt%" PRIu32 ": mechanism 0x%" PRIx32 " info", token_id, type);
+	IMSG("PKCS11 token %"PRIu32": mechanism 0x%"PRIx32" info", token_id, type);
 
 	return PKCS11_OK;
 }
@@ -1031,7 +1031,7 @@ static uint32_t open_ck_session(uintptr_t tee_session, TEE_Param *ctrl,
 	*(uint32_t *)out->memref.buffer = session->handle;
 	out->memref.size = sizeof(uint32_t);
 
-	IMSG("SKSs%" PRIu32 ": open", session->handle);
+	IMSG("PKCS11 session %"PRIu32": open", session->handle);
 
 	return PKCS11_OK;
 }
@@ -1074,7 +1074,7 @@ static void close_ck_session(struct pkcs11_session *session)
 
 	TEE_Free(session);
 
-	IMSG("SKSs%" PRIu32 ": close", session->handle);
+	IMSG("PKCS11 session %"PRIu32": close", session->handle);
 }
 
 /* ctrl=[session-handle], in=unused, out=unused */
@@ -1132,7 +1132,7 @@ uint32_t entry_ck_token_close_all(uintptr_t tee_session, TEE_Param *ctrl,
 	if (!token)
 		return PKCS11_CKR_SLOT_ID_INVALID;
 
-	IMSG("SKSt%" PRIu32 ": close sessions", token_id);
+	IMSG("PKCS11 sesssion %"PRIu32": close sessions", token_id);
 
 	TAILQ_FOREACH_SAFE(session, &client->session_list, link, next) {
 		if (session->token == token)
@@ -1254,7 +1254,7 @@ uint32_t entry_init_pin(uintptr_t tee_session, TEE_Param *ctrl,
 
 	assert(session->token->db_main->flags & PKCS11_CKFT_TOKEN_INITIALIZED);
 
-	IMSG("SKSs%" PRIu32 ": init PIN", session_handle);
+	IMSG("PKCS11 session %"PRIu32": init PIN", session_handle);
 
 	return set_pin(session, pin, pin_size, PKCS11_CKU_USER);
 }
@@ -1484,7 +1484,7 @@ uint32_t entry_set_pin(uintptr_t tee_session, TEE_Param *ctrl,
 	if (rv)
 		return rv;
 
-	IMSG("SKSs%" PRIu32 ": set PIN", session_handle);
+	IMSG("PKCS11 session %"PRIu32": set PIN", session_handle);
 
 	return set_pin(session, pin, pin_size, PKCS11_CKU_USER);
 }
@@ -1603,7 +1603,7 @@ uint32_t entry_login(uintptr_t tee_session, TEE_Param *ctrl,
 	}
 
 	if (!rv)
-		IMSG("SKSs%" PRIu32 ": login", session_handle);
+		IMSG("PKCS11 session %"PRIu32": login", session_handle);
 
 	return rv;
 }
@@ -1637,7 +1637,7 @@ uint32_t entry_logout(uintptr_t tee_session, TEE_Param *ctrl,
 
 	session_logout(session);
 
-	IMSG("SKSs%" PRIu32 ": logout", session_handle);
+	IMSG("PKCS11 session %"PRIu32": logout", session_handle);
 
 	return PKCS11_OK;
 }

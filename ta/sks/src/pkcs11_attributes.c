@@ -1496,7 +1496,7 @@ bool object_is_private(struct pkcs11_attrs_head *head)
  *
  * @attrs1 - Object
  * @attrs2 - Object paired to attrs1 or NULL
- * Return an SKS return code
+ * Return an PKCS11 return code
  */
 uint32_t add_missing_attribute_id(struct pkcs11_attrs_head **attrs1,
 				  struct pkcs11_attrs_head **attrs2)

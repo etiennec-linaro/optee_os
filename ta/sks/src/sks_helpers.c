@@ -84,7 +84,7 @@ static const struct attr_size attr_ids[] = {
 	PKCS11_ID_SZ(PKCS11_CKA_DESTROYABLE, 1),
 	PKCS11_ID_SZ(PKCS11_CKA_ALWAYS_AUTHENTICATE, 1),
 	PKCS11_ID_SZ(PKCS11_CKA_WRAP_WITH_TRUSTED, 1),
-	/* Specific SKS attribute IDs */
+	/* Specific PKCS11 TA internal attribute ID */
 	PKCS11_ID_SZ(PKCS11_CKA_UNDEFINED_ID, 0),
 	PKCS11_ID_SZ(PKCS11_CKA_EC_POINT_X, 0),
 	PKCS11_ID_SZ(PKCS11_CKA_EC_POINT_Y, 0),
@@ -373,7 +373,7 @@ static const struct string_id __maybe_unused string_functions[] = {
 };
 
 /*
- * Helper functions to analyse SKS identifiers
+ * Helper functions to analyse PKCS11 TA identifiers
  */
 
 size_t pkcs11_attr_is_class(uint32_t attribute_id)
@@ -434,7 +434,7 @@ int pkcs11_attr2boolprop_shift(uint32_t attr)
 }
 
 /*
- * Conversion between SKS and GPD TEE return codes
+ * Conversion between PKCS11 TA and GPD TEE return codes
  */
 
 TEE_Result pkcs2tee_error(uint32_t rv)
@@ -597,7 +597,7 @@ size_t get_supported_mechanisms(uint32_t *array, size_t array_count)
 	return m;
 }
 
-/* Initialize a TEE attribute for a target SKS attribute in an object */
+/* Initialize a TEE attribute for a target PKCS11 TA attribute in an object */
 bool pkcs2tee_load_attr(TEE_Attribute *tee_ref, uint32_t tee_id,
 			struct pkcs11_object *obj, uint32_t pkcs11_id)
 {
@@ -634,7 +634,7 @@ bool pkcs2tee_load_attr(TEE_Attribute *tee_ref, uint32_t tee_id,
 	return true;
 }
 
-/* Easy conversion between SKS function of TEE crypto mode */
+/* Easy conversion between PKCS11 TA function of TEE crypto mode */
 void pkcs2tee_mode(uint32_t *tee_id, uint32_t function)
 {
 	switch (function) {
@@ -660,7 +660,7 @@ void pkcs2tee_mode(uint32_t *tee_id, uint32_t function)
 
 #if CFG_TEE_TA_LOG_LEVEL > 0
 /*
- * Convert a SKS ID into its label string
+ * Convert a PKCS11 TA ID into its label string
  */
 const char *id2str_attr(uint32_t id)
 {

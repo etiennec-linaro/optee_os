@@ -14,7 +14,7 @@ struct pkcs11_object;
 struct active_processing;
 
 /*
- * Entry points from SKS TA invocation commands
+ * Entry points from PKCS11 TA invocation commands
  */
 
 uint32_t entry_import_object(uintptr_t teesess, TEE_Param *ctrl,

@@ -102,10 +102,10 @@ out:
 }
 
 /*
- * destroy_object - destroy an SKS object
+ * destroy_object - destroy an PKCS11 TA object
  *
  * @session - session requesting object destruction
- * @object - reference to the sks object
+ * @object - reference to the PKCS11 TA object
  * @session_object_only - true is only session object shall be destroyed
  */
 void destroy_object(struct pkcs11_session *session,
@@ -178,7 +178,7 @@ struct pkcs11_object *create_token_object_instance(struct pkcs11_attrs_head *hea
 }
 
 /*
- * create_object - create an SKS object from its attributes and value
+ * create_object - create an PKCS11 TA object from its attributes and value
  *
  * @session - session requesting object creation
  * @attributes - reference to serialized attributes
@@ -304,7 +304,7 @@ uint32_t entry_destroy_object(uintptr_t tee_session, TEE_Param *ctrl,
 	destroy_object(session, object, false);
 	handle_put(&session->object_handle_db, object_handle);
 
-	IMSG("SKSs%" PRIu32 ": destroy object 0x%" PRIx32,
+	IMSG("PKCS11 session %"PRIu32": destroy object 0x%"PRIx32,
 	     session_handle, object_handle);
 
 	return rv;
@@ -655,7 +655,7 @@ uint32_t entry_find_objects(uintptr_t tee_session, TEE_Param *ctrl,
 	/* Update output buffer according the number of handles provided */
 	out->memref.size = count * sizeof(uint32_t);
 
-	IMSG("SKSs%" PRIu32 ": finding objects", session_handle);
+	IMSG("PKCS11 session %"PRIu32": finding objects", session_handle);
 
 	return PKCS11_OK;
 }
@@ -844,7 +844,7 @@ uint32_t entry_get_attribute_value(uintptr_t tee_session, TEE_Param *ctrl,
 	/* Move updated template to out buffer */
 	TEE_MemMove(out->memref.buffer, template, out->memref.size);
 
-	IMSG("SKSs%" PRIu32 ": get attributes 0x%" PRIx32,
+	IMSG("PKCS11 session %"PRIu32": get attributes 0x%"PRIx32,
 	     session_handle, object_handle);
 
 bail:

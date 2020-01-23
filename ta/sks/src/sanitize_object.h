@@ -24,11 +24,11 @@ bool sanitize_consistent_class_and_type(struct pkcs11_attrs_head *attrs);
  * @size - byte size of the serialized binary blob
  *
  * This function copies an attribute list from a client API attribute head
- * into a SKS internal attribute structure. It generates a serialized attribute
+ * into a PKCS11 TA internal attribute structure. It generates a serialized attribute
  * list with a consistent format and identified attribute IDs.
  *
- * ref points to a blob starting with a sks head.
- * ref may pointer to an unaligned address.
+ * @head points to a blob starting with a pkcs11 attribute header.
+ * @head may pointer to an unaligned address.
  * This function allocates, fill and returns a serialized attribute list
  * into a serializer container.
  */

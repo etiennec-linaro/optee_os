@@ -218,7 +218,7 @@ uint32_t entry_import_object(uintptr_t tee_session,
 	TEE_MemMove(out->memref.buffer, &obj_handle, sizeof(uint32_t));
 	out->memref.size = sizeof(uint32_t);
 
-	IMSG("SKSs%" PRIu32 ": import object 0x%" PRIx32,
+	IMSG("PKCS11 session %"PRIu32": import object 0x%"PRIx32,
 	     session_handle, obj_handle);
 
 bail:
@@ -417,7 +417,7 @@ uint32_t entry_generate_secret(uintptr_t tee_session,
 	TEE_MemMove(out->memref.buffer, &obj_handle, sizeof(uint32_t));
 	out->memref.size = sizeof(uint32_t);
 
-	IMSG("SKSs%" PRIu32 ": generate secret 0x%" PRIx32,
+	IMSG("PKCS11 session %"PRIu32": generate secret 0x%"PRIx32,
 	     session_handle, obj_handle);
 
 bail:
@@ -625,7 +625,7 @@ uint32_t entry_generate_key_pair(uintptr_t teesess,
 	TEE_MemMove(hdl_ptr + 1, &privkey_handle, sizeof(uint32_t));
 	out->memref.size = 2 * sizeof(uint32_t);
 
-	IMSG("SKSs%" PRIu32 ": create key pair 0x%" PRIx32 "/0x%" PRIx32,
+	IMSG("PKCS11 session %"PRIu32": create key pair 0x%"PRIx32"/0x%"PRIx32,
 	     session_handle, privkey_handle, pubkey_handle);
 
 bail:
@@ -714,7 +714,7 @@ uint32_t entry_processing_init(uintptr_t tee_session, TEE_Param *ctrl,
 	}
 	if (rv == PKCS11_OK) {
 		session->processing->mecha_type = proc_params->id;
-		IMSG("SKSs%" PRIu32 ": init processing %s %s",
+		IMSG("PKCS11 session %"PRIu32": init processing %s %s",
 		     session_handle, id2str_proc(proc_params->id),
 		     id2str_function(function));
 	}
@@ -783,7 +783,7 @@ uint32_t entry_processing_step(uintptr_t tee_session, TEE_Param *ctrl,
 	}
 	if (rv == PKCS11_OK) {
 		session->processing->updated = true;
-		IMSG("SKSs%" PRIu32 ": processing %s %s",
+		IMSG("PKCS11 session%"PRIu32": processing %s %s",
 		     session_handle, id2str_proc(mecha_type),
 		     id2str_function(function));
 	}
@@ -860,7 +860,7 @@ uint32_t entry_verify_oneshot(uintptr_t tee_session, TEE_Param *ctrl,
 		rv = step_asymm_operation(session, function, step, in, in2);
 	}
 
-	IMSG("SKSs%" PRIu32 ": verify %s %s: %s", session_handle,
+	IMSG("PKCS11 session %"PRIu32": verify %s %s: %s", session_handle,
 	     id2str_proc(mecha_type), id2str_function(function),
 	     id2str_rc(rv));
 
@@ -1034,7 +1034,7 @@ uint32_t entry_derive_key(uintptr_t tee_session, TEE_Param *ctrl,
 	TEE_MemMove(out->memref.buffer, &out_handle, sizeof(uint32_t));
 	out->memref.size = sizeof(uint32_t);
 
-	IMSG("SKSs%" PRIu32 ": derive key Ox%" PRIx32 ", %s",
+	IMSG("PKCS11 session %"PRIu32": derive key Ox%"PRIx32", %s",
 	     session_handle, out_handle, id2str_proc(mecha_id));
 
 bail:

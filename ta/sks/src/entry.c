@@ -91,7 +91,7 @@ static uint32_t entry_ping(TEE_Param *ctrl, TEE_Param *in, TEE_Param *out)
 }
 
 /*
- * Entry point for SKS TA commands
+ * Entry point for PKCS11 TA commands
  *
  * ABI: param#0 is the control buffer with serialized arguments.
  *	param#1 is an input/output data buffer
@@ -362,18 +362,18 @@ TEE_Result TA_InvokeCommandEntryPoint(void *tee_session, uint32_t cmd,
 
 		res = pkcs2tee_noerr(rc);
 
-		DMSG("SKS TA exit: %s rc 0x%08" PRIx32 "/%s",
-			id2str_ta_cmd(cmd), rc, id2str_rc(rc));
+		DMSG("PKCS11 TA exit: %s rc 0x%08"PRIx32"/%s",
+		     id2str_ta_cmd(cmd), rc, id2str_rc(rc));
 	} else {
 		res = pkcs2tee_error(rc);
-		DMSG("SKS TA exit: %s rc 0x%08" PRIx32 "/%s, TEE rc %" PRIx32,
-			id2str_ta_cmd(cmd), rc, id2str_rc(rc), res);
+		DMSG("PKCS11 TA exit: %s rc 0x%08"PRIx32"/%s, TEE rc %"PRIx32,
+		     id2str_ta_cmd(cmd), rc, id2str_rc(rc), res);
 	}
 
 	return res;
 
 bad_types:
-	DMSG("Bad parameter types used at SKS TA entry:");
+	DMSG("Bad parameter types used at PKCS11 TA entry:");
 	DMSG("- parameter #0: formatted input request buffer or none");
 	DMSG("- parameter #1: processed input data buffer or none");
 	DMSG("- parameter #2: processed output data buffer or none");

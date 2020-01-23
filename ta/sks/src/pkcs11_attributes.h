@@ -38,7 +38,7 @@
  * - client provides a attributes list template, pkcs11 complete with default
  *   attribute values. Object is created if attributes are consistent and
  *   comply token/session stte.
- * - SKS sequence:
+ * - PKCS11 sequence:
  *   - check/set token/session state
  *   - create a attribute list from client template and default values.
  *   - check new secret attributes complies requested mechanism .
@@ -61,7 +61,7 @@
 
  * Case 3: Use a secret for data processing
  * - client provides a mechanism ID and the secret handle.
- * - SKS checks mechanism and secret comply, if mechanism and token/session
+ * - PKCS11 checks mechanism and secret comply, if mechanism and token/session
  *   state comply and last if secret and token/session state comply.
  *   - check/set token/session state
  *   - check secret's parent attributes complies requested processing.
@@ -73,9 +73,9 @@
  * Case 4: Create a secret from a client template and a secret's parent
  * (i.e derive a symmetric key)
  * - client args: new-key template, mechanism ID, parent-key handle.
- * - SKS create a new-key attribute list based on template + default values +
+ * - PKCS11 create a new-key attribute list based on template + default values +
  *   inheritance from the parent key attributes.
- * - SKS checks:
+ * - PKCS11 checks:
  *   - token/session state
  *   - parent-key vs mechanism
  *   - parent-key vs token/session state

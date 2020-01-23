@@ -150,8 +150,8 @@ static uint32_t pkcs2tee_algorithm(uint32_t *tee_id,
 static uint32_t pkcs2tee_key_type(uint32_t *tee_type, struct pkcs11_object *obj,
 				 enum processing_func function)
 {
-	uint32_t class = get_class(obj->attributes);
-	uint32_t type = get_type(obj->attributes);
+	enum pkcs11_class_id class = get_class(obj->attributes);
+	enum pkcs11_key_type type = get_type(obj->attributes);
 
 	switch (class) {
 	case PKCS11_CKO_PUBLIC_KEY:
@@ -222,8 +222,8 @@ static uint32_t load_tee_key(struct pkcs11_session *session,
 	size_t object_size = 0;
 	uint32_t rv = 0;
 	TEE_Result res = TEE_ERROR_GENERIC;
-	uint32_t __maybe_unused class = get_class(obj->attributes);
-	uint32_t type = get_type(obj->attributes);
+	enum pkcs11_class_id __maybe_unused class = get_class(obj->attributes);
+	enum pkcs11_key_type type = get_type(obj->attributes);
 
 	assert(class == PKCS11_CKO_PUBLIC_KEY ||
 	       class == PKCS11_CKO_PRIVATE_KEY);

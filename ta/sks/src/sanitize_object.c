@@ -25,8 +25,8 @@
 
 bool sanitize_consistent_class_and_type(struct pkcs11_attrs_head *attrs)
 {
-	uint32_t class = get_class(attrs);
-	uint32_t type = get_type(attrs);
+	enum pkcs11_class_id class = get_class(attrs);
+	enum pkcs11_key_type type = get_type(attrs);
 
 	switch (class) {
 	case PKCS11_CKO_DATA:
@@ -240,7 +240,7 @@ static uint32_t sanitize_indirect_attr(struct pkcs11_attrs_head **dst,
 {
 	struct pkcs11_attrs_head *obj2 = NULL;
 	uint32_t rc = 0;
-	uint32_t class = get_class(*dst);
+	enum pkcs11_class_id class = get_class(*dst);
 
 	if (class == PKCS11_CKO_UNDEFINED_ID)
 		return PKCS11_ERROR;

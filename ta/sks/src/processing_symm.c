@@ -100,9 +100,7 @@ static uint32_t pkcs2tee_key_type(uint32_t *tee_type, struct pkcs11_object *obj)
 	};
 	const size_t last = sizeof(pkcs2tee_key_type) / (2 * sizeof(uint32_t));
 	size_t n = 0;
-	uint32_t type = 0;
-
-	type = get_type(obj->attributes);
+	enum pkcs11_key_type type = get_type(obj->attributes);
 
 	assert(get_class(obj->attributes) == PKCS11_CKO_SECRET_KEY);
 

@@ -388,7 +388,9 @@ size_t pkcs11_attr_is_class(uint32_t attribute_id)
 
 size_t pkcs11_attr_is_type(uint32_t attribute_id)
 {
-	switch (attribute_id) {
+	enum pkcs11_attr_id id = attribute_id;
+
+	switch (id) {
 	case PKCS11_CKA_KEY_TYPE:
 	case PKCS11_CKA_MECHANISM_TYPE:
 		return sizeof(uint32_t);
@@ -399,7 +401,9 @@ size_t pkcs11_attr_is_type(uint32_t attribute_id)
 
 bool pkcs11_class_has_type(uint32_t class)
 {
-	switch (class) {
+	enum pkcs11_class_id class_id = class;
+
+	switch (class_id) {
 	case PKCS11_CKO_CERTIFICATE:
 	case PKCS11_CKO_PUBLIC_KEY:
 	case PKCS11_CKO_PRIVATE_KEY:
@@ -414,13 +418,15 @@ bool pkcs11_class_has_type(uint32_t class)
 
 bool pkcs11_attr_class_is_key(uint32_t class)
 {
-	switch (class) {
+	enum pkcs11_class_id class_id = class;
+
+	switch (class_id) {
 	case PKCS11_CKO_SECRET_KEY:
 	case PKCS11_CKO_PUBLIC_KEY:
 	case PKCS11_CKO_PRIVATE_KEY:
-		return 1;
+		return true;
 	default:
-		return 0;
+		return false;
 	}
 }
 
@@ -439,9 +445,11 @@ int pkcs11_attr2boolprop_shift(uint32_t attr)
  * Conversion between PKCS11 TA and GPD TEE return codes
  */
 
-TEE_Result pkcs2tee_error(uint32_t rv)
+TEE_Result pkcs2tee_error(uint32_t rc)
 {
-	switch (rv) {
+	enum pkcs11_rc rc_id = rc;
+
+	switch (rc_id) {
 	case PKCS11_CKR_OK:
 		return TEE_SUCCESS;
 
@@ -461,7 +469,9 @@ TEE_Result pkcs2tee_error(uint32_t rv)
 
 TEE_Result pkcs2tee_noerr(uint32_t rc)
 {
-	switch (rc) {
+	enum pkcs11_rc rc_id = rc;
+
+	switch (rc_id) {
 	case PKCS11_CKR_ARGUMENTS_BAD:
 		return TEE_ERROR_BAD_PARAMETERS;
 
@@ -519,7 +529,9 @@ bool valid_pkcs11_attribute_id(uint32_t id, uint32_t size)
 
 bool key_type_is_symm_key(uint32_t id)
 {
-	switch (id) {
+	enum pkcs11_key_type key_type = id;
+
+	switch (key_type) {
 	case PKCS11_CKK_AES:
 	case PKCS11_CKK_GENERIC_SECRET:
 	case PKCS11_CKK_MD5_HMAC:
@@ -536,7 +548,9 @@ bool key_type_is_symm_key(uint32_t id)
 
 bool key_type_is_asymm_key(uint32_t id)
 {
-	switch (id) {
+	enum pkcs11_key_type key_type = id;
+
+	switch (key_type) {
 	case PKCS11_CKK_EC:
 	case PKCS11_CKK_RSA:
 		return true;
@@ -734,11 +748,14 @@ const char *id2str_class(uint32_t id)
 
 const char *id2str_type(uint32_t id, uint32_t class)
 {
-	switch (class) {
+	enum pkcs11_class_id class_id = class;
+	enum pkcs11_key_type key_type = id;
+
+	switch (class_id) {
 	case PKCS11_CKO_SECRET_KEY:
 	case PKCS11_CKO_PUBLIC_KEY:
 	case PKCS11_CKO_PRIVATE_KEY:
-		return id2str_key_type(id);
+		return id2str_key_type(key_type);
 	default:
 		return unknown;
 	}

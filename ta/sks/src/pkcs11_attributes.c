@@ -512,7 +512,7 @@ static uint32_t create_pkcs11_storage_attributes(struct pkcs11_attrs_head **out,
 	uint32_t const *optional = &pkcs11_any_object_optional[0];
 	size_t boolprops_count = ARRAY_SIZE(pkcs11_any_object_boolprops);
 	size_t optional_count = ARRAY_SIZE(pkcs11_any_object_optional);
-	uint32_t class = 0;
+	enum pkcs11_class_id class = 0;
 	uint32_t rv = 0;
 
 	init_attributes_head(out);
@@ -1119,8 +1119,9 @@ uint32_t check_created_attrs_against_processing(uint32_t proc_id,
 	return PKCS11_OK;
 }
 
-void pkcs11_max_min_key_size(uint32_t key_type, uint32_t *max_key_size,
-			     uint32_t *min_key_size, bool bit_size_only)
+void pkcs11_max_min_key_size(enum pkcs11_key_type key_type,
+			     uint32_t *max_key_size, uint32_t *min_key_size,
+			     bool bit_size_only)
 {
 	uint32_t mult = bit_size_only ? 8 : 1;
 
@@ -1346,8 +1347,8 @@ uint32_t check_parent_attrs_against_processing(uint32_t proc_id,
 					       struct pkcs11_attrs_head *head)
 {
 	uint32_t __maybe_unused rc = 0;
-	uint32_t key_class = get_class(head);
-	uint32_t key_type = get_type(head);
+	enum pkcs11_class_id key_class = get_class(head);
+	enum pkcs11_key_type key_type = get_type(head);
 
 	if (function == PKCS11_FUNCTION_ENCRYPT &&
 	    !get_bool(head, PKCS11_CKA_ENCRYPT)) {

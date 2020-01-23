@@ -50,10 +50,9 @@ struct pkcs11_client *tee_session2client(uintptr_t tee_session)
 {
 	struct pkcs11_client *client;
 
-	TAILQ_FOREACH(client, &pkcs11_client_list, link) {
+	TAILQ_FOREACH(client, &pkcs11_client_list, link)
 		if (client == (void *)tee_session)
 			return client;
-	}
 
 	return NULL;
 }
@@ -84,9 +83,8 @@ void unregister_client(uintptr_t tee_session)
 		return;
 	}
 
-	TAILQ_FOREACH_SAFE(session, &client->session_list, link, next) {
+	TAILQ_FOREACH_SAFE(session, &client->session_list, link, next)
 		close_ck_session(session);
-	}
 
 	TAILQ_REMOVE(&pkcs11_client_list, client, link);
 	handle_db_destroy(&client->session_handle_db);
@@ -305,16 +303,13 @@ uint32_t entry_ck_token_initialize(TEE_Param *ctrl,
 		return PKCS11_CKR_PIN_LOCKED;
 	}
 
-	TAILQ_FOREACH(client, &pkcs11_client_list, link) {
-		if (!TAILQ_EMPTY(&client->session_list)) {
+	TAILQ_FOREACH(client, &pkcs11_client_list, link)
+		if (!TAILQ_EMPTY(&client->session_list))
 			return PKCS11_CKR_SESSION_EXISTS;
-		}
-	}
 
 	cpin = TEE_Malloc(PKCS11_TOKEN_PIN_SIZE, TEE_MALLOC_FILL_ZERO);
-	if (!cpin) {
+	if (!cpin)
 		return PKCS11_MEMORY;
-	}
 
 	TEE_MemMove(cpin, pin, pin_size);
 	cipher_pin(token->pin_hdl[0], cpin, PKCS11_TOKEN_PIN_SIZE);
@@ -985,9 +980,8 @@ static uint32_t open_ck_session(uintptr_t tee_session, TEE_Param *ctrl,
 	if (!token)
 		return PKCS11_CKR_SLOT_ID_INVALID;
 
-	if (!readonly && token->state == PKCS11_TOKEN_READ_ONLY) {
+	if (!readonly && token->state == PKCS11_TOKEN_READ_ONLY)
 		return PKCS11_CKR_TOKEN_WRITE_PROTECTED;
-	}
 
 	client = tee_session2client(tee_session);
 	if (!client) {
@@ -996,11 +990,9 @@ static uint32_t open_ck_session(uintptr_t tee_session, TEE_Param *ctrl,
 	}
 
 	if (readonly) {
-		TAILQ_FOREACH(session, &client->session_list, link) {
-			if (session->state == PKCS11_SESSION_SO_READ_WRITE) {
+		TAILQ_FOREACH(session, &client->session_list, link)
+			if (session->state == PKCS11_SESSION_SO_READ_WRITE)
 				return PKCS11_CKR_SESSION_READ_WRITE_SO_EXISTS;
-			}
-		}
 	}
 
 	session = TEE_Malloc(sizeof(*session), TEE_MALLOC_FILL_ZERO);
@@ -1055,10 +1047,9 @@ static void close_ck_session(struct pkcs11_session *session)
 	release_active_processing(session);
 
 	/* No need to put object handles, the whole database is destroyed */
-	while (!LIST_EMPTY(&session->object_list)) {
-		destroy_object(session, LIST_FIRST(&session->object_list),
-				true);
-	}
+	while (!LIST_EMPTY(&session->object_list))
+		destroy_object(session,
+			       LIST_FIRST(&session->object_list), true);
 
 	release_session_find_obj_context(session);
 
@@ -1134,10 +1125,9 @@ uint32_t entry_ck_token_close_all(uintptr_t tee_session, TEE_Param *ctrl,
 
 	IMSG("PKCS11 sesssion %"PRIu32": close sessions", token_id);
 
-	TAILQ_FOREACH_SAFE(session, &client->session_list, link, next) {
+	TAILQ_FOREACH_SAFE(session, &client->session_list, link, next)
 		if (session->token == token)
 			close_ck_session(session);
-	}
 
 	return PKCS11_OK;
 }

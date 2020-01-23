@@ -159,22 +159,20 @@ static uint32_t pkcs2tee_key_type(uint32_t *tee_type, struct pkcs11_object *obj,
 
 	switch (type) {
 	case PKCS11_CKK_EC:
-		if (class == PKCS11_CKO_PRIVATE_KEY) {
+		if (class == PKCS11_CKO_PRIVATE_KEY)
 			*tee_type = (function == PKCS11_FUNCTION_DERIVE) ?
 					TEE_TYPE_ECDH_KEYPAIR :
 					TEE_TYPE_ECDSA_KEYPAIR;
-		} else {
+		else
 			*tee_type = (function == PKCS11_FUNCTION_DERIVE) ?
 					TEE_TYPE_ECDH_PUBLIC_KEY :
 					TEE_TYPE_ECDSA_PUBLIC_KEY;
-		}
 		break;
 	case PKCS11_CKK_RSA:
-		if (class == PKCS11_CKO_PRIVATE_KEY) {
+		if (class == PKCS11_CKO_PRIVATE_KEY)
 			*tee_type = TEE_TYPE_RSA_KEYPAIR;
-		} else {
+		else
 			*tee_type = TEE_TYPE_RSA_PUBLIC_KEY;
-		}
 		break;
 	default:
 		TEE_Panic(type);
@@ -638,11 +636,11 @@ uint32_t do_asymm_derivation(struct pkcs11_session *session,
 	if (rv)
 		goto bail;
 
-	if (a_size * 8 < key_bit_size) {
+	if (a_size * 8 < key_bit_size)
 		rv = PKCS11_CKR_KEY_SIZE_RANGE;
-	} else {
-		rv = add_attribute(head, PKCS11_CKA_VALUE, a_ptr, key_byte_size);
-	}
+	else
+		rv = add_attribute(head, PKCS11_CKA_VALUE, a_ptr,
+				   key_byte_size);
 
 	TEE_Free(a_ptr);
 bail:

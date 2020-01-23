@@ -173,11 +173,10 @@ uint32_t unregister_persistent_object(struct ck_token *token, TEE_UUID *uuid)
 	if (!uuid)
 		return PKCS11_OK;
 
-	for (index = (int)(token->db_objs->count) - 1; index >= 0; index--) {
+	for (index = (int)(token->db_objs->count) - 1; index >= 0; index--)
 		if (!TEE_MemCompare(token->db_objs->uuids + index,
 				    uuid, sizeof(TEE_UUID)))
 			break;
-	}
 
 	if (index < 0) {
 		EMSG("Cannot unregister an invalid persistent object");
@@ -351,7 +350,7 @@ struct ck_token *init_token_db(unsigned int token_id)
 
 			TEE_MemMove(uuid, &db_objs->uuids[idx], sizeof(*uuid));
 
-			obj = create_token_object_instance(NULL, uuid);
+			obj = create_token_object(NULL, uuid);
 			if (!obj)
 				TEE_Panic(0);
 

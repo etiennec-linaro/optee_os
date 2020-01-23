@@ -32,8 +32,8 @@ struct pkcs11_object *pkcs11_handle2object(uint32_t client_handle,
 uint32_t pkcs11_object2handle(struct pkcs11_object *obj,
 			   struct pkcs11_session *session);
 
-struct pkcs11_object *create_token_object_instance(struct pkcs11_attrs_head *head,
-						TEE_UUID *uuid);
+struct pkcs11_object *create_token_object(struct pkcs11_attrs_head *head,
+					  TEE_UUID *uuid);
 
 uint32_t create_object(void *session, struct pkcs11_attrs_head *attributes,
 			uint32_t *handle);

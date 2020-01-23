@@ -92,11 +92,9 @@ uint32_t handle_lookup_handle(struct handle_db *db, void *ptr)
 	uint32_t n = 0;
 
 	if (ptr) {
-		for (n = 1; n < db->max_ptrs; n++) {
-			if (db->ptrs[n] == ptr) {
+		for (n = 1; n < db->max_ptrs; n++)
+			if (db->ptrs[n] == ptr)
 				return n;
-			}
-		}
 	}
 
 	return 0;

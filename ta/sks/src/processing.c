@@ -43,22 +43,22 @@ static bool func_matches_state(enum processing_func function,
 {
 	switch (function) {
 	case PKCS11_FUNCTION_ENCRYPT:
-		return (state == PKCS11_SESSION_ENCRYPTING ||
-			state == PKCS11_SESSION_DIGESTING_ENCRYPTING ||
-			state == PKCS11_SESSION_SIGNING_ENCRYPTING);
+		return state == PKCS11_SESSION_ENCRYPTING ||
+		       state == PKCS11_SESSION_DIGESTING_ENCRYPTING ||
+		       state == PKCS11_SESSION_SIGNING_ENCRYPTING;
 	case PKCS11_FUNCTION_DECRYPT:
-		return (state == PKCS11_SESSION_DECRYPTING ||
-			state == PKCS11_SESSION_DECRYPTING_DIGESTING ||
-			state == PKCS11_SESSION_DECRYPTING_VERIFYING);
+		return state == PKCS11_SESSION_DECRYPTING ||
+		       state == PKCS11_SESSION_DECRYPTING_DIGESTING ||
+		       state == PKCS11_SESSION_DECRYPTING_VERIFYING;
 	case PKCS11_FUNCTION_DIGEST:
-		return (state == PKCS11_SESSION_DIGESTING ||
-			state == PKCS11_SESSION_DIGESTING_ENCRYPTING);
+		return state == PKCS11_SESSION_DIGESTING ||
+		       state == PKCS11_SESSION_DIGESTING_ENCRYPTING;
 	case PKCS11_FUNCTION_SIGN:
-		return (state == PKCS11_SESSION_SIGNING ||
-			state == PKCS11_SESSION_SIGNING_ENCRYPTING);
+		return state == PKCS11_SESSION_SIGNING ||
+		       state == PKCS11_SESSION_SIGNING_ENCRYPTING;
 	case PKCS11_FUNCTION_VERIFY:
-		return (state == PKCS11_SESSION_VERIFYING ||
-			state == PKCS11_SESSION_DECRYPTING_VERIFYING);
+		return state == PKCS11_SESSION_VERIFYING ||
+		       state == PKCS11_SESSION_DECRYPTING_VERIFYING;
 	case PKCS11_FUNCTION_SIGN_RECOVER:
 		return state == PKCS11_SESSION_SIGNING_RECOVER;
 	case PKCS11_FUNCTION_VERIFY_RECOVER:
@@ -706,13 +706,13 @@ uint32_t entry_processing_init(uintptr_t tee_session, TEE_Param *ctrl,
 	if (rv)
 		goto bail;
 
-	rv = PKCS11_CKR_MECHANISM_INVALID;
-	if (processing_is_tee_symm(proc_params->id)) {
+	if (processing_is_tee_symm(proc_params->id))
 		rv = init_symm_operation(session, function, proc_params, obj);
-	}
-	if (processing_is_tee_asymm(proc_params->id)) {
+	else if (processing_is_tee_asymm(proc_params->id))
 		rv = init_asymm_operation(session, function, proc_params, obj);
-	}
+	else
+		rv = PKCS11_CKR_MECHANISM_INVALID;
+
 	if (rv == PKCS11_OK) {
 		session->processing->mecha_type = proc_params->id;
 		IMSG("PKCS11 session %"PRIu32": init processing %s %s",
@@ -775,13 +775,13 @@ uint32_t entry_processing_step(uintptr_t tee_session, TEE_Param *ctrl,
 	if (rv)
 		goto bail;
 
-	rv = PKCS11_CKR_MECHANISM_INVALID;
-	if (processing_is_tee_symm(mecha_type)) {
+	if (processing_is_tee_symm(mecha_type))
 		rv = step_symm_operation(session, function, step, in, out);
-	}
-	if (processing_is_tee_asymm(mecha_type)) {
+	else if (processing_is_tee_asymm(mecha_type))
 		rv = step_asymm_operation(session, function, step, in, out);
-	}
+	else
+		rv = PKCS11_CKR_MECHANISM_INVALID;
+
 	if (rv == PKCS11_OK) {
 		session->processing->updated = true;
 		IMSG("PKCS11 session%"PRIu32": processing %s %s",
@@ -853,13 +853,12 @@ uint32_t entry_verify_oneshot(uintptr_t tee_session, TEE_Param *ctrl,
 	if (rv)
 		goto bail;
 
-	rv = PKCS11_CKR_MECHANISM_INVALID;
-	if (processing_is_tee_symm(mecha_type)) {
+	if (processing_is_tee_symm(mecha_type))
 		rv = step_symm_operation(session, function, step, in, in2);
-	}
-	if (processing_is_tee_asymm(mecha_type)) {
+	else if (processing_is_tee_asymm(mecha_type))
 		rv = step_asymm_operation(session, function, step, in, in2);
-	}
+	else
+		rv = PKCS11_CKR_MECHANISM_INVALID;
 
 	IMSG("PKCS11 session %"PRIu32": verify %s %s: %s", session_handle,
 	     id2str_proc(mecha_type), id2str_function(function),
@@ -966,7 +965,6 @@ uint32_t entry_derive_key(uintptr_t tee_session, TEE_Param *ctrl,
 	// TODO: check_created_against_parent(session, parent, child);
 	// This can handle DERVIE_TEMPLATE attributes from the parent key.
 
-	rv = PKCS11_CKR_MECHANISM_INVALID;
 	if (processing_is_tee_symm(proc_params->id)) {
 		rv = init_symm_operation(session, PKCS11_FUNCTION_DERIVE,
 					 proc_params, parent_obj);
@@ -975,15 +973,17 @@ uint32_t entry_derive_key(uintptr_t tee_session, TEE_Param *ctrl,
 
 		rv = do_symm_derivation(session, proc_params,
 					parent_obj, &head);
-	}
-	if (processing_is_tee_asymm(proc_params->id)) {
+	} else if (processing_is_tee_asymm(proc_params->id)) {
 		rv = init_asymm_operation(session, PKCS11_FUNCTION_DERIVE,
 					  proc_params, parent_obj);
 		if (rv)
 			goto bail;
 
 		rv = do_asymm_derivation(session, proc_params, &head);
+	} else {
+		rv = PKCS11_CKR_MECHANISM_INVALID;
 	}
+
 	if (rv)
 		goto bail;
 

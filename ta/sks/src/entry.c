@@ -7,6 +7,7 @@
 #include <sks_ta.h>
 #include <tee_internal_api.h>
 #include <tee_internal_api_extensions.h>
+#include <util.h>
 
 #include "handle.h"
 #include "object.h"
@@ -90,6 +91,13 @@ static uint32_t entry_ping(TEE_Param *ctrl, TEE_Param *in, TEE_Param *out)
 	return PKCS11_OK;
 }
 
+static bool ctrl_stores_output_status(uint32_t ptypes, TEE_Param *ctrl)
+{
+	return TEE_PARAM_TYPE_GET(ptypes, 0) == TEE_PARAM_TYPE_MEMREF_INOUT &&
+	       ALIGNMENT_IS_OK(ctrl->memref.buffer, uint32_t) &&
+	       ctrl->memref.size >= sizeof(uint32_t);
+}
+
 /*
  * Entry point for PKCS11 TA commands
  *
@@ -98,9 +106,9 @@ static uint32_t entry_ping(TEE_Param *ctrl, TEE_Param *in, TEE_Param *out)
  *	param#2 is an input/output data buffer (also used to return handles)
  *	param#3 is not used
  *
- * Param#0 ctrl, if defined is an in/out buffer, is used to send back to
- * the client a Cryptoki status ID that supersedes the TEE result code which
- * will be force to TEE_SUCCESS. Note that some Cryptoki error status are
+ * Param#0 ctrl, if defined, is an in/out buffer, is used to send back to
+ * the client a Cryptoki status ID that superseeds the TEE result code which
+ * will be forced to TEE_SUCCESS. Note that some Cryptoki error states are
  * sent straight through TEE result code. See pkcs2tee_noerr().
  */
 TEE_Result TA_InvokeCommandEntryPoint(void *tee_session, uint32_t cmd,
@@ -116,7 +124,7 @@ TEE_Result TA_InvokeCommandEntryPoint(void *tee_session, uint32_t cmd,
 	TEE_Result res = TEE_ERROR_GENERIC;
 	uint32_t rc = 0;
 
-	/* param#0: input buffer with request serialized arguments */
+	/* Param#0: none or input/in-out buffer with serialized arguments */
 	switch (TEE_PARAM_TYPE_GET(ptypes, 0)) {
 	case TEE_PARAM_TYPE_NONE:
 		break;
@@ -128,7 +136,7 @@ TEE_Result TA_InvokeCommandEntryPoint(void *tee_session, uint32_t cmd,
 		goto bad_types;
 	}
 
-	/* param#1: input data buffer */
+	/* Param#1: none or input/output/in-out data buffer */
 	switch (TEE_PARAM_TYPE_GET(ptypes, 1)) {
 	case TEE_PARAM_TYPE_NONE:
 		break;
@@ -146,7 +154,7 @@ TEE_Result TA_InvokeCommandEntryPoint(void *tee_session, uint32_t cmd,
 		goto bad_types;
 	}
 
-	/* param#2: input or output data buffer */
+	/* Param#2: none or input/output/in-out data buffer */
 	switch (TEE_PARAM_TYPE_GET(ptypes, 2)) {
 	case TEE_PARAM_TYPE_NONE:
 		break;
@@ -164,7 +172,7 @@ TEE_Result TA_InvokeCommandEntryPoint(void *tee_session, uint32_t cmd,
 		goto bad_types;
 	}
 
-	/* param#3: unused */
+	/* Param#3: currently unused */
 	switch (TEE_PARAM_TYPE_GET(ptypes, 3)) {
 	case TEE_PARAM_TYPE_NONE:
 		break;
@@ -353,10 +361,7 @@ TEE_Result TA_InvokeCommandEntryPoint(void *tee_session, uint32_t cmd,
 		return TEE_ERROR_NOT_SUPPORTED;
 	}
 
-	if (TEE_PARAM_TYPE_GET(ptypes, 0) == TEE_PARAM_TYPE_MEMREF_INOUT &&
-	    ctrl->memref.size >= sizeof(uint32_t) &&
-	    !((uintptr_t)ctrl->memref.buffer & 0x03UL)) {
-
+	if (ctrl_stores_output_status(ptypes, ctrl)) {
 		TEE_MemMove(ctrl->memref.buffer, &rc, sizeof(uint32_t));
 		ctrl->memref.size = sizeof(uint32_t);
 
@@ -374,7 +379,7 @@ TEE_Result TA_InvokeCommandEntryPoint(void *tee_session, uint32_t cmd,
 
 bad_types:
 	DMSG("Bad parameter types used at PKCS11 TA entry:");
-	DMSG("- parameter #0: formatted input request buffer or none");
+	DMSG("- parameter #0: formatted input, inout request buffer or none");
 	DMSG("- parameter #1: processed input data buffer or none");
 	DMSG("- parameter #2: processed output data buffer or none");
 	DMSG("- parameter #3: none");

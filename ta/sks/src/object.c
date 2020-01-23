@@ -58,9 +58,8 @@ static void cleanup_volatile_obj_ref(struct pkcs11_object *obj)
 	if (obj->key_handle != TEE_HANDLE_NULL)
 		TEE_FreeTransientObject(obj->key_handle);
 
-	if (obj->attribs_hdl != TEE_HANDLE_NULL) {
+	if (obj->attribs_hdl != TEE_HANDLE_NULL)
 		TEE_CloseObject(obj->attribs_hdl);
-	}
 
 	TEE_Free(obj->attributes);
 	TEE_Free(obj->uuid);
@@ -78,9 +77,8 @@ static void cleanup_persistent_object(struct pkcs11_object *obj,
 		return;
 
 	/* Open handle with write properties to destroy the object */
-	if (obj->attribs_hdl != TEE_HANDLE_NULL) {
+	if (obj->attribs_hdl != TEE_HANDLE_NULL)
 		TEE_CloseObject(obj->attribs_hdl);
-	}
 
 	res = TEE_OpenPersistentObject(TEE_STORAGE_PRIVATE,
 					obj->uuid, sizeof(TEE_UUID),
@@ -149,7 +147,7 @@ void destroy_object(struct pkcs11_session *session,
 	}
 }
 
-static struct pkcs11_object *create_object_instance(struct pkcs11_attrs_head *head)
+static struct pkcs11_object *create_obj_instance(struct pkcs11_attrs_head *head)
 {
 	struct pkcs11_object *obj = NULL;
 
@@ -164,15 +162,13 @@ static struct pkcs11_object *create_object_instance(struct pkcs11_attrs_head *he
 	return obj;
 }
 
-struct pkcs11_object *create_token_object_instance(struct pkcs11_attrs_head *head,
-						TEE_UUID *uuid)
+struct pkcs11_object *create_token_object(struct pkcs11_attrs_head *head,
+					  TEE_UUID *uuid)
 {
-	struct pkcs11_object *obj = create_object_instance(head);
+	struct pkcs11_object *obj = create_obj_instance(head);
 
-	if (!obj)
-		return NULL;
-
-	obj->uuid = uuid;
+	if (obj)
+		obj->uuid = uuid;
 
 	return obj;
 }
@@ -202,7 +198,7 @@ uint32_t create_object(void *sess, struct pkcs11_attrs_head *head,
 	 * are expected consistent and reliable.
 	 */
 
-	obj = create_object_instance(head);
+	obj = create_obj_instance(head);
 	if (!obj)
 		return PKCS11_MEMORY;
 
@@ -386,9 +382,8 @@ static uint32_t token_obj_matches_ref(struct pkcs11_attrs_head *req_attrs,
 
 bail:
 	TEE_Free(attr);
-	if (obj->attribs_hdl == TEE_HANDLE_NULL && hdl != TEE_HANDLE_NULL) {
+	if (obj->attribs_hdl == TEE_HANDLE_NULL && hdl != TEE_HANDLE_NULL)
 		TEE_CloseObject(hdl);
-	}
 
 	return rv;
 }

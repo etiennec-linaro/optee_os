@@ -19,7 +19,7 @@ static inline void set_attributes_in_head(struct pkcs11_attrs_head *head)
 	head->boolproph |= PKCS11_BOOLPROPH_FLAG;
 }
 
-static inline bool head_contains_boolprops(struct pkcs11_attrs_head __unused *head)
+static inline bool head_contains_boolprops(struct pkcs11_attrs_head *head)
 {
 	return head->boolproph & PKCS11_BOOLPROPH_FLAG;
 }
@@ -69,15 +69,15 @@ uint32_t remove_attribute_check(struct pkcs11_attrs_head **head, uint32_t attrib
  * output array of the size of each values found.
  *
  * If attr_size != NULL, return in in *attr_size attribute value size.
- * If attr != NULL return in *attr the address in memory of the attribute value.
+ * If attr != NULL return in *attr the address of the attribute value.
  */
 void get_attribute_ptrs(struct pkcs11_attrs_head *head, uint32_t attribute,
 			void **attr, uint32_t *attr_size, size_t *count);
 
 /*
  * If attributes is not found return PKCS11_NOT_FOUND.
- * If attr_size != NULL, return in in *attr_size attribute value size.
- * If attr != NULL return in *attr the address in memory of the attribute value.
+ * If attr_size != NULL, return in *attr_size attribute value size.
+ * If attr != NULL, return in *attr the address of the attribute value.
  *
  * Return a PKCS11_OK or PKCS11_NOT_FOUND on success, or a PKCS11 return code.
  */

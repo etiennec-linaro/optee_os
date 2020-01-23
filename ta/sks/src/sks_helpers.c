@@ -558,10 +558,9 @@ bool mechanism_is_supported(uint32_t id)
 {
 	size_t n = 0;
 
-	for (n = 0; n < ARRAY_SIZE(processing_ids); n++) {
+	for (n = 0; n < ARRAY_SIZE(processing_ids); n++)
 		if (processing_ids[n].id == id)
 			return processing_ids[n].supported;
-	}
 
 	return false;
 }
@@ -572,10 +571,9 @@ size_t get_supported_mechanisms(uint32_t *array, size_t array_count)
 	size_t m = 0;
 	size_t count = 0;
 
-	for (n = 0; n < ARRAY_SIZE(processing_ids); n++) {
+	for (n = 0; n < ARRAY_SIZE(processing_ids); n++)
 		if (processing_ids[n].supported)
 			count++;
-	}
 
 	if (array_count == 0)
 		return count;
@@ -717,6 +715,16 @@ static const char *id2str(uint32_t id, const struct string_id *table,
 #define ID2STR(id, table, prefix)	\
 	id2str(id, table, ARRAY_SIZE(table), prefix)
 
+const char *id2str_rc(uint32_t id)
+{
+	return ID2STR(id, string_rc, "PKCS11_CKR_");
+}
+
+const char *id2str_ta_cmd(uint32_t id)
+{
+	return ID2STR(id, string_cmd, NULL);
+}
+
 const char *id2str_class(uint32_t id)
 {
 	return ID2STR(id, string_class, "PKCS11_CKO_");
@@ -733,6 +741,7 @@ const char *id2str_type(uint32_t id, uint32_t class)
 		return unknown;
 	}
 }
+
 const char *id2str_key_type(uint32_t id)
 {
 	return ID2STR(id, string_key_type, "PKCS11_CKK_");
@@ -762,16 +771,6 @@ const char *id2str_proc_flag(uint32_t id)
 	return ID2STR(id, string_proc_flags, "PKCS11_CKFM_");
 }
 
-const char *id2str_rc(uint32_t id)
-{
-	return ID2STR(id, string_rc, "PKCS11_CKR_");
-}
-
-const char *id2str_ta_cmd(uint32_t id)
-{
-	return ID2STR(id, string_cmd, NULL);
-}
-
 const char *id2str_slot_flag(uint32_t id)
 {
 	return ID2STR(id, string_slot_flags, "PKCS11_CKFS_");
@@ -786,14 +785,14 @@ const char *id2str_attr_value(uint32_t id, size_t size, void *value)
 {
 	static const char str_true[] = "TRUE";
 	static const char str_false[] = "FALSE";
-	static const char str_unkwon[] = "*";
+	static const char str_unknown[] = "*";
 	uint32_t type = 0;
 
 	if (pkcs11_attr2boolprop_shift(id) >= 0)
 		return !!*(uint8_t *)value ? str_true : str_false;
 
 	if (size < sizeof(uint32_t))
-		return str_unkwon;
+		return str_unknown;
 
 	TEE_MemMove(&type, value, sizeof(uint32_t));
 
@@ -806,7 +805,7 @@ const char *id2str_attr_value(uint32_t id, size_t size, void *value)
 	if (id == PKCS11_CKA_MECHANISM_TYPE)
 		return id2str_mechanism_type(type);
 
-	return str_unkwon;
+	return str_unknown;
 }
 
 const char *id2str_function(uint32_t id)

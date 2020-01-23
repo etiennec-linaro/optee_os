@@ -332,7 +332,7 @@ uint32_t get_attribute(struct pkcs11_attrs_head *head, uint32_t attribute,
 		uint32_t *boolprop = NULL;
 
 		boolprop = (shift < 32) ? &head->boolpropl : &head->boolproph;
-		bbool = (*boolprop & (1 << (shift % 32))) ? PKCS11_TRUE : PKCS11_FALSE;
+		bbool = *boolprop & BIT(shift % 32);
 
 		size = sizeof(uint8_t);
 		attr_ptr = &bbool;
@@ -539,9 +539,8 @@ static uint32_t __trace_attributes(char *prefix, void *src, void *end)
 	}
 
 	/* Sanity */
-	if (cur != (char *)end) {
+	if (cur != (char *)end)
 		EMSG("Warning: unexpected alignment in object attributes");
-	}
 
 	TEE_Free(prefix2);
 	return PKCS11_OK;

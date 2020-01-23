@@ -125,7 +125,7 @@ struct ck_token {
  * processing state.
  */
 enum pkcs11_proc_state {
-	PKCS11_SESSION_READY = 0,		/* No active processing/operation */
+	PKCS11_SESSION_READY = 0,		/* No active processing */
 	PKCS11_SESSION_ENCRYPTING,
 	PKCS11_SESSION_DECRYPTING,
 	PKCS11_SESSION_DIGESTING,

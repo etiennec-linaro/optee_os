@@ -89,8 +89,8 @@ uint32_t serialargs_get_ptr(struct serialargs *args, void **out, size_t size)
 	return PKCS11_OK;
 }
 
-uint32_t serialargs_alloc_get_one_attribute(struct serialargs *args __unused,
-					    struct pkcs11_attribute_head **out __unused)
+uint32_t serialargs_alloc_get_one_attribute(struct serialargs *args,
+					    struct pkcs11_attribute_head **out)
 {
 	struct pkcs11_attribute_head head;
 	size_t out_size = sizeof(head);
@@ -127,8 +127,8 @@ uint32_t serialargs_alloc_get_one_attribute(struct serialargs *args __unused,
 	return PKCS11_OK;
 }
 
-uint32_t serialargs_alloc_get_attributes(struct serialargs *args __unused,
-					 struct pkcs11_object_head **out __unused)
+uint32_t serialargs_alloc_get_attributes(struct serialargs *args,
+					 struct pkcs11_object_head **out)
 {
 	struct pkcs11_object_head attr;
 	struct pkcs11_object_head *pattr = NULL;

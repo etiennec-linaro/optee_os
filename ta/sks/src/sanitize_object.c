@@ -189,10 +189,10 @@ static uint32_t sanitize_boolprop(struct pkcs11_attrs_head **dst,
 	/* Store the attribute inside the serialized data */
 	if (!(*sanity_ptr & mask)) {
 		uint32_t rc = 0;
-		uint8_t sks_bool = !!value;
+		uint8_t pkcs11_bool = !!value;
 
 		rc = add_attribute(dst, PKCS11_BOOLPROPS_BASE + shift,
-				   &sks_bool, sizeof(uint8_t));
+				   &pkcs11_bool, sizeof(uint8_t));
 		if (rc)
 			return rc;
 	}

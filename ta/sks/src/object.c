@@ -19,13 +19,13 @@
 #include "serializer.h"
 #include "sks_helpers.h"
 
-struct pkcs11_object *sks_handle2object(uint32_t handle,
+struct pkcs11_object *pkcs11_handle2object(uint32_t handle,
 				     struct pkcs11_session *session)
 {
 	return handle_lookup(&session->object_handle_db, handle);
 }
 
-uint32_t sks_object2handle(struct pkcs11_object *obj,
+uint32_t pkcs11_object2handle(struct pkcs11_object *obj,
 			   struct pkcs11_session *session)
 {
 	return handle_lookup_handle(&session->object_handle_db, obj);
@@ -125,7 +125,7 @@ void destroy_object(struct pkcs11_session *session,
 	if (session_only) {
 		/* Destroy object due to session closure */
 		handle_put(&session->object_handle_db,
-			   sks_object2handle(obj, session));
+			   pkcs11_object2handle(obj, session));
 		cleanup_volatile_obj_ref(obj);
 
 		return;
@@ -141,10 +141,10 @@ void destroy_object(struct pkcs11_session *session,
 
 		cleanup_persistent_object(obj, session->token);
 		handle_put(&session->object_handle_db,
-			   sks_object2handle(obj, session));
+			   pkcs11_object2handle(obj, session));
 	} else {
 		handle_put(&session->object_handle_db,
-			   sks_object2handle(obj, session));
+			   pkcs11_object2handle(obj, session));
 		cleanup_volatile_obj_ref(obj);
 	}
 }
@@ -290,14 +290,14 @@ uint32_t entry_destroy_object(uintptr_t tee_session, TEE_Param *ctrl,
 	if (rv)
 		return rv;
 
-	session = sks_handle2session(session_handle, tee_session);
+	session = pkcs11_handle2session(session_handle, tee_session);
 	if (!session)
 		return PKCS11_CKR_SESSION_HANDLE_INVALID;
 
 	if (session_is_active(session))
 		return PKCS11_CKR_OPERATION_ACTIVE;
 
-	object = sks_handle2object(object_handle, session);
+	object = pkcs11_handle2object(object_handle, session);
 	if (!object)
 		return PKCS11_BAD_PARAM;
 
@@ -444,7 +444,7 @@ uint32_t entry_find_objects_init(uintptr_t tee_session, TEE_Param *ctrl,
 	if (rv)
 		return rv;
 
-	session = sks_handle2session(session_handle, tee_session);
+	session = pkcs11_handle2session(session_handle, tee_session);
 	if (!session) {
 		rv = PKCS11_CKR_SESSION_HANDLE_INVALID;
 		goto bail;
@@ -521,7 +521,7 @@ uint32_t entry_find_objects_init(uintptr_t tee_session, TEE_Param *ctrl,
 		find_ctx->handles = handles;
 
 		*(find_ctx->handles + find_ctx->count) =
-			sks_object2handle(obj, session);
+			pkcs11_object2handle(obj, session);
 		find_ctx->count++;
 	}
 
@@ -549,7 +549,7 @@ uint32_t entry_find_objects_init(uintptr_t tee_session, TEE_Param *ctrl,
 			continue;
 
 		/* Object may not yet be published in the session */
-		obj_handle = sks_object2handle(obj, session);
+		obj_handle = pkcs11_object2handle(obj, session);
 		if (!obj_handle) {
 			obj_handle = handle_get(&session->object_handle_db,
 						obj);
@@ -620,7 +620,7 @@ uint32_t entry_find_objects(uintptr_t tee_session, TEE_Param *ctrl,
 	if (rv)
 		return rv;
 
-	session = sks_handle2session(session_handle, tee_session);
+	session = pkcs11_handle2session(session_handle, tee_session);
 	if (!session)
 		return PKCS11_CKR_SESSION_HANDLE_INVALID;
 
@@ -688,7 +688,7 @@ uint32_t entry_find_objects_final(uintptr_t tee_session, TEE_Param *ctrl,
 	if (rv)
 		return rv;
 
-	session = sks_handle2session(session_handle, tee_session);
+	session = pkcs11_handle2session(session_handle, tee_session);
 	if (!session)
 		return PKCS11_CKR_SESSION_HANDLE_INVALID;
 
@@ -739,13 +739,13 @@ uint32_t entry_get_attribute_value(uintptr_t tee_session, TEE_Param *ctrl,
 	if (rv)
 		return rv;
 
-	session = sks_handle2session(session_handle, tee_session);
+	session = pkcs11_handle2session(session_handle, tee_session);
 	if (!session) {
 		rv = PKCS11_CKR_SESSION_HANDLE_INVALID;
 		goto bail;
 	}
 
-	obj = sks_handle2object(object_handle, session);
+	obj = pkcs11_handle2object(object_handle, session);
 	if (!obj) {
 		rv = PKCS11_BAD_PARAM;
 		goto bail;

@@ -251,7 +251,7 @@ uintptr_t register_client(void);
 void unregister_client(uintptr_t tee_session);
 
 void ck_token_close_tee_session(uintptr_t tee_session);
-struct pkcs11_session *sks_handle2session(uint32_t handle,
+struct pkcs11_session *pkcs11_handle2session(uint32_t handle,
 					  uintptr_t tee_session);
 
 static inline bool session_is_active(struct pkcs11_session *session)

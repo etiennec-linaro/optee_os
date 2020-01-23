@@ -26,10 +26,10 @@ struct pkcs11_object {
 
 LIST_HEAD(object_list, pkcs11_object);
 
-struct pkcs11_object *sks_handle2object(uint32_t client_handle,
+struct pkcs11_object *pkcs11_handle2object(uint32_t client_handle,
 				     struct pkcs11_session *session);
 
-uint32_t sks_object2handle(struct pkcs11_object *obj,
+uint32_t pkcs11_object2handle(struct pkcs11_object *obj,
 			   struct pkcs11_session *session);
 
 struct pkcs11_object *create_token_object_instance(struct pkcs11_attrs_head *head,

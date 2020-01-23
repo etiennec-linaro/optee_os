@@ -26,7 +26,7 @@ static uint32_t get_ready_session(struct pkcs11_session **sess,
 {
 	struct pkcs11_session *session = NULL;
 
-	session = sks_handle2session(session_handle, tee_session);
+	session = pkcs11_handle2session(session_handle, tee_session);
 	if (!session)
 		return PKCS11_CKR_SESSION_HANDLE_INVALID;
 
@@ -77,7 +77,7 @@ static uint32_t get_active_session(struct pkcs11_session **sess,
 	struct pkcs11_session *session = NULL;
 	uint32_t rv = PKCS11_CKR_OPERATION_NOT_INITIALIZED;
 
-	session = sks_handle2session(session_handle, tee_session);
+	session = pkcs11_handle2session(session_handle, tee_session);
 	if (!session)
 		return PKCS11_CKR_SESSION_HANDLE_INVALID;
 
@@ -679,7 +679,7 @@ uint32_t entry_processing_init(uintptr_t tee_session, TEE_Param *ctrl,
 	if (rv)
 		return rv;
 
-	obj = sks_handle2object(key_handle, session);
+	obj = pkcs11_handle2object(key_handle, session);
 	if (!obj)
 		return PKCS11_CKR_KEY_HANDLE_INVALID;
 
@@ -918,7 +918,7 @@ uint32_t entry_derive_key(uintptr_t tee_session, TEE_Param *ctrl,
 	if (rv)
 		goto bail;
 
-	parent_obj = sks_handle2object(parent_handle, session);
+	parent_obj = pkcs11_handle2object(parent_handle, session);
 	if (!parent_obj) {
 		rv = PKCS11_CKR_KEY_HANDLE_INVALID;
 		goto bail;

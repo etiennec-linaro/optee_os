@@ -79,10 +79,10 @@ static uint32_t sanitize_class_and_type(struct pkcs11_attrs_head **dst,
 		TEE_MemMove(&cli_ref, cur, sizeof(cli_ref));
 		len = sizeof(cli_ref) + cli_ref.size;
 
-		if (sks_attr_is_class(cli_ref.id)) {
+		if (pkcs11_attr_is_class(cli_ref.id)) {
 			uint32_t class;
 
-			if (cli_ref.size != sks_attr_is_class(cli_ref.id)) {
+			if (cli_ref.size != pkcs11_attr_is_class(cli_ref.id)) {
 				rc = PKCS11_CKR_TEMPLATE_INCONSISTENT;
 				goto bail;
 			}
@@ -101,10 +101,10 @@ static uint32_t sanitize_class_and_type(struct pkcs11_attrs_head **dst,
 		}
 
 		/* The attribute is a type-in-class */
-		if (sks_attr_is_type(cli_ref.id)) {
+		if (pkcs11_attr_is_type(cli_ref.id)) {
 			uint32_t type = 0;
 
-			if (cli_ref.size != sks_attr_is_type(cli_ref.id)) {
+			if (cli_ref.size != pkcs11_attr_is_type(cli_ref.id)) {
 				rc = PKCS11_CKR_TEMPLATE_INCONSISTENT;
 				goto bail;
 			}
@@ -160,7 +160,7 @@ static uint32_t sanitize_boolprop(struct pkcs11_attrs_head **dst,
 	uint32_t *sanity_ptr = NULL;
 
 	/* Get the boolean property shift position and value */
-	shift = sks_attr2boolprop_shift(cli_ref->id);
+	shift = pkcs11_attr2boolprop_shift(cli_ref->id);
 	if (shift < 0)
 		return PKCS11_NOT_FOUND;
 
@@ -257,7 +257,7 @@ static uint32_t sanitize_indirect_attr(struct pkcs11_attrs_head **dst,
 		return PKCS11_NOT_FOUND;
 	}
 	/* Such attributes are expected only for keys (and vendor defined) */
-	if (sks_attr_class_is_key(class))
+	if (pkcs11_attr_class_is_key(class))
 		return PKCS11_CKR_TEMPLATE_INCONSISTENT;
 
 	init_attributes_head(&obj2);
@@ -310,9 +310,9 @@ uint32_t sanitize_client_object(struct pkcs11_attrs_head **dst,
 		TEE_MemMove(&cli_ref, cur, sizeof(cli_ref));
 		next = sizeof(cli_ref) + cli_ref.size;
 
-		if (sks_attr_is_class(cli_ref.id) ||
-		    sks_attr_is_type(cli_ref.id) ||
-		    sks_attr2boolprop_shift(cli_ref.id) >= 0)
+		if (pkcs11_attr_is_class(cli_ref.id) ||
+		    pkcs11_attr_is_type(cli_ref.id) ||
+		    pkcs11_attr2boolprop_shift(cli_ref.id) >= 0)
 			continue;
 
 		rc = sanitize_indirect_attr(dst, &cli_ref, cur);
@@ -321,7 +321,7 @@ uint32_t sanitize_client_object(struct pkcs11_attrs_head **dst,
 		if (rc != PKCS11_NOT_FOUND)
 			goto bail;
 
-		if (!valid_sks_attribute_id(cli_ref.id, cli_ref.size)) {
+		if (!valid_pkcs11_attribute_id(cli_ref.id, cli_ref.size)) {
 			EMSG("Invalid attribute id 0x%" PRIx32, cli_ref.id);
 			rc = PKCS11_CKR_TEMPLATE_INCONSISTENT;
 			goto bail;

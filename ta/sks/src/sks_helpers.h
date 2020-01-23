@@ -26,15 +26,15 @@ struct pkcs11_object;
 /*
  * Helper functions to analyse CK fields
  */
-bool valid_sks_attribute_id(uint32_t id, uint32_t size);
-size_t sks_attr_is_class(uint32_t attribute_id);
-size_t sks_attr_is_type(uint32_t attribute_id);
-bool sks_class_has_boolprop(uint32_t class);
-bool sks_class_has_type(uint32_t class);
-bool sks_attr_class_is_key(uint32_t class);
+bool valid_pkcs11_attribute_id(uint32_t id, uint32_t size);
+size_t pkcs11_attr_is_class(uint32_t attribute_id);
+size_t pkcs11_attr_is_type(uint32_t attribute_id);
+bool pkcs11_class_has_boolprop(uint32_t class);
+bool pkcs11_class_has_type(uint32_t class);
+bool pkcs11_attr_class_is_key(uint32_t class);
 bool key_type_is_symm_key(uint32_t id);
 bool key_type_is_asymm_key(uint32_t id);
-int sks_attr2boolprop_shift(uint32_t attr);
+int pkcs11_attr2boolprop_shift(uint32_t attr);
 bool mechanism_is_valid(uint32_t id);
 bool mechanism_is_supported(uint32_t id);
 size_t get_supported_mechanisms(uint32_t *array, size_t array_count);

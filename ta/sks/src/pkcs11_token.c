@@ -163,7 +163,7 @@ bool pkcs11_session_is_public(struct pkcs11_session *session)
 		session->state == PKCS11_SESSION_PUBLIC_READ_ONLY;
 }
 
-struct pkcs11_session *sks_handle2session(uint32_t handle,
+struct pkcs11_session *pkcs11_handle2session(uint32_t handle,
 					  uintptr_t tee_session)
 {
 	struct pkcs11_client *client = tee_session2client(tee_session);
@@ -941,7 +941,7 @@ static void session_logout(struct pkcs11_session *session)
 
 			destroy_object(sess, obj, true);
 			handle_put(&sess->object_handle_db,
-				   sks_object2handle(obj, sess));
+				   pkcs11_object2handle(obj, sess));
 		}
 
 		if (pkcs11_session_is_read_write(sess))
@@ -1097,7 +1097,7 @@ uint32_t entry_ck_token_close_session(uintptr_t tee_session, TEE_Param *ctrl,
 	if (rv)
 		return rv;
 
-	session = sks_handle2session(session_handle, tee_session);
+	session = pkcs11_handle2session(session_handle, tee_session);
 	if (!session)
 		return PKCS11_CKR_SESSION_HANDLE_INVALID;
 
@@ -1237,7 +1237,7 @@ uint32_t entry_init_pin(uintptr_t tee_session, TEE_Param *ctrl,
 	if (rv)
 		return rv;
 
-	session = sks_handle2session(session_handle, tee_session);
+	session = pkcs11_handle2session(session_handle, tee_session);
 	if (!session)
 		return PKCS11_CKR_SESSION_HANDLE_INVALID;
 
@@ -1458,7 +1458,7 @@ uint32_t entry_set_pin(uintptr_t tee_session, TEE_Param *ctrl,
 	if (rv)
 		return rv;
 
-	session = sks_handle2session(session_handle, tee_session);
+	session = pkcs11_handle2session(session_handle, tee_session);
 	if (!session)
 		return PKCS11_CKR_SESSION_HANDLE_INVALID;
 
@@ -1514,7 +1514,7 @@ uint32_t entry_login(uintptr_t tee_session, TEE_Param *ctrl,
 	if (rv)
 		return rv;
 
-	session = sks_handle2session(session_handle, tee_session);
+	session = pkcs11_handle2session(session_handle, tee_session);
 	if (!session)
 		return PKCS11_CKR_SESSION_HANDLE_INVALID;
 
@@ -1628,7 +1628,7 @@ uint32_t entry_logout(uintptr_t tee_session, TEE_Param *ctrl,
 	if (rv)
 		return rv;
 
-	session = sks_handle2session(session_handle, tee_session);
+	session = pkcs11_handle2session(session_handle, tee_session);
 	if (!session)
 		return PKCS11_CKR_SESSION_HANDLE_INVALID;
 

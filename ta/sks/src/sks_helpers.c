@@ -376,7 +376,7 @@ static const struct string_id __maybe_unused string_functions[] = {
  * Helper functions to analyse SKS identifiers
  */
 
-size_t sks_attr_is_class(uint32_t attribute_id)
+size_t pkcs11_attr_is_class(uint32_t attribute_id)
 {
 	if (attribute_id == PKCS11_CKA_CLASS)
 		return sizeof(uint32_t);
@@ -384,7 +384,7 @@ size_t sks_attr_is_class(uint32_t attribute_id)
 		return 0;
 }
 
-size_t sks_attr_is_type(uint32_t attribute_id)
+size_t pkcs11_attr_is_type(uint32_t attribute_id)
 {
 	switch (attribute_id) {
 	case PKCS11_CKA_KEY_TYPE:
@@ -395,7 +395,7 @@ size_t sks_attr_is_type(uint32_t attribute_id)
 	}
 }
 
-bool sks_class_has_type(uint32_t class)
+bool pkcs11_class_has_type(uint32_t class)
 {
 	switch (class) {
 	case PKCS11_CKO_CERTIFICATE:
@@ -410,7 +410,7 @@ bool sks_class_has_type(uint32_t class)
 	}
 }
 
-bool sks_attr_class_is_key(uint32_t class)
+bool pkcs11_attr_class_is_key(uint32_t class)
 {
 	switch (class) {
 	case PKCS11_CKO_SECRET_KEY:
@@ -423,7 +423,7 @@ bool sks_attr_class_is_key(uint32_t class)
 }
 
 /* Returns shift position or -1 on error */
-int sks_attr2boolprop_shift(uint32_t attr)
+int pkcs11_attr2boolprop_shift(uint32_t attr)
 {
 	COMPILE_TIME_ASSERT(PKCS11_BOOLPROPS_BASE == 0);
 
@@ -500,7 +500,7 @@ uint32_t tee2sks_error(TEE_Result res)
 	}
 }
 
-bool valid_sks_attribute_id(uint32_t id, uint32_t size)
+bool valid_pkcs11_attribute_id(uint32_t id, uint32_t size)
 {
 	size_t n = 0;
 
@@ -789,7 +789,7 @@ const char *id2str_attr_value(uint32_t id, size_t size, void *value)
 	static const char str_unkwon[] = "*";
 	uint32_t type = 0;
 
-	if (sks_attr2boolprop_shift(id) >= 0)
+	if (pkcs11_attr2boolprop_shift(id) >= 0)
 		return !!*(uint8_t *)value ? str_true : str_false;
 
 	if (size < sizeof(uint32_t))
@@ -797,7 +797,7 @@ const char *id2str_attr_value(uint32_t id, size_t size, void *value)
 
 	TEE_MemMove(&type, value, sizeof(uint32_t));
 
-	if (sks_attr_is_class(id))
+	if (pkcs11_attr_is_class(id))
 		return id2str_class(type);
 
 	if (id == PKCS11_CKA_KEY_TYPE)

@@ -36,12 +36,12 @@ uint32_t init_attributes_head(struct pkcs11_attrs_head **head)
 static bool attribute_is_in_head(uint32_t attribute)
 {
 #ifdef PKCS11_SHEAD_WITH_TYPE
-	if (attribute == PKCS11_CKA_CLASS || sks_attr_is_type(attribute))
+	if (attribute == PKCS11_CKA_CLASS || pkcs11_attr_is_type(attribute))
 		return true;
 #endif
 
 #ifdef PKCS11_SHEAD_WITH_BOOLPROPS
-	if (sks_attr2boolprop_shift(attribute) >= 0)
+	if (pkcs11_attr2boolprop_shift(attribute) >= 0)
 		return true;
 #endif
 
@@ -59,7 +59,7 @@ uint32_t add_attribute(struct pkcs11_attrs_head **head,
 	int __maybe_unused shift = 0;
 
 #ifdef PKCS11_SHEAD_WITH_TYPE
-	if (attribute == PKCS11_CKA_CLASS || sks_attr_is_type(attribute)) {
+	if (attribute == PKCS11_CKA_CLASS || pkcs11_attr_is_type(attribute)) {
 		assert(size == sizeof(uint32_t));
 
 		TEE_MemMove(attribute == PKCS11_CKA_CLASS ?
@@ -71,7 +71,7 @@ uint32_t add_attribute(struct pkcs11_attrs_head **head,
 #endif
 
 #ifdef PKCS11_SHEAD_WITH_BOOLPROPS
-	shift = sks_attr2boolprop_shift(attribute);
+	shift = pkcs11_attr2boolprop_shift(attribute);
 	if (head_contains_boolprops(*head) && shift >= 0) {
 		uint32_t mask = shift < 32 ? BIT(shift) : BIT(shift - 32);
 		uint32_t val = *(uint8_t *)data ? mask : 0;
@@ -288,7 +288,7 @@ uint32_t get_attribute_ptr(struct pkcs11_attrs_head *head, uint32_t attribute,
 #endif
 #ifdef PKCS11_SHEAD_WITH_BOOLPROPS
 	if (head_contains_boolprops(head) &&
-	    sks_attr2boolprop_shift(attribute) >= 0)
+	    pkcs11_attr2boolprop_shift(attribute) >= 0)
 		TEE_Panic(0);
 #endif
 
@@ -327,7 +327,7 @@ uint32_t get_attribute(struct pkcs11_attrs_head *head, uint32_t attribute,
 #endif
 
 #ifdef PKCS11_SHEAD_WITH_BOOLPROPS
-	shift = sks_attr2boolprop_shift(attribute);
+	shift = pkcs11_attr2boolprop_shift(attribute);
 	if (head_contains_boolprops(head) && shift >= 0) {
 		uint32_t *boolprop = NULL;
 
@@ -369,7 +369,7 @@ bool get_bool(struct pkcs11_attrs_head *head, uint32_t attribute)
 	int __maybe_unused shift = 0;
 
 #ifdef PKCS11_SHEAD_WITH_BOOLPROPS
-	shift = sks_attr2boolprop_shift(attribute);
+	shift = pkcs11_attr2boolprop_shift(attribute);
 	if (shift < 0)
 		TEE_Panic(PKCS11_NOT_FOUND);
 
@@ -418,7 +418,7 @@ bool attributes_match_reference(struct pkcs11_attrs_head *candidate,
 
 		TEE_MemMove(&pkcs11_ref, ref_attr, sizeof(pkcs11_ref));
 
-		shift = sks_attr2boolprop_shift(pkcs11_ref.id);
+		shift = pkcs11_attr2boolprop_shift(pkcs11_ref.id);
 		if (shift >= 0) {
 			bool bb_ref = get_bool(ref, pkcs11_ref.id);
 			bool bb_candidate = get_bool(candidate, pkcs11_ref.id);

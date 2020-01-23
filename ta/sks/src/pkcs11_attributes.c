@@ -154,7 +154,7 @@ static const __maybe_unused struct pkcs11_mechachism_modes pkcs11_modes[] = {
 	 */
 };
 
-static uint32_t sks_function2ckfm(enum processing_func function)
+static uint32_t pkcs11_function2ckfm(enum processing_func function)
 {
 	switch (function) {
 	case PKCS11_FUNCTION_DIGEST:
@@ -230,7 +230,7 @@ uint32_t check_mechanism_against_processing(struct pkcs11_session *session,
 			for (n = 0; n < ARRAY_SIZE(pkcs11_modes); n++) {
 				if (pkcs11_modes[n].id == mechanism_type) {
 					allowed = pkcs11_modes[n].flags &
-						  sks_function2ckfm(function);
+						  pkcs11_function2ckfm(function);
 					break;
 				}
 			}

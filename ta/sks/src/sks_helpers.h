@@ -24,28 +24,70 @@
 struct pkcs11_object;
 
 /*
- * Helper functions to analyse CK fields
+ * Return true if and only if attribute ID with companion attribute value
+ * size do match a valid attribute identifier.
+ *
+ * @attribute_id - Target PKCS11 attribute ID
+ * @size - Byte size of the attribute value, 0 if non-constant size
  */
-bool valid_pkcs11_attribute_id(uint32_t id, uint32_t size);
+bool valid_pkcs11_attribute_id(uint32_t attribute_id, uint32_t size);
+
+/*
+ * Return class attribute byte size if @attribute_id is the ID of a class
+ * attribute or 0 if not.
+ */
 size_t pkcs11_attr_is_class(uint32_t attribute_id);
+
+/*
+ * Return type attribute byte size if @attribute_id is the ID of a type
+ * attribute or 0 if not.
+ */
 size_t pkcs11_attr_is_type(uint32_t attribute_id);
+
+/* Return true if the object class has boolprop attribute(s) */
 bool pkcs11_class_has_boolprop(uint32_t class);
-bool pkcs11_class_has_type(uint32_t class);
-bool pkcs11_attr_class_is_key(uint32_t class);
-bool key_type_is_symm_key(uint32_t id);
-bool key_type_is_asymm_key(uint32_t id);
-int pkcs11_attr2boolprop_shift(uint32_t attr);
-bool mechanism_is_valid(uint32_t id);
-bool mechanism_is_supported(uint32_t id);
+
+/* Return true if the object class is related to a type-on-class */
+bool pkcs11_class_has_type(uint32_t class_id);
+
+/* Return true if the object class relates to a key */
+bool pkcs11_attr_class_is_key(uint32_t class_id);
+
+/* Return true if the key type @attribute_id relates to a symmetric key */
+bool key_type_is_symm_key(uint32_t key_type_id);
+
+/* Return true if the key type @attribute_id relates to a asymmetric key */
+bool key_type_is_asymm_key(uint32_t key_type_id);
+
+/* Boolprop flag shift position if @attribute_id is boolean, else -1 */
+int pkcs11_attr2boolprop_shift(uint32_t attribute_id);
+
+/* Return true if @id identifies a valid mechanism ID */
+bool mechanism_is_valid(uint32_t mechaism_id);
+
+/* Return true if @id identifies a supported mechanism */
+bool mechanism_is_supported(uint32_t mechanism_id);
+
+/*
+ * Get the list the the supported mechanism
+ *
+ * @array - Output buffer filled with supported mechanism IDs
+ * @array_count - Number of 32bit cells in output buffer
+ *
+ * Return number of supported mechanism. Output buffer is filled if well sized.
+ */
 size_t get_supported_mechanisms(uint32_t *array, size_t array_count);
 
+/* Convert PKCS11 TA function ID into a TEE crypto operation mode */
 void pkcs2tee_mode(uint32_t *tee_id, uint32_t function);
+
+/* Load TEE operation attributes from a PKCS11 object, return false on error */
 bool pkcs2tee_load_attr(TEE_Attribute *tee_ref, uint32_t tee_id,
 			struct pkcs11_object *obj, uint32_t pkcs11_id);
 
 /*
  * Convert PKCS11 TA return code into a GPD TEE result ID when matching.
- * If not, return a TEE success (_noerr) or generic error (_error).
+ * If not, return a TEE success (_noerr) or a generic error (_error).
  */
 TEE_Result pkcs2tee_noerr(uint32_t rv);
 TEE_Result pkcs2tee_error(uint32_t rv);

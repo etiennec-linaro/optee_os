@@ -172,7 +172,7 @@ static const struct processing_id __maybe_unused processing_ids[] = {
         PKCS11_UNSUPPORTED_PROCESSING_ID(PKCS11_CKM_UNDEFINED_ID)
 };
 
-struct string_id {
+struct any_id {
 	uint32_t id;
 #if CFG_TEE_TA_LOG_LEVEL > 0
 	const char *string;
@@ -180,12 +180,12 @@ struct string_id {
 };
 
 #if CFG_TEE_TA_LOG_LEVEL > 0
-#define PKCS11_ID(_id)		{ .id = _id, .string = #_id }
+#define PKCS11_ID(_id)		{ .id = (uint32_t)(_id), .string = #_id }
 #else
-#define PKCS11_ID(_id)		{ .id = _id }
+#define PKCS11_ID(_id)		{ .id = (uint32_t)(_id) }
 #endif
 
-static const struct string_id __maybe_unused string_cmd[] = {
+static const struct any_id __maybe_unused string_cmd[] = {
 	PKCS11_ID(PKCS11_CMD_PING),
 	PKCS11_ID(PKCS11_CMD_SLOT_LIST),
 	PKCS11_ID(PKCS11_CMD_SLOT_INFO),
@@ -234,7 +234,7 @@ static const struct string_id __maybe_unused string_cmd[] = {
 	PKCS11_ID(PKCS11_CMD_GENERATE_KEY_PAIR),
 };
 
-static const struct string_id __maybe_unused string_rc[] = {
+static const struct any_id __maybe_unused string_rc[] = {
 	PKCS11_ID(PKCS11_CKR_OK),
 	PKCS11_ID(PKCS11_CKR_GENERAL_ERROR),
 	PKCS11_ID(PKCS11_CKR_DEVICE_MEMORY),
@@ -282,13 +282,13 @@ static const struct string_id __maybe_unused string_rc[] = {
 	PKCS11_ID(PKCS11_RV_NOT_IMPLEMENTED),
 };
 
-static const struct string_id __maybe_unused string_slot_flags[] = {
+static const struct any_id __maybe_unused string_slot_flags[] = {
 	PKCS11_ID(PKCS11_CKFS_TOKEN_PRESENT),
 	PKCS11_ID(PKCS11_CKFS_REMOVABLE_DEVICE),
 	PKCS11_ID(PKCS11_CKFS_HW_SLOT),
 };
 
-static const struct string_id __maybe_unused string_token_flags[] = {
+static const struct any_id __maybe_unused string_token_flags[] = {
 	PKCS11_ID(PKCS11_CKFT_RNG),
 	PKCS11_ID(PKCS11_CKFT_WRITE_PROTECTED),
 	PKCS11_ID(PKCS11_CKFT_LOGIN_REQUIRED),
@@ -309,7 +309,7 @@ static const struct string_id __maybe_unused string_token_flags[] = {
 	PKCS11_ID(PKCS11_CKFT_ERROR_STATE),
 };
 
-static const struct string_id __maybe_unused string_class[] = {
+static const struct any_id __maybe_unused string_class[] = {
 	PKCS11_ID(PKCS11_CKO_SECRET_KEY),
 	PKCS11_ID(PKCS11_CKO_PUBLIC_KEY),
 	PKCS11_ID(PKCS11_CKO_PRIVATE_KEY),
@@ -322,7 +322,7 @@ static const struct string_id __maybe_unused string_class[] = {
 	PKCS11_ID(PKCS11_CKO_UNDEFINED_ID)
 };
 
-static const struct string_id __maybe_unused string_key_type[] = {
+static const struct any_id __maybe_unused string_key_type[] = {
 	PKCS11_ID(PKCS11_CKK_AES),
 	PKCS11_ID(PKCS11_CKK_GENERIC_SECRET),
 	PKCS11_ID(PKCS11_CKK_MD5_HMAC),
@@ -337,12 +337,12 @@ static const struct string_id __maybe_unused string_key_type[] = {
 };
 
 /* Processing IDs not exported in the TA API */
-static const struct string_id __maybe_unused string_internal_processing[] = {
+static const struct any_id __maybe_unused string_internal_processing[] = {
 	PKCS11_ID(PKCS11_PROCESSING_IMPORT),
 	PKCS11_ID(PKCS11_PROCESSING_COPY),
 };
 
-static const struct string_id __maybe_unused string_proc_flags[] = {
+static const struct any_id __maybe_unused string_proc_flags[] = {
 	PKCS11_ID(PKCS11_CKFM_HW),
 	PKCS11_ID(PKCS11_CKFM_ENCRYPT),
 	PKCS11_ID(PKCS11_CKFM_DECRYPT),
@@ -364,7 +364,7 @@ static const struct string_id __maybe_unused string_proc_flags[] = {
 	PKCS11_ID(PKCS11_CKFM_EC_COMPRESS),
 };
 
-static const struct string_id __maybe_unused string_functions[] = {
+static const struct any_id __maybe_unused string_functions[] = {
 	PKCS11_ID(PKCS11_FUNCTION_ENCRYPT),
 	PKCS11_ID(PKCS11_FUNCTION_DECRYPT),
 	PKCS11_ID(PKCS11_FUNCTION_SIGN),
@@ -373,7 +373,7 @@ static const struct string_id __maybe_unused string_functions[] = {
 };
 
 /*
- * Helper functions to analyse PKCS11 TA identifiers
+ * Helper functions to analyse PKCS11 identifiers
  */
 
 size_t pkcs11_attr_is_class(uint32_t attribute_id)
@@ -690,7 +690,7 @@ static const char *id2str_mechanism_type(uint32_t id)
 	return unknown;
 }
 
-static const char *id2str(uint32_t id, const struct string_id *table,
+static const char *id2str(uint32_t id, const struct any_id *table,
 			  size_t count, const char *prefix)
 {
 	size_t n = 0;

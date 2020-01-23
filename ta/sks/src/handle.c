@@ -1,7 +1,6 @@
+// SPDX-License-Identifier: BSD-2-Clause
 /*
- * Copyright (c) 2014-2018, Linaro Limited
- *
- * SPDX-License-Identifier: BSD-2-Clause
+ * Copyright (c) 2014-2020, Linaro Limited
  */
 
 #include <stdlib.h>

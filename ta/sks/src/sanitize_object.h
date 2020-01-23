@@ -1,11 +1,10 @@
+/* SPDX-License-Identifier: BSD-2-Clause */
 /*
- * Copyright (c) 2017-2018, Linaro Limited
- *
- * SPDX-License-Identifier: BSD-2-Clause
+ * Copyright (c) 2017-2020, Linaro Limited
  */
 
-#ifndef __SERIAL_SANITIZE_H
-#define __SERIAL_SANITIZE_H
+#ifndef PKCS11_TA_SANITIZE_OBJECT_H
+#define PKCS11_TA_SANITIZE_OBJECT_H
 
 #include "serializer.h"
 
@@ -40,5 +39,4 @@ uint32_t sanitize_client_object(struct pkcs11_attrs_head **dst,
 uint32_t trace_attributes_from_api_head(const char *prefix,
 					void *ref, size_t size);
 
-#endif /*__SERIAL_SANITIZE_H*/
-
+#endif /*PKCS11_TA_SANITIZE_OBJECT_H*/

@@ -1,10 +1,10 @@
 /* SPDX-License-Identifier: BSD-2-Clause */
 /*
- * Copyright (c) 2017-2018, Linaro Limited
+ * Copyright (c) 2018-2020, Linaro Limited
  */
 
-#ifndef __SKS_HELPERS_H
-#define __SKS_HELPERS_H
+#ifndef PKCS11_TA_PKCS11_HELPERS_H
+#define PKCS11_TA_PKCS11_HELPERS_H
 
 #include <sks_ta.h>
 #include <stdint.h>
@@ -68,4 +68,4 @@ const char *id2str_skscmd(uint32_t id);
 const char *id2str_attr_value(uint32_t id, size_t size, void *value);
 const char *id2str_function(uint32_t id);
 
-#endif /*__CK_HELPERS_H*/
+#endif /*PKCS11_TA_PKCS11_HELPERS_H*/

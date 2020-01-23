@@ -1,9 +1,9 @@
 /* SPDX-License-Identifier: BSD-2-Clause */
 /*
- * Copyright (c) 2017-2018, Linaro Limited
+ * Copyright (c) 2017-2020, Linaro Limited
  */
-#ifndef __SKS_PKCS11_TOKEN_H__
-#define __SKS_PKCS11_TOKEN_H__
+#ifndef PKCS11_TA_PKCS11_TOKEN_H
+#define PKCS11_TA_PKCS11_TOKEN_H
 
 #include <sys/queue.h>
 #include <tee_internal_api.h>
@@ -313,4 +313,4 @@ uint32_t entry_login(uintptr_t tee_session, TEE_Param *ctrl,
 uint32_t entry_logout(uintptr_t tee_session, TEE_Param *ctrl,
 		      TEE_Param *in, TEE_Param *out);
 
-#endif /*__SKS_PKCS11_TOKEN_H__*/
+#endif /*PKCS11_TA_PKCS11_TOKEN_H*/

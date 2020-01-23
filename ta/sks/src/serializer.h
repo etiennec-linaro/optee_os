@@ -1,10 +1,10 @@
 /* SPDX-License-Identifier: BSD-2-Clause */
 /*
- * Copyright (c) 2017-2018, Linaro Limited
+ * Copyright (c) 2017-2020, Linaro Limited
  */
 
-#ifndef __SERIALIZER_H__
-#define __SERIALIZER_H__
+#ifndef PKCS11_TA_SERIALIZER_H
+#define PKCS11_TA_SERIALIZER_H
 
 #include <sks_internal_abi.h>
 #include <stdint.h>
@@ -44,5 +44,4 @@ uint32_t serialargs_alloc_and_get(struct serialargs *args,
  */
 uint32_t serialize(char **bstart, size_t *blen, void *data, size_t len);
 
-#endif /*__SERIALIZER_H*/
-
+#endif /*PKCS11_TA_SERIALIZER_H*/

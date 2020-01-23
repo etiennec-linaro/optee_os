@@ -1,10 +1,10 @@
 /* SPDX-License-Identifier: BSD-2-Clause */
 /*
- * Copyright (c) 2017-2018, Linaro Limited
+ * Copyright (c) 2017-2020, Linaro Limited
  */
 
-#ifndef __SKS_OBJECT_H__
-#define __SKS_OBJECT_H__
+#ifndef PKCS11_TA_OBJECT_H
+#define PKCS11_TA_OBJECT_H
 
 #include <sks_internal_abi.h>
 #include <sys/queue.h>
@@ -61,4 +61,4 @@ uint32_t entry_get_attribute_value(uintptr_t teesess, TEE_Param *ctrl,
 
 void release_session_find_obj_context(struct pkcs11_session *session);
 
-#endif /*__SKS_OBJECT_H__*/
+#endif /*PKCS11_TA_OBJECT_H*/

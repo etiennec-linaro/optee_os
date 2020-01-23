@@ -1,10 +1,10 @@
 /* SPDX-License-Identifier: BSD-2-Clause */
 /*
- * Copyright (c) 2017-2018, Linaro Limited
+ * Copyright (c) 2017-2020, Linaro Limited
  */
 
-#ifndef __SKS_PROCESSING_H__
-#define __SKS_PROCESSING_H__
+#ifndef PKCS11_TA_PROCESSING_H
+#define PKCS11_TA_PROCESSING_H
 
 #include <tee_internal_api.h>
 #include <pkcs11_attributes.h>
@@ -167,4 +167,4 @@ uint32_t generate_rsa_keys(struct pkcs11_attribute_head *proc_params,
 			   struct pkcs11_attrs_head **pub_head,
 			   struct pkcs11_attrs_head **priv_head);
 
-#endif /*__SKS_PROCESSING_H__*/
+#endif /*PKCS11_TA_PROCESSING_H*/

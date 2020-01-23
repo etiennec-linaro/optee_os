@@ -1,11 +1,10 @@
+/* SPDX-License-Identifier: BSD-2-Clause */
 /*
- * Copyright (c) 2017-2018, Linaro Limited
- *
- * SPDX-License-Identifier: BSD-2-Clause
+ * Copyright (c) 2017-2020, Linaro Limited
  */
 
-#ifndef __ATTRIBUTES_H
-#define __ATTRIBUTES_H
+#ifndef PKCS11_TA_ATTRIBUTES_H
+#define PKCS11_TA_ATTRIBUTES_H
 
 #include <assert.h>
 #include <sks_internal_abi.h>
@@ -163,4 +162,4 @@ bool get_bool(struct pkcs11_attrs_head *head, uint32_t attribute);
 /* Debug: dump object attributes to IMSG() trace console */
 uint32_t trace_attributes(const char *prefix, void *ref);
 
-#endif /*__ATTRIBUTES_H*/
+#endif /*PKCS11_TA_ATTRIBUTES_H*/

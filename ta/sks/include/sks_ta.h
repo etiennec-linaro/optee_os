@@ -1,10 +1,10 @@
 /* SPDX-License-Identifier: BSD-2-Clause */
 /*
- * Copyright (c) 2017-2018, Linaro Limited
+ * Copyright (c) 2018-2020, Linaro Limited
  */
 
-#ifndef __SKS_TA_H__
-#define __SKS_TA_H__
+#ifndef PKCS11_TA_H
+#define PKCS11_TA_H
 
 #include <sys/types.h>
 #include <stdint.h>
@@ -1061,5 +1061,4 @@ struct pkcs11_attribute_head {
  *		32bit: byte size of the source data
  *		byte array: source data
  */
-
-#endif /*__SKS_TA_H__*/
+#endif /*PKCS11_TA_H*/

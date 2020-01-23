@@ -1,11 +1,10 @@
+/* SPDX-License-Identifier: BSD-2-Clause */
 /*
- * Copyright (c) 2017-2018, Linaro Limited
- *
- * SPDX-License-Identifier: BSD-2-Clause
+ * Copyright (c) 2017-2020, Linaro Limited
  */
 
-#ifndef __PKCS11_ATTRIBUTE_H
-#define __PKCS11_ATTRIBUTE_H
+#ifndef PKCS11_TA_PKCS11_ATTRIBUTES_H
+#define PKCS11_TA_PKCS11_ATTRIBUTES_H
 
 #include <inttypes.h>
 
@@ -166,4 +165,4 @@ bool attribute_is_exportable(struct pkcs11_attribute_head *req_attr,
 uint32_t add_missing_attribute_id(struct pkcs11_attrs_head **attrs1,
 				  struct pkcs11_attrs_head **attrs2);
 
-#endif /*__PKCS11_ATTRIBUTE_H*/
+#endif /*PKCS11_TA_PKCS11_ATTRIBUTES_H*/

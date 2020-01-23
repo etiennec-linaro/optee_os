@@ -1,11 +1,10 @@
+/* SPDX-License-Identifier: BSD-2-Clause */
 /*
- * Copyright (c) 2014-2018, Linaro Limited
- *
- * SPDX-License-Identifier: BSD-2-Clause
+ * Copyright (c) 2014-2020, Linaro Limited
  */
 
-#ifndef __HANDLE_H
-#define __HANDLE_H
+#ifndef PKCS11_TA_HANDLE_H
+#define PKCS11_TA_HANDLE_H
 
 #include <stddef.h>
 
@@ -53,5 +52,4 @@ void *handle_lookup(struct handle_db *db, uint32_t handle);
 /* Return the handle associated to a pointer if found, else return 0 */
 uint32_t handle_lookup_handle(struct handle_db *db, void *ptr);
 
-#endif /*__HANDLE_H*/
-
+#endif /*PKCS11_TA_HANDLE_H*/

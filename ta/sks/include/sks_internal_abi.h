@@ -4,8 +4,8 @@
  * SPDX-License-Identifier: BSD-2-Clause
  */
 
-#ifndef __SKS_INTERNAL_ABI_H
-#define __SKS_INTERNAL_ABI_H
+#ifndef PKCS11_INTERNAL_ABI_H
+#define PKCS11_INTERNAL_ABI_H
 
 /* Internal format is based on the API IDs */
 #include <sks_ta.h>
@@ -58,4 +58,4 @@ struct pkcs11_attrs_head {
 	uint8_t attrs[];
 };
 
-#endif /*__SKS_INTERNAL_ABI_H*/
+#endif /*PKCS11_INTERNAL_ABI_H*/

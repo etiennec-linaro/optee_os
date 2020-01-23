@@ -155,7 +155,7 @@ static uint32_t allocate_tee_operation(struct pkcs11_session *session,
 		EMSG("TEE_AllocateOp. failed %" PRIx32 " %" PRIx32 " %" PRIx32,
 			algo, mode, size);
 
-	return tee2sks_error(res);
+	return tee2pkcs_error(res);
 }
 
 static uint32_t load_tee_key(struct pkcs11_session *session,
@@ -192,7 +192,7 @@ static uint32_t load_tee_key(struct pkcs11_session *session,
 					  &obj->key_handle);
 	if (res) {
 		DMSG("TEE_AllocateTransientObject failed, %" PRIx32, res);
-		return tee2sks_error(res);
+		return tee2pkcs_error(res);
 	}
 
 	res = TEE_PopulateTransientObject(obj->key_handle, &tee_attr, 1);
@@ -209,13 +209,13 @@ key_ready:
 		goto error;
 	}
 
-	return tee2sks_error(res);
+	return tee2pkcs_error(res);
 
 error:
 	TEE_FreeTransientObject(obj->key_handle);
 	obj->key_handle = TEE_HANDLE_NULL;
 
-	return tee2sks_error(res);
+	return tee2pkcs_error(res);
 }
 
 static uint32_t init_tee_operation(struct pkcs11_session *session,
@@ -384,7 +384,7 @@ uint32_t step_symm_operation(struct pkcs11_session *session,
 						in_buf, in_size,
 						out_buf, &out_size);
 			output_data = true;
-			rv = tee2sks_error(res);
+			rv = tee2pkcs_error(res);
 			break;
 		default:
 			TEE_Panic(function);
@@ -402,7 +402,7 @@ uint32_t step_symm_operation(struct pkcs11_session *session,
 			res = TEE_AEUpdate(proc->tee_op_handle,
 					   in_buf, in_size, out_buf, &out_size);
 			output_data = true;
-			rv = tee2sks_error(res);
+			rv = tee2pkcs_error(res);
 
 			if (step == PKCS11_FUNC_STEP_ONESHOT &&
 			    (rv == PKCS11_OK || rv == PKCS11_SHORT_BUFFER)) {
@@ -446,12 +446,12 @@ uint32_t step_symm_operation(struct pkcs11_session *session,
 			res = TEE_MACComputeFinal(proc->tee_op_handle,
 						  NULL, 0, out_buf, &out_size);
 			output_data = true;
-			rv = tee2sks_error(res);
+			rv = tee2pkcs_error(res);
 			break;
 		case PKCS11_FUNCTION_VERIFY:
 			res = TEE_MACCompareFinal(proc->tee_op_handle,
 						  NULL, 0, in2_buf, in2_size);
-			rv = tee2sks_error(res);
+			rv = tee2pkcs_error(res);
 			break;
 		default:
 			TEE_Panic(function);
@@ -471,7 +471,7 @@ uint32_t step_symm_operation(struct pkcs11_session *session,
 						in_buf, in_size,
 						out_buf, &out_size);
 			output_data = true;
-			rv = tee2sks_error(res);
+			rv = tee2pkcs_error(res);
 			break;
 		default:
 			TEE_Panic(function);

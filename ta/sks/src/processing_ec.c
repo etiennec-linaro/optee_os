@@ -1131,35 +1131,35 @@ uint32_t pkcs2tee_algo_ecdsa(uint32_t *tee_id,
 	return PKCS11_OK;
 }
 
-static uint32_t tee2sks_ec_attributes(struct pkcs11_attrs_head **pub_head,
+static uint32_t tee2pkcs_ec_attributes(struct pkcs11_attrs_head **pub_head,
 				 struct pkcs11_attrs_head **priv_head,
 				 TEE_ObjectHandle tee_obj)
 {
 	uint32_t rv = 0;
 
-	rv = tee2sks_add_attribute(priv_head, PKCS11_CKA_VALUE,
+	rv = tee2pkcs_add_attribute(priv_head, PKCS11_CKA_VALUE,
 				   tee_obj, TEE_ATTR_ECC_PRIVATE_VALUE);
 	if (rv)
 		goto bail;
 
 	// FIXME: 1 DER formatted x/y point instead of 2 CKA_EC_POINT attributes
-	rv = tee2sks_add_attribute(priv_head, PKCS11_CKA_EC_POINT_X,
+	rv = tee2pkcs_add_attribute(priv_head, PKCS11_CKA_EC_POINT_X,
 				   tee_obj, TEE_ATTR_ECC_PUBLIC_VALUE_X);
 	if (rv)
 		goto bail;
 
-	rv = tee2sks_add_attribute(priv_head, PKCS11_CKA_EC_POINT_Y,
+	rv = tee2pkcs_add_attribute(priv_head, PKCS11_CKA_EC_POINT_Y,
 				   tee_obj, TEE_ATTR_ECC_PUBLIC_VALUE_Y);
 	if (rv)
 		goto bail;
 
 	// FIXME: 1 DER formatted x/y point instead of 2 CKA_EC_POINT attributes
-	rv = tee2sks_add_attribute(pub_head, PKCS11_CKA_EC_POINT_X,
+	rv = tee2pkcs_add_attribute(pub_head, PKCS11_CKA_EC_POINT_X,
 				   tee_obj, TEE_ATTR_ECC_PUBLIC_VALUE_X);
 	if (rv)
 		goto bail;
 
-	rv = tee2sks_add_attribute(pub_head, PKCS11_CKA_EC_POINT_Y,
+	rv = tee2pkcs_add_attribute(pub_head, PKCS11_CKA_EC_POINT_Y,
 				   tee_obj, TEE_ATTR_ECC_PUBLIC_VALUE_Y);
 
 bail:
@@ -1227,22 +1227,22 @@ uint32_t generate_ec_keys(struct pkcs11_attribute_head *proc_params,
 					  521/*tee_size*/, &tee_obj);
 	if (res) {
 		EMSG("TEE service failed, %" PRIx32, res);
-		return tee2sks_error(res);
+		return tee2pkcs_error(res);
 	}
 
 	res = TEE_RestrictObjectUsage1(tee_obj, TEE_USAGE_EXTRACTABLE);
 	if (res) {
-		rv = tee2sks_error(res);
+		rv = tee2pkcs_error(res);
 		goto bail;
 	}
 
 	res = TEE_GenerateKey(tee_obj, tee_size, &tee_key_attr[0], 1);
 	if (res) {
-		rv = tee2sks_error(res);
+		rv = tee2pkcs_error(res);
 		goto bail;
 	}
 
-	rv = tee2sks_ec_attributes(pub_head, priv_head, tee_obj);
+	rv = tee2pkcs_ec_attributes(pub_head, priv_head, tee_obj);
 
 bail:
 	if (tee_obj != TEE_HANDLE_NULL)

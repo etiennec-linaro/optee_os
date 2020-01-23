@@ -184,7 +184,7 @@ uint32_t tee_ae_decrypt_update(struct active_processing *processing,
 			res = TEE_AEUpdate(processing->tee_op_handle,
 					   ctx->pending_tag, len, ct, &ct_size);
 			if (res) {
-				rv = tee2sks_error(res);
+				rv = tee2pkcs_error(res);
 				goto bail;
 			}
 
@@ -227,7 +227,7 @@ uint32_t tee_ae_decrypt_update(struct active_processing *processing,
 			res = TEE_AEUpdate(processing->tee_op_handle,
 					   in, data_len, ct + ct_size, &size);
 			if (res) {
-				rv = tee2sks_error(res);
+				rv = tee2pkcs_error(res);
 				goto bail;
 			}
 
@@ -361,7 +361,7 @@ uint32_t tee_ae_decrypt_final(struct active_processing *processing,
 	TEE_Free(ctx->pending_tag);
 	ctx->pending_tag = NULL;
 
-	rv = tee2sks_error(res);
+	rv = tee2pkcs_error(res);
 	if (rv)
 		goto bail;
 
@@ -434,7 +434,7 @@ uint32_t tee_ae_encrypt_final(struct active_processing *processing,
 	if (!res)
 		*out_size = size + tag_len;
 
-	return tee2sks_error(res);
+	return tee2pkcs_error(res);
 }
 
 uint32_t tee_init_ccm_operation(struct active_processing *processing,

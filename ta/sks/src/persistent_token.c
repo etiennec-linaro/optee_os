@@ -53,11 +53,11 @@ int update_persistent_db(struct ck_token *token, size_t offset, size_t size)
 
 	res = TEE_SeekObjectData(token->db_hdl, offset, TEE_DATA_SEEK_SET);
 	if (res)
-		return tee2sks_error(res);
+		return tee2pkcs_error(res);
 
 	res = TEE_WriteObjectData(token->db_hdl, field, size);
 	if (res)
-		return tee2sks_error(res);
+		return tee2pkcs_error(res);
 
 	return 0;
 }
@@ -196,7 +196,7 @@ uint32_t unregister_persistent_object(struct ck_token *token, TEE_UUID *uuid)
 	if (res) {
 		EMSG("Failed to read database");
 		TEE_Free(ptr);
-		return tee2sks_error(res);
+		return tee2pkcs_error(res);
 	}
 
 	TEE_MemMove(ptr, token->db_objs,
@@ -216,7 +216,7 @@ uint32_t unregister_persistent_object(struct ck_token *token, TEE_UUID *uuid)
 	if (res) {
 		EMSG("Failed to update database");
 		TEE_Free(ptr);
-		return tee2sks_error(res);
+		return tee2pkcs_error(res);
 	}
 
 	TEE_Free(token->db_objs);
@@ -253,13 +253,13 @@ uint32_t register_persistent_object(struct ck_token *token, TEE_UUID *uuid)
 
 	res = TEE_TruncateObjectData(token->db_hdl, size + sizeof(TEE_UUID));
 	if (res)
-		return tee2sks_error(res);
+		return tee2pkcs_error(res);
 
 	res = TEE_SeekObjectData(token->db_hdl,
 				 sizeof(struct token_persistent_main),
 				 TEE_DATA_SEEK_SET);
 	if (res)
-		return tee2sks_error(res);
+		return tee2pkcs_error(res);
 
 	token->db_objs->count++;
 
@@ -268,7 +268,7 @@ uint32_t register_persistent_object(struct ck_token *token, TEE_UUID *uuid)
 				  token->db_objs->count * sizeof(TEE_UUID));
 	if (res) {
 		token->db_objs->count--;
-		return tee2sks_error(res);
+		return tee2pkcs_error(res);
 	}
 
 	return PKCS11_OK;

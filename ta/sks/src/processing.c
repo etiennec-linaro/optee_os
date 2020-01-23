@@ -452,10 +452,10 @@ uint32_t alloc_get_tee_attribute_data(TEE_ObjectHandle tee_obj,
 		*size = sz;
 	}
 
-	return tee2sks_error(res);
+	return tee2pkcs_error(res);
 }
 
-uint32_t tee2sks_add_attribute(struct pkcs11_attrs_head **head, uint32_t sks_id,
+uint32_t tee2pkcs_add_attribute(struct pkcs11_attrs_head **head, uint32_t pkcs11_id,
 				TEE_ObjectHandle tee_obj, uint32_t tee_id)
 {
 	uint32_t rv = 0;
@@ -466,14 +466,14 @@ uint32_t tee2sks_add_attribute(struct pkcs11_attrs_head **head, uint32_t sks_id,
 	if (rv)
 		goto bail;
 
-	rv = add_attribute(head, sks_id, a_ptr, a_size);
+	rv = add_attribute(head, pkcs11_id, a_ptr, a_size);
 
 	TEE_Free(a_ptr);
 
 bail:
 	if (rv)
 		EMSG("Failed TEE attribute 0x%" PRIx32 "for %s (0x%" PRIx32 ")",
-				tee_id, id2str_attr(sks_id), sks_id);
+				tee_id, id2str_attr(pkcs11_id), pkcs11_id);
 	return rv;
 }
 

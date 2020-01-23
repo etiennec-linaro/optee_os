@@ -49,7 +49,7 @@ bool pkcs2tee_load_attr(TEE_Attribute *tee_ref, uint32_t tee_id,
  */
 TEE_Result pkcs2tee_noerr(uint32_t rv);
 TEE_Result pkcs2tee_error(uint32_t rv);
-uint32_t tee2sks_error(TEE_Result res);
+uint32_t tee2pkcs_error(TEE_Result res);
 
 /* Id-to-string conversions when CFG_TEE_TA_LOG_LEVEL > 0 */
 const char *id2str_attr_value(uint32_t id, size_t size, void *value);

@@ -369,19 +369,19 @@ uint32_t load_tee_rsa_key_attrs(TEE_Attribute **tee_attrs, size_t *tee_count,
 	return rv;
 }
 
-static uint32_t tee2sks_rsa_attributes(struct pkcs11_attrs_head **pub_head,
+static uint32_t tee2pkcs_rsa_attributes(struct pkcs11_attrs_head **pub_head,
 					struct pkcs11_attrs_head **priv_head,
 					TEE_ObjectHandle tee_obj)
 {
 	uint32_t rv;
 
-	rv = tee2sks_add_attribute(pub_head, PKCS11_CKA_MODULUS,
+	rv = tee2pkcs_add_attribute(pub_head, PKCS11_CKA_MODULUS,
 				   tee_obj, TEE_ATTR_RSA_MODULUS);
 	if (rv)
 		goto bail;
 
 	if (get_attribute_ptr(*pub_head, PKCS11_CKA_PUBLIC_EXPONENT, NULL, NULL)) {
-		rv = tee2sks_add_attribute(pub_head,
+		rv = tee2pkcs_add_attribute(pub_head,
 					   PKCS11_CKA_PUBLIC_EXPONENT,
 					   tee_obj,
 					   TEE_ATTR_RSA_PUBLIC_EXPONENT);
@@ -389,42 +389,42 @@ static uint32_t tee2sks_rsa_attributes(struct pkcs11_attrs_head **pub_head,
 			goto bail;
 	}
 
-	rv = tee2sks_add_attribute(priv_head, PKCS11_CKA_MODULUS,
+	rv = tee2pkcs_add_attribute(priv_head, PKCS11_CKA_MODULUS,
 				   tee_obj, TEE_ATTR_RSA_MODULUS);
 	if (rv)
 		goto bail;
 
-	rv = tee2sks_add_attribute(priv_head, PKCS11_CKA_PUBLIC_EXPONENT,
+	rv = tee2pkcs_add_attribute(priv_head, PKCS11_CKA_PUBLIC_EXPONENT,
 				   tee_obj, TEE_ATTR_RSA_PUBLIC_EXPONENT);
 	if (rv)
 		goto bail;
 
-	rv = tee2sks_add_attribute(priv_head, PKCS11_CKA_PRIVATE_EXPONENT,
+	rv = tee2pkcs_add_attribute(priv_head, PKCS11_CKA_PRIVATE_EXPONENT,
 				   tee_obj, TEE_ATTR_RSA_PRIVATE_EXPONENT);
 	if (rv)
 		goto bail;
 
-	rv = tee2sks_add_attribute(priv_head, PKCS11_CKA_PRIME_1,
+	rv = tee2pkcs_add_attribute(priv_head, PKCS11_CKA_PRIME_1,
 				   tee_obj, TEE_ATTR_RSA_PRIME1);
 	if (rv)
 		goto bail;
 
-	rv = tee2sks_add_attribute(priv_head, PKCS11_CKA_PRIME_2,
+	rv = tee2pkcs_add_attribute(priv_head, PKCS11_CKA_PRIME_2,
 				   tee_obj, TEE_ATTR_RSA_PRIME2);
 	if (rv)
 		goto bail;
 
-	rv = tee2sks_add_attribute(priv_head, PKCS11_CKA_EXPONENT_1,
+	rv = tee2pkcs_add_attribute(priv_head, PKCS11_CKA_EXPONENT_1,
 				   tee_obj, TEE_ATTR_RSA_EXPONENT1);
 	if (rv)
 		goto bail;
 
-	rv = tee2sks_add_attribute(priv_head, PKCS11_CKA_EXPONENT_2,
+	rv = tee2pkcs_add_attribute(priv_head, PKCS11_CKA_EXPONENT_2,
 				   tee_obj, TEE_ATTR_RSA_EXPONENT2);
 	if (rv)
 		goto bail;
 
-	rv = tee2sks_add_attribute(priv_head, PKCS11_CKA_COEFFICIENT,
+	rv = tee2pkcs_add_attribute(priv_head, PKCS11_CKA_COEFFICIENT,
 				   tee_obj, TEE_ATTR_RSA_COEFFICIENT);
 bail:
 	return rv;
@@ -486,24 +486,24 @@ uint32_t generate_rsa_keys(struct pkcs11_attribute_head *proc_params,
 					  tee_size, &tee_obj);
 	if (res) {
 		DMSG("TEE_AllocateTransientObject failed 0x%" PRIx32, res);
-		return tee2sks_error(res);
+		return tee2pkcs_error(res);
 	}
 
 	res = TEE_RestrictObjectUsage1(tee_obj, TEE_USAGE_EXTRACTABLE);
 	if (res) {
 		DMSG("TEE_RestrictObjectUsage1 failed 0x%" PRIx32, res);
-		rv = tee2sks_error(res);
+		rv = tee2pkcs_error(res);
 		goto bail;
 	}
 
 	res = TEE_GenerateKey(tee_obj, tee_size, &tee_attrs[0], tee_count);
 	if (res) {
 		DMSG("TEE_GenerateKey failed 0x%" PRIx32, res);
-		rv = tee2sks_error(res);
+		rv = tee2pkcs_error(res);
 		goto bail;
 	}
 
-	rv = tee2sks_rsa_attributes(pub_head, priv_head, tee_obj);
+	rv = tee2pkcs_rsa_attributes(pub_head, priv_head, tee_obj);
 
 bail:
 	if (tee_obj != TEE_HANDLE_NULL)

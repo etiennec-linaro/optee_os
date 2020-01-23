@@ -235,7 +235,7 @@ uint32_t create_object(void *sess, struct pkcs11_attrs_head *head,
 						 obj->attributes, size,
 						 &obj->attribs_hdl);
 		if (res) {
-			rv = tee2sks_error(res);
+			rv = tee2pkcs_error(res);
 			goto bail;
 		}
 
@@ -336,14 +336,14 @@ static uint32_t token_obj_matches_ref(struct pkcs11_attrs_head *req_attrs,
 					       &hdl);
 		if (res) {
 			EMSG("OpenPersistent failed 0x%" PRIx32, res);
-			return tee2sks_error(res);
+			return tee2pkcs_error(res);
 		}
 	}
 
 	res = TEE_GetObjectInfo1(hdl, &info);
 	if (res) {
 		EMSG("GetObjectInfo failed 0x%" PRIx32, res);
-		rv = tee2sks_error(res);
+		rv = tee2pkcs_error(res);
 		goto bail;
 	}
 
@@ -361,7 +361,7 @@ static uint32_t token_obj_matches_ref(struct pkcs11_attrs_head *req_attrs,
 	}
 
 	if (res) {
-		rv = tee2sks_error(res);
+		rv = tee2pkcs_error(res);
 		EMSG("Read %" PRIu32 " bytes, failed 0x%" PRIx32,
 			read_bytes, res);
 		goto bail;

@@ -477,7 +477,7 @@ TEE_Result pkcs2tee_noerr(uint32_t rc)
 	}
 }
 
-uint32_t tee2sks_error(TEE_Result res)
+uint32_t tee2pkcs_error(TEE_Result res)
 {
 	switch (res) {
 	case TEE_SUCCESS:

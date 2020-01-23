@@ -553,7 +553,7 @@ static void trace_boolprops(const char *prefix, struct pkcs11_attrs_head *head)
 {
 	size_t __maybe_unused n = 0;
 
-	for (n = 0; n <= SKS_BOOLPROPS_LAST; n++) {
+	for (n = 0; n <= PKCS11_BOOLPROPS_LAST; n++) {
 		bool bp = n < 32 ? !!(head->boolpropl & BIT(n)) :
 				 !!(head->boolproph & BIT(n - 32));
 

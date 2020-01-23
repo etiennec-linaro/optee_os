@@ -17,12 +17,12 @@
 #ifdef PKCS11_SHEAD_WITH_BOOLPROPS
 static inline void set_attributes_in_head(struct pkcs11_attrs_head *head)
 {
-	head->boolproph |= SKS_BOOLPROPH_FLAG;
+	head->boolproph |= PKCS11_BOOLPROPH_FLAG;
 }
 
 static inline bool head_contains_boolprops(struct pkcs11_attrs_head __unused *head)
 {
-	return head->boolproph & SKS_BOOLPROPH_FLAG;
+	return head->boolproph & PKCS11_BOOLPROPH_FLAG;
 }
 #endif
 

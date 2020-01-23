@@ -165,7 +165,7 @@ static uint32_t sanitize_boolprop(struct pkcs11_attrs_head **dst,
 	if (shift < 0)
 		return PKCS11_NOT_FOUND;
 
-	if (shift >= SKS_MAX_BOOLPROP_SHIFT)
+	if (shift >= PKCS11_MAX_BOOLPROP_SHIFT)
 		return PKCS11_FAILED;
 
 	mask = 1 << (shift % 32);
@@ -192,7 +192,7 @@ static uint32_t sanitize_boolprop(struct pkcs11_attrs_head **dst,
 		uint32_t rc = 0;
 		uint8_t sks_bool = !!value;
 
-		rc = add_attribute(dst, SKS_BOOLPROPS_BASE + shift,
+		rc = add_attribute(dst, PKCS11_BOOLPROPS_BASE + shift,
 				   &sks_bool, sizeof(uint8_t));
 		if (rc)
 			return rc;
@@ -210,8 +210,8 @@ static uint32_t sanitize_boolprops(struct pkcs11_attrs_head **dst, void *src)
 	char *end = NULL;
 	size_t len = 0;
 	struct pkcs11_attribute_head cli_ref;
-	uint32_t sanity[SKS_MAX_BOOLPROP_ARRAY] = { 0 };
-	uint32_t boolprops[SKS_MAX_BOOLPROP_ARRAY] = { 0 };
+	uint32_t sanity[PKCS11_MAX_BOOLPROP_ARRAY] = { 0 };
+	uint32_t boolprops[PKCS11_MAX_BOOLPROP_ARRAY] = { 0 };
 	uint32_t rc = 0;
 
 	TEE_MemMove(&head, src, sizeof(head));

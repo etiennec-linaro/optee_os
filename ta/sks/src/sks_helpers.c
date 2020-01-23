@@ -424,9 +424,9 @@ bool sks_attr_class_is_key(uint32_t class)
 /* Returns shift position or -1 on error */
 int sks_attr2boolprop_shift(uint32_t attr)
 {
-	COMPILE_TIME_ASSERT(SKS_BOOLPROPS_BASE == 0);
+	COMPILE_TIME_ASSERT(PKCS11_BOOLPROPS_BASE == 0);
 
-	if (attr > SKS_BOOLPROPS_LAST)
+	if (attr > PKCS11_BOOLPROPS_LAST)
 		return -1;
 
 	return attr;

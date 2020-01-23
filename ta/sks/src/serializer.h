@@ -35,8 +35,9 @@ uint32_t serialargs_alloc_get_attributes(struct serialargs *args,
 uint32_t serialargs_alloc_and_get(struct serialargs *args,
 				   void **out, size_t size);
 
-#define SKS_MAX_BOOLPROP_SHIFT	64
-#define SKS_MAX_BOOLPROP_ARRAY	(SKS_MAX_BOOLPROP_SHIFT / sizeof(uint32_t))
+#define PKCS11_MAX_BOOLPROP_SHIFT	64
+#define PKCS11_MAX_BOOLPROP_ARRAY	(PKCS11_MAX_BOOLPROP_SHIFT / \
+					 sizeof(uint32_t))
 
 /**
  * serialize - Append data into a serialized buffer

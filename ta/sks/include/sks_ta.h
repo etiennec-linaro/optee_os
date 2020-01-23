@@ -727,7 +727,10 @@ struct pkcs11_attribute_head {
  * PKCS11_CKA_<x> relates to cryptoki CKA_<x>.
  * Value range [0 63] is reserved to boolean value attributes.
  */
-#define SKS_BOOLPROPS_BASE				0x00000000
+#define PKCS11_BOOLPROPH_FLAG		(1U << 31)
+#define PKCS11_BOOLPROPS_BASE		0
+#define PKCS11_BOOLPROPS_MAX		63
+
 #define PKCS11_CKA_TOKEN				0x00000000
 #define PKCS11_CKA_PRIVATE				0x00000001
 #define PKCS11_CKA_TRUSTED				0x00000002
@@ -750,10 +753,8 @@ struct pkcs11_attribute_head {
 #define PKCS11_CKA_DESTROYABLE				0x00000013
 #define PKCS11_CKA_ALWAYS_AUTHENTICATE			0x00000014
 #define PKCS11_CKA_WRAP_WITH_TRUSTED			0x00000015
-/* Last boolean property ID (value is 63) is reserved */
-#define SKS_BOOLPROPS_LAST				PKCS11_CKA_WRAP_WITH_TRUSTED
-#define SKS_BOOLPROPS_END				0x0000003F
-#define SKS_BOOLPROPH_FLAG				BIT(31)
+#define PKCS11_BOOLPROPS_LAST				PKCS11_CKA_WRAP_WITH_TRUSTED
+#define PKCS11_BOOLPROPS_END				PKCS11_BOOLPROPS_MAX
 
 #define PKCS11_CKA_LABEL				0x00000040
 #define PKCS11_CKA_VALUE				0x00000041

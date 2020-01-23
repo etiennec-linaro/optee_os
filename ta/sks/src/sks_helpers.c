@@ -767,7 +767,7 @@ const char *id2str_rc(uint32_t id)
 	return ID2STR(id, string_rc, "PKCS11_CKR_");
 }
 
-const char *id2str_skscmd(uint32_t id)
+const char *id2str_ta_cmd(uint32_t id)
 {
 	return ID2STR(id, string_cmd, NULL);
 }

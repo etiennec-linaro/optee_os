@@ -101,7 +101,7 @@ static uint32_t entry_ping(TEE_Param *ctrl, TEE_Param *in, TEE_Param *out)
  * Param#0 ctrl, if defined is an in/out buffer, is used to send back to
  * the client a Cryptoki status ID that supersedes the TEE result code which
  * will be force to TEE_SUCCESS. Note that some Cryptoki error status are
- * sent straight through TEE result code. See sks2tee_noerr().
+ * sent straight through TEE result code. See pkcs2tee_noerr().
  */
 TEE_Result TA_InvokeCommandEntryPoint(void *tee_session, uint32_t cmd,
 				      uint32_t ptypes,
@@ -360,12 +360,12 @@ TEE_Result TA_InvokeCommandEntryPoint(void *tee_session, uint32_t cmd,
 		TEE_MemMove(ctrl->memref.buffer, &rc, sizeof(uint32_t));
 		ctrl->memref.size = sizeof(uint32_t);
 
-		res = sks2tee_noerr(rc);
+		res = pkcs2tee_noerr(rc);
 
 		DMSG("SKS TA exit: %s rc 0x%08" PRIx32 "/%s",
 			id2str_ta_cmd(cmd), rc, id2str_rc(rc));
 	} else {
-		res = sks2tee_error(rc);
+		res = pkcs2tee_error(rc);
 		DMSG("SKS TA exit: %s rc 0x%08" PRIx32 "/%s, TEE rc %" PRIx32,
 			id2str_ta_cmd(cmd), rc, id2str_rc(rc), res);
 	}

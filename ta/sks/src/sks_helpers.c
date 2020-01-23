@@ -437,7 +437,7 @@ int pkcs11_attr2boolprop_shift(uint32_t attr)
  * Conversion between SKS and GPD TEE return codes
  */
 
-TEE_Result sks2tee_error(uint32_t rv)
+TEE_Result pkcs2tee_error(uint32_t rv)
 {
 	switch (rv) {
 	case PKCS11_CKR_OK:
@@ -457,7 +457,7 @@ TEE_Result sks2tee_error(uint32_t rv)
 	}
 }
 
-TEE_Result sks2tee_noerr(uint32_t rc)
+TEE_Result pkcs2tee_noerr(uint32_t rc)
 {
 	switch (rc) {
 	case PKCS11_CKR_ARGUMENTS_BAD:
@@ -598,8 +598,8 @@ size_t get_supported_mechanisms(uint32_t *array, size_t array_count)
 }
 
 /* Initialize a TEE attribute for a target SKS attribute in an object */
-bool sks2tee_load_attr(TEE_Attribute *tee_ref, uint32_t tee_id,
-			struct pkcs11_object *obj, uint32_t sks_id)
+bool pkcs2tee_load_attr(TEE_Attribute *tee_ref, uint32_t tee_id,
+			struct pkcs11_object *obj, uint32_t pkcs11_id)
 {
 	void *a_ptr = NULL;
 	uint32_t a_size = 0;
@@ -626,7 +626,7 @@ bool sks2tee_load_attr(TEE_Attribute *tee_ref, uint32_t tee_id,
 		break;
 	}
 
-	if (get_attribute_ptr(obj->attributes, sks_id, &a_ptr, &a_size))
+	if (get_attribute_ptr(obj->attributes, pkcs11_id, &a_ptr, &a_size))
 		return false;
 
 	TEE_InitRefAttribute(tee_ref, tee_id, a_ptr, a_size);
@@ -635,7 +635,7 @@ bool sks2tee_load_attr(TEE_Attribute *tee_ref, uint32_t tee_id,
 }
 
 /* Easy conversion between SKS function of TEE crypto mode */
-void sks2tee_mode(uint32_t *tee_id, uint32_t function)
+void pkcs2tee_mode(uint32_t *tee_id, uint32_t function)
 {
 	switch (function) {
 	case PKCS11_FUNCTION_ENCRYPT:

@@ -15,7 +15,7 @@
 #include "serializer.h"
 #include "sks_helpers.h"
 
-uint32_t sks2tee_proc_params_rsa_pss(struct active_processing *processing,
+uint32_t pkcs2tee_proc_params_rsa_pss(struct active_processing *processing,
 				     struct pkcs11_attribute_head *proc_params)
 {
 	struct serialargs args;
@@ -53,7 +53,7 @@ void tee_release_rsa_pss_operation(struct active_processing *processing)
 	processing->extra_ctx = NULL;
 }
 
-uint32_t sks2tee_algo_rsa_pss(uint32_t *tee_id,
+uint32_t pkcs2tee_algo_rsa_pss(uint32_t *tee_id,
 				struct pkcs11_attribute_head *proc_params)
 {
 	struct serialargs args;
@@ -149,7 +149,7 @@ uint32_t tee_init_rsa_aes_key_wrap_operation(struct active_processing *proc,
 	return PKCS11_ERROR;
 }
 
-uint32_t sks2tee_algo_rsa_oaep(uint32_t *tee_id,
+uint32_t pkcs2tee_algo_rsa_oaep(uint32_t *tee_id,
 				struct pkcs11_attribute_head *proc_params)
 {
 	struct serialargs args;
@@ -283,11 +283,11 @@ uint32_t load_tee_rsa_key_attrs(TEE_Attribute **tee_attrs, size_t *tee_count,
 		if (!attrs)
 			return PKCS11_MEMORY;
 
-		if (sks2tee_load_attr(&attrs[count], TEE_ATTR_RSA_MODULUS,
+		if (pkcs2tee_load_attr(&attrs[count], TEE_ATTR_RSA_MODULUS,
 					obj, PKCS11_CKA_MODULUS))
 			count++;
 
-		if (sks2tee_load_attr(&attrs[count],
+		if (pkcs2tee_load_attr(&attrs[count],
 					TEE_ATTR_RSA_PUBLIC_EXPONENT,
 					obj, PKCS11_CKA_PUBLIC_EXPONENT))
 			count++;
@@ -303,16 +303,16 @@ uint32_t load_tee_rsa_key_attrs(TEE_Attribute **tee_attrs, size_t *tee_count,
 		if (!attrs)
 			return PKCS11_MEMORY;
 
-		if (sks2tee_load_attr(&attrs[count], TEE_ATTR_RSA_MODULUS,
+		if (pkcs2tee_load_attr(&attrs[count], TEE_ATTR_RSA_MODULUS,
 					obj, PKCS11_CKA_MODULUS))
 			count++;
 
-		if (sks2tee_load_attr(&attrs[count],
+		if (pkcs2tee_load_attr(&attrs[count],
 					TEE_ATTR_RSA_PUBLIC_EXPONENT,
 					obj, PKCS11_CKA_PUBLIC_EXPONENT))
 			count++;
 
-		if (sks2tee_load_attr(&attrs[count],
+		if (pkcs2tee_load_attr(&attrs[count],
 					TEE_ATTR_RSA_PRIVATE_EXPONENT,
 					obj, PKCS11_CKA_PRIVATE_EXPONENT))
 			count++;
@@ -326,27 +326,27 @@ uint32_t load_tee_rsa_key_attrs(TEE_Attribute **tee_attrs, size_t *tee_count,
 			break;
 		}
 
-		if (sks2tee_load_attr(&attrs[count],
+		if (pkcs2tee_load_attr(&attrs[count],
 					TEE_ATTR_RSA_PRIME1,
 					obj, PKCS11_CKA_PRIME_1))
 			count++;
 
-		if (sks2tee_load_attr(&attrs[count],
+		if (pkcs2tee_load_attr(&attrs[count],
 					TEE_ATTR_RSA_PRIME2,
 					obj, PKCS11_CKA_PRIME_2))
 			count++;
 
-		if (sks2tee_load_attr(&attrs[count],
+		if (pkcs2tee_load_attr(&attrs[count],
 					TEE_ATTR_RSA_EXPONENT1,
 					obj, PKCS11_CKA_EXPONENT_1))
 			count++;
 
-		if (sks2tee_load_attr(&attrs[count],
+		if (pkcs2tee_load_attr(&attrs[count],
 					TEE_ATTR_RSA_EXPONENT2,
 					obj, PKCS11_CKA_EXPONENT_2))
 			count++;
 
-		if (sks2tee_load_attr(&attrs[count],
+		if (pkcs2tee_load_attr(&attrs[count],
 					TEE_ATTR_RSA_COEFFICIENT,
 					obj, PKCS11_CKA_COEFFICIENT))
 			count++;

@@ -46,12 +46,12 @@ bool processing_is_tee_asymm(uint32_t proc_id)
 	}
 }
 
-static uint32_t sks2tee_algorithm(uint32_t *tee_id,
+static uint32_t pkcs2tee_algorithm(uint32_t *tee_id,
 				  enum processing_func function,
 				  struct pkcs11_attribute_head *proc_params,
 				  struct pkcs11_object *obj)
 {
-	static const uint32_t sks2tee_algo[][2] = {
+	static const uint32_t pkcs2tee_algo[][2] = {
 		/* RSA flavors */
 		{ PKCS11_CKM_RSA_PKCS, TEE_ALG_RSAES_PKCS1_V1_5
 				/* TEE_ALG_RSASSA_PKCS1_V1_5 on signatures */ },
@@ -81,13 +81,13 @@ static uint32_t sks2tee_algorithm(uint32_t *tee_id,
 		{ PKCS11_CKM_ECDH1_DERIVE, 1 },
 		{ PKCS11_CKM_ECDH1_COFACTOR_DERIVE, 1 },
 	};
-	size_t end = sizeof(sks2tee_algo) / (2 * sizeof(uint32_t));
+	size_t end = sizeof(pkcs2tee_algo) / (2 * sizeof(uint32_t));
 	size_t n = 0;
 	uint32_t rv = 0;
 
 	for (n = 0; n < end; n++) {
-		if (proc_params->id == sks2tee_algo[n][0]) {
-			*tee_id = sks2tee_algo[n][1];
+		if (proc_params->id == pkcs2tee_algo[n][0]) {
+			*tee_id = pkcs2tee_algo[n][1];
 			break;
 		}
 	}
@@ -112,13 +112,13 @@ static uint32_t sks2tee_algorithm(uint32_t *tee_id,
 	case PKCS11_CKM_SHA256_RSA_PKCS_PSS:
 	case PKCS11_CKM_SHA384_RSA_PKCS_PSS:
 	case PKCS11_CKM_SHA512_RSA_PKCS_PSS:
-		rv = sks2tee_algo_rsa_pss(tee_id, proc_params);
+		rv = pkcs2tee_algo_rsa_pss(tee_id, proc_params);
 		break;
 	case PKCS11_CKM_RSA_PKCS_OAEP:
-		rv = sks2tee_algo_rsa_oaep(tee_id, proc_params);
+		rv = pkcs2tee_algo_rsa_oaep(tee_id, proc_params);
 		break;
 	case PKCS11_CKM_ECDH1_DERIVE:
-		rv = sks2tee_algo_ecdh(tee_id, proc_params, obj);
+		rv = pkcs2tee_algo_ecdh(tee_id, proc_params, obj);
 		break;
 	case PKCS11_CKM_ECDH1_COFACTOR_DERIVE:
 		return PKCS11_NOT_IMPLEMENTED;
@@ -128,7 +128,7 @@ static uint32_t sks2tee_algorithm(uint32_t *tee_id,
 	case PKCS11_CKM_ECDSA_SHA256:
 	case PKCS11_CKM_ECDSA_SHA384:
 	case PKCS11_CKM_ECDSA_SHA512:
-		rv = sks2tee_algo_ecdsa(tee_id, proc_params, obj);
+		rv = pkcs2tee_algo_ecdsa(tee_id, proc_params, obj);
 		break;
 	default:
 		rv = PKCS11_OK;
@@ -142,7 +142,7 @@ static uint32_t sks2tee_algorithm(uint32_t *tee_id,
 	return rv;
 }
 
-static uint32_t sks2tee_key_type(uint32_t *tee_type, struct pkcs11_object *obj,
+static uint32_t pkcs2tee_key_type(uint32_t *tee_type, struct pkcs11_object *obj,
 				 enum processing_func function)
 {
 	uint32_t class = get_class(obj->attributes);
@@ -196,10 +196,10 @@ static uint32_t allocate_tee_operation(struct pkcs11_session *session,
 
 	assert(session->processing->tee_op_handle == TEE_HANDLE_NULL);
 
-	if (sks2tee_algorithm(&algo, function, proc_params, obj))
+	if (pkcs2tee_algorithm(&algo, function, proc_params, obj))
 		return PKCS11_FAILED;
 
-	sks2tee_mode(&mode, function);
+	pkcs2tee_mode(&mode, function);
 
 	res = TEE_AllocateOperation(&session->processing->tee_op_handle,
 				    algo, mode, size);
@@ -261,7 +261,7 @@ static uint32_t load_tee_key(struct pkcs11_session *session,
 		obj->key_handle = TEE_HANDLE_NULL;
 	}
 
-	rv = sks2tee_key_type(&obj->key_type, obj, function);
+	rv = pkcs2tee_key_type(&obj->key_type, obj, function);
 	if (rv)
 		return rv;
 
@@ -326,7 +326,7 @@ static uint32_t init_tee_operation(struct pkcs11_session *session,
 	case PKCS11_CKM_SHA384_RSA_PKCS_PSS:
 	case PKCS11_CKM_SHA512_RSA_PKCS_PSS:
 	case PKCS11_CKM_SHA224_RSA_PKCS_PSS:
-		rv = sks2tee_proc_params_rsa_pss(session->processing,
+		rv = pkcs2tee_proc_params_rsa_pss(session->processing,
 						 proc_params);
 		break;
 	default:
@@ -599,7 +599,7 @@ uint32_t do_asymm_derivation(struct pkcs11_session *session,
 	switch (proc_params->id) {
 	case PKCS11_CKM_ECDH1_DERIVE:
 	case PKCS11_CKM_ECDH1_COFACTOR_DERIVE:
-		rv = sks2tee_ecdh_param_pub(proc_params, &a_ptr, &a_size);
+		rv = pkcs2tee_ecdh_param_pub(proc_params, &a_ptr, &a_size);
 		if (rv)
 			goto bail;
 

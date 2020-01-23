@@ -47,10 +47,10 @@ bool processing_is_tee_symm(uint32_t proc_id)
 	}
 }
 
-static uint32_t sks2tee_algorithm(uint32_t *tee_id,
+static uint32_t pkcs2tee_algorithm(uint32_t *tee_id,
 			      struct pkcs11_attribute_head *proc_params)
 {
-	static const uint32_t sks2tee_algo[][2] = {
+	static const uint32_t pkcs2tee_algo[][2] = {
 		/* AES flavors */
 		{ PKCS11_CKM_AES_ECB, TEE_ALG_AES_ECB_NOPAD },
 		{ PKCS11_CKM_AES_CBC, TEE_ALG_AES_CBC_NOPAD },
@@ -70,12 +70,12 @@ static uint32_t sks2tee_algorithm(uint32_t *tee_id,
 		{ PKCS11_CKM_SHA384_HMAC, TEE_ALG_HMAC_SHA384 },
 		{ PKCS11_CKM_SHA512_HMAC, TEE_ALG_HMAC_SHA512 },
 	};
-	size_t end = sizeof(sks2tee_algo) / (2 * sizeof(uint32_t));
+	size_t end = sizeof(pkcs2tee_algo) / (2 * sizeof(uint32_t));
 	size_t n = 0;
 
 	for (n = 0; n < end; n++) {
-		if (proc_params->id == sks2tee_algo[n][0]) {
-			*tee_id = sks2tee_algo[n][1];
+		if (proc_params->id == pkcs2tee_algo[n][0]) {
+			*tee_id = pkcs2tee_algo[n][1];
 			break;
 		}
 	}
@@ -86,9 +86,9 @@ static uint32_t sks2tee_algorithm(uint32_t *tee_id,
 	return PKCS11_OK;
 }
 
-static uint32_t sks2tee_key_type(uint32_t *tee_type, struct pkcs11_object *obj)
+static uint32_t pkcs2tee_key_type(uint32_t *tee_type, struct pkcs11_object *obj)
 {
-	static const uint32_t sks2tee_key_type[][2] = {
+	static const uint32_t pkcs2tee_key_type[][2] = {
 		{ PKCS11_CKK_AES, TEE_TYPE_AES },
 		{ PKCS11_CKK_GENERIC_SECRET, TEE_TYPE_GENERIC_SECRET },
 		{ PKCS11_CKK_MD5_HMAC, TEE_TYPE_HMAC_MD5 },
@@ -98,7 +98,7 @@ static uint32_t sks2tee_key_type(uint32_t *tee_type, struct pkcs11_object *obj)
 		{ PKCS11_CKK_SHA384_HMAC, TEE_TYPE_HMAC_SHA384 },
 		{ PKCS11_CKK_SHA512_HMAC, TEE_TYPE_HMAC_SHA512 },
 	};
-	const size_t last = sizeof(sks2tee_key_type) / (2 * sizeof(uint32_t));
+	const size_t last = sizeof(pkcs2tee_key_type) / (2 * sizeof(uint32_t));
 	size_t n = 0;
 	uint32_t type = 0;
 
@@ -107,8 +107,8 @@ static uint32_t sks2tee_key_type(uint32_t *tee_type, struct pkcs11_object *obj)
 	assert(get_class(obj->attributes) == PKCS11_CKO_SECRET_KEY);
 
 	for (n = 0; n < last; n++) {
-		if (sks2tee_key_type[n][0] == type) {
-			*tee_type = sks2tee_key_type[n][1];
+		if (pkcs2tee_key_type[n][0] == type) {
+			*tee_type = pkcs2tee_key_type[n][1];
 			return PKCS11_OK;
 		}
 	}
@@ -128,7 +128,7 @@ static uint32_t allocate_tee_operation(struct pkcs11_session *session,
 
 	assert(session->processing->tee_op_handle == TEE_HANDLE_NULL);
 
-	if (sks2tee_algorithm(&algo, proc_params))
+	if (pkcs2tee_algorithm(&algo, proc_params))
 		return PKCS11_FAILED;
 
 	/* Sign/Verify with AES or generic key relate to TEE MAC operation */
@@ -145,7 +145,7 @@ static uint32_t allocate_tee_operation(struct pkcs11_session *session,
 		mode = TEE_MODE_MAC;
 		break;
 	default:
-		sks2tee_mode(&mode, function);
+		pkcs2tee_mode(&mode, function);
 		break;
 	}
 
@@ -174,13 +174,13 @@ static uint32_t load_tee_key(struct pkcs11_session *session,
 		goto key_ready;
 	}
 
-	if (!sks2tee_load_attr(&tee_attr, TEE_ATTR_SECRET_VALUE,
+	if (!pkcs2tee_load_attr(&tee_attr, TEE_ATTR_SECRET_VALUE,
 			       obj, PKCS11_CKA_VALUE)) {
 		EMSG("No secret found");
 		return PKCS11_FAILED;
 	}
 
-	rv = sks2tee_key_type(&key_type, obj);
+	rv = pkcs2tee_key_type(&key_type, obj);
 	if (rv)
 		return rv;
 

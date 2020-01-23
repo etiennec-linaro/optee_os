@@ -947,18 +947,18 @@ uint32_t load_tee_ec_key_attrs(TEE_Attribute **tee_attrs, size_t *tee_count,
 		if (!attrs)
 			return PKCS11_MEMORY;
 
-		if (sks2tee_load_attr(&attrs[count], TEE_ATTR_ECC_CURVE,
+		if (pkcs2tee_load_attr(&attrs[count], TEE_ATTR_ECC_CURVE,
 					obj, PKCS11_CKA_EC_PARAMS))
 			count++;
 
 		/* FIXME: get attribute from PKCS11_CKA_EC_POINT (DER format) */
-		if (sks2tee_load_attr(&attrs[count],
+		if (pkcs2tee_load_attr(&attrs[count],
 					TEE_ATTR_ECC_PUBLIC_VALUE_X,
 					obj, PKCS11_CKA_EC_POINT_X))
 			count++;
 
 		/* FIXME: get attribute from PKCS11_CKA_EC_POINT (DER format) */
-		if (sks2tee_load_attr(&attrs[count],
+		if (pkcs2tee_load_attr(&attrs[count],
 					TEE_ATTR_ECC_PUBLIC_VALUE_Y,
 					obj, PKCS11_CKA_EC_POINT_Y))
 			count++;
@@ -974,25 +974,25 @@ uint32_t load_tee_ec_key_attrs(TEE_Attribute **tee_attrs, size_t *tee_count,
 		if (!attrs)
 			return PKCS11_MEMORY;
 
-		if (sks2tee_load_attr(&attrs[count], TEE_ATTR_ECC_CURVE,
+		if (pkcs2tee_load_attr(&attrs[count], TEE_ATTR_ECC_CURVE,
 					obj, PKCS11_CKA_EC_PARAMS))
 			count++;
 
 
-		if (sks2tee_load_attr(&attrs[count],
+		if (pkcs2tee_load_attr(&attrs[count],
 					TEE_ATTR_ECC_PRIVATE_VALUE,
 					obj, PKCS11_CKA_VALUE))
 			count++;
 
 
 		/* FIXME: get attribute from PKCS11_CKA_EC_POINT (DER format) */
-		if (sks2tee_load_attr(&attrs[count],
+		if (pkcs2tee_load_attr(&attrs[count],
 					TEE_ATTR_ECC_PUBLIC_VALUE_X,
 					obj, PKCS11_CKA_EC_POINT_X))
 			count++;
 
 		/* FIXME: get attribute from PKCS11_CKA_EC_POINT (DER format) */
-		if (sks2tee_load_attr(&attrs[count],
+		if (pkcs2tee_load_attr(&attrs[count],
 					TEE_ATTR_ECC_PUBLIC_VALUE_Y,
 					obj, PKCS11_CKA_EC_POINT_Y))
 			count++;
@@ -1015,7 +1015,7 @@ uint32_t load_tee_ec_key_attrs(TEE_Attribute **tee_attrs, size_t *tee_count,
 	return rv;
 }
 
-uint32_t sks2tee_algo_ecdh(uint32_t *tee_id,
+uint32_t pkcs2tee_algo_ecdh(uint32_t *tee_id,
 			   struct pkcs11_attribute_head *proc_params,
 			   struct pkcs11_object *obj)
 {
@@ -1060,7 +1060,7 @@ uint32_t sks2tee_algo_ecdh(uint32_t *tee_id,
 	return PKCS11_OK;
 }
 
-uint32_t sks2tee_ecdh_param_pub(struct pkcs11_attribute_head *proc_params,
+uint32_t pkcs2tee_ecdh_param_pub(struct pkcs11_attribute_head *proc_params,
 			        void **pub_data, size_t *pub_size)
 {
 	struct serialargs args;
@@ -1091,7 +1091,7 @@ uint32_t sks2tee_ecdh_param_pub(struct pkcs11_attribute_head *proc_params,
 	return serialargs_get_ptr(&args, pub_data, temp);
 }
 
-uint32_t sks2tee_algo_ecdsa(uint32_t *tee_id,
+uint32_t pkcs2tee_algo_ecdsa(uint32_t *tee_id,
 			   struct pkcs11_attribute_head *proc_params,
 			   struct pkcs11_object *obj)
 {

@@ -127,14 +127,14 @@ size_t ec_params2tee_keysize(void *attr, size_t size);
 
 uint32_t ec_params2tee_curve(void *attr, size_t size);
 
-uint32_t sks2tee_algo_ecdh(uint32_t *tee_id,
+uint32_t pkcs2tee_algo_ecdh(uint32_t *tee_id,
 			   struct pkcs11_attribute_head *proc_params,
 			   struct pkcs11_object *obj);
 
-uint32_t sks2tee_ecdh_param_pub(struct pkcs11_attribute_head *proc_params,
+uint32_t pkcs2tee_ecdh_param_pub(struct pkcs11_attribute_head *proc_params,
 			        void **pub_data, size_t *pub_size);
 
-uint32_t sks2tee_algo_ecdsa(uint32_t *tee_id,
+uint32_t pkcs2tee_algo_ecdsa(uint32_t *tee_id,
 			   struct pkcs11_attribute_head *proc_params,
 			   struct pkcs11_object *obj);
 
@@ -148,15 +148,15 @@ uint32_t generate_ec_keys(struct pkcs11_attribute_head *proc_params,
 uint32_t load_tee_rsa_key_attrs(TEE_Attribute **tee_attrs, size_t *tee_count,
 				struct pkcs11_object *obj);
 
-uint32_t sks2tee_proc_params_rsa_pss(struct active_processing *processing,
+uint32_t pkcs2tee_proc_params_rsa_pss(struct active_processing *processing,
 				     struct pkcs11_attribute_head *proc_params);
 
 void tee_release_rsa_pss_operation(struct active_processing *processing);
 
-uint32_t sks2tee_algo_rsa_pss(uint32_t *tee_id,
+uint32_t pkcs2tee_algo_rsa_pss(uint32_t *tee_id,
 				struct pkcs11_attribute_head *proc_params);
 
-uint32_t sks2tee_algo_rsa_oaep(uint32_t *tee_id,
+uint32_t pkcs2tee_algo_rsa_oaep(uint32_t *tee_id,
 				struct pkcs11_attribute_head *proc_params);
 
 uint32_t tee_init_rsa_aes_key_wrap_operation(struct active_processing *proc,

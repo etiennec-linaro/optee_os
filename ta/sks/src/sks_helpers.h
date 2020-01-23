@@ -39,16 +39,16 @@ bool mechanism_is_valid(uint32_t id);
 bool mechanism_is_supported(uint32_t id);
 size_t get_supported_mechanisms(uint32_t *array, size_t array_count);
 
-void sks2tee_mode(uint32_t *tee_id, uint32_t function);
-bool sks2tee_load_attr(TEE_Attribute *tee_ref, uint32_t tee_id,
-			struct pkcs11_object *obj, uint32_t sks_id);
+void pkcs2tee_mode(uint32_t *tee_id, uint32_t function);
+bool pkcs2tee_load_attr(TEE_Attribute *tee_ref, uint32_t tee_id,
+			struct pkcs11_object *obj, uint32_t pkcs11_id);
 
 /*
  * Convert SKS return code into a GPD TEE result ID when matching.
  * If not, return a TEE success (_noerr) or generic error (_error).
  */
-TEE_Result sks2tee_noerr(uint32_t rv);
-TEE_Result sks2tee_error(uint32_t rv);
+TEE_Result pkcs2tee_noerr(uint32_t rv);
+TEE_Result pkcs2tee_error(uint32_t rv);
 uint32_t tee2sks_error(TEE_Result res);
 
 /* Id-to-string conversions when CFG_TEE_TA_LOG_LEVEL > 0 */

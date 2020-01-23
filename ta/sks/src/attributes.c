@@ -446,7 +446,7 @@ bool attributes_match_reference(struct pkcs11_attrs_head *candidate,
 /*
  * Debug: dump CK attribute array to output trace
  */
-#define ATTR_TRACE_FMT	"%s attr %s / %s\t(0x%04" PRIx32 " %" PRIu32 "-byte"
+#define ATTR_TRACE_FMT	"%s attr %s / %s\t(0x%04"PRIx32" %"PRIu32"-byte"
 #define ATTR_FMT_0BYTE	ATTR_TRACE_FMT ")"
 #define ATTR_FMT_1BYTE	ATTR_TRACE_FMT ": %02x)"
 #define ATTR_FMT_2BYTE	ATTR_TRACE_FMT ": %02x %02x)"
@@ -556,7 +556,7 @@ static void trace_boolprops(const char *prefix, struct pkcs11_attrs_head *head)
 		bool bp = n < 32 ? !!(head->boolpropl & BIT(n)) :
 				 !!(head->boolproph & BIT(n - 32));
 
-		IMSG_RAW("%s| attr %s / %s (0x%" PRIx32 ")",
+		IMSG_RAW("%s| attr %s / %s (0x%"PRIx32")",
 			 prefix, id2str_attr(n), bp ? "TRUE" : "FALSE", n);
 	}
 }
@@ -578,10 +578,10 @@ uint32_t trace_attributes(const char *prefix, void *ref)
 		TEE_MemMove(pre, prefix, strlen(prefix));
 
 	IMSG_RAW("%s,--- (serial object) Attributes list --------", pre);
-	IMSG_RAW("%s| %" PRIu32 " item(s) - %" PRIu32 " bytes",
-		pre, head.attrs_count, head.attrs_size);
+	IMSG_RAW("%s| %"PRIu32" item(s) - %"PRIu32" bytes",
+		 pre, head.attrs_count, head.attrs_size);
 #ifdef PKCS11_SHEAD_WITH_TYPE
-	IMSG_RAW("%s| class (0x%" PRIx32 ") %s type (0x%" PRIx32 ") %s",
+	IMSG_RAW("%s| class (0x%"PRIx32") %s type (0x%"PRIx32") %s",
 		 pre, head.class, id2str_class(head.class),
 		 head.type, id2str_type(head.type, head.class));
 #endif

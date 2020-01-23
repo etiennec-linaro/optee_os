@@ -211,14 +211,16 @@ uint32_t pkcs2tee_algo_rsa_oaep(uint32_t *tee_id,
 			*tee_id = TEE_ALG_RSAES_PKCS1_OAEP_MGF1_SHA512;
 			break;
 		default:
-			EMSG("Unexpected %s (0x%" PRIx32 ")",
-				id2str_proc(hash), hash);
+			EMSG("Unexpected %s (0x%"PRIx32")",
+			     id2str_proc(hash), hash);
+
 			return PKCS11_ERROR;
 		}
 		break;
 	default:
-		EMSG("Unexpected %s (0x%" PRIx32 ")",
-			id2str_proc(proc_params->id), proc_params->id);
+		EMSG("Unexpected %s (0x%"PRIx32")",
+		     id2str_proc(proc_params->id), proc_params->id);
+
 		return PKCS11_ERROR;
 	}
 
@@ -478,6 +480,7 @@ uint32_t generate_rsa_keys(struct pkcs11_attribute_head *proc_params,
 	    !get_attribute(*priv_head, PKCS11_CKA_EXPONENT_2, NULL, NULL) ||
 	    !get_attribute(*priv_head, PKCS11_CKA_COEFFICIENT, NULL, NULL)) {
 		EMSG("Unexpected attribute(s) found");
+
 		return PKCS11_CKR_TEMPLATE_INCONSISTENT;
 	}
 
@@ -485,20 +488,23 @@ uint32_t generate_rsa_keys(struct pkcs11_attribute_head *proc_params,
 	res = TEE_AllocateTransientObject(TEE_TYPE_RSA_KEYPAIR,
 					  tee_size, &tee_obj);
 	if (res) {
-		DMSG("TEE_AllocateTransientObject failed 0x%" PRIx32, res);
+		DMSG("TEE_AllocateTransientObject failed 0x%"PRIx32, res);
+
 		return tee2pkcs_error(res);
 	}
 
 	res = TEE_RestrictObjectUsage1(tee_obj, TEE_USAGE_EXTRACTABLE);
 	if (res) {
-		DMSG("TEE_RestrictObjectUsage1 failed 0x%" PRIx32, res);
+		DMSG("TEE_RestrictObjectUsage1 failed 0x%"PRIx32, res);
+
 		rv = tee2pkcs_error(res);
 		goto bail;
 	}
 
 	res = TEE_GenerateKey(tee_obj, tee_size, &tee_attrs[0], tee_count);
 	if (res) {
-		DMSG("TEE_GenerateKey failed 0x%" PRIx32, res);
+		DMSG("TEE_GenerateKey failed 0x%"PRIx32, res);
+
 		rv = tee2pkcs_error(res);
 		goto bail;
 	}

@@ -172,17 +172,17 @@ TEE_Result TA_InvokeCommandEntryPoint(void *tee_session, uint32_t cmd,
 		goto bad_types;
 	}
 
-	DMSG("%s ctrl %" PRIu32 "@%p, %s %" PRIu32 "@%p, %s %" PRIu32 "@%p",
-		id2str_ta_cmd(cmd),
-		ctrl ? ctrl->memref.size : 0, ctrl ? ctrl->memref.buffer : 0,
-		p1_out ? "out" : (p1_in ? "in" : "---"),
-		p1_out ? p1_out->memref.size : (p1_in ? p1_in->memref.size : 0),
-		p1_out ? p1_out->memref.buffer :
-			(p1_in ? p1_in->memref.buffer : NULL),
-		p2_out ? "out" : (p2_in ? "in" : "---"),
-		p2_out ? p2_out->memref.size : (p2_in ? p2_in->memref.size : 0),
-		p2_out ? p2_out->memref.buffer :
-			(p2_in ? p2_in->memref.buffer : NULL));
+	DMSG("%s ctrl %"PRIu32"@%p, %s %"PRIu32"@%p, %s %"PRIu32"@%p",
+	     id2str_ta_cmd(cmd),
+	     ctrl ? ctrl->memref.size : 0, ctrl ? ctrl->memref.buffer : 0,
+	     p1_out ? "out" : (p1_in ? "in" : "---"),
+	     p1_out ? p1_out->memref.size : (p1_in ? p1_in->memref.size : 0),
+	     p1_out ? p1_out->memref.buffer :
+		      (p1_in ? p1_in->memref.buffer : NULL),
+	     p2_out ? "out" : (p2_in ? "in" : "---"),
+	     p2_out ? p2_out->memref.size : (p2_in ? p2_in->memref.size : 0),
+	     p2_out ? p2_out->memref.buffer :
+		      (p2_in ? p2_in->memref.buffer : NULL));
 
 	switch (cmd) {
 	case PKCS11_CMD_PING:
@@ -349,7 +349,7 @@ TEE_Result TA_InvokeCommandEntryPoint(void *tee_session, uint32_t cmd,
 		break;
 
 	default:
-		EMSG("Command ID 0x%x is not supported", cmd);
+		EMSG("Command 0x%"PRIx32" is not supported", cmd);
 		return TEE_ERROR_NOT_SUPPORTED;
 	}
 
@@ -362,11 +362,11 @@ TEE_Result TA_InvokeCommandEntryPoint(void *tee_session, uint32_t cmd,
 
 		res = pkcs2tee_noerr(rc);
 
-		DMSG("PKCS11 TA exit: %s rc 0x%08"PRIx32"/%s",
+		DMSG("%s rc 0x%08"PRIx32"/%s",
 		     id2str_ta_cmd(cmd), rc, id2str_rc(rc));
 	} else {
 		res = pkcs2tee_error(rc);
-		DMSG("PKCS11 TA exit: %s rc 0x%08"PRIx32"/%s, TEE rc %"PRIx32,
+		DMSG("%s rc 0x%08"PRIx32"/%s, TEE rc %"PRIx32,
 		     id2str_ta_cmd(cmd), rc, id2str_rc(rc), res);
 	}
 

@@ -335,14 +335,14 @@ static uint32_t token_obj_matches_ref(struct pkcs11_attrs_head *req_attrs,
 					       TEE_DATA_FLAG_ACCESS_READ,
 					       &hdl);
 		if (res) {
-			EMSG("OpenPersistent failed 0x%" PRIx32, res);
+			EMSG("OpenPersistent failed 0x%"PRIx32, res);
 			return tee2pkcs_error(res);
 		}
 	}
 
 	res = TEE_GetObjectInfo1(hdl, &info);
 	if (res) {
-		EMSG("GetObjectInfo failed 0x%" PRIx32, res);
+		EMSG("GetObjectInfo failed 0x%"PRIx32, res);
 		rv = tee2pkcs_error(res);
 		goto bail;
 	}
@@ -357,18 +357,18 @@ static uint32_t token_obj_matches_ref(struct pkcs11_attrs_head *req_attrs,
 	if (!res) {
 		res = TEE_SeekObjectData(hdl, 0, TEE_DATA_SEEK_SET);
 		if (res)
-			EMSG("Seek to 0 failed 0x%" PRIx32, res);
+			EMSG("Seek to 0 failed 0x%"PRIx32, res);
 	}
 
 	if (res) {
 		rv = tee2pkcs_error(res);
-		EMSG("Read %" PRIu32 " bytes, failed 0x%" PRIx32,
-			read_bytes, res);
+		EMSG("Read %"PRIu32" bytes, failed 0x%"PRIx32,
+		     read_bytes, res);
 		goto bail;
 	}
 	if (read_bytes != info.dataSize) {
-		EMSG("Read %" PRIu32 " bytes, expected 0x%" PRIu32,
-			read_bytes, info.dataSize);
+		EMSG("Read %"PRIu32" bytes, expected 0x%"PRIu32,
+		     read_bytes, info.dataSize);
 		rv = PKCS11_ERROR;
 		goto bail;
 	}

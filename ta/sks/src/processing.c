@@ -281,7 +281,8 @@ static uint32_t generate_random_key_value(struct pkcs11_attrs_head **head)
 	rv = get_attribute_ptr(*head, PKCS11_CKA_VALUE_LEN, &data, &data_size);
 	if (rv || data_size != sizeof(uint32_t)) {
 		DMSG("%s", rv ? "No attribute value_len found" :
-			"Invalid size for attribute VALUE_LEN");
+		     "Invalid size for attribute VALUE_LEN");
+
 		return PKCS11_CKR_ATTRIBUTE_VALUE_INVALID;
 	}
 	TEE_MemMove(&value_len, data, data_size);
@@ -472,8 +473,8 @@ uint32_t tee2pkcs_add_attribute(struct pkcs11_attrs_head **head, uint32_t pkcs11
 
 bail:
 	if (rv)
-		EMSG("Failed TEE attribute 0x%" PRIx32 "for %s (0x%" PRIx32 ")",
-				tee_id, id2str_attr(pkcs11_id), pkcs11_id);
+		EMSG("Failed TEE attribute 0x%"PRIx32"for %s (0x%"PRIx32")",
+		     tee_id, id2str_attr(pkcs11_id), pkcs11_id);
 	return rv;
 }
 

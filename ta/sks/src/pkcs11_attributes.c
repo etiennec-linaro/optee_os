@@ -198,11 +198,11 @@ int check_pkcs11_mechanism_flags(uint32_t mechanism_type, uint32_t flags)
 
 	for (n = 0; n < ARRAY_SIZE(pkcs11_modes); n++) {
 		if (pkcs11_modes[n].id == mechanism_type) {
-			if (test_flags & ~pkcs11_modes[n].flags) {
-				EMSG("%s flags: 0x%" PRIx32 " vs 0x%" PRIx32,
-					id2str_proc(mechanism_type),
-					test_flags, pkcs11_modes[n].flags);
-			}
+			if (test_flags & ~pkcs11_modes[n].flags)
+				EMSG("%s flags: 0x%"PRIx32 "vs 0x%"PRIx32,
+				     id2str_proc(mechanism_type),
+				     test_flags, pkcs11_modes[n].flags);
+
 			return test_flags & ~pkcs11_modes[n].flags;
 		}
 	}
@@ -269,9 +269,9 @@ uint32_t check_mechanism_against_processing(struct pkcs11_session *session,
 	}
 
 	if (!allowed)
-		EMSG("Processing %s (%" PRIx32 ") not permitted (%u/%u)",
-			id2str_proc(mechanism_type), mechanism_type,
-			function, step);
+		EMSG("Processing %s (%"PRIx32") not permitted (%u/%u)",
+		     id2str_proc(mechanism_type), mechanism_type,
+		     function, step);
 
 	return allowed ? PKCS11_OK : PKCS11_CKR_KEY_FUNCTION_NOT_PERMITTED;
 }
@@ -309,7 +309,7 @@ static uint8_t *pkcs11_object_default_boolprop(uint32_t attribute)
 	case PKCS11_CKA_TRUSTED:
 		return (uint8_t *)&bool_false;
 	default:
-		DMSG("No default for boolprop attribute 0x%" PRIx32, attribute);
+		DMSG("No default for boolprop attribute 0x%"PRIx32, attribute);
 		TEE_Panic(0); // FIXME: errno
 	}
 
@@ -515,6 +515,7 @@ static uint32_t create_pkcs11_storage_attributes(struct pkcs11_attrs_head **out,
 	class = get_class(temp);
 	if (class == PKCS11_CKO_UNDEFINED_ID) {
 		EMSG("Class attribute not found");
+
 		return PKCS11_CKR_TEMPLATE_INCONSISTENT;
 	}
 	rv = add_attribute(out, PKCS11_CKA_CLASS, &class, sizeof(uint32_t));
@@ -545,6 +546,7 @@ static uint32_t create_pkcs11_genkey_attributes(struct pkcs11_attrs_head **out,
 	type = get_type(temp);
 	if (type == PKCS11_CKK_UNDEFINED_ID) {
 		EMSG("Key type attribute not found");
+
 		return PKCS11_CKR_TEMPLATE_INCONSISTENT;
 	}
 	rv = add_attribute(out, PKCS11_CKA_KEY_TYPE, &type, sizeof(uint32_t));
@@ -586,8 +588,9 @@ static uint32_t create_pkcs11_symm_key_attributes(struct pkcs11_attrs_head **out
 	case PKCS11_CKK_SHA224_HMAC:
 		break;
 	default:
-		EMSG("Invalid key type (0x%" PRIx32 ", %s)",
-			get_type(*out), id2str_key_type(get_type(*out)));
+		EMSG("Invalid key type (0x%"PRIx32", %s)",
+		     get_type(*out), id2str_key_type(get_type(*out)));
+
 		return PKCS11_CKR_TEMPLATE_INCONSISTENT;
 	}
 
@@ -667,8 +670,9 @@ static uint32_t create_pkcs11_pub_key_attributes(struct pkcs11_attrs_head **out,
 		optional_count = ARRAY_SIZE(pkcs11_ec_public_key_optional);
 		break;
 	default:
-		EMSG("Invalid key type (0x%" PRIx32 ", %s)",
-			get_type(*out), id2str_key_type(get_type(*out)));
+		EMSG("Invalid key type (0x%"PRIx32", %s)",
+		     get_type(*out), id2str_key_type(get_type(*out)));
+
 		return PKCS11_CKR_TEMPLATE_INCONSISTENT;
 	}
 
@@ -732,8 +736,9 @@ static uint32_t create_pkcs11_priv_key_attributes(struct pkcs11_attrs_head **out
 		optional_count = ARRAY_SIZE(pkcs11_ec_private_key_optional);
 		break;
 	default:
-		EMSG("Invalid key type (0x%" PRIx32 ", %s)",
-			get_type(*out), id2str_key_type(get_type(*out)));
+		EMSG("Invalid key type (0x%"PRIx32", %s)",
+		     get_type(*out), id2str_key_type(get_type(*out)));
+
 		return PKCS11_CKR_TEMPLATE_INCONSISTENT;
 	}
 
@@ -817,8 +822,9 @@ uint32_t create_attributes_from_template(struct pkcs11_attrs_head **out,
 		rv = create_pkcs11_priv_key_attributes(&attrs, temp);
 		break;
 	default:
-		DMSG("Invalid object class 0x%" PRIx32 "/%s",
-			get_class(temp), id2str_class(get_class(temp)));
+		DMSG("Invalid object class 0x%"PRIx32"/%s",
+		     get_class(temp), id2str_class(get_class(temp)));
+
 		rv = PKCS11_CKR_TEMPLATE_INCONSISTENT;
 		break;
 	}
@@ -906,16 +912,18 @@ static uint32_t check_attrs_misc_integrity(struct pkcs11_attrs_head *head)
 	if (get_bool(head, PKCS11_CKA_NEVER_EXTRACTABLE) &&
 	    get_bool(head, PKCS11_CKA_EXTRACTABLE)) {
 		DMSG("Never/Extractable attributes mismatch %d/%d",
-			get_bool(head, PKCS11_CKA_NEVER_EXTRACTABLE),
-			get_bool(head, PKCS11_CKA_EXTRACTABLE));
+		     get_bool(head, PKCS11_CKA_NEVER_EXTRACTABLE),
+		     get_bool(head, PKCS11_CKA_EXTRACTABLE));
+
 		return PKCS11_CKR_TEMPLATE_INCONSISTENT;
 	}
 
 	if (get_bool(head, PKCS11_CKA_ALWAYS_SENSITIVE) &&
 	    !get_bool(head, PKCS11_CKA_SENSITIVE)) {
 		DMSG("Sensitive/always attributes mismatch %d/%d",
-			get_bool(head, PKCS11_CKA_SENSITIVE),
-			get_bool(head, PKCS11_CKA_ALWAYS_SENSITIVE));
+		     get_bool(head, PKCS11_CKA_SENSITIVE),
+		     get_bool(head, PKCS11_CKA_ALWAYS_SENSITIVE));
+
 		return PKCS11_CKR_TEMPLATE_INCONSISTENT;
 	}
 
@@ -945,6 +953,7 @@ uint32_t check_access_attrs_against_token(struct pkcs11_session *session,
 
 	if (private && pkcs11_session_is_public(session)) {
 		DMSG("Private object access from a public session");
+
 		return PKCS11_CKR_KEY_FUNCTION_NOT_PERMITTED;
 	}
 
@@ -969,12 +978,14 @@ uint32_t check_created_attrs_against_token(struct pkcs11_session *session,
 	if (get_bool(head, PKCS11_CKA_TRUSTED) &&
 	    !pkcs11_session_is_security_officer(session)) {
 		DMSG("Can't create trusted object");
+
 		return PKCS11_CKR_KEY_FUNCTION_NOT_PERMITTED;
 	}
 
 	if (get_bool(head, PKCS11_CKA_TOKEN) &&
 	    !pkcs11_session_is_read_write(session)) {
 		DMSG("Can't create persistent object");
+
 		return PKCS11_CKR_SESSION_READ_ONLY;
 	}
 
@@ -1007,11 +1018,11 @@ uint32_t check_created_attrs_against_parent_key(
 		uint8_t __maybe_unused bvalue = 0;		\
 								\
 		DMSG("%s issue for %s: %sfound, value %d",	\
-			id2str_attr(attr),			\
-			id2str_proc(proc),			\
-			get_attribute(head, attr, &bvalue, NULL) ? \
-			"not " : "",				\
-			bvalue);				\
+		     id2str_attr(attr),				\
+		     id2str_proc(proc),				\
+		     get_attribute(head, attr, &bvalue, NULL) ? \
+		     "not " : "",				\
+		     bvalue);					\
 	} while (0)
 
 /*
@@ -1044,6 +1055,7 @@ uint32_t check_created_attrs_against_processing(uint32_t proc_id,
 		if (get_attribute(head, PKCS11_CKA_LOCAL, &bbool, NULL) ||
 		    bbool) {
 			DMSG_BAD_BBOOL(PKCS11_CKA_LOCAL, proc_id, head);
+
 			return PKCS11_CKR_TEMPLATE_INCONSISTENT;
 		}
 		break;
@@ -1054,6 +1066,7 @@ uint32_t check_created_attrs_against_processing(uint32_t proc_id,
 		if (get_attribute(head, PKCS11_CKA_LOCAL, &bbool, NULL) ||
 		    !bbool) {
 			DMSG_BAD_BBOOL(PKCS11_CKA_LOCAL, proc_id, head);
+
 			return PKCS11_CKR_TEMPLATE_INCONSISTENT;
 		}
 		break;
@@ -1268,8 +1281,9 @@ uint32_t check_created_attrs(struct pkcs11_attrs_head *key1,
 				&max_key_size, &min_key_size, false);
 
 	if (key_length < min_key_size || key_length > max_key_size) {
-		EMSG("Length %" PRIu32 " vs range [%" PRIu32 " %" PRIu32 "]",
-			key_length, min_key_size, max_key_size);
+		EMSG("Length %"PRIu32" vs range [%"PRIu32" %"PRIu32"]",
+		     key_length, min_key_size, max_key_size);
+
 		return PKCS11_CKR_KEY_SIZE_RANGE;
 	}
 
@@ -1373,7 +1387,8 @@ uint32_t check_parent_attrs_against_processing(uint32_t proc_id,
 			break;
 
 		DMSG("%s invalid key %s/%s", id2str_proc(proc_id),
-			id2str_class(key_class), id2str_key_type(key_type));
+		     id2str_class(key_class), id2str_key_type(key_type));
+
 		return PKCS11_CKR_KEY_FUNCTION_NOT_PERMITTED;
 
 	case PKCS11_CKM_MD5_HMAC:
@@ -1433,8 +1448,9 @@ uint32_t check_parent_attrs_against_processing(uint32_t proc_id,
 		    (key_class != PKCS11_CKO_PUBLIC_KEY &&
 		     key_class != PKCS11_CKO_PRIVATE_KEY)) {
 			EMSG("Invalid key %s for mechanism %s",
-				id2str_type(key_type, key_class),
-				id2str_proc(proc_id));
+			     id2str_type(key_type, key_class),
+			     id2str_proc(proc_id));
+
 			return PKCS11_CKR_KEY_FUNCTION_NOT_PERMITTED;
 		}
 		break;
@@ -1458,15 +1474,17 @@ uint32_t check_parent_attrs_against_processing(uint32_t proc_id,
 		    (key_class != PKCS11_CKO_PUBLIC_KEY &&
 		     key_class != PKCS11_CKO_PRIVATE_KEY)) {
 			EMSG("Invalid key %s for mechanism %s",
-				id2str_type(key_type, key_class),
-				id2str_proc(proc_id));
+			     id2str_type(key_type, key_class),
+			     id2str_proc(proc_id));
+
 			return PKCS11_CKR_KEY_FUNCTION_NOT_PERMITTED;
 		}
 		break;
 
 	default:
-		DMSG("Invalid processing 0x%" PRIx32 " (%s)", proc_id,
-			id2str_proc(proc_id));
+		DMSG("Invalid processing 0x%"PRIx32" (%s)", proc_id,
+		     id2str_proc(proc_id));
+
 		return PKCS11_CKR_MECHANISM_INVALID;
 	}
 

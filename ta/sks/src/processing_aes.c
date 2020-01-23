@@ -40,7 +40,8 @@ uint32_t tee_init_ctr_operation(struct active_processing *processing,
 
 	if (incr_counter != 1) {
 		DMSG("Supports only 1 bit increment counter: %d",
-						incr_counter);
+		     incr_counter);
+
 		rv = PKCS11_CKR_MECHANISM_PARAM_INVALID;
 		goto bail;
 	}
@@ -320,6 +321,7 @@ uint32_t tee_ae_decrypt_final(struct active_processing *processing,
 
 	if (!out_size) {
 		DMSG("Expect at least a buffer for the output data");
+
 		return PKCS11_BAD_PARAM;
 	}
 
@@ -329,7 +331,8 @@ uint32_t tee_ae_decrypt_final(struct active_processing *processing,
 
 	if (ctx->pending_size != ctx->tag_byte_len) {
 		DMSG("Not enough samples: %u/%u",
-			ctx->pending_size, ctx->tag_byte_len);
+		     ctx->pending_size, ctx->tag_byte_len);
+
 		return PKCS11_FAILED;	// FIXME: CKR_ENCRYPTED_DATA_LEN_RANGE
 	}
 
@@ -410,8 +413,8 @@ uint32_t tee_ae_encrypt_final(struct active_processing *processing,
 
 	if (tag_len != ctx->tag_byte_len ||
 	    (res != TEE_SUCCESS && res != TEE_ERROR_SHORT_BUFFER)) {
-		EMSG("Unexpected tag length %u/%zu or rc 0x%" PRIx32,
-			tag_len, ctx->tag_byte_len, res);
+		EMSG("Unexpected tag length %u/%zu or rc 0x%"PRIx32,
+		     tag_len, ctx->tag_byte_len, res);
 		return PKCS11_ERROR;
 	}
 
@@ -489,10 +492,10 @@ uint32_t tee_init_ccm_operation(struct active_processing *processing,
 	    !nonce_len || nonce_len > 15 ||
 	    aad_len > 256 ||
 	    mac_len < 4 || mac_len > 16 || mac_len & 1) {
-		DMSG("Invalid parameters: data_len %" PRIu32
-			", nonce_len %" PRIu32 ", aad_len %" PRIu32
-			", mac_len %" PRIu32, data_len, nonce_len,
-			aad_len, mac_len);
+		DMSG("Invalid parameters: data_len %"PRIu32
+		     ", nonce_len %"PRIu32", aad_len %"PRIu32
+		     ", mac_len %"PRIu32, data_len, nonce_len,
+		     aad_len, mac_len);
 		rv = PKCS11_CKR_MECHANISM_PARAM_INVALID;
 		goto bail;
 	}
@@ -598,8 +601,8 @@ uint32_t tee_init_gcm_operation(struct active_processing *processing,
 	/* As per pkcs#11 mechanism specification */
 	if (tag_bitlen > 128 ||
 	    !iv_len || iv_len > 256) {
-		DMSG("Invalid parameters: tag_bit_len %" PRIu32
-			", iv_len %" PRIu32, tag_bitlen, iv_len);
+		DMSG("Invalid parameters: tag_bit_len %"PRIu32
+		     ", iv_len %"PRIu32, tag_bitlen, iv_len);
 		rv = PKCS11_CKR_MECHANISM_PARAM_INVALID;
 		goto bail;
 	}

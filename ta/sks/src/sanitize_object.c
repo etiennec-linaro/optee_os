@@ -322,7 +322,7 @@ uint32_t sanitize_client_object(struct pkcs11_attrs_head **dst,
 			goto bail;
 
 		if (!valid_pkcs11_attribute_id(cli_ref.id, cli_ref.size)) {
-			EMSG("Invalid attribute id 0x%" PRIx32, cli_ref.id);
+			EMSG("Invalid attribute id 0x%"PRIx32, cli_ref.id);
 			rc = PKCS11_CKR_TEMPLATE_INCONSISTENT;
 			goto bail;
 		}
@@ -377,11 +377,11 @@ static uint32_t __trace_attributes(char *prefix, void *src, void *end)
 
 		next = sizeof(pkcs11_ref) + pkcs11_ref.size;
 
-		IMSG_RAW("%s Attr %s / %s (0x%04" PRIx32 " %" PRIu32 "-byte)",
-			prefix, id2str_attr(pkcs11_ref.id),
-			id2str_attr_value(pkcs11_ref.id, pkcs11_ref.size,
+		IMSG_RAW("%s Attr %s / %s (0x%04"PRIx32" %"PRIu32"-byte)",
+			 prefix, id2str_attr(pkcs11_ref.id),
+			 id2str_attr_value(pkcs11_ref.id, pkcs11_ref.size,
 					   cur + sizeof(pkcs11_ref)),
-			pkcs11_ref.id, pkcs11_ref.size);
+			 pkcs11_ref.id, pkcs11_ref.size);
 
 		switch (pkcs11_ref.size) {
 		case 0:
@@ -423,9 +423,8 @@ static uint32_t __trace_attributes(char *prefix, void *src, void *end)
 	}
 
 	/* Sanity */
-	if (cur != (char *)end) {
+	if (cur != (char *)end)
 		EMSG("Warning: unexpected alignment issue");
-	}
 
 	TEE_Free(prefix2);
 	return PKCS11_OK;
@@ -443,7 +442,7 @@ uint32_t trace_attributes_from_api_head(const char *prefix,
 
 	if (size > sizeof(head) + head.attrs_size) {
 		EMSG("template overflows client buffer (%u/%u)",
-			size, sizeof(head) + head.attrs_size);
+		     size, sizeof(head) + head.attrs_size);
 		return PKCS11_FAILED;
 	}
 
@@ -455,8 +454,8 @@ uint32_t trace_attributes_from_api_head(const char *prefix,
 		TEE_MemMove(pre, prefix, strlen(prefix));
 
 	IMSG_RAW("%s,--- (serial object) Attributes list --------", pre);
-	IMSG_RAW("%s| %" PRIx32 " item(s) - %" PRIu32 " bytes",
-		pre, head.attrs_count, head.attrs_size);
+	IMSG_RAW("%s| %"PRIx32" item(s) - %"PRIu32" bytes",
+		 pre, head.attrs_count, head.attrs_size);
 
 	offset = sizeof(head);
 	pre[prefix ? strlen(prefix) : 0] = '|';

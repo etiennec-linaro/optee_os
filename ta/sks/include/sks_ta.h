@@ -7,6 +7,7 @@
 #define PKCS11_TA_H
 
 #include <sys/types.h>
+#include <stdbool.h>
 #include <stdint.h>
 
 #define PKCS11_TA_UUID { 0xfd02c9da, 0x306c, 0x48c7, \
@@ -16,6 +17,12 @@
 #define PKCS11_TA_VERSION_MAJOR			0
 #define PKCS11_TA_VERSION_MINOR			1
 #define PKCS11_TA_VERSION_PATCH			0
+
+/* Attribute specific values */
+#define PKCS11_UNAVAILABLE_INFORMATION		UINT32_C(0xFFFFFFFF)
+#define PKCS11_UNDEFINED_ID			PKCS11_UNAVAILABLE_INFORMATION
+#define PKCS11_FALSE				false
+#define PKCS11_TRUE				true
 
 /*
  * PKCS11_CMD_PING		Acknowledge TA presence and return TA version info
@@ -715,12 +722,6 @@ struct pkcs11_attribute_head {
 /* Status without strict equivalence in Cryptoki API */
 #define PKCS11_RV_NOT_FOUND				0x00001000
 #define PKCS11_RV_NOT_IMPLEMENTED			0x00001001
-
-/* Attribute specific values */
-#define PKCS11_CK_UNAVAILABLE_INFORMATION	((uint32_t)0xFFFFFFFF)
-#define PKCS11_UNDEFINED_ID			PKCS11_CK_UNAVAILABLE_INFORMATION
-#define PKCS11_FALSE				0
-#define PKCS11_TRUE				1
 
 /*
  * Attribute identifiers

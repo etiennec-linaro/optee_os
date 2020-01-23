@@ -204,12 +204,12 @@ uint32_t create_object(void *sess, struct pkcs11_attrs_head *head,
 
 	obj = create_object_instance(head);
 	if (!obj)
-		return SKS_MEMORY;
+		return PKCS11_MEMORY;
 
 	/* Create a handle for the object in the session database */
 	obj_handle = handle_get(&session->object_handle_db, obj);
 	if (!obj_handle) {
-		rv = SKS_MEMORY;
+		rv = PKCS11_MEMORY;
 		goto bail;
 	}
 
@@ -246,7 +246,7 @@ uint32_t create_object(void *sess, struct pkcs11_attrs_head *head,
 
 		LIST_INSERT_HEAD(&session->token->object_list, obj, link);
 	} else {
-		rv = SKS_OK;
+		rv = PKCS11_OK;
 		LIST_INSERT_HEAD(get_session_objects(session), obj, link);
 	}
 
@@ -278,7 +278,7 @@ uint32_t entry_destroy_object(uintptr_t tee_session, TEE_Param *ctrl,
 	TEE_MemFill(&ctrlargs, 0, sizeof(ctrlargs));
 
 	if (!ctrl || in || out)
-		return SKS_BAD_PARAM;
+		return PKCS11_BAD_PARAM;
 
 	serialargs_init(&ctrlargs, ctrl->memref.buffer, ctrl->memref.size);
 
@@ -299,7 +299,7 @@ uint32_t entry_destroy_object(uintptr_t tee_session, TEE_Param *ctrl,
 
 	object = sks_handle2object(object_handle, session);
 	if (!object)
-		return SKS_BAD_PARAM;
+		return PKCS11_BAD_PARAM;
 
 	destroy_object(session, object, false);
 	handle_put(&session->object_handle_db, object_handle);
@@ -326,7 +326,7 @@ static uint32_t token_obj_matches_ref(struct pkcs11_attrs_head *req_attrs,
 		if (!attributes_match_reference(obj->attributes, req_attrs))
 			return PKCS11_NOT_FOUND;
 
-		return SKS_OK;
+		return PKCS11_OK;
 	}
 
 	if (hdl == TEE_HANDLE_NULL) {
@@ -349,7 +349,7 @@ static uint32_t token_obj_matches_ref(struct pkcs11_attrs_head *req_attrs,
 
 	attr = TEE_Malloc(info.dataSize, TEE_MALLOC_FILL_ZERO);
 	if (!attr) {
-		rv = SKS_MEMORY;
+		rv = PKCS11_MEMORY;
 		goto bail;
 	}
 
@@ -369,7 +369,7 @@ static uint32_t token_obj_matches_ref(struct pkcs11_attrs_head *req_attrs,
 	if (read_bytes != info.dataSize) {
 		EMSG("Read %" PRIu32 " bytes, expected 0x%" PRIu32,
 			read_bytes, info.dataSize);
-		rv = SKS_ERROR;
+		rv = PKCS11_ERROR;
 		goto bail;
 	}
 
@@ -382,7 +382,7 @@ static uint32_t token_obj_matches_ref(struct pkcs11_attrs_head *req_attrs,
 	attr = NULL;
 	obj->attribs_hdl = hdl;
 	hdl = TEE_HANDLE_NULL;
-	rv = SKS_OK;
+	rv = PKCS11_OK;
 
 bail:
 	TEE_Free(attr);
@@ -432,7 +432,7 @@ uint32_t entry_find_objects_init(uintptr_t tee_session, TEE_Param *ctrl,
 	TEE_MemFill(&ctrlargs, 0, sizeof(ctrlargs));
 
 	if (!ctrl || in || out)
-		return SKS_BAD_PARAM;
+		return PKCS11_BAD_PARAM;
 
 	serialargs_init(&ctrlargs, ctrl->memref.buffer, ctrl->memref.size);
 
@@ -458,14 +458,14 @@ uint32_t entry_find_objects_init(uintptr_t tee_session, TEE_Param *ctrl,
 
 	if (session->find_ctx) {
 		EMSG("Active object search already in progress");
-		rv = SKS_FAILED;
+		rv = PKCS11_FAILED;
 		goto bail;
 	}
 
 	/* Must zero init the structure */
 	find_ctx = TEE_Malloc(sizeof(*find_ctx), TEE_MALLOC_FILL_ZERO);
 	if (!find_ctx) {
-		rv = SKS_MEMORY;
+		rv = PKCS11_MEMORY;
 		goto bail;
 	}
 
@@ -515,7 +515,7 @@ uint32_t entry_find_objects_init(uintptr_t tee_session, TEE_Param *ctrl,
 		handles = TEE_Realloc(find_ctx->handles,
 				      (find_ctx->count + 1) * sizeof(*handles));
 		if (!handles) {
-			rv = SKS_MEMORY;
+			rv = PKCS11_MEMORY;
 			goto bail;
 		}
 		find_ctx->handles = handles;
@@ -540,7 +540,7 @@ uint32_t entry_find_objects_init(uintptr_t tee_session, TEE_Param *ctrl,
 			rv = token_obj_matches_ref(req_attrs, obj);
 			if (rv == PKCS11_NOT_FOUND)
 				continue;
-			if (rv != SKS_OK)
+			if (rv != PKCS11_OK)
 				goto bail;
 		}
 
@@ -554,7 +554,7 @@ uint32_t entry_find_objects_init(uintptr_t tee_session, TEE_Param *ctrl,
 			obj_handle = handle_get(&session->object_handle_db,
 						obj);
 			if (!obj_handle) {
-				rv = SKS_MEMORY;
+				rv = PKCS11_MEMORY;
 				goto bail;
 			}
 		}
@@ -562,7 +562,7 @@ uint32_t entry_find_objects_init(uintptr_t tee_session, TEE_Param *ctrl,
 		handles = TEE_Realloc(find_ctx->handles,
 				      (find_ctx->count + 1) * sizeof(*handles));
 		if (!handles) {
-			rv = SKS_MEMORY;
+			rv = PKCS11_MEMORY;
 			goto bail;
 		}
 
@@ -573,14 +573,14 @@ uint32_t entry_find_objects_init(uintptr_t tee_session, TEE_Param *ctrl,
 	}
 
 	if (rv == PKCS11_NOT_FOUND)
-		rv = SKS_OK;
+		rv = PKCS11_OK;
 
 	/* Save target attributes to search (if needed later) */
 	find_ctx->attributes = req_attrs;
 	req_attrs = NULL;
 	session->find_ctx = find_ctx;
 	find_ctx = NULL;
-	rv = SKS_OK;
+	rv = PKCS11_OK;
 
 bail:
 	TEE_Free(req_attrs);
@@ -609,7 +609,7 @@ uint32_t entry_find_objects(uintptr_t tee_session, TEE_Param *ctrl,
 	TEE_MemFill(&ctrlargs, 0, sizeof(ctrlargs));
 
 	if (!ctrl || in || !out)
-		return SKS_BAD_PARAM;
+		return PKCS11_BAD_PARAM;
 
 	out_count = out->memref.size / sizeof(uint32_t);
 	out_handles = (uint32_t *)(uintptr_t)out->memref.buffer;
@@ -657,7 +657,7 @@ uint32_t entry_find_objects(uintptr_t tee_session, TEE_Param *ctrl,
 
 	IMSG("SKSs%" PRIu32 ": finding objects", session_handle);
 
-	return SKS_OK;
+	return PKCS11_OK;
 }
 
 void release_session_find_obj_context(struct pkcs11_session *session)
@@ -680,7 +680,7 @@ uint32_t entry_find_objects_final(uintptr_t tee_session, TEE_Param *ctrl,
 	TEE_MemFill(&ctrlargs, 0, sizeof(ctrlargs));
 
 	if (!ctrl || in || out)
-		return SKS_BAD_PARAM;
+		return PKCS11_BAD_PARAM;
 
 	serialargs_init(&ctrlargs, ctrl->memref.buffer, ctrl->memref.size);
 
@@ -697,7 +697,7 @@ uint32_t entry_find_objects_final(uintptr_t tee_session, TEE_Param *ctrl,
 
 	release_session_find_obj_context(session);
 
-	return SKS_OK;
+	return PKCS11_OK;
 }
 
 /*
@@ -723,7 +723,7 @@ uint32_t entry_get_attribute_value(uintptr_t tee_session, TEE_Param *ctrl,
 	TEE_MemFill(&ctrlargs, 0, sizeof(ctrlargs));
 
 	if (!ctrl || in || !out)
-		return SKS_BAD_PARAM;
+		return PKCS11_BAD_PARAM;
 
 	serialargs_init(&ctrlargs, ctrl->memref.buffer, ctrl->memref.size);
 
@@ -747,7 +747,7 @@ uint32_t entry_get_attribute_value(uintptr_t tee_session, TEE_Param *ctrl,
 
 	obj = sks_handle2object(object_handle, session);
 	if (!obj) {
-		rv = SKS_BAD_PARAM;
+		rv = PKCS11_BAD_PARAM;
 		goto bail;
 	}
 
@@ -807,17 +807,17 @@ uint32_t entry_get_attribute_value(uintptr_t tee_session, TEE_Param *ctrl,
 				   &(cli_ref->size));
 		/* Check 2. */
 		switch (rv) {
-		case SKS_OK:
+		case PKCS11_OK:
 			break;
 		case PKCS11_NOT_FOUND:
 			cli_ref->size = PKCS11_UNAVAILABLE_INFORMATION;
 			attr_type_invalid = 1;
 			break;
-		case SKS_SHORT_BUFFER:
+		case PKCS11_SHORT_BUFFER:
 			buffer_too_small = 1;
 			break;
 		default:
-			rv = SKS_ERROR;
+			rv = PKCS11_ERROR;
 			goto bail;
 		}
 	}
@@ -833,7 +833,7 @@ uint32_t entry_get_attribute_value(uintptr_t tee_session, TEE_Param *ctrl,
 	 * applies to any of the requested attributes will CKR_OK be returned.
 	 */
 
-	rv = SKS_OK;
+	rv = PKCS11_OK;
 	if (attr_sensitive)
 		rv = PKCS11_CKR_ATTRIBUTE_SENSITIVE;
 	if (attr_type_invalid)

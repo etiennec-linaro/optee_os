@@ -35,7 +35,7 @@ static uint32_t get_ready_session(struct pkcs11_session **sess,
 
 	*sess = session;
 
-	return SKS_OK;
+	return PKCS11_OK;
 }
 
 static bool func_matches_state(enum processing_func function,
@@ -84,7 +84,7 @@ static uint32_t get_active_session(struct pkcs11_session **sess,
 	if (session->processing &&
 	    func_matches_state(function, session->processing->state)) {
 		*sess = session;
-		rv = SKS_OK;
+		rv = PKCS11_OK;
 	}
 
 	return rv;
@@ -144,15 +144,15 @@ uint32_t entry_import_object(uintptr_t tee_session,
 	 */
 
 	if (!ctrl || in || !out)
-		return SKS_BAD_PARAM;
+		return PKCS11_BAD_PARAM;
 
 	if (out->memref.size < sizeof(uint32_t)) {
 		out->memref.size = sizeof(uint32_t);
-		return SKS_SHORT_BUFFER;
+		return PKCS11_SHORT_BUFFER;
 	}
 
 	if ((uintptr_t)out->memref.buffer & 0x3UL)
-		return SKS_BAD_PARAM;
+		return PKCS11_BAD_PARAM;
 
 	serialargs_init(&ctrlargs, ctrl->memref.buffer, ctrl->memref.size);
 
@@ -291,7 +291,7 @@ static uint32_t generate_random_key_value(struct pkcs11_attrs_head **head)
 
 	value = TEE_Malloc(value_len, TEE_USER_MEM_HINT_NO_FILL_ZERO);
 	if (!value)
-		return SKS_MEMORY;
+		return PKCS11_MEMORY;
 
 	TEE_GenerateRandom(value, value_len);
 
@@ -318,15 +318,15 @@ uint32_t entry_generate_secret(uintptr_t tee_session,
 	TEE_MemFill(&ctrlargs, 0, sizeof(ctrlargs));
 
 	if (!ctrl || in || !out)
-		return SKS_BAD_PARAM;
+		return PKCS11_BAD_PARAM;
 
 	if (out->memref.size < sizeof(uint32_t)) {
 		out->memref.size = sizeof(uint32_t);
-		return SKS_SHORT_BUFFER;
+		return PKCS11_SHORT_BUFFER;
 	}
 
 	if ((uintptr_t)out->memref.buffer & 0x3UL)
-		return SKS_BAD_PARAM;
+		return PKCS11_BAD_PARAM;
 
 	serialargs_init(&ctrlargs, ctrl->memref.buffer, ctrl->memref.size);
 
@@ -438,11 +438,11 @@ uint32_t alloc_get_tee_attribute_data(TEE_ObjectHandle tee_obj,
 
 	res = TEE_GetObjectBufferAttribute(tee_obj, attribute, NULL, &sz);
 	if (res != TEE_ERROR_SHORT_BUFFER)
-		return SKS_FAILED;
+		return PKCS11_FAILED;
 
 	ptr = TEE_Malloc(sz, TEE_USER_MEM_HINT_NO_FILL_ZERO);
 	if (!ptr)
-		return SKS_MEMORY;
+		return PKCS11_MEMORY;
 
 	res = TEE_GetObjectBufferAttribute(tee_obj, attribute, ptr, &sz);
 	if (res) {
@@ -496,14 +496,14 @@ uint32_t entry_generate_key_pair(uintptr_t teesess,
 	TEE_MemFill(&ctrlargs, 0, sizeof(ctrlargs));
 
 	if (!ctrl || in || !out)
-		return SKS_BAD_PARAM;
+		return PKCS11_BAD_PARAM;
 
 	if (out->memref.size < 2 * sizeof(uint32_t))
-		return SKS_SHORT_BUFFER;
+		return PKCS11_SHORT_BUFFER;
 
 	// FIXME: cleaner way to test alignment of out buffer
 	if ((uintptr_t)out->memref.buffer & 0x3UL)
-		return SKS_BAD_PARAM;
+		return PKCS11_BAD_PARAM;
 
 	serialargs_init(&ctrlargs, ctrl->memref.buffer, ctrl->memref.size);
 
@@ -663,7 +663,7 @@ uint32_t entry_processing_init(uintptr_t tee_session, TEE_Param *ctrl,
 	TEE_MemFill(&ctrlargs, 0, sizeof(ctrlargs));
 
 	if (!ctrl || in || out)
-		return SKS_BAD_PARAM;
+		return PKCS11_BAD_PARAM;
 
 	serialargs_init(&ctrlargs, ctrl->memref.buffer, ctrl->memref.size);
 
@@ -712,7 +712,7 @@ uint32_t entry_processing_init(uintptr_t tee_session, TEE_Param *ctrl,
 	if (processing_is_tee_asymm(proc_params->id)) {
 		rv = init_asymm_operation(session, function, proc_params, obj);
 	}
-	if (rv == SKS_OK) {
+	if (rv == PKCS11_OK) {
 		session->processing->mecha_type = proc_params->id;
 		IMSG("SKSs%" PRIu32 ": init processing %s %s",
 		     session_handle, id2str_proc(proc_params->id),
@@ -754,7 +754,7 @@ uint32_t entry_processing_step(uintptr_t tee_session, TEE_Param *ctrl,
 	TEE_MemFill(&ctrlargs, 0, sizeof(ctrlargs));
 
 	if (!ctrl)
-		return SKS_BAD_PARAM;
+		return PKCS11_BAD_PARAM;
 
 	serialargs_init(&ctrlargs, ctrl->memref.buffer, ctrl->memref.size);
 
@@ -781,7 +781,7 @@ uint32_t entry_processing_step(uintptr_t tee_session, TEE_Param *ctrl,
 	if (processing_is_tee_asymm(mecha_type)) {
 		rv = step_asymm_operation(session, function, step, in, out);
 	}
-	if (rv == SKS_OK) {
+	if (rv == PKCS11_OK) {
 		session->processing->updated = true;
 		IMSG("SKSs%" PRIu32 ": processing %s %s",
 		     session_handle, id2str_proc(mecha_type),
@@ -791,12 +791,12 @@ uint32_t entry_processing_step(uintptr_t tee_session, TEE_Param *ctrl,
 bail:
 	switch (step) {
 	case PKCS11_FUNC_STEP_UPDATE:
-		if (rv != SKS_OK && rv != SKS_SHORT_BUFFER)
+		if (rv != PKCS11_OK && rv != PKCS11_SHORT_BUFFER)
 			release_active_processing(session);
 		break;
 	default:
 		/* ONESHOT and FINAL terminates processing on success */
-		if (rv != SKS_SHORT_BUFFER)
+		if (rv != PKCS11_SHORT_BUFFER)
 			release_active_processing(session);
 		break;
 	}
@@ -832,7 +832,7 @@ uint32_t entry_verify_oneshot(uintptr_t tee_session, TEE_Param *ctrl,
 
 	assert(function == PKCS11_FUNCTION_VERIFY);
 	if (!ctrl)
-		return SKS_BAD_PARAM;
+		return PKCS11_BAD_PARAM;
 
 	serialargs_init(&ctrlargs, ctrl->memref.buffer, ctrl->memref.size);
 
@@ -865,7 +865,7 @@ uint32_t entry_verify_oneshot(uintptr_t tee_session, TEE_Param *ctrl,
 	     id2str_rc(rv));
 
 bail:
-	if (rv != SKS_SHORT_BUFFER)
+	if (rv != PKCS11_SHORT_BUFFER)
 		release_active_processing(session);
 
 	return rv;
@@ -890,15 +890,15 @@ uint32_t entry_derive_key(uintptr_t tee_session, TEE_Param *ctrl,
 	TEE_MemFill(&ctrlargs, 0, sizeof(ctrlargs));
 
 	if (!ctrl || in || !out)
-		return SKS_BAD_PARAM;
+		return PKCS11_BAD_PARAM;
 
 	if (out->memref.size < sizeof(uint32_t)) {
 		out->memref.size = sizeof(uint32_t);
-		return SKS_SHORT_BUFFER;
+		return PKCS11_SHORT_BUFFER;
 	}
 
 	if ((uintptr_t)out->memref.buffer & 0x3UL)
-		return SKS_BAD_PARAM;
+		return PKCS11_BAD_PARAM;
 
 	serialargs_init(&ctrlargs, ctrl->memref.buffer, ctrl->memref.size);
 

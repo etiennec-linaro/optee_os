@@ -83,7 +83,7 @@ static uint32_t sks2tee_algorithm(uint32_t *tee_id,
 	if (n == end)
 		return PKCS11_NOT_IMPLEMENTED;
 
-	return SKS_OK;
+	return PKCS11_OK;
 }
 
 static uint32_t sks2tee_key_type(uint32_t *tee_type, struct pkcs11_object *obj)
@@ -109,7 +109,7 @@ static uint32_t sks2tee_key_type(uint32_t *tee_type, struct pkcs11_object *obj)
 	for (n = 0; n < last; n++) {
 		if (sks2tee_key_type[n][0] == type) {
 			*tee_type = sks2tee_key_type[n][1];
-			return SKS_OK;
+			return PKCS11_OK;
 		}
 	}
 
@@ -129,7 +129,7 @@ static uint32_t allocate_tee_operation(struct pkcs11_session *session,
 	assert(session->processing->tee_op_handle == TEE_HANDLE_NULL);
 
 	if (sks2tee_algorithm(&algo, proc_params))
-		return SKS_FAILED;
+		return PKCS11_FAILED;
 
 	/* Sign/Verify with AES or generic key relate to TEE MAC operation */
 	switch (proc_params->id) {
@@ -177,7 +177,7 @@ static uint32_t load_tee_key(struct pkcs11_session *session,
 	if (!sks2tee_load_attr(&tee_attr, TEE_ATTR_SECRET_VALUE,
 			       obj, PKCS11_CKA_VALUE)) {
 		EMSG("No secret found");
-		return SKS_FAILED;
+		return PKCS11_FAILED;
 	}
 
 	rv = sks2tee_key_type(&key_type, obj);
@@ -186,7 +186,7 @@ static uint32_t load_tee_key(struct pkcs11_session *session,
 
 	object_size = get_object_key_bit_size(obj);
 	if (!object_size)
-		return SKS_ERROR;
+		return PKCS11_ERROR;
 
 	res = TEE_AllocateTransientObject(key_type, object_size,
 					  &obj->key_handle);
@@ -221,7 +221,7 @@ error:
 static uint32_t init_tee_operation(struct pkcs11_session *session,
 				   struct pkcs11_attribute_head *proc_params)
 {
-	uint32_t rv = SKS_ERROR;
+	uint32_t rv = PKCS11_ERROR;
 
 	switch (proc_params->id) {
 	case PKCS11_CKM_AES_CMAC_GENERAL:
@@ -237,14 +237,14 @@ static uint32_t init_tee_operation(struct pkcs11_session *session,
 			return PKCS11_CKR_MECHANISM_PARAM_INVALID;
 
 		TEE_MACInit(session->processing->tee_op_handle, NULL, 0);
-		rv = SKS_OK;
+		rv = PKCS11_OK;
 		break;
 	case PKCS11_CKM_AES_ECB:
 		if (proc_params->size)
 			return PKCS11_CKR_MECHANISM_PARAM_INVALID;
 
 		TEE_CipherInit(session->processing->tee_op_handle, NULL, 0);
-		rv = SKS_OK;
+		rv = PKCS11_OK;
 		break;
 	case PKCS11_CKM_AES_CBC:
 	case PKCS11_CKM_AES_CBC_PAD:
@@ -254,7 +254,7 @@ static uint32_t init_tee_operation(struct pkcs11_session *session,
 
 		TEE_CipherInit(session->processing->tee_op_handle,
 			       proc_params->data, 16);
-		rv = SKS_OK;
+		rv = PKCS11_OK;
 		break;
 	case PKCS11_CKM_AES_CTR:
 		rv = tee_init_ctr_operation(session->processing,
@@ -313,7 +313,7 @@ uint32_t step_symm_operation(struct pkcs11_session *session,
 			     enum processing_step step,
 			     TEE_Param *in, TEE_Param *io2)
 {
-	uint32_t rv = SKS_ERROR;
+	uint32_t rv = PKCS11_ERROR;
 	TEE_Result res = TEE_ERROR_GENERIC;
 	void *in_buf = in ? in->memref.buffer : NULL;
 	size_t in_size = in ? in->memref.size : 0;
@@ -331,7 +331,7 @@ uint32_t step_symm_operation(struct pkcs11_session *session,
 	case PKCS11_FUNC_STEP_FINAL:
 		break;
 	default:
-		return SKS_ERROR;
+		return PKCS11_ERROR;
 	}
 
 	/*
@@ -353,14 +353,14 @@ uint32_t step_symm_operation(struct pkcs11_session *session,
 
 		if (!in) {
 			DMSG("No input data");
-			return SKS_BAD_PARAM;
+			return PKCS11_BAD_PARAM;
 		}
 
 		switch (function) {
 		case PKCS11_FUNCTION_SIGN:
 		case PKCS11_FUNCTION_VERIFY:
 			TEE_MACUpdate(proc->tee_op_handle, in_buf, in_size);
-			rv = SKS_OK;
+			rv = PKCS11_OK;
 			break;
 		default:
 			TEE_Panic(function);
@@ -405,7 +405,7 @@ uint32_t step_symm_operation(struct pkcs11_session *session,
 			rv = tee2sks_error(res);
 
 			if (step == PKCS11_FUNC_STEP_ONESHOT &&
-			    (rv == SKS_OK || rv == SKS_SHORT_BUFFER)) {
+			    (rv == PKCS11_OK || rv == PKCS11_SHORT_BUFFER)) {
 				out_buf = (char *)out_buf + out_size;
 				out_size2 -= out_size;
 			}
@@ -511,11 +511,11 @@ uint32_t step_symm_operation(struct pkcs11_session *session,
 	}
 
 bail:
-	if (output_data && (rv == SKS_OK || rv == SKS_SHORT_BUFFER)) {
+	if (output_data && (rv == PKCS11_OK || rv == PKCS11_SHORT_BUFFER)) {
 		if (io2)
 			io2->memref.size = out_size;
 		else
-			rv = SKS_ERROR;
+			rv = PKCS11_ERROR;
 	}
 
 	return rv;
@@ -527,5 +527,5 @@ uint32_t do_symm_derivation(struct pkcs11_session *session __unused,
 			     struct pkcs11_attrs_head **head __unused)
 {
 	EMSG("Symm key derivation not yet supported");
-	return SKS_ERROR;
+	return PKCS11_ERROR;
 }

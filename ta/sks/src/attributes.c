@@ -23,14 +23,14 @@ uint32_t init_attributes_head(struct pkcs11_attrs_head **head)
 {
 	*head = TEE_Malloc(sizeof(struct pkcs11_attrs_head), TEE_MALLOC_FILL_ZERO);
 	if (!*head)
-		return SKS_MEMORY;
+		return PKCS11_MEMORY;
 
 #ifdef SKS_SHEAD_WITH_TYPE
 	(*head)->class = PKCS11_CKO_UNDEFINED_ID;
 	(*head)->type = PKCS11_CKK_UNDEFINED_ID;
 #endif
 
-	return SKS_OK;
+	return PKCS11_OK;
 }
 
 #if defined(SKS_SHEAD_WITH_TYPE) || defined(SKS_SHEAD_WITH_BOOLPROPS)
@@ -67,7 +67,7 @@ uint32_t add_attribute(struct pkcs11_attrs_head **head,
 				&(*head)->class : &(*head)->type,
 				data, sizeof(uint32_t));
 
-		return SKS_OK;
+		return PKCS11_OK;
 	}
 #endif
 
@@ -87,7 +87,7 @@ uint32_t add_attribute(struct pkcs11_attrs_head **head,
 		else
 			(*head)->boolproph = ((*head)->boolproph & ~mask) | val;
 
-		return SKS_OK;
+		return PKCS11_OK;
 	}
 #endif
 
@@ -124,7 +124,7 @@ uint32_t remove_attribute(struct pkcs11_attrs_head **head, uint32_t attribute)
 	/* Can't remove an attribute that is defined in the head */
 	if (head_contains_boolprops(*head) && attribute_is_in_head(attribute)) {
 		EMSG("Can't remove attribute from the head");
-		return SKS_FAILED;
+		return PKCS11_FAILED;
 	}
 #endif
 
@@ -146,10 +146,10 @@ uint32_t remove_attribute(struct pkcs11_attrs_head **head, uint32_t attribute)
 		h->attrs_size -= next_off;
 		end -= next_off;
 		next_off = 0;
-		return SKS_OK;
+		return PKCS11_OK;
 	}
 
-	DMSG("SKS_VALUE not found");
+	DMSG("PKCS11_VALUE not found");
 	return PKCS11_NOT_FOUND;
 }
 
@@ -185,7 +185,7 @@ uint32_t remove_attribute_check(struct pkcs11_attrs_head **head, uint32_t attrib
 		found++;
 		if (found > max_check) {
 			DMSG("Too many attribute occurrences");
-			return SKS_FAILED;
+			return PKCS11_FAILED;
 		}
 
 		TEE_MemMove(cur, cur + next_off, end - (cur + next_off));
@@ -199,16 +199,16 @@ uint32_t remove_attribute_check(struct pkcs11_attrs_head **head, uint32_t attrib
 	/* sanity */
 	if (cur != end) {
 		EMSG("Bad end address");
-		return SKS_ERROR;
+		return PKCS11_ERROR;
 	}
 
 	if (!found) {
-		EMSG("SKS_VALUE not found");
-		return SKS_FAILED;
+		EMSG("PKCS11_VALUE not found");
+		return PKCS11_FAILED;
 
 	}
 
-	return SKS_OK;
+	return PKCS11_OK;
 }
 
 void get_attribute_ptrs(struct pkcs11_attrs_head *head, uint32_t attribute,
@@ -276,7 +276,7 @@ uint32_t get_attribute_ptr(struct pkcs11_attrs_head *head, uint32_t attribute,
 		if (attr_ptr)
 			*attr_ptr = &head->class;
 
-		return SKS_OK;
+		return PKCS11_OK;
 	}
 	if (attribute == PKCS11_CKA_KEY_TYPE) {
 		if (attr_size)
@@ -284,7 +284,7 @@ uint32_t get_attribute_ptr(struct pkcs11_attrs_head *head, uint32_t attribute,
 		if (attr_ptr)
 			*attr_ptr = &head->type;
 
-		return SKS_OK;
+		return PKCS11_OK;
 	}
 #endif
 #ifdef SKS_SHEAD_WITH_BOOLPROPS
@@ -299,9 +299,9 @@ uint32_t get_attribute_ptr(struct pkcs11_attrs_head *head, uint32_t attribute,
 		return PKCS11_NOT_FOUND;
 
 	if (count != 1)
-		return SKS_ERROR;
+		return PKCS11_ERROR;
 
-	return SKS_OK;
+	return PKCS11_OK;
 }
 
 uint32_t get_attribute(struct pkcs11_attrs_head *head, uint32_t attribute,
@@ -341,7 +341,7 @@ uint32_t get_attribute(struct pkcs11_attrs_head *head, uint32_t attribute,
 	}
 #endif
 	rc = get_attribute_ptr(head, attribute, &attr_ptr, &size);
-	if (rc == SKS_OK)
+	if (rc == PKCS11_OK)
 		goto found;
 
 	return rc;
@@ -350,7 +350,7 @@ found:
 	if (attr_size && *attr_size != size) {
 		*attr_size = size;
 		/* This reuses buffer-to-small for any bad size matching */
-		return SKS_SHORT_BUFFER;
+		return PKCS11_SHORT_BUFFER;
 	}
 
 	if (attr)
@@ -359,7 +359,7 @@ found:
 	if (attr_size)
 		*attr_size = size;
 
-	return SKS_OK;
+	return PKCS11_OK;
 }
 
 bool get_bool(struct pkcs11_attrs_head *head, uint32_t attribute)
@@ -387,7 +387,7 @@ bool get_bool(struct pkcs11_attrs_head *head, uint32_t attribute)
 	if (rc == PKCS11_NOT_FOUND)
 		return false;
 
-	assert(rc == SKS_OK);
+	assert(rc == PKCS11_OK);
 	return !!bbool;
 }
 
@@ -465,7 +465,7 @@ static uint32_t __trace_attributes(char *prefix, void *src, void *end)
 	/* append 4 spaces to the prefix plus terminal '\0' */
 	prefix2 = TEE_Malloc(prefix_len + 1 + 4, TEE_MALLOC_FILL_ZERO);
 	if (!prefix2)
-		return SKS_MEMORY;
+		return PKCS11_MEMORY;
 
 	TEE_MemMove(prefix2, prefix, prefix_len + 1);
 	TEE_MemFill(prefix2 + prefix_len, ' ', 4);
@@ -545,7 +545,7 @@ static uint32_t __trace_attributes(char *prefix, void *src, void *end)
 	}
 
 	TEE_Free(prefix2);
-	return SKS_OK;
+	return PKCS11_OK;
 }
 
 #ifdef SKS_SHEAD_WITH_BOOLPROPS
@@ -574,7 +574,7 @@ uint32_t trace_attributes(const char *prefix, void *ref)
 
 	pre = TEE_Malloc(prefix ? strlen(prefix) + 2 : 2, TEE_MALLOC_FILL_ZERO);
 	if (!pre)
-		return SKS_MEMORY;
+		return PKCS11_MEMORY;
 	if (prefix)
 		TEE_MemMove(pre, prefix, strlen(prefix));
 

@@ -41,11 +41,11 @@ uint32_t sks2tee_proc_params_rsa_pss(struct active_processing *processing,
 	processing->extra_ctx = TEE_Malloc(sizeof(uint32_t),
 						TEE_USER_MEM_HINT_NO_FILL_ZERO);
 	if (!processing->extra_ctx)
-		return SKS_MEMORY;
+		return PKCS11_MEMORY;
 
 	*(uint32_t *)processing->extra_ctx = salt_len;
 
-	return SKS_OK;
+	return PKCS11_OK;
 }
 
 void tee_release_rsa_pss_operation(struct active_processing *processing)
@@ -99,10 +99,10 @@ uint32_t sks2tee_algo_rsa_pss(uint32_t *tee_id,
 			return PKCS11_CKR_MECHANISM_PARAM_INVALID;
 		break;
 	default:
-		return SKS_ERROR;
+		return PKCS11_ERROR;
 	}
 
-	return SKS_OK;
+	return PKCS11_OK;
 }
 
 // Currently unused
@@ -147,7 +147,7 @@ uint32_t tee_init_rsa_aes_key_wrap_operation(struct active_processing *proc,
 
 	// TODO
 	(void)proc;
-	return SKS_ERROR;
+	return PKCS11_ERROR;
 }
 
 uint32_t sks2tee_algo_rsa_oaep(uint32_t *tee_id,
@@ -214,16 +214,16 @@ uint32_t sks2tee_algo_rsa_oaep(uint32_t *tee_id,
 		default:
 			EMSG("Unexpected %s (0x%" PRIx32 ")",
 				id2str_proc(hash), hash);
-			return SKS_ERROR;
+			return PKCS11_ERROR;
 		}
 		break;
 	default:
 		EMSG("Unexpected %s (0x%" PRIx32 ")",
 			id2str_proc(proc_params->id), proc_params->id);
-		return SKS_ERROR;
+		return PKCS11_ERROR;
 	}
 
-	return SKS_OK;
+	return PKCS11_OK;
 }
 
 // Unused yet...
@@ -265,7 +265,7 @@ uint32_t tee_init_rsa_oaep_operation(struct active_processing *processing,
 
 	// TODO
 	(void)processing;
-	return SKS_ERROR;
+	return PKCS11_ERROR;
 }
 
 uint32_t load_tee_rsa_key_attrs(TEE_Attribute **tee_attrs, size_t *tee_count,
@@ -273,7 +273,7 @@ uint32_t load_tee_rsa_key_attrs(TEE_Attribute **tee_attrs, size_t *tee_count,
 {
 	TEE_Attribute *attrs = NULL;
 	size_t count = 0;
-	uint32_t rv = SKS_ERROR;
+	uint32_t rv = PKCS11_ERROR;
 
 	assert(get_type(obj->attributes) == PKCS11_CKK_RSA);
 
@@ -282,7 +282,7 @@ uint32_t load_tee_rsa_key_attrs(TEE_Attribute **tee_attrs, size_t *tee_count,
 		attrs = TEE_Malloc(3 * sizeof(TEE_Attribute),
 				   TEE_USER_MEM_HINT_NO_FILL_ZERO);
 		if (!attrs)
-			return SKS_MEMORY;
+			return PKCS11_MEMORY;
 
 		if (sks2tee_load_attr(&attrs[count], TEE_ATTR_RSA_MODULUS,
 					obj, PKCS11_CKA_MODULUS))
@@ -294,7 +294,7 @@ uint32_t load_tee_rsa_key_attrs(TEE_Attribute **tee_attrs, size_t *tee_count,
 			count++;
 
 		if (count == 2)
-			rv = SKS_OK;
+			rv = PKCS11_OK;
 
 		break;
 
@@ -302,7 +302,7 @@ uint32_t load_tee_rsa_key_attrs(TEE_Attribute **tee_attrs, size_t *tee_count,
 		attrs = TEE_Malloc(8 * sizeof(TEE_Attribute),
 				   TEE_USER_MEM_HINT_NO_FILL_ZERO);
 		if (!attrs)
-			return SKS_MEMORY;
+			return PKCS11_MEMORY;
 
 		if (sks2tee_load_attr(&attrs[count], TEE_ATTR_RSA_MODULUS,
 					obj, PKCS11_CKA_MODULUS))
@@ -323,7 +323,7 @@ uint32_t load_tee_rsa_key_attrs(TEE_Attribute **tee_attrs, size_t *tee_count,
 
 		if (get_attribute(obj->attributes, PKCS11_CKA_PRIME_1,
 					   NULL, NULL)) {
-			rv = SKS_OK;
+			rv = PKCS11_OK;
 			break;
 		}
 
@@ -353,7 +353,7 @@ uint32_t load_tee_rsa_key_attrs(TEE_Attribute **tee_attrs, size_t *tee_count,
 			count++;
 
 		if (count == 8)
-			rv = SKS_OK;
+			rv = PKCS11_OK;
 
 		break;
 
@@ -362,7 +362,7 @@ uint32_t load_tee_rsa_key_attrs(TEE_Attribute **tee_attrs, size_t *tee_count,
 		break;
 	}
 
-	if (rv == SKS_OK) {
+	if (rv == PKCS11_OK) {
 		*tee_attrs = attrs;
 		*tee_count = count;
 	}
@@ -461,7 +461,7 @@ uint32_t generate_rsa_keys(struct pkcs11_attribute_head *proc_params,
 
 	rv = get_attribute_ptr(*pub_head, PKCS11_CKA_PUBLIC_EXPONENT,
 				&a_ptr, &a_size);
-	if (rv == SKS_OK) {
+	if (rv == PKCS11_OK) {
 		TEE_InitRefAttribute(&tee_attrs[tee_count],
 				     TEE_ATTR_RSA_PUBLIC_EXPONENT,
 				     a_ptr, a_size);

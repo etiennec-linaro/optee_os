@@ -131,7 +131,7 @@ static uint32_t sks2tee_algorithm(uint32_t *tee_id,
 		rv = sks2tee_algo_ecdsa(tee_id, proc_params, obj);
 		break;
 	default:
-		rv = SKS_OK;
+		rv = PKCS11_OK;
 		break;
 	}
 
@@ -181,7 +181,7 @@ static uint32_t sks2tee_key_type(uint32_t *tee_type, struct pkcs11_object *obj,
 		break;
 	}
 
-	return SKS_OK;
+	return PKCS11_OK;
 }
 
 static uint32_t allocate_tee_operation(struct pkcs11_session *session,
@@ -197,7 +197,7 @@ static uint32_t allocate_tee_operation(struct pkcs11_session *session,
 	assert(session->processing->tee_op_handle == TEE_HANDLE_NULL);
 
 	if (sks2tee_algorithm(&algo, function, proc_params, obj))
-		return SKS_FAILED;
+		return PKCS11_FAILED;
 
 	sks2tee_mode(&mode, function);
 
@@ -267,7 +267,7 @@ static uint32_t load_tee_key(struct pkcs11_session *session,
 
 	object_size = get_object_key_bit_size(obj);
 	if (!object_size)
-		return SKS_ERROR;
+		return PKCS11_ERROR;
 
 	switch (type) {
 	case PKCS11_CKK_RSA:
@@ -318,7 +318,7 @@ error:
 static uint32_t init_tee_operation(struct pkcs11_session *session,
 				   struct pkcs11_attribute_head *proc_params)
 {
-	uint32_t rv = SKS_OK;
+	uint32_t rv = PKCS11_OK;
 
 	switch (proc_params->id) {
 	case PKCS11_CKM_SHA1_RSA_PKCS_PSS:
@@ -370,7 +370,7 @@ uint32_t step_asymm_operation(struct pkcs11_session *session,
 			      enum processing_step step,
 			      TEE_Param *in, TEE_Param *io2)
 {
-	uint32_t rv = SKS_ERROR;
+	uint32_t rv = PKCS11_ERROR;
 	TEE_Result res = TEE_ERROR_GENERIC;
 	void *in_buf = in ? in->memref.buffer : NULL;
 	size_t in_size = in ? in->memref.size : 0;
@@ -390,7 +390,7 @@ uint32_t step_asymm_operation(struct pkcs11_session *session,
 	case PKCS11_FUNC_STEP_FINAL:
 		break;
 	default:
-		return SKS_ERROR;
+		return PKCS11_ERROR;
 	}
 
 	/* TEE attribute(s) required by the operation */
@@ -403,7 +403,7 @@ uint32_t step_asymm_operation(struct pkcs11_session *session,
 		tee_attrs = TEE_Malloc(sizeof(TEE_Attribute),
 					TEE_USER_MEM_HINT_NO_FILL_ZERO);
 		if (!tee_attrs) {
-			rv = SKS_MEMORY;
+			rv = PKCS11_MEMORY;
 			goto bail;
 		}
 
@@ -432,7 +432,7 @@ uint32_t step_asymm_operation(struct pkcs11_session *session,
 		goto bail;
 	default:
 		/* Other mechanism do not expect multi stage operation */
-		rv = SKS_ERROR;
+		rv = PKCS11_ERROR;
 		break;
 	}
 
@@ -448,7 +448,7 @@ uint32_t step_asymm_operation(struct pkcs11_session *session,
 	case PKCS11_CKM_ECDSA:
 		// TODO: check input size is enough
 		if (!in_size) {
-			rv = SKS_FAILED;
+			rv = PKCS11_FAILED;
 			goto bail;
 		}
 		break;
@@ -474,7 +474,7 @@ uint32_t step_asymm_operation(struct pkcs11_session *session,
 		break;
 	default:
 		if (step != PKCS11_FUNC_STEP_ONESHOT) {
-			rv = SKS_ERROR;
+			rv = PKCS11_ERROR;
 			goto bail;
 		}
 		break;
@@ -552,11 +552,11 @@ uint32_t step_asymm_operation(struct pkcs11_session *session,
 		break;
 	}
 bail:
-	if (output_data && (rv == SKS_OK || rv == SKS_SHORT_BUFFER)) {
+	if (output_data && (rv == PKCS11_OK || rv == PKCS11_SHORT_BUFFER)) {
 		if (io2)
 			io2->memref.size = out_size;
 		else
-			rv = SKS_ERROR;
+			rv = PKCS11_ERROR;
 	}
 
 	TEE_Free(tee_attrs);
@@ -568,7 +568,7 @@ uint32_t do_asymm_derivation(struct pkcs11_session *session,
 			     struct pkcs11_attribute_head *proc_params,
 			     struct pkcs11_attrs_head **head)
 {
-	uint32_t rv = SKS_ERROR;
+	uint32_t rv = PKCS11_ERROR;
 	TEE_Result res = TEE_ERROR_GENERIC;
 	TEE_Attribute tee_attrs[2];
 	size_t tee_attrs_count = 0;

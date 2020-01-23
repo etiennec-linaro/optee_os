@@ -30,14 +30,14 @@ uint32_t serialargs_get(struct serialargs *args, void *out, size_t size)
 	if (args->next + size > args->start + args->size) {
 		EMSG("arg too short: full %zd, remain %zd, expect %zd",
 		     args->size, args->size - (args->next - args->start), size);
-		return SKS_BAD_PARAM;
+		return PKCS11_BAD_PARAM;
 	}
 
 	TEE_MemMove(out, args->next, size);
 
 	args->next += size;
 
-	return SKS_OK;
+	return PKCS11_OK;
 }
 
 uint32_t serialargs_alloc_and_get(struct serialargs *args,
@@ -47,25 +47,25 @@ uint32_t serialargs_alloc_and_get(struct serialargs *args,
 
 	if (!size) {
 		*out = NULL;
-		return SKS_OK;
+		return PKCS11_OK;
 	}
 
 	if (args->next + size > args->start + args->size) {
 		EMSG("arg too short: full %zd, remain %zd, expect %zd",
 		     args->size, args->size - (args->next - args->start), size);
-		return SKS_BAD_PARAM;
+		return PKCS11_BAD_PARAM;
 	}
 
 	ptr = TEE_Malloc(size, TEE_MALLOC_FILL_ZERO);
 	if (!ptr)
-		return SKS_MEMORY;
+		return PKCS11_MEMORY;
 
 	TEE_MemMove(ptr, args->next, size);
 
 	args->next += size;
 	*out = ptr;
 
-	return SKS_OK;
+	return PKCS11_OK;
 }
 
 uint32_t serialargs_get_ptr(struct serialargs *args, void **out, size_t size)
@@ -74,19 +74,19 @@ uint32_t serialargs_get_ptr(struct serialargs *args, void **out, size_t size)
 
 	if (!size) {
 		*out = NULL;
-		return SKS_OK;
+		return PKCS11_OK;
 	}
 
 	if (args->next + size > args->start + args->size) {
 		EMSG("arg too short: full %zd, remain %zd, expect %zd",
 		     args->size, args->size - (args->next - args->start), size);
-		return SKS_BAD_PARAM;
+		return PKCS11_BAD_PARAM;
 	}
 
 	args->next += size;
 	*out = ptr;
 
-	return SKS_OK;
+	return PKCS11_OK;
 }
 
 uint32_t serialargs_alloc_get_one_attribute(struct serialargs *args __unused,
@@ -102,7 +102,7 @@ uint32_t serialargs_alloc_get_one_attribute(struct serialargs *args __unused,
 		EMSG("arg too short: full %zd, remain %zd, expect at least %zd",
 		     args->size, args->size - (args->next - args->start),
 		     out_size);
-		return SKS_BAD_PARAM;
+		return PKCS11_BAD_PARAM;
 	}
 
 	TEE_MemMove(&head, args->next, out_size);
@@ -112,19 +112,19 @@ uint32_t serialargs_alloc_get_one_attribute(struct serialargs *args __unused,
 		EMSG("arg too short: full %zd, remain %zd, expect %zd",
 		     args->size, args->size - (args->next - args->start),
 		     out_size);
-		return SKS_BAD_PARAM;
+		return PKCS11_BAD_PARAM;
 	}
 
 	pref = TEE_Malloc(out_size, TEE_USER_MEM_HINT_NO_FILL_ZERO);
 	if (!pref)
-		return SKS_MEMORY;
+		return PKCS11_MEMORY;
 
 	TEE_MemMove(pref, args->next, out_size);
 	args->next += out_size;
 
 	*out = pref;
 
-	return SKS_OK;
+	return PKCS11_OK;
 }
 
 uint32_t serialargs_alloc_get_attributes(struct serialargs *args __unused,
@@ -140,7 +140,7 @@ uint32_t serialargs_alloc_get_attributes(struct serialargs *args __unused,
 		EMSG("arg too short: full %zd, remain %zd, expect at least %zd",
 		     args->size, args->size - (args->next - args->start),
 		     attr_size);
-		return SKS_BAD_PARAM;
+		return PKCS11_BAD_PARAM;
 	}
 
 	TEE_MemMove(&attr, args->next, attr_size);
@@ -150,19 +150,19 @@ uint32_t serialargs_alloc_get_attributes(struct serialargs *args __unused,
 		EMSG("arg too short: full %zd, remain %zd, expect %zd",
 		     args->size, args->size - (args->next - args->start),
 		     attr_size);
-		return SKS_BAD_PARAM;
+		return PKCS11_BAD_PARAM;
 	}
 
 	pattr = TEE_Malloc(attr_size, TEE_USER_MEM_HINT_NO_FILL_ZERO);
 	if (!pattr)
-		return SKS_MEMORY;
+		return PKCS11_MEMORY;
 
 	TEE_MemMove(pattr, args->next, attr_size);
 	args->next += attr_size;
 
 	*out = pattr;
 
-	return SKS_OK;
+	return PKCS11_OK;
 }
 
 /*
@@ -178,12 +178,12 @@ uint32_t serialize(char **bstart, size_t *blen, void *data, size_t len)
 
 	buf = TEE_Realloc(*bstart, nlen);
 	if (!buf)
-		return SKS_MEMORY;
+		return PKCS11_MEMORY;
 
 	TEE_MemMove(buf + *blen, data, len);
 
 	*blen = nlen;
 	*bstart = buf;
 
-	return SKS_OK;
+	return PKCS11_OK;
 }

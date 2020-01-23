@@ -125,7 +125,7 @@ uint32_t create_object_uuid(struct ck_token *token __unused,
 	obj->uuid = TEE_Malloc(sizeof(TEE_UUID),
 				TEE_USER_MEM_HINT_NO_FILL_ZERO);
 	if (!obj->uuid)
-		return SKS_MEMORY;
+		return PKCS11_MEMORY;
 
 	TEE_GenerateRandom(obj->uuid, sizeof(TEE_UUID));
 
@@ -134,7 +134,7 @@ uint32_t create_object_uuid(struct ck_token *token __unused,
 	 * database) and the pending created uuids (not already registered
 	 * if any).
 	 */
-	return SKS_OK;
+	return PKCS11_OK;
 }
 
 void destroy_object_uuid(struct ck_token *token __unused,
@@ -156,12 +156,12 @@ uint32_t get_persistent_objects_list(struct ck_token *token,
 	*size = token->db_objs->count * sizeof(TEE_UUID);
 
 	if (out_size < *size)
-		return SKS_SHORT_BUFFER;
+		return PKCS11_SHORT_BUFFER;
 
 	if (array)
 		TEE_MemMove(array, token->db_objs->uuids, *size);
 
-	return SKS_OK;
+	return PKCS11_OK;
 }
 
 uint32_t unregister_persistent_object(struct ck_token *token, TEE_UUID *uuid)
@@ -172,7 +172,7 @@ uint32_t unregister_persistent_object(struct ck_token *token, TEE_UUID *uuid)
 	TEE_Result res = TEE_ERROR_GENERIC;
 
 	if (!uuid)
-		return SKS_OK;
+		return PKCS11_OK;
 
 	for (index = (int)(token->db_objs->count) - 1; index >= 0; index--) {
 		if (!TEE_MemCompare(token->db_objs->uuids + index,
@@ -189,7 +189,7 @@ uint32_t unregister_persistent_object(struct ck_token *token, TEE_UUID *uuid)
 			 ((token->db_objs->count - 1) * sizeof(TEE_UUID)),
 			 TEE_USER_MEM_HINT_NO_FILL_ZERO);
 	if (!ptr)
-		return SKS_MEMORY;
+		return PKCS11_MEMORY;
 
 	res = TEE_SeekObjectData(token->db_hdl,
 				 sizeof(struct token_persistent_main),
@@ -223,7 +223,7 @@ uint32_t unregister_persistent_object(struct ck_token *token, TEE_UUID *uuid)
 	TEE_Free(token->db_objs);
 	token->db_objs = ptr;
 
-	return SKS_OK;
+	return PKCS11_OK;
 }
 
 uint32_t register_persistent_object(struct ck_token *token, TEE_UUID *uuid)
@@ -243,7 +243,7 @@ uint32_t register_persistent_object(struct ck_token *token, TEE_UUID *uuid)
 			  sizeof(struct token_persistent_objs) +
 			  ((count + 1) * sizeof(TEE_UUID)));
 	if (!ptr)
-		return SKS_MEMORY;
+		return PKCS11_MEMORY;
 
 	token->db_objs = ptr;
 	TEE_MemMove(token->db_objs->uuids + count, uuid, sizeof(TEE_UUID));
@@ -272,7 +272,7 @@ uint32_t register_persistent_object(struct ck_token *token, TEE_UUID *uuid)
 		return tee2sks_error(res);
 	}
 
-	return SKS_OK;
+	return PKCS11_OK;
 }
 
 /*

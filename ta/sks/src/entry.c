@@ -57,22 +57,22 @@ static uint32_t entry_ping(TEE_Param *ctrl, TEE_Param *in, TEE_Param *out)
 	uint32_t *ver = NULL;
 
 	if (ctrl || in)
-		return SKS_BAD_PARAM;
+		return PKCS11_BAD_PARAM;
 
 	if (!out)
-		return SKS_OK;
+		return PKCS11_OK;
 
 	if (out->memref.size < 2 * sizeof(uint32_t))
-		return SKS_SHORT_BUFFER;
+		return PKCS11_SHORT_BUFFER;
 
 	if ((uintptr_t)out->memref.buffer & 0x03UL)
-		return SKS_BAD_PARAM;
+		return PKCS11_BAD_PARAM;
 
 	ver = (uint32_t *)out->memref.buffer;
 	*ver = SKS_VERSION_ID0;
 	*(ver + 1) = SKS_VERSION_ID1;
 
-	return SKS_OK;
+	return PKCS11_OK;
 }
 
 /*

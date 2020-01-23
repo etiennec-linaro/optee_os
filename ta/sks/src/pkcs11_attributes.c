@@ -226,7 +226,7 @@ uint32_t check_mechanism_against_processing(struct pkcs11_session *session,
 		case PKCS11_FUNCTION_COPY:
 		case PKCS11_FUNCTION_MODIFY:
 		case PKCS11_FUNCTION_DESTROY:
-			return SKS_OK;
+			return PKCS11_OK;
 		default:
 			for (n = 0; n < ARRAY_SIZE(pkcs11_modes); n++) {
 				if (pkcs11_modes[n].id == mechanism_type) {
@@ -262,7 +262,7 @@ uint32_t check_mechanism_against_processing(struct pkcs11_session *session,
 		    !session->processing->relogged)
 			return PKCS11_CKR_USER_NOT_LOGGED_IN;
 
-		return SKS_OK;
+		return PKCS11_OK;
 
 	default:
 		TEE_Panic(step);
@@ -274,7 +274,7 @@ uint32_t check_mechanism_against_processing(struct pkcs11_session *session,
 			id2str_proc(mechanism_type), mechanism_type,
 			function, step);
 
-	return allowed ? SKS_OK : PKCS11_CKR_KEY_FUNCTION_NOT_PERMITTED;
+	return allowed ? PKCS11_OK : PKCS11_CKR_KEY_FUNCTION_NOT_PERMITTED;
 }
 
 /*
@@ -346,7 +346,7 @@ static uint32_t set_mandatory_boolprops(struct pkcs11_attrs_head **out,
 					struct pkcs11_attrs_head *temp,
 					uint32_t const *bp, size_t bp_count)
 {
-	uint32_t rv = SKS_OK;
+	uint32_t rv = PKCS11_OK;
 	size_t n = 0;
 
 	for (n = 0; n < bp_count; n++) {
@@ -362,7 +362,7 @@ static uint32_t __unused set_mandatory_attributes(struct pkcs11_attrs_head **out
 					 struct pkcs11_attrs_head *temp,
 					 uint32_t const *bp, size_t bp_count)
 {
-	uint32_t rv = SKS_OK;
+	uint32_t rv = PKCS11_OK;
 	size_t n = 0;
 
 	for (n = 0; n < bp_count; n++) {
@@ -386,7 +386,7 @@ static uint32_t set_optional_attributes(struct pkcs11_attrs_head **out,
 					struct pkcs11_attrs_head *temp,
 					uint32_t const *bp, size_t bp_count)
 {
-	uint32_t rv = SKS_OK;
+	uint32_t rv = PKCS11_OK;
 	size_t n = 0;
 
 	for (n = 0; n < bp_count; n++) {
@@ -920,7 +920,7 @@ static uint32_t check_attrs_misc_integrity(struct pkcs11_attrs_head *head)
 		return PKCS11_CKR_TEMPLATE_INCONSISTENT;
 	}
 
-	return SKS_OK;
+	return PKCS11_OK;
 }
 
 /*
@@ -952,7 +952,7 @@ uint32_t check_access_attrs_against_token(struct pkcs11_session *session,
 	/*
 	 * TODO: START_DATE and END_DATE: complies with current time?
 	 */
-	return SKS_OK;
+	return PKCS11_OK;
 }
 
 /*
@@ -982,7 +982,7 @@ uint32_t check_created_attrs_against_token(struct pkcs11_session *session,
 	/*
 	 * TODO: START_DATE and END_DATE: complies with current time?
 	 */
-	return SKS_OK;
+	return PKCS11_OK;
 }
 
 /*
@@ -1000,7 +1000,7 @@ uint32_t check_created_attrs_against_parent_key(
 	 * Unwrapping: check head vs parent key UNWRAP_TEMPLATE attribute.
 	 * Derive: check head vs parent key DERIVE_TEMPLATE attribute (late comer?).
 	 */
-	return SKS_ERROR;
+	return PKCS11_ERROR;
 }
 
 #define DMSG_BAD_BBOOL(attr, proc, head) \
@@ -1091,7 +1091,7 @@ uint32_t check_created_attrs_against_processing(uint32_t proc_id,
 		break;
 	}
 
-	return SKS_OK;
+	return PKCS11_OK;
 }
 
 void pkcs11_max_min_key_size(uint32_t key_type, uint32_t *max_key_size,
@@ -1260,7 +1260,7 @@ uint32_t check_created_attrs(struct pkcs11_attrs_head *key1,
 	 */
 	switch (get_type(key1)) {
 	case PKCS11_CKK_EC:
-		return SKS_OK;
+		return PKCS11_OK;
 	default:
 		break;
 	}
@@ -1274,7 +1274,7 @@ uint32_t check_created_attrs(struct pkcs11_attrs_head *key1,
 		return PKCS11_CKR_KEY_SIZE_RANGE;
 	}
 
-	return SKS_OK;
+	return PKCS11_OK;
 }
 
 /* Check processing ID against attribute ALLOWED_PROCESSINGS if any */
@@ -1288,7 +1288,7 @@ static bool parent_key_complies_allowed_processings(uint32_t proc_id,
 
 	/* Check only if restricted allowed mechanisms list is defined */
 	if (get_attribute_ptr(head, PKCS11_CKA_ALLOWED_MECHANISMS,
-			      (void *)&attr, &size) != SKS_OK) {
+			      (void *)&attr, &size) != PKCS11_OK) {
 		return true;
 	}
 
@@ -1476,7 +1476,7 @@ uint32_t check_parent_attrs_against_processing(uint32_t proc_id,
 		return PKCS11_CKR_KEY_FUNCTION_NOT_PERMITTED;
 	}
 
-	return SKS_OK;
+	return PKCS11_OK;
 }
 
 bool object_is_private(struct pkcs11_attrs_head *head)
@@ -1524,7 +1524,7 @@ uint32_t add_missing_attribute_id(struct pkcs11_attrs_head **attrs1,
 		}
 
 		if (id1 && id2)
-			return SKS_OK;
+			return PKCS11_OK;
 
 		if (id1 && !id2)
 			return add_attribute(attrs2, PKCS11_CKA_ID, id1, id1_size);
@@ -1533,18 +1533,18 @@ uint32_t add_missing_attribute_id(struct pkcs11_attrs_head **attrs1,
 			return add_attribute(attrs1, PKCS11_CKA_ID, id2, id2_size);
 	} else {
 		if (id1)
-			return SKS_OK;
+			return PKCS11_OK;
 	}
 
 	id1_size = PKCS11_CKA_DEFAULT_SIZE;
 	id1 = TEE_Malloc(id1_size, 0);
 	if (!id1)
-		return SKS_MEMORY;
+		return PKCS11_MEMORY;
 
 	TEE_GenerateRandom(id1, (uint32_t)id1_size);
 
 	rv = add_attribute(attrs1, PKCS11_CKA_ID, id1, id1_size);
-	if (rv == SKS_OK && attrs2)
+	if (rv == PKCS11_OK && attrs2)
 		rv = add_attribute(attrs2, PKCS11_CKA_ID, id1, id1_size);
 
 	TEE_Free(id1);

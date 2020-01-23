@@ -277,8 +277,8 @@ static const struct string_id __maybe_unused string_rc[] = {
 	PKCS11_ID(PKCS11_CKR_USER_TOO_MANY_TYPES),
 	PKCS11_ID(PKCS11_CKR_USER_TYPE_INVALID),
 	PKCS11_ID(PKCS11_CKR_SESSION_READ_ONLY_EXISTS),
-	PKCS11_ID(PKCS11_NOT_FOUND),
-	PKCS11_ID(PKCS11_NOT_IMPLEMENTED),
+	PKCS11_ID(PKCS11_RV_NOT_FOUND),
+	PKCS11_ID(PKCS11_RV_NOT_IMPLEMENTED),
 };
 
 static const struct string_id __maybe_unused string_slot_flags[] = {

@@ -20,7 +20,8 @@
 
 uint32_t init_attributes_head(struct pkcs11_attrs_head **head)
 {
-	*head = TEE_Malloc(sizeof(struct pkcs11_attrs_head), TEE_MALLOC_FILL_ZERO);
+	*head = TEE_Malloc(sizeof(struct pkcs11_attrs_head),
+			   TEE_MALLOC_FILL_ZERO);
 	if (!*head)
 		return PKCS11_MEMORY;
 
@@ -64,7 +65,7 @@ uint32_t add_attribute(struct pkcs11_attrs_head **head,
 
 		TEE_MemMove(attribute == PKCS11_CKA_CLASS ?
 				&(*head)->class : &(*head)->type,
-				data, sizeof(uint32_t));
+			    data, sizeof(uint32_t));
 
 		return PKCS11_OK;
 	}
@@ -152,8 +153,8 @@ uint32_t remove_attribute(struct pkcs11_attrs_head **head, uint32_t attribute)
 	return PKCS11_NOT_FOUND;
 }
 
-uint32_t remove_attribute_check(struct pkcs11_attrs_head **head, uint32_t attribute,
-				size_t max_check)
+uint32_t remove_attribute_check(struct pkcs11_attrs_head **head,
+				uint32_t attribute, size_t max_check)
 {
 	struct pkcs11_attrs_head *h = *head;
 	char *cur = NULL;

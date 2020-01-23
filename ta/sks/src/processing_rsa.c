@@ -382,7 +382,8 @@ static uint32_t tee2pkcs_rsa_attributes(struct pkcs11_attrs_head **pub_head,
 	if (rv)
 		goto bail;
 
-	if (get_attribute_ptr(*pub_head, PKCS11_CKA_PUBLIC_EXPONENT, NULL, NULL)) {
+	if (get_attribute_ptr(*pub_head, PKCS11_CKA_PUBLIC_EXPONENT,
+			      NULL, NULL)) {
 		rv = tee2pkcs_add_attribute(pub_head,
 					   PKCS11_CKA_PUBLIC_EXPONENT,
 					   tee_obj,
@@ -472,8 +473,10 @@ uint32_t generate_rsa_keys(struct pkcs11_attribute_head *proc_params,
 
 	if (!get_attribute(*pub_head, PKCS11_CKA_MODULUS, NULL, NULL) ||
 	    !get_attribute(*priv_head, PKCS11_CKA_MODULUS, NULL, NULL) ||
-	    !get_attribute(*priv_head, PKCS11_CKA_PUBLIC_EXPONENT, NULL, NULL) ||
-	    !get_attribute(*priv_head, PKCS11_CKA_PRIVATE_EXPONENT, NULL, NULL) ||
+	    !get_attribute(*priv_head, PKCS11_CKA_PUBLIC_EXPONENT,
+			   NULL, NULL) ||
+	    !get_attribute(*priv_head, PKCS11_CKA_PRIVATE_EXPONENT,
+			   NULL, NULL) ||
 	    !get_attribute(*priv_head, PKCS11_CKA_PRIME_1, NULL, NULL) ||
 	    !get_attribute(*priv_head, PKCS11_CKA_PRIME_2, NULL, NULL) ||
 	    !get_attribute(*priv_head, PKCS11_CKA_EXPONENT_1, NULL, NULL) ||

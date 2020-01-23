@@ -256,7 +256,7 @@ size_t get_object_key_bit_size(struct pkcs11_object *obj)
 
 	case PKCS11_CKK_EC:
 		if (get_attribute_ptr(attrs, PKCS11_CKA_EC_PARAMS,
-					&a_ptr, &a_size))
+				      &a_ptr, &a_size))
 			return 0;
 
 		return ec_params2tee_keysize(a_ptr, a_size);
@@ -380,8 +380,9 @@ uint32_t entry_generate_secret(uintptr_t tee_session,
 		goto bail;
 
 	/*
-	 * Execute target processing and add value as attribute PKCS11_CKA_VALUE.
-	 * Symm key generation: depends on target processing to be used.
+	 * Execute target processing and add value as attribute
+	 * PKCS11_CKA_VALUE. Symm key generation: depends on target
+	 * processing to be used.
 	 */
 	switch (proc_params->id) {
 	case PKCS11_CKM_GENERIC_SECRET_KEY_GEN:
@@ -456,8 +457,9 @@ uint32_t alloc_get_tee_attribute_data(TEE_ObjectHandle tee_obj,
 	return tee2pkcs_error(res);
 }
 
-uint32_t tee2pkcs_add_attribute(struct pkcs11_attrs_head **head, uint32_t pkcs11_id,
-				TEE_ObjectHandle tee_obj, uint32_t tee_id)
+uint32_t tee2pkcs_add_attribute(struct pkcs11_attrs_head **head,
+				uint32_t pkcs11_id, TEE_ObjectHandle tee_obj,
+				uint32_t tee_id)
 {
 	uint32_t rv = 0;
 	void *a_ptr = NULL;
@@ -534,8 +536,9 @@ uint32_t entry_generate_key_pair(uintptr_t teesess,
 
 	template_size = sizeof(*template) + template->attrs_size;
 
-	rv = create_attributes_from_template(&pub_head, template, template_size,
-					     NULL, PKCS11_FUNCTION_GENERATE_PAIR);
+	rv = create_attributes_from_template(&pub_head,
+					     template, template_size, NULL,
+					     PKCS11_FUNCTION_GENERATE_PAIR);
 	if (rv)
 		goto bail;
 
@@ -548,8 +551,9 @@ uint32_t entry_generate_key_pair(uintptr_t teesess,
 
 	template_size = sizeof(*template) + template->attrs_size;
 
-	rv = create_attributes_from_template(&priv_head, template, template_size,
-					     NULL, PKCS11_FUNCTION_GENERATE_PAIR);
+	rv = create_attributes_from_template(&priv_head,
+					     template, template_size, NULL,
+					     PKCS11_FUNCTION_GENERATE_PAIR);
 	if (rv)
 		goto bail;
 
@@ -693,7 +697,8 @@ uint32_t entry_processing_init(uintptr_t tee_session, TEE_Param *ctrl,
 		goto bail;
 
 	rv = check_mechanism_against_processing(session, proc_params->id,
-						function, PKCS11_FUNC_STEP_INIT);
+						function,
+						PKCS11_FUNC_STEP_INIT);
 	if (rv)
 		goto bail;
 

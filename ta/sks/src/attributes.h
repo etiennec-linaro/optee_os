@@ -56,8 +56,8 @@ uint32_t remove_attribute(struct pkcs11_attrs_head **head, uint32_t attrib);
  *
  * Return a PKCS11_OK on success or a PKCS11 return code.
  */
-uint32_t remove_attribute_check(struct pkcs11_attrs_head **head, uint32_t attribute,
-				size_t max_check);
+uint32_t remove_attribute_check(struct pkcs11_attrs_head **head,
+				uint32_t attribute, size_t max_check);
 
 /*
  * If *count == 0, count and return in *count the number of attributes matching

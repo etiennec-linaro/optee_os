@@ -152,13 +152,13 @@ bool pkcs11_session_is_security_officer(struct pkcs11_session *session)
 bool pkcs11_session_is_user(struct pkcs11_session *session)
 {
 	return session->state == PKCS11_SESSION_USER_READ_WRITE ||
-		session->state == PKCS11_SESSION_USER_READ_ONLY;
+	       session->state == PKCS11_SESSION_USER_READ_ONLY;
 }
 
 bool pkcs11_session_is_public(struct pkcs11_session *session)
 {
 	return session->state == PKCS11_SESSION_PUBLIC_READ_WRITE ||
-		session->state == PKCS11_SESSION_PUBLIC_READ_ONLY;
+	       session->state == PKCS11_SESSION_PUBLIC_READ_ONLY;
 }
 
 struct pkcs11_session *pkcs11_handle2session(uint32_t handle,
@@ -174,7 +174,8 @@ struct pkcs11_session *pkcs11_handle2session(uint32_t handle,
  */
 int set_processing_state(struct pkcs11_session *session,
 			 enum processing_func function,
-			 struct pkcs11_object *obj1, struct pkcs11_object *obj2)
+			 struct pkcs11_object *obj1,
+			 struct pkcs11_object *obj2)
 {
 	enum pkcs11_proc_state state;
 	struct active_processing *proc = NULL;
@@ -315,7 +316,8 @@ uint32_t entry_ck_token_initialize(TEE_Param *ctrl,
 	cipher_pin(token->pin_hdl[0], cpin, PKCS11_TOKEN_PIN_SIZE);
 
 	if (!token->db_main->so_pin_size) {
-		TEE_MemMove(token->db_main->so_pin, cpin, PKCS11_TOKEN_PIN_SIZE);
+		TEE_MemMove(token->db_main->so_pin, cpin,
+			    PKCS11_TOKEN_PIN_SIZE);
 		token->db_main->so_pin_size = pin_size;
 
 		update_persistent_db(token,
@@ -598,7 +600,8 @@ static uint32_t supported_mechanism_info_flag(uint32_t proc_id)
 	case PKCS11_CKM_AES_CBC:
 	case PKCS11_CKM_AES_CBC_PAD:
 		flags = PKCS11_CKFM_ENCRYPT | PKCS11_CKFM_DECRYPT |
-			PKCS11_CKFM_WRAP | PKCS11_CKFM_UNWRAP | PKCS11_CKFM_DERIVE;
+			PKCS11_CKFM_WRAP | PKCS11_CKFM_UNWRAP |
+			PKCS11_CKFM_DERIVE;
 		break;
 	case PKCS11_CKM_AES_CTR:
 	case PKCS11_CKM_AES_CTS:
@@ -608,7 +611,8 @@ static uint32_t supported_mechanism_info_flag(uint32_t proc_id)
 			PKCS11_CKFM_WRAP | PKCS11_CKFM_UNWRAP;
 		break;
 	case PKCS11_CKM_AES_GMAC:
-		flags = PKCS11_CKFM_SIGN | PKCS11_CKFM_VERIFY | PKCS11_CKFM_DERIVE;
+		flags = PKCS11_CKFM_SIGN | PKCS11_CKFM_VERIFY |
+			PKCS11_CKFM_DERIVE;
 		break;
 	case PKCS11_CKM_AES_CMAC:
 	case PKCS11_CKM_AES_CMAC_GENERAL:
@@ -825,7 +829,7 @@ uint32_t entry_ck_token_mecha_info(TEE_Param *ctrl,
 	info->flags = supported_mechanism_info_flag(type);
 
 	supported_mechanism_key_size(type, &info->min_key_size,
-					&info->max_key_size, false);
+				     &info->max_key_size, false);
 
 	out->memref.size = sizeof(struct pkcs11_mechanism_info);
 
@@ -1161,9 +1165,9 @@ static uint32_t set_pin(struct pkcs11_session *session,
 		pin_count = &session->token->db_main->so_pin_count;
 		pin_key_hdl = session->token->pin_hdl[0];
 		flag_mask = PKCS11_CKFT_SO_PIN_COUNT_LOW |
-				PKCS11_CKFT_SO_PIN_FINAL_TRY |
-				PKCS11_CKFT_SO_PIN_LOCKED |
-				PKCS11_CKFT_SO_PIN_TO_BE_CHANGED;
+			    PKCS11_CKFT_SO_PIN_FINAL_TRY |
+			    PKCS11_CKFT_SO_PIN_LOCKED |
+			    PKCS11_CKFT_SO_PIN_TO_BE_CHANGED;
 		break;
 	case PKCS11_CKU_USER:
 		pin = session->token->db_main->user_pin;
@@ -1171,9 +1175,9 @@ static uint32_t set_pin(struct pkcs11_session *session,
 		pin_count = &session->token->db_main->user_pin_count;
 		pin_key_hdl = session->token->pin_hdl[1];
 		flag_mask = PKCS11_CKFT_USER_PIN_COUNT_LOW |
-				PKCS11_CKFT_USER_PIN_FINAL_TRY |
-				PKCS11_CKFT_USER_PIN_LOCKED |
-				PKCS11_CKFT_USER_PIN_TO_BE_CHANGED;
+			    PKCS11_CKFT_USER_PIN_FINAL_TRY |
+			    PKCS11_CKFT_USER_PIN_LOCKED |
+			    PKCS11_CKFT_USER_PIN_TO_BE_CHANGED;
 		break;
 	default:
 		return PKCS11_FAILED;
@@ -1194,11 +1198,12 @@ static uint32_t set_pin(struct pkcs11_session *session,
 	session->token->db_main->flags &= ~flag_mask;
 
 	if (user_type == PKCS11_CKU_USER)
-		session->token->db_main->flags |= PKCS11_CKFT_USER_PIN_INITIALIZED;
+		session->token->db_main->flags |=
+			PKCS11_CKFT_USER_PIN_INITIALIZED;
 
 	// Paranoia: Check unmodified old content is still valid
-	update_persistent_db(session->token,
-			     0, sizeof(*session->token->db_main));
+	update_persistent_db(session->token, 0,
+			     sizeof(*session->token->db_main));
 
 	TEE_Free(cpin);
 
@@ -1355,7 +1360,8 @@ static uint32_t check_user_pin(struct pkcs11_session *session,
 	if (token->db_main->user_pin_size != pin_size)
 		pin_rc = 1;
 
-	if (buf_compare_ct(token->db_main->user_pin, cpin, PKCS11_TOKEN_PIN_SIZE))
+	if (buf_compare_ct(token->db_main->user_pin, cpin,
+			   PKCS11_TOKEN_PIN_SIZE))
 		pin_rc = 1;
 
 	TEE_Free(cpin);
@@ -1395,9 +1401,9 @@ static uint32_t check_user_pin(struct pkcs11_session *session,
 	}
 
 	if (token->db_main->flags & (PKCS11_CKFT_USER_PIN_COUNT_LOW |
-					PKCS11_CKFT_USER_PIN_FINAL_TRY)) {
+				     PKCS11_CKFT_USER_PIN_FINAL_TRY)) {
 		token->db_main->flags &= ~(PKCS11_CKFT_USER_PIN_COUNT_LOW |
-				   PKCS11_CKFT_USER_PIN_FINAL_TRY);
+					   PKCS11_CKFT_USER_PIN_FINAL_TRY);
 
 		update_persistent_db(token,
 				     offsetof(struct token_persistent_main,
@@ -1467,7 +1473,8 @@ uint32_t entry_set_pin(uintptr_t tee_session, TEE_Param *ctrl,
 		return set_pin(session, pin, pin_size, PKCS11_CKU_SO);
 	}
 
-	if (!(session->token->db_main->flags & PKCS11_CKFT_USER_PIN_INITIALIZED))
+	if (!(session->token->db_main->flags &
+	      PKCS11_CKFT_USER_PIN_INITIALIZED))
 		return PKCS11_ERROR;
 
 	rv = check_user_pin(session, old_pin, old_pin_size);

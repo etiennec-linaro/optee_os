@@ -832,15 +832,15 @@ struct supported_ecc_curve {
 	size_t label_size;
 };
 
-#define ECC_CURVE(_tee_id, _key_size, _label)	\
+#define ECC_CURVE(_tee_id, _key_size, _label)			\
 	{							\
 		.tee_id = _tee_id,				\
 		.key_size = _key_size,				\
 		.oid_der = _label ## _oid_der,			\
 		.oid_size = sizeof(_label ## _oid_der),		\
-		.name_der = _label ## _name_der,			\
+		.name_der = _label ## _name_der,		\
 		.name_size = sizeof(_label ## _name_der),	\
-		.label = #_label,					\
+		.label = #_label,				\
 		.label_size = sizeof(#_label) - 1,		\
 	}
 
@@ -1197,7 +1197,8 @@ uint32_t generate_ec_keys(struct pkcs11_attribute_head *proc_params,
 		return PKCS11_CKR_TEMPLATE_INCONSISTENT;
 	}
 
-	if (get_attribute_ptr(*pub_head, PKCS11_CKA_EC_PARAMS, &a_ptr, &a_size)) {
+	if (get_attribute_ptr(*pub_head, PKCS11_CKA_EC_PARAMS,
+			      &a_ptr, &a_size)) {
 		EMSG("Not EC_PARAMS attribute found");
 		return PKCS11_CKR_ATTRIBUTE_TYPE_INVALID;
 	}
@@ -1208,7 +1209,8 @@ uint32_t generate_ec_keys(struct pkcs11_attribute_head *proc_params,
 
 	tee_curve = ec_params2tee_curve(a_ptr, a_size);
 
-	if (get_attribute_ptr(*priv_head, PKCS11_CKA_EC_PARAMS, &a_ptr, &a_size)) {
+	if (get_attribute_ptr(*priv_head, PKCS11_CKA_EC_PARAMS,
+			      &a_ptr, &a_size)) {
 		EMSG("Not EC_PARAMS attribute found");
 		return PKCS11_CKR_ATTRIBUTE_TYPE_INVALID;
 	}

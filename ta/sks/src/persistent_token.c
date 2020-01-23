@@ -122,7 +122,7 @@ uint32_t create_object_uuid(struct ck_token *token __unused,
 	assert(!obj->uuid);
 
 	obj->uuid = TEE_Malloc(sizeof(TEE_UUID),
-				TEE_USER_MEM_HINT_NO_FILL_ZERO);
+			       TEE_USER_MEM_HINT_NO_FILL_ZERO);
 	if (!obj->uuid)
 		return PKCS11_MEMORY;
 
@@ -247,8 +247,8 @@ uint32_t register_persistent_object(struct ck_token *token, TEE_UUID *uuid)
 	TEE_MemMove(token->db_objs->uuids + count, uuid, sizeof(TEE_UUID));
 
 	size = sizeof(struct token_persistent_main) +
-		sizeof(struct token_persistent_objs) +
-		count * sizeof(TEE_UUID);
+	       sizeof(struct token_persistent_objs) +
+	       count * sizeof(TEE_UUID);
 
 	res = TEE_TruncateObjectData(token->db_hdl, size + sizeof(TEE_UUID));
 	if (res)
@@ -307,10 +307,10 @@ struct ck_token *init_token_db(unsigned int token_id)
 		TEE_Panic(0);
 
 	res = TEE_OpenPersistentObject(TEE_STORAGE_PRIVATE,
-					db_file, sizeof(db_file),
-					TEE_DATA_FLAG_ACCESS_READ |
-					TEE_DATA_FLAG_ACCESS_WRITE,
-					&db_hdl);
+				       db_file, sizeof(db_file),
+				       TEE_DATA_FLAG_ACCESS_READ |
+				       TEE_DATA_FLAG_ACCESS_WRITE,
+				       &db_hdl);
 	if (res == TEE_SUCCESS) {
 		uint32_t size = 0;
 		size_t idx = 0;
@@ -388,7 +388,7 @@ struct ck_token *init_token_db(unsigned int token_id)
 			TEE_Panic(0);
 
 		res = TEE_TruncateObjectData(db_hdl, sizeof(*db_main) +
-							sizeof(*db_objs));
+						     sizeof(*db_objs));
 		if (res)
 			TEE_Panic(0);
 

@@ -13,23 +13,23 @@
 #include "pkcs11_attributes.h"
 
 /* Hard coded description */
-#define PKCS11_TOKEN_LABEL			"op-tee pkcs#11 token (dev...)"
-#define PKCS11_TOKEN_MANUFACTURER		"Linaro"
-#define PKCS11_TOKEN_MODEL			"OP-TEE SKS TA"
-#define PKCS11_TOKEN_SERIAL_NUMBER		"0000000000000000"
+#define PKCS11_TOKEN_LABEL		"op-tee pkcs#11 token (dev...)"
+#define PKCS11_TOKEN_MANUFACTURER	"Linaro"
+#define PKCS11_TOKEN_MODEL		"OP-TEE PKCS11 TA"
+#define PKCS11_TOKEN_SERIAL_NUMBER	"0000000000000000"
 #define PKCS11_TOKEN_HW_VERSION		{ 0, 0 }
 #define PKCS11_TOKEN_FW_VERSION		{ PKCS11_TA_VERSION_MAJOR, \
 					  PKCS11_TA_VERSION_MINOR }
 
-#define PKCS11_SLOT_DESCRIPTION		"OP-TEE SKS TA"
-#define PKCS11_SLOT_MANUFACTURER		PKCS11_TOKEN_MANUFACTURER
+#define PKCS11_SLOT_DESCRIPTION		"OP-TEE PKCS11 TA"
+#define PKCS11_SLOT_MANUFACTURER	PKCS11_TOKEN_MANUFACTURER
 #define PKCS11_SLOT_HW_VERSION		PKCS11_TOKEN_HW_VERSION
 #define PKCS11_SLOT_FW_VERSION		PKCS11_TOKEN_FW_VERSION
 
-#define PADDED_STRING_COPY(_dst, _src) \
-	do { \
-		TEE_MemFill((char *)(_dst), ' ', sizeof(_dst)); \
-		TEE_MemMove((char *)(_dst), (_src), \
+#define PADDED_STRING_COPY(_dst, _src)					\
+	do {								\
+		TEE_MemFill((char *)(_dst), ' ', sizeof(_dst));		\
+		TEE_MemMove((char *)(_dst), (_src),			\
 			    MIN(strlen((char *)(_src)), sizeof(_dst))); \
 	} while (0)
 
@@ -51,7 +51,7 @@ enum pkcs11_session_state {
 TAILQ_HEAD(client_list, pkcs11_client);
 TAILQ_HEAD(session_list, pkcs11_session);
 
-#define PKCS11_MAX_USERS			2
+#define PKCS11_MAX_USERS		2
 #define PKCS11_TOKEN_PIN_SIZE		128
 
 /*
@@ -112,10 +112,13 @@ struct ck_token {
 
 	struct object_list object_list;
 
-	TEE_ObjectHandle db_hdl;	/* Opened handle to persistent database */
-	TEE_ObjectHandle pin_hdl[PKCS11_MAX_USERS];	/* Opened handle to PIN keys */
-	struct token_persistent_main *db_main;		/* Copy persistent database */
-	struct token_persistent_objs *db_objs;		/* Copy persistent database */
+	/* Open handles to token database */
+	TEE_ObjectHandle db_hdl;
+	/*  Open handles to PIN keys */
+	TEE_ObjectHandle pin_hdl[PKCS11_MAX_USERS];
+	/* Copy in RAM of the persistent database */
+	struct token_persistent_main *db_main;
+	struct token_persistent_objs *db_objs;
 };
 
 /*
@@ -261,7 +264,8 @@ static inline bool session_is_active(struct pkcs11_session *session)
 
 int set_processing_state(struct pkcs11_session *session,
 			 enum processing_func function,
-			 struct pkcs11_object *obj1, struct pkcs11_object *obj2);
+			 struct pkcs11_object *obj1,
+			 struct pkcs11_object *obj2);
 
 bool pkcs11_session_is_read_write(struct pkcs11_session *session);
 bool pkcs11_session_is_public(struct pkcs11_session *session);

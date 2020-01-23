@@ -55,8 +55,9 @@ uint32_t alloc_get_tee_attribute_data(TEE_ObjectHandle tee_obj,
 					     uint32_t attribute,
 					     void **data, size_t *size);
 
-uint32_t tee2pkcs_add_attribute(struct pkcs11_attrs_head **head, uint32_t pkcs11_id,
-				TEE_ObjectHandle tee_obj, uint32_t tee_id);
+uint32_t tee2pkcs_add_attribute(struct pkcs11_attrs_head **head,
+				uint32_t pkcs11_id, TEE_ObjectHandle tee_obj,
+				uint32_t tee_id);
 
 /*
  * Symmetric crypto algorithm specific functions

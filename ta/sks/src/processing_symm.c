@@ -118,7 +118,7 @@ static uint32_t pkcs2tee_key_type(uint32_t *tee_type, struct pkcs11_object *obj)
 
 static uint32_t allocate_tee_operation(struct pkcs11_session *session,
 					enum processing_func function,
-					struct pkcs11_attribute_head *proc_params,
+					struct pkcs11_attribute_head *params,
 					struct pkcs11_object *obj)
 {
 	uint32_t size = (uint32_t)get_object_key_bit_size(obj);
@@ -128,11 +128,11 @@ static uint32_t allocate_tee_operation(struct pkcs11_session *session,
 
 	assert(session->processing->tee_op_handle == TEE_HANDLE_NULL);
 
-	if (pkcs2tee_algorithm(&algo, proc_params))
+	if (pkcs2tee_algorithm(&algo, params))
 		return PKCS11_FAILED;
 
 	/* Sign/Verify with AES or generic key relate to TEE MAC operation */
-	switch (proc_params->id) {
+	switch (params->id) {
 	case PKCS11_CKM_AES_CMAC_GENERAL:
 	case PKCS11_CKM_AES_CMAC:
 	case PKCS11_CKM_MD5_HMAC:

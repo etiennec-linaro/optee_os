@@ -130,9 +130,10 @@ uint32_t create_attributes_from_template(struct pkcs11_attrs_head **out,
 uint32_t check_created_attrs_against_token(struct pkcs11_session *session,
 					   struct pkcs11_attrs_head *head);
 
-uint32_t check_created_attrs_against_parent_key(uint32_t proc_id,
-						struct pkcs11_attrs_head *parent,
-						struct pkcs11_attrs_head *head);
+uint32_t check_created_attrs_against_parent_key(
+					uint32_t proc_id,
+					struct pkcs11_attrs_head *parent,
+					struct pkcs11_attrs_head *head);
 
 uint32_t check_created_attrs_against_processing(uint32_t proc_id,
 						struct pkcs11_attrs_head *head);

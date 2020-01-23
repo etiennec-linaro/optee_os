@@ -81,9 +81,9 @@ static void cleanup_persistent_object(struct pkcs11_object *obj,
 		TEE_CloseObject(obj->attribs_hdl);
 
 	res = TEE_OpenPersistentObject(TEE_STORAGE_PRIVATE,
-					obj->uuid, sizeof(TEE_UUID),
-					TEE_DATA_FLAG_ACCESS_WRITE_META,
-					&obj->attribs_hdl);
+				       obj->uuid, sizeof(TEE_UUID),
+				       TEE_DATA_FLAG_ACCESS_WRITE_META,
+				       &obj->attribs_hdl);
 	assert(!res);
 	if (res)
 		goto out;
@@ -217,6 +217,9 @@ uint32_t create_object(void *sess, struct pkcs11_attrs_head *head,
 		 * (move the full sequence to persisent_db.c?)
 		 */
 		size_t size = attributes_size(obj->attributes);
+		uint32_t tee_obj_flags = TEE_DATA_FLAG_ACCESS_READ |
+					 TEE_DATA_FLAG_ACCESS_WRITE |
+					 TEE_DATA_FLAG_ACCESS_WRITE_META;
 
 		rv = create_object_uuid(get_session_token(session), obj);
 		if (rv)
@@ -224,9 +227,7 @@ uint32_t create_object(void *sess, struct pkcs11_attrs_head *head,
 
 		res = TEE_CreatePersistentObject(TEE_STORAGE_PRIVATE,
 						 obj->uuid, sizeof(TEE_UUID),
-						 TEE_DATA_FLAG_ACCESS_READ |
-						 TEE_DATA_FLAG_ACCESS_WRITE |
-						 TEE_DATA_FLAG_ACCESS_WRITE_META,
+						 tee_obj_flags,
 						 TEE_HANDLE_NULL,
 						 obj->attributes, size,
 						 &obj->attribs_hdl);

@@ -176,7 +176,8 @@ uint32_t tee_ae_decrypt_update(struct active_processing *processing,
 		 * an allocated temporary reference.
 		 */
 		if (ct_size) {
-			ct = TEE_Malloc(ct_size, TEE_USER_MEM_HINT_NO_FILL_ZERO);
+			ct = TEE_Malloc(ct_size,
+					TEE_USER_MEM_HINT_NO_FILL_ZERO);
 			if (!ct) {
 				rv = PKCS11_MEMORY;
 				goto bail;

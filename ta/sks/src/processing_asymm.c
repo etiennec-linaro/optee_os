@@ -57,10 +57,14 @@ static uint32_t pkcs2tee_algorithm(uint32_t *tee_id,
 				/* TEE_ALG_RSASSA_PKCS1_V1_5 on signatures */ },
 		{ PKCS11_CKM_RSA_PKCS_OAEP, 1 }, /* Need to look into params */
 		{ PKCS11_CKM_SHA1_RSA_PKCS, TEE_ALG_RSASSA_PKCS1_V1_5_SHA1 },
-		{ PKCS11_CKM_SHA224_RSA_PKCS, TEE_ALG_RSASSA_PKCS1_V1_5_SHA224 },
-		{ PKCS11_CKM_SHA256_RSA_PKCS, TEE_ALG_RSASSA_PKCS1_V1_5_SHA256 },
-		{ PKCS11_CKM_SHA384_RSA_PKCS, TEE_ALG_RSASSA_PKCS1_V1_5_SHA384 },
-		{ PKCS11_CKM_SHA512_RSA_PKCS, TEE_ALG_RSASSA_PKCS1_V1_5_SHA512 },
+		{ PKCS11_CKM_SHA224_RSA_PKCS,
+					TEE_ALG_RSASSA_PKCS1_V1_5_SHA224 },
+		{ PKCS11_CKM_SHA256_RSA_PKCS,
+					TEE_ALG_RSASSA_PKCS1_V1_5_SHA256 },
+		{ PKCS11_CKM_SHA384_RSA_PKCS,
+					TEE_ALG_RSASSA_PKCS1_V1_5_SHA384 },
+		{ PKCS11_CKM_SHA512_RSA_PKCS,
+					TEE_ALG_RSASSA_PKCS1_V1_5_SHA512 },
 		{ PKCS11_CKM_SHA1_RSA_PKCS_PSS,
 					TEE_ALG_RSASSA_PKCS1_PSS_MGF1_SHA1 },
 		{ PKCS11_CKM_SHA224_RSA_PKCS_PSS,
@@ -136,7 +140,8 @@ static uint32_t pkcs2tee_algorithm(uint32_t *tee_id,
 	}
 
 	if (*tee_id == TEE_ALG_RSAES_PKCS1_V1_5 &&
-	    (function == PKCS11_FUNCTION_SIGN || function == PKCS11_FUNCTION_VERIFY))
+	    (function == PKCS11_FUNCTION_SIGN ||
+	     function == PKCS11_FUNCTION_VERIFY))
 		*tee_id = TEE_ALG_RSASSA_PKCS1_V1_5;
 
 	return rv;
@@ -184,7 +189,7 @@ static uint32_t pkcs2tee_key_type(uint32_t *tee_type, struct pkcs11_object *obj,
 
 static uint32_t allocate_tee_operation(struct pkcs11_session *session,
 					enum processing_func function,
-					struct pkcs11_attribute_head *proc_params,
+					struct pkcs11_attribute_head *params,
 					struct pkcs11_object *obj)
 {
 	uint32_t size = (uint32_t)get_object_key_bit_size(obj);
@@ -194,7 +199,7 @@ static uint32_t allocate_tee_operation(struct pkcs11_session *session,
 
 	assert(session->processing->tee_op_handle == TEE_HANDLE_NULL);
 
-	if (pkcs2tee_algorithm(&algo, function, proc_params, obj))
+	if (pkcs2tee_algorithm(&algo, function, params, obj))
 		return PKCS11_FAILED;
 
 	pkcs2tee_mode(&mode, function);
@@ -220,7 +225,8 @@ static uint32_t load_tee_key(struct pkcs11_session *session,
 	uint32_t __maybe_unused class = get_class(obj->attributes);
 	uint32_t type = get_type(obj->attributes);
 
-	assert(class == PKCS11_CKO_PUBLIC_KEY || class == PKCS11_CKO_PRIVATE_KEY);
+	assert(class == PKCS11_CKO_PUBLIC_KEY ||
+	       class == PKCS11_CKO_PRIVATE_KEY);
 
 	if (obj->key_handle != TEE_HANDLE_NULL) {
 		switch (type) {

@@ -87,7 +87,8 @@ static uint32_t sanitize_class_and_type(struct pkcs11_attrs_head **dst,
 				goto bail;
 			}
 
-			TEE_MemMove(&class, cur + sizeof(cli_ref), cli_ref.size);
+			TEE_MemMove(&class, cur + sizeof(cli_ref),
+				    cli_ref.size);
 
 			if (class_found != PKCS11_CKO_UNDEFINED_ID &&
 			    class_found != class) {
@@ -245,8 +246,8 @@ static uint32_t sanitize_indirect_attr(struct pkcs11_attrs_head **dst,
 		return PKCS11_ERROR;
 
 	/*
-	 * Serialized attributes: current applicable only the key templates which
-	 * are tables of attributes.
+	 * Serialized attributes: current applicable only the key templates
+	 * which are tables of attributes.
 	 */
 	switch (cli_ref->id) {
 	case PKCS11_CKA_WRAP_TEMPLATE:
@@ -269,7 +270,8 @@ static uint32_t sanitize_indirect_attr(struct pkcs11_attrs_head **dst,
 		return rc;
 
 	return add_attribute(dst, cli_ref->id, obj2,
-			     sizeof(struct pkcs11_attrs_head) + obj2->attrs_size);
+			     sizeof(struct pkcs11_attrs_head) +
+			     obj2->attrs_size);
 }
 
 uint32_t sanitize_client_object(struct pkcs11_attrs_head **dst,
@@ -373,7 +375,8 @@ static uint32_t __trace_attributes(char *prefix, void *src, void *end)
 		TEE_MemMove(&pkcs11_ref, cur, sizeof(pkcs11_ref));
 		TEE_MemMove(&data[0], cur + sizeof(pkcs11_ref),
 			    MIN(pkcs11_ref.size, sizeof(data)));
-		TEE_MemMove(&data_u32, cur + sizeof(pkcs11_ref), sizeof(data_u32));
+		TEE_MemMove(&data_u32, cur + sizeof(pkcs11_ref),
+			    sizeof(data_u32));
 
 		next = sizeof(pkcs11_ref) + pkcs11_ref.size;
 
@@ -412,8 +415,9 @@ static uint32_t __trace_attributes(char *prefix, void *src, void *end)
 		case PKCS11_CKA_UNWRAP_TEMPLATE:
 		case PKCS11_CKA_DERIVE_TEMPLATE:
 			rc = trace_attributes_from_api_head(prefix2,
-							cur + sizeof(pkcs11_ref),
-							(char *)end - cur);
+							    cur +
+							    sizeof(pkcs11_ref),
+							    (char *)end - cur);
 			if (rc)
 				return rc;
 			break;

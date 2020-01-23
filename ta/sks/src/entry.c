@@ -52,9 +52,23 @@ void TA_CloseSessionEntryPoint(void *tee_session)
 	unregister_client((uintptr_t)tee_session);
 }
 
+/*
+ * Entry point for invocation command PKCS11_CMD_PING
+ *
+ * @ctrl - param memref[0] or NULL: expected NULL
+ * @in - param memref[1] or NULL: expected NULL
+ * @out - param memref[2] or NULL
+ *
+ * Return a PKCS11_CKR_* value
+ */
 static uint32_t entry_ping(TEE_Param *ctrl, TEE_Param *in, TEE_Param *out)
 {
-	uint32_t *ver = NULL;
+	const uint32_t ver[] = {
+		PKCS11_TA_VERSION_MAJOR,
+		PKCS11_TA_VERSION_MINOR,
+		PKCS11_TA_VERSION_PATCH,
+	};
+	size_t size = 0;
 
 	if (ctrl || in)
 		return PKCS11_BAD_PARAM;
@@ -62,15 +76,16 @@ static uint32_t entry_ping(TEE_Param *ctrl, TEE_Param *in, TEE_Param *out)
 	if (!out)
 		return PKCS11_OK;
 
-	if (out->memref.size < 2 * sizeof(uint32_t))
+	size = out->memref.size;
+	out->memref.size = sizeof(ver);
+
+	if (size < sizeof(ver))
 		return PKCS11_SHORT_BUFFER;
 
-	if ((uintptr_t)out->memref.buffer & 0x03UL)
+	if (!ALIGNMENT_IS_OK(out->memref.buffer, uint32_t))
 		return PKCS11_BAD_PARAM;
 
-	ver = (uint32_t *)out->memref.buffer;
-	*ver = SKS_VERSION_ID0;
-	*(ver + 1) = SKS_VERSION_ID1;
+	TEE_MemMove(out->memref.buffer, ver, sizeof(ver));
 
 	return PKCS11_OK;
 }

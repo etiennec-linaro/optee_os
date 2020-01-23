@@ -12,9 +12,10 @@
 #define TA_SKS_UUID { 0xfd02c9da, 0x306c, 0x48c7, \
 			{ 0xa4, 0x9c, 0xbb, 0xd8, 0x27, 0xae, 0x86, 0xee } }
 
-/* SKS trusted application version information */
-#define SKS_VERSION_ID0		0
-#define SKS_VERSION_ID1		0
+/* PKCS11 trusted application version information */
+#define PKCS11_TA_VERSION_MAJOR			0
+#define PKCS11_TA_VERSION_MINOR			1
+#define PKCS11_TA_VERSION_PATCH			0
 
 /*
  * PKCS11_CMD_PING		Acknowledge TA presence and return TA version info
@@ -22,8 +23,9 @@
  * Optional invocation parameter:
  *
  * [out]        memref[2] = [
- *                      32bit version0 value,
- *                      32bit version1 value
+ *                      32bit version major value (PKCS11_TA_VERSION_MAJOR),
+ *                      32bit version minor value (PKCS11_TA_VERSION_MINOR),
+ *                      32bit version patch value (PKCS11_TA_VERSION_PATCH),
  *              ]
  */
 #define PKCS11_CMD_PING				0x00000000

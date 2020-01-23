@@ -20,7 +20,11 @@
 
 #define TA_CURRENT_TA_EXT_PROPERTIES \
     { "gp.ta.description", USER_TA_PROP_TYPE_STRING, \
-        "Secure key services trusted application" }, \
-    { "gp.ta.version", USER_TA_PROP_TYPE_U32, &(const uint32_t){ 0x0000 } }
+        "PKCS#11 trusted application" }, \
+    { "gp.ta.version", USER_TA_PROP_TYPE_U32, \
+      &(const uint32_t){ (PKCS11_TA_VERSION_MAJOR << 2) | \
+		         PKCS11_TA_VERSION_MINOR \
+      } \
+    }
 
 #endif /*USER_TA_HEADER_DEFINES_H*/

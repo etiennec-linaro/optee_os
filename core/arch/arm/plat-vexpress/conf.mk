@@ -107,6 +107,9 @@ CFG_DTB_MAX_SIZE ?= 0x100000
 endif
 
 # This hack embeds the SKS TA as an early TA which is handy for SKS tests
-ifeq ($(CFG_SECURE_KEY_SERVICES)-$(CFG_IN_TREE_EARLY_TAS),y-)
+ifdef CFG_SECURE_KEY_SERVICES
+CFG_PKCS11_TA ?= $(CFG_SECURE_KEY_SERVICES)
+endif
+ifeq ($(CFG_PKCS11_TA)-$(CFG_IN_TREE_EARLY_TAS),y-)
 CFG_IN_TREE_EARLY_TAS=pkcs11/fd02c9da-306c-48c7-a49c-bbd827ae86ee
 endif

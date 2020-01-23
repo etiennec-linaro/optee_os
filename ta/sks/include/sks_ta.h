@@ -403,11 +403,11 @@ struct pkcs11_session_info {
 /*
  * pkcs11_object_head - Header of object whose data are serialized in memory
  *
- * An object in made of several attributes. Attributes are store one next to
- * the other with byte alignment as serialized byte arrays. Appended
+ * An object is made of several attributes. Attributes are stored one next to
+ * the other with byte alignment as a serialized byte arrays. Appended
  * attributes byte arrays are prepend with this header structure that
- * defines the number of attribute items and the overall byte size of the
- * attrs byte array.
+ * defines the number of attribute items and the overall byte size of byte
+ * array field pkcs11_object_head::attrs.
  *
  * @attrs_size - byte size of whole byte array attrs[]
  * @attrs_count - number of attribute items stored in attrs[]
@@ -420,9 +420,9 @@ struct pkcs11_object_head {
 };
 
 /*
- * Attribute reference in the TA ABI. Each attribute start with the header
- * structure followed by the attribute value, its byte size being defined
- * in the attribute header.
+ * Attribute reference in the TA ABI. Each attribute starts with a header
+ * structure followed by the attribute value. The attribute byte size is
+ * defined in the attribute header.
  *
  * @id - the 32bit identifier of the attribute, see PKCS11_CKA_<x>
  * @size - the 32bit value attribute byte size
@@ -503,7 +503,7 @@ struct pkcs11_attribute_head {
  *
  * [in]		memref[0] = [
  *			32bit session handle,
- *			32bit key handle
+ *			32bit object handle
  *		]
  * [out]	memref[0] = 32bit fine grain return code
  * [out]	memref[2] = 32bit object_byte_size
@@ -780,7 +780,7 @@ struct pkcs11_attribute_head {
 #define PKCS11_RV_NOT_IMPLEMENTED			0x00001001
 
 /*
- * Attribute identifiers
+ * Attribute identification IDs
  * Valid values for struct pkcs11_attribute_head::id
  *
  * PKCS11_CKA_<x> relates to cryptoki CKA_<x>.
@@ -994,18 +994,23 @@ struct pkcs11_attribute_head {
  * supported processing is defined here from this comment rather than using
  * C structures.
  *
- * Processing parameters are used as argument the C_EncryptInit and friends
- * using the struct pkcs11_attribute_head format where field 'type' is the SKS
- * processing ID and field 'size' is the parameter byte size. Below is shown
- * the head structure struct pkcs11_attribute_head fields and the trailling data
- * that are the effective parameters binary blob for the target
- * processing/mechanism.
+ * Processing parameters are used as arguments to C_EncryptInit and friends
+ * using struct pkcs11_attribute_head format where field 'type' is the
+ * PKCS11 mechanism ID and field 'size' is the mechanism parameters byte size.
+ * Below is shown the head structure struct pkcs11_attribute_head fields and
+ * the trailing data that are the effective parameters binary blob for the
+ * target processing/mechanism.
+ *
+ * AES and generic secret generation
+ *   head:	32bit: type = PKCS11_CKM_AES_KEY_GEN
+ *			   or PKCS11_CKM_GENERIC_SECRET_KEY_GEN
+ *		32bit: size = 0
  *
  * AES ECB
  *   head:	32bit: type = PKCS11_CKM_AES_ECB
  *		32bit: params byte size = 0
  *
- * AES CBC, CBC_NOPAD and CTS
+ * AES CBC, CBC_PAD and CTS
  *   head:	32bit: type = PKCS11_CKM_AES_CBC
  *			  or PKCS11_CKM_AES_CBC_PAD
  *			  or PKCS11_CKM_AES_CTS
@@ -1095,8 +1100,8 @@ struct pkcs11_attribute_head {
  *   head:	32bit: type = PKCS11_CKM_RSA_PKCS_OAEP
  *		32bit: params byte size
  *  params:	32bit: hash algorithm identifier (PKCS11_CK_M_xxx)
- *		32bit: CK_RSA_PKCS_MGF_TYPE
- *		32bit: CK_RSA_PKCS_OAEP_SOURCE_TYPE
+ *		32bit: PKCS11_CK_RSA_PKCS_MGF_TYPE
+ *		32bit: PKCS11_CK_RSA_PKCS_OAEP_SOURCE_TYPE
  *		32bit: byte size of the source data
  *		byte array: source data
  *
@@ -1107,16 +1112,16 @@ struct pkcs11_attribute_head {
  *			   or PKCS11_CKM_SHA512_RSA_PKCS_PSS
  *		32bit: params byte size
  *  params:	32bit: hash algorithm identifier (PKCS11_CK_M_xxx)
- *		32bit: CK_RSA_PKCS_MGF_TYPE
+ *		32bit: PKCS11_CK_RSA_PKCS_MGF_TYPE
  *		32bit: byte size of the salt in the PSS encoding
  *
  * AES key wrapping by RSA, params relates to struct CK_RSA_AES_KEY_WRAP_PARAMS.
- *   head:	32bit: type = CKM_RSA_AES_KEY_WRAP
+ *   head:	32bit: type = PKCS11_CKM_RSA_AES_KEY_WRAP
  *		32bit: params byte size
  *  params:	32bit: bit size of the AES key
  *		32bit: hash algorithm identifier (PKCS11_CK_M_xxx)
- *		32bit: CK_RSA_PKCS_MGF_TYPE
- *		32bit: CK_RSA_PKCS_OAEP_SOURCE_TYPE
+ *		32bit: PKCS11_CK_RSA_PKCS_MGF_TYPE
+ *		32bit: PKCS11_CK_RSA_PKCS_OAEP_SOURCE_TYPE
  *		32bit: byte size of the source data
  *		byte array: source data
  */

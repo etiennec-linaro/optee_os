@@ -20,9 +20,9 @@
  * object value (i.e the AES key value). In the end, an object is a list of
  * attributes.
  *
- * SKS uses a serialized format for defining the attributes of an object. The
- * attributes content starts with a header structure header followed by each
- * attributes, stored in serialized fields:
+ * PKCS11 TA uses a serialized format for defining the attributes of an object.
+ * The attributes content starts with a header structure header followed by
+ * each attributes, stored in serialized fields:
  * - the 32bit identifier of the attribute
  * - the 32bit value attribute byte size
  * - the effective value of the attribute (variable size)
@@ -34,7 +34,7 @@ struct pkcs11_ref {
 };
 
 /*
- * Header of a serialised memory object inside SKS TA.
+ * Header of a serialised memory object inside PKCS11 TA.
  *
  * @attrs_size; byte size of the serialized data
  * @attrs_count; number of items in the blob

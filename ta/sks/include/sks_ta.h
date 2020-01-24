@@ -52,16 +52,16 @@
  */
 #define PKCS11_CMD_SLOT_INFO			0x00000002
 
-#define SKS_SLOT_DESC_SIZE		64
-#define SKS_SLOT_MANUFACTURER_SIZE	32
-#define SKS_SLOT_VERSION_SIZE		2
+#define PKCS11_SLOT_DESC_SIZE			64
+#define PKCS11_SLOT_MANUFACTURER_SIZE		32
+#define PKCS11_SLOT_VERSION_SIZE			2
 
 struct pkcs11_slot_info {
-	uint8_t slotDescription[SKS_SLOT_DESC_SIZE];
-	uint8_t manufacturerID[SKS_SLOT_MANUFACTURER_SIZE];
+	uint8_t slotDescription[PKCS11_SLOT_DESC_SIZE];
+	uint8_t manufacturerID[PKCS11_SLOT_MANUFACTURER_SIZE];
 	uint32_t flags;
-	uint8_t hardwareVersion[SKS_SLOT_VERSION_SIZE];
-	uint8_t firmwareVersion[SKS_SLOT_VERSION_SIZE];
+	uint8_t hardwareVersion[PKCS11_SLOT_VERSION_SIZE];
+	uint8_t firmwareVersion[PKCS11_SLOT_VERSION_SIZE];
 };
 
 /*
@@ -85,16 +85,16 @@ struct pkcs11_slot_info {
  */
 #define PKCS11_CMD_TOKEN_INFO			0x00000003
 
-#define SKS_TOKEN_LABEL_SIZE		32
-#define SKS_TOKEN_MANUFACTURER_SIZE	32
-#define SKS_TOKEN_MODEL_SIZE		16
-#define SKS_TOKEN_SERIALNUM_SIZE	16
+#define PKCS11_TOKEN_LABEL_SIZE			32
+#define PKCS11_TOKEN_MANUFACTURER_SIZE		32
+#define PKCS11_TOKEN_MODEL_SIZE			16
+#define PKCS11_TOKEN_SERIALNUM_SIZE		16
 
 struct pkcs11_token_info {
-	uint8_t label[SKS_TOKEN_LABEL_SIZE];
-	uint8_t manufacturerID[SKS_TOKEN_MANUFACTURER_SIZE];
-	uint8_t model[SKS_TOKEN_MODEL_SIZE];
-	uint8_t serialNumber[SKS_TOKEN_SERIALNUM_SIZE];
+	uint8_t label[PKCS11_TOKEN_LABEL_SIZE];
+	uint8_t manufacturerID[PKCS11_TOKEN_MANUFACTURER_SIZE];
+	uint8_t model[PKCS11_TOKEN_MODEL_SIZE];
+	uint8_t serialNumber[PKCS11_TOKEN_SERIALNUM_SIZE];
 	uint32_t flags;
 	uint32_t ulMaxSessionCount;
 	uint32_t ulSessionCount;

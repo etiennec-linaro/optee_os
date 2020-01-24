@@ -13,17 +13,17 @@
 #include "pkcs11_attributes.h"
 
 /* Hard coded description */
-#define SKS_CRYPTOKI_TOKEN_LABEL		"op-tee pkcs#11 token (dev...)"
-#define SKS_CRYPTOKI_TOKEN_MANUFACTURER		"Linaro"
-#define SKS_CRYPTOKI_TOKEN_MODEL		"OP-TEE SKS TA"
-#define SKS_CRYPTOKI_TOKEN_SERIAL_NUMBER	"0000000000000000"
-#define SKS_CRYPTOKI_TOKEN_HW_VERSION		{ 0, 0 }
-#define SKS_CRYPTOKI_TOKEN_FW_VERSION		{ 0, 0 }
+#define PKCS11_TOKEN_LABEL			"op-tee pkcs#11 token (dev...)"
+#define PKCS11_TOKEN_MANUFACTURER		"Linaro"
+#define PKCS11_TOKEN_MODEL			"OP-TEE SKS TA"
+#define PKCS11_TOKEN_SERIAL_NUMBER		"0000000000000000"
+#define PKCS11_TOKEN_HW_VERSION		{ 0, 0 }
+#define PKCS11_TOKEN_FW_VERSION		{ 0, 0 }
 
-#define SKS_CRYPTOKI_SLOT_DESCRIPTION		"OP-TEE SKS TA"
-#define SKS_CRYPTOKI_SLOT_MANUFACTURER		SKS_CRYPTOKI_TOKEN_MANUFACTURER
-#define SKS_CRYPTOKI_SLOT_HW_VERSION		SKS_CRYPTOKI_TOKEN_HW_VERSION
-#define SKS_CRYPTOKI_SLOT_FW_VERSION		SKS_CRYPTOKI_TOKEN_FW_VERSION
+#define PKCS11_SLOT_DESCRIPTION		"OP-TEE SKS TA"
+#define PKCS11_SLOT_MANUFACTURER		PKCS11_TOKEN_MANUFACTURER
+#define PKCS11_SLOT_HW_VERSION		PKCS11_TOKEN_HW_VERSION
+#define PKCS11_SLOT_FW_VERSION		PKCS11_TOKEN_FW_VERSION
 
 #define PADDED_STRING_COPY(_dst, _src) \
 	do { \
@@ -51,7 +51,7 @@ TAILQ_HEAD(client_list, pkcs11_client);
 TAILQ_HEAD(session_list, pkcs11_session);
 
 #define SKS_MAX_USERS			2
-#define SKS_TOKEN_PIN_SIZE		128
+#define PKCS11_TOKEN_PIN_SIZE		128
 
 /*
  * Persistent state of the token
@@ -69,16 +69,16 @@ TAILQ_HEAD(session_list, pkcs11_session);
 struct token_persistent_main {
 	uint32_t version;
 
-	uint8_t label[SKS_TOKEN_LABEL_SIZE];
+	uint8_t label[PKCS11_TOKEN_LABEL_SIZE];
 	uint32_t flags;
 
 	uint32_t so_pin_count;
 	uint32_t so_pin_size;
-	uint8_t so_pin[SKS_TOKEN_PIN_SIZE];
+	uint8_t so_pin[PKCS11_TOKEN_PIN_SIZE];
 
 	uint32_t user_pin_count;
 	uint32_t user_pin_size;
-	uint8_t user_pin[SKS_TOKEN_PIN_SIZE];
+	uint8_t user_pin[PKCS11_TOKEN_PIN_SIZE];
 };
 
 /*

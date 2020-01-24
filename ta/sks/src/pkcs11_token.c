@@ -264,7 +264,7 @@ uint32_t entry_ck_token_initialize(TEE_Param *ctrl,
 	uint32_t token_id = 0;
 	uint32_t pin_size = 0;
 	void *pin = NULL;
-	char label[SKS_TOKEN_LABEL_SIZE + 1] = { 0 };
+	char label[PKCS11_TOKEN_LABEL_SIZE + 1] = { 0 };
 	struct ck_token *token;
 	uint8_t *cpin = NULL;
 	int pin_rc = 0;
@@ -285,14 +285,14 @@ uint32_t entry_ck_token_initialize(TEE_Param *ctrl,
 	if (rv)
 		return rv;
 
-	if (pin_size < 8 || pin_size > SKS_TOKEN_PIN_SIZE)
+	if (pin_size < 8 || pin_size > PKCS11_TOKEN_PIN_SIZE)
 		return PKCS11_CKR_PIN_LEN_RANGE;
 
 	rv = serialargs_get_ptr(&ctrlargs, &pin, pin_size);
 	if (rv)
 		return rv;
 
-	rv = serialargs_get(&ctrlargs, &label, SKS_TOKEN_LABEL_SIZE);
+	rv = serialargs_get(&ctrlargs, &label, PKCS11_TOKEN_LABEL_SIZE);
 	if (rv)
 		return rv;
 
@@ -311,16 +311,16 @@ uint32_t entry_ck_token_initialize(TEE_Param *ctrl,
 		}
 	}
 
-	cpin = TEE_Malloc(SKS_TOKEN_PIN_SIZE, TEE_MALLOC_FILL_ZERO);
+	cpin = TEE_Malloc(PKCS11_TOKEN_PIN_SIZE, TEE_MALLOC_FILL_ZERO);
 	if (!cpin) {
 		return PKCS11_MEMORY;
 	}
 
 	TEE_MemMove(cpin, pin, pin_size);
-	cipher_pin(token->pin_hdl[0], cpin, SKS_TOKEN_PIN_SIZE);
+	cipher_pin(token->pin_hdl[0], cpin, PKCS11_TOKEN_PIN_SIZE);
 
 	if (!token->db_main->so_pin_size) {
-		TEE_MemMove(token->db_main->so_pin, cpin, SKS_TOKEN_PIN_SIZE);
+		TEE_MemMove(token->db_main->so_pin, cpin, PKCS11_TOKEN_PIN_SIZE);
 		token->db_main->so_pin_size = pin_size;
 
 		update_persistent_db(token,
@@ -338,7 +338,7 @@ uint32_t entry_ck_token_initialize(TEE_Param *ctrl,
 	pin_rc = 0;
 	if (token->db_main->so_pin_size != pin_size)
 		pin_rc = 1;
-	if (buf_compare_ct(token->db_main->so_pin, cpin, SKS_TOKEN_PIN_SIZE))
+	if (buf_compare_ct(token->db_main->so_pin, cpin, PKCS11_TOKEN_PIN_SIZE))
 		pin_rc = 1;
 
 	if (pin_rc) {
@@ -369,7 +369,7 @@ uint32_t entry_ck_token_initialize(TEE_Param *ctrl,
 	token->db_main->so_pin_count = 0;
 
 inited:
-	TEE_MemMove(token->db_main->label, label, SKS_TOKEN_LABEL_SIZE);
+	TEE_MemMove(token->db_main->label, label, PKCS11_TOKEN_LABEL_SIZE);
 	token->db_main->flags |= PKCS11_CKFT_TOKEN_INITIALIZED;
 	/* Reset user PIN */
 	token->db_main->user_pin_size = 0;
@@ -381,7 +381,7 @@ inited:
 
 	update_persistent_db(token, 0, sizeof(*token->db_main));
 
-	label[SKS_TOKEN_LABEL_SIZE] = '\0';
+	label[PKCS11_TOKEN_LABEL_SIZE] = '\0';
 	IMSG("SKSt%" PRIu32 ": initialized \"%s\"", token_id, label);
 
 	TEE_Free(cpin);
@@ -421,10 +421,10 @@ uint32_t entry_ck_slot_info(TEE_Param *ctrl, TEE_Param *in, TEE_Param *out)
 	struct serialargs ctrlargs;
 	uint32_t token_id = 0;
 	struct ck_token *token = NULL;
-	const char desc[] = SKS_CRYPTOKI_SLOT_DESCRIPTION;
-	const char manuf[] = SKS_CRYPTOKI_SLOT_MANUFACTURER;
-	const char hwver[2] = SKS_CRYPTOKI_SLOT_HW_VERSION;
-	const char fwver[2] = SKS_CRYPTOKI_SLOT_FW_VERSION;
+	const char desc[] = PKCS11_SLOT_DESCRIPTION;
+	const char manuf[] = PKCS11_SLOT_MANUFACTURER;
+	const char hwver[2] = PKCS11_SLOT_HW_VERSION;
+	const char fwver[2] = PKCS11_SLOT_FW_VERSION;
 	struct pkcs11_slot_info info;
 
 	TEE_MemFill(&ctrlargs, 0, sizeof(ctrlargs));
@@ -475,11 +475,11 @@ uint32_t entry_ck_token_info(TEE_Param *ctrl, TEE_Param *in, TEE_Param *out)
 	struct serialargs ctrlargs;
 	uint32_t token_id = 0;
 	struct ck_token *token = NULL;
-	const char manuf[] = SKS_CRYPTOKI_TOKEN_MANUFACTURER;
-	const char sernu[] = SKS_CRYPTOKI_TOKEN_SERIAL_NUMBER;
-	const char model[] = SKS_CRYPTOKI_TOKEN_MODEL;
-	const char hwver[] = SKS_CRYPTOKI_TOKEN_HW_VERSION;
-	const char fwver[] = SKS_CRYPTOKI_TOKEN_FW_VERSION;
+	const char manuf[] = PKCS11_TOKEN_MANUFACTURER;
+	const char sernu[] = PKCS11_TOKEN_SERIAL_NUMBER;
+	const char model[] = PKCS11_TOKEN_MODEL;
+	const char hwver[] = PKCS11_TOKEN_HW_VERSION;
+	const char fwver[] = PKCS11_TOKEN_FW_VERSION;
 	struct pkcs11_token_info info;
 
 	TEE_MemFill(&ctrlargs, 0, sizeof(ctrlargs));
@@ -1161,7 +1161,7 @@ static uint32_t set_pin(struct pkcs11_session *session,
 	if (!pkcs11_session_is_read_write(session))
 		return PKCS11_CKR_SESSION_READ_ONLY;
 
-	if (new_pin_size < 8 || new_pin_size > SKS_TOKEN_PIN_SIZE)
+	if (new_pin_size < 8 || new_pin_size > PKCS11_TOKEN_PIN_SIZE)
 		return PKCS11_CKR_PIN_LEN_RANGE;
 
 	switch (user_type) {
@@ -1189,15 +1189,15 @@ static uint32_t set_pin(struct pkcs11_session *session,
 		return PKCS11_FAILED;
 	}
 
-	cpin = TEE_Malloc(SKS_TOKEN_PIN_SIZE, TEE_MALLOC_FILL_ZERO);
+	cpin = TEE_Malloc(PKCS11_TOKEN_PIN_SIZE, TEE_MALLOC_FILL_ZERO);
 	if (!cpin)
 		return PKCS11_MEMORY;
 
 	TEE_MemMove(cpin, new_pin, new_pin_size);
 
-	cipher_pin(pin_key_hdl, cpin, SKS_TOKEN_PIN_SIZE);
+	cipher_pin(pin_key_hdl, cpin, PKCS11_TOKEN_PIN_SIZE);
 
-	TEE_MemMove(pin, cpin, SKS_TOKEN_PIN_SIZE);
+	TEE_MemMove(pin, cpin, PKCS11_TOKEN_PIN_SIZE);
 	*pin_size = new_pin_size;
 	*pin_count = 0;
 
@@ -1274,19 +1274,19 @@ static uint32_t check_so_pin(struct pkcs11_session *session,
 	if (token->db_main->flags & PKCS11_CKFT_SO_PIN_LOCKED)
 		return PKCS11_CKR_PIN_LOCKED;
 
-	cpin = TEE_Malloc(SKS_TOKEN_PIN_SIZE, TEE_MALLOC_FILL_ZERO);
+	cpin = TEE_Malloc(PKCS11_TOKEN_PIN_SIZE, TEE_MALLOC_FILL_ZERO);
 	if (!cpin)
 		return PKCS11_MEMORY;
 
 	TEE_MemMove(cpin, pin, pin_size);
-	cipher_pin(token->pin_hdl[0], cpin, SKS_TOKEN_PIN_SIZE);
+	cipher_pin(token->pin_hdl[0], cpin, PKCS11_TOKEN_PIN_SIZE);
 
 	pin_rc = 0;
 
 	if (token->db_main->so_pin_size != pin_size)
 		pin_rc = 1;
 
-	if (buf_compare_ct(token->db_main->so_pin, cpin, SKS_TOKEN_PIN_SIZE))
+	if (buf_compare_ct(token->db_main->so_pin, cpin, PKCS11_TOKEN_PIN_SIZE))
 		pin_rc = 1;
 
 	TEE_Free(cpin);
@@ -1353,19 +1353,19 @@ static uint32_t check_user_pin(struct pkcs11_session *session,
 	if (token->db_main->flags & PKCS11_CKFT_USER_PIN_LOCKED)
 		return PKCS11_CKR_PIN_LOCKED;
 
-	cpin = TEE_Malloc(SKS_TOKEN_PIN_SIZE, TEE_MALLOC_FILL_ZERO);
+	cpin = TEE_Malloc(PKCS11_TOKEN_PIN_SIZE, TEE_MALLOC_FILL_ZERO);
 	if (!cpin)
 		return PKCS11_MEMORY;
 
 	TEE_MemMove(cpin, pin, pin_size);
-	cipher_pin(token->pin_hdl[1], cpin, SKS_TOKEN_PIN_SIZE);
+	cipher_pin(token->pin_hdl[1], cpin, PKCS11_TOKEN_PIN_SIZE);
 
 	pin_rc = 0;
 
 	if (token->db_main->user_pin_size != pin_size)
 		pin_rc = 1;
 
-	if (buf_compare_ct(token->db_main->user_pin, cpin, SKS_TOKEN_PIN_SIZE))
+	if (buf_compare_ct(token->db_main->user_pin, cpin, PKCS11_TOKEN_PIN_SIZE))
 		pin_rc = 1;
 
 	TEE_Free(cpin);

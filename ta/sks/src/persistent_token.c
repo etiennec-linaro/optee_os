@@ -368,9 +368,9 @@ struct ck_token *init_token_db(unsigned int token_id)
 
 		/*
 		 * Not supported:
-		 *   SKS_TOKEN_FULLY_RESTORABLE
+		 *   PKCS11_TOKEN_FULLY_RESTORABLE
 		 * TODO: check these:
-		 *   SKS_TOKEN_HAS_CLOCK => related to TEE time secure level
+		 *   PKCS11_TOKEN_HAS_CLOCK => related to TEE time secure level
 		 */
 		db_main->flags = PKCS11_CKFT_SO_PIN_TO_BE_CHANGED |
 				 PKCS11_CKFT_USER_PIN_TO_BE_CHANGED |

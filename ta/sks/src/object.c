@@ -762,12 +762,12 @@ uint32_t entry_get_attribute_value(uintptr_t tee_session, TEE_Param *ctrl,
 	 * 1. If the specified attribute (i.e., the attribute specified by the
 	 * type field) for the object cannot be revealed because the object is
 	 * sensitive or unextractable, then the ulValueLen field in that triple
-	 * is modified to hold the value CK_UNAVAILABLE_INFORMATION.
+	 * is modified to hold the value PKCS11_CK_UNAVAILABLE_INFORMATION.
 	 *
 	 * 2. Otherwise, if the specified value for the object is invalid (the
 	 * object does not possess such an attribute), then the ulValueLen field
 	 * in that triple is modified to hold the value
-	 * CK_UNAVAILABLE_INFORMATION.
+	 * PKCS11_CK_UNAVAILABLE_INFORMATION.
 	 *
 	 * 3. Otherwise, if the pValue field has the value NULL_PTR, then the
 	 * ulValueLen field is modified to hold the exact length of the
@@ -780,7 +780,7 @@ uint32_t entry_get_attribute_value(uintptr_t tee_session, TEE_Param *ctrl,
 	 * attribute.
 	 *
 	 * 5. Otherwise, the ulValueLen field is modified to hold the value
-	 * CK_UNAVAILABLE_INFORMATION.
+	 * PKCS11_CK_UNAVAILABLE_INFORMATION.
 	 */
 	cur = (char *)template + sizeof(struct sks_object_head);
 	end = cur + template->attrs_size;

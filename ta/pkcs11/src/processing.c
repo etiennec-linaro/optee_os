@@ -151,7 +151,7 @@ uint32_t entry_import_object(uintptr_t tee_session,
 		return PKCS11_SHORT_BUFFER;
 	}
 
-	if ((uintptr_t)out->memref.buffer & 0x3UL)
+	if (!ALIGNMENT_IS_OK(out->memref.buffer, uint32_t))
 		return PKCS11_BAD_PARAM;
 
 	serialargs_init(&ctrlargs, ctrl->memref.buffer, ctrl->memref.size);
@@ -326,7 +326,7 @@ uint32_t entry_generate_secret(uintptr_t tee_session,
 		return PKCS11_SHORT_BUFFER;
 	}
 
-	if ((uintptr_t)out->memref.buffer & 0x3UL)
+	if (!ALIGNMENT_IS_OK(out->memref.buffer, uint32_t))
 		return PKCS11_BAD_PARAM;
 
 	serialargs_init(&ctrlargs, ctrl->memref.buffer, ctrl->memref.size);
@@ -504,8 +504,7 @@ uint32_t entry_generate_key_pair(uintptr_t teesess,
 	if (out->memref.size < 2 * sizeof(uint32_t))
 		return PKCS11_SHORT_BUFFER;
 
-	// FIXME: cleaner way to test alignment of out buffer
-	if ((uintptr_t)out->memref.buffer & 0x3UL)
+	if (!ALIGNMENT_IS_OK(out->memref.buffer, uint32_t))
 		return PKCS11_BAD_PARAM;
 
 	serialargs_init(&ctrlargs, ctrl->memref.buffer, ctrl->memref.size);
@@ -902,7 +901,7 @@ uint32_t entry_derive_key(uintptr_t tee_session, TEE_Param *ctrl,
 		return PKCS11_SHORT_BUFFER;
 	}
 
-	if ((uintptr_t)out->memref.buffer & 0x3UL)
+	if (!ALIGNMENT_IS_OK(out->memref.buffer, uint32_t))
 		return PKCS11_BAD_PARAM;
 
 	serialargs_init(&ctrlargs, ctrl->memref.buffer, ctrl->memref.size);

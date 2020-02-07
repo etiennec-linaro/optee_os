@@ -597,7 +597,7 @@ uint32_t entry_find_objects(uintptr_t tee_session, TEE_Param *ctrl,
 	uint32_t session_handle = 0;
 	struct pkcs11_session *session = NULL;
 	struct pkcs11_find_objects *ctx = NULL;
-	uint32_t *out_handles = NULL;
+	char *out_handles = NULL;
 	size_t out_count = 0;
 	size_t count = 0;
 	size_t idx = 0;
@@ -608,7 +608,7 @@ uint32_t entry_find_objects(uintptr_t tee_session, TEE_Param *ctrl,
 		return PKCS11_BAD_PARAM;
 
 	out_count = out->memref.size / sizeof(uint32_t);
-	out_handles = (uint32_t *)(uintptr_t)out->memref.buffer;
+	out_handles = out->memref.buffer;
 
 	serialargs_init(&ctrlargs, ctrl->memref.buffer, ctrl->memref.size);
 
@@ -634,7 +634,8 @@ uint32_t entry_find_objects(uintptr_t tee_session, TEE_Param *ctrl,
 		if (count >= out_count)
 			break;
 
-		*(out_handles + count) = *(ctx->handles + idx);
+		TEE_MemMove(out_handles + count * sizeof(uint32_t),
+			    ctx->handles + idx, sizeof(uint32_t));
 		ctx->next = idx + 1;
 
 		if (idx < session->find_ctx->temp_start)

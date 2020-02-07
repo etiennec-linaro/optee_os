@@ -146,13 +146,10 @@ uint32_t entry_import_object(uintptr_t tee_session,
 	if (!ctrl || in || !out)
 		return PKCS11_BAD_PARAM;
 
-	if (out->memref.size < sizeof(uint32_t)) {
-		out->memref.size = sizeof(uint32_t);
+	if (out->memref.size < sizeof(obj_handle)) {
+		out->memref.size = sizeof(obj_handle);
 		return PKCS11_SHORT_BUFFER;
 	}
-
-	if (!ALIGNMENT_IS_OK(out->memref.buffer, uint32_t))
-		return PKCS11_BAD_PARAM;
 
 	serialargs_init(&ctrlargs, ctrl->memref.buffer, ctrl->memref.size);
 
@@ -215,8 +212,8 @@ uint32_t entry_import_object(uintptr_t tee_session,
 	 */
 	head = NULL;
 
-	TEE_MemMove(out->memref.buffer, &obj_handle, sizeof(uint32_t));
-	out->memref.size = sizeof(uint32_t);
+	TEE_MemMove(out->memref.buffer, &obj_handle, sizeof(obj_handle));
+	out->memref.size = sizeof(obj_handle);
 
 	IMSG("PKCS11 session %"PRIu32": import object 0x%"PRIx32,
 	     session_handle, obj_handle);
@@ -321,13 +318,10 @@ uint32_t entry_generate_secret(uintptr_t tee_session,
 	if (!ctrl || in || !out)
 		return PKCS11_BAD_PARAM;
 
-	if (out->memref.size < sizeof(uint32_t)) {
-		out->memref.size = sizeof(uint32_t);
+	if (out->memref.size < sizeof(obj_handle)) {
+		out->memref.size = sizeof(obj_handle);
 		return PKCS11_SHORT_BUFFER;
 	}
-
-	if (!ALIGNMENT_IS_OK(out->memref.buffer, uint32_t))
-		return PKCS11_BAD_PARAM;
 
 	serialargs_init(&ctrlargs, ctrl->memref.buffer, ctrl->memref.size);
 
@@ -416,8 +410,8 @@ uint32_t entry_generate_secret(uintptr_t tee_session,
 	 */
 	head = NULL;
 
-	TEE_MemMove(out->memref.buffer, &obj_handle, sizeof(uint32_t));
-	out->memref.size = sizeof(uint32_t);
+	TEE_MemMove(out->memref.buffer, &obj_handle, sizeof(obj_handle));
+	out->memref.size = sizeof(obj_handle);
 
 	IMSG("PKCS11 session %"PRIu32": generate secret 0x%"PRIx32,
 	     session_handle, obj_handle);
@@ -501,11 +495,8 @@ uint32_t entry_generate_key_pair(uintptr_t teesess,
 	if (!ctrl || in || !out)
 		return PKCS11_BAD_PARAM;
 
-	if (out->memref.size < 2 * sizeof(uint32_t))
+	if (out->memref.size < (sizeof(pubkey_handle) + sizeof(privkey_handle)))
 		return PKCS11_SHORT_BUFFER;
-
-	if (!ALIGNMENT_IS_OK(out->memref.buffer, uint32_t))
-		return PKCS11_BAD_PARAM;
 
 	serialargs_init(&ctrlargs, ctrl->memref.buffer, ctrl->memref.size);
 
@@ -625,9 +616,9 @@ uint32_t entry_generate_key_pair(uintptr_t teesess,
 	priv_head = NULL;
 	hdl_ptr = (uint32_t *)out->memref.buffer;
 
-	TEE_MemMove(hdl_ptr, &pubkey_handle, sizeof(uint32_t));
-	TEE_MemMove(hdl_ptr + 1, &privkey_handle, sizeof(uint32_t));
-	out->memref.size = 2 * sizeof(uint32_t);
+	TEE_MemMove(hdl_ptr, &pubkey_handle, sizeof(pubkey_handle));
+	TEE_MemMove(hdl_ptr + 1, &privkey_handle, sizeof(privkey_handle));
+	out->memref.size = sizeof(pubkey_handle) + sizeof(privkey_handle);
 
 	IMSG("PKCS11 session %"PRIu32": create key pair 0x%"PRIx32"/0x%"PRIx32,
 	     session_handle, privkey_handle, pubkey_handle);
@@ -896,13 +887,10 @@ uint32_t entry_derive_key(uintptr_t tee_session, TEE_Param *ctrl,
 	if (!ctrl || in || !out)
 		return PKCS11_BAD_PARAM;
 
-	if (out->memref.size < sizeof(uint32_t)) {
-		out->memref.size = sizeof(uint32_t);
+	if (out->memref.size < sizeof(out_handle)) {
+		out->memref.size = sizeof(out_handle);
 		return PKCS11_SHORT_BUFFER;
 	}
-
-	if (!ALIGNMENT_IS_OK(out->memref.buffer, uint32_t))
-		return PKCS11_BAD_PARAM;
 
 	serialargs_init(&ctrlargs, ctrl->memref.buffer, ctrl->memref.size);
 
@@ -1036,8 +1024,8 @@ uint32_t entry_derive_key(uintptr_t tee_session, TEE_Param *ctrl,
 	 */
 	head = NULL;
 
-	TEE_MemMove(out->memref.buffer, &out_handle, sizeof(uint32_t));
-	out->memref.size = sizeof(uint32_t);
+	TEE_MemMove(out->memref.buffer, &out_handle, sizeof(out_handle));
+	out->memref.size = sizeof(out_handle);
 
 	IMSG("PKCS11 session %"PRIu32": derive key Ox%"PRIx32", %s",
 	     session_handle, out_handle, id2str_proc(mecha_id));

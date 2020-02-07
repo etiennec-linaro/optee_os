@@ -400,12 +400,8 @@ uint32_t entry_ck_slot_list(TEE_Param *ctrl, TEE_Param *in, TEE_Param *out)
 		return PKCS11_SHORT_BUFFER;
 	}
 
-	if (!ALIGNMENT_IS_OK(out->memref.buffer, uint32_t)) {
-		return PKCS11_BAD_PARAM;
-	}
-
 	for (id = out->memref.buffer, n = 0; n < TOKEN_COUNT; n++, id++)
-		*id = (uint32_t)n;
+		TEE_MemMove(id, &n, sizeof(uint32_t));
 
 	out->memref.size = out_size;
 
@@ -434,9 +430,6 @@ uint32_t entry_ck_slot_info(TEE_Param *ctrl, TEE_Param *in, TEE_Param *out)
 		out->memref.size = sizeof(struct pkcs11_slot_info);
 		return PKCS11_SHORT_BUFFER;
 	}
-
-	if (!ALIGNMENT_IS_OK(out->memref.buffer, uint32_t))
-		return PKCS11_BAD_PARAM;
 
 	serialargs_init(&ctrlargs, ctrl->memref.buffer, ctrl->memref.size);
 
@@ -489,9 +482,6 @@ uint32_t entry_ck_token_info(TEE_Param *ctrl, TEE_Param *in, TEE_Param *out)
 		out->memref.size = sizeof(struct pkcs11_token_info);
 		return PKCS11_SHORT_BUFFER;
 	}
-
-	if (!ALIGNMENT_IS_OK(out->memref.buffer, uint32_t))
-		return PKCS11_BAD_PARAM;
 
 	serialargs_init(&ctrlargs, ctrl->memref.buffer, ctrl->memref.size);
 
@@ -558,9 +548,6 @@ uint32_t entry_ck_token_mecha_ids(TEE_Param *ctrl,
 		return PKCS11_SHORT_BUFFER;
 	}
 
-	if (!ALIGNMENT_IS_OK(out->memref.buffer, uint32_t))
-		return PKCS11_BAD_PARAM;
-
 	serialargs_init(&ctrlargs, ctrl->memref.buffer, ctrl->memref.size);
 
 	rv = serialargs_get(&ctrlargs, &token_id, sizeof(uint32_t));
@@ -572,7 +559,8 @@ uint32_t entry_ck_token_mecha_ids(TEE_Param *ctrl,
 		return PKCS11_CKR_SLOT_ID_INVALID;
 
 	out->memref.size = sizeof(uint32_t) *
-		get_supported_mechanisms(out->memref.buffer, mechanisms_count);
+			   get_supported_mechanisms(out->memref.buffer,
+						    mechanisms_count);
 
 	assert(out->memref.size == mechanisms_count * sizeof(uint32_t));
 
@@ -792,7 +780,7 @@ uint32_t entry_ck_token_mecha_info(TEE_Param *ctrl,
 	uint32_t token_id = 0;
 	uint32_t type = 0;
 	struct ck_token *token = NULL;
-	struct pkcs11_mechanism_info *info = NULL;
+	struct pkcs11_mechanism_info info = { };
 
 	TEE_MemFill(&ctrlargs, 0, sizeof(ctrlargs));
 
@@ -803,11 +791,6 @@ uint32_t entry_ck_token_mecha_info(TEE_Param *ctrl,
 		out->memref.size = sizeof(info);
 		return PKCS11_SHORT_BUFFER;
 	}
-
-	if (!ALIGNMENT_IS_OK(out->memref.buffer, uint32_t))
-		return PKCS11_BAD_PARAM;
-
-	info = (struct pkcs11_mechanism_info *)out->memref.buffer;
 
 	serialargs_init(&ctrlargs, ctrl->memref.buffer, ctrl->memref.size);
 
@@ -826,12 +809,13 @@ uint32_t entry_ck_token_mecha_info(TEE_Param *ctrl,
 	if (!mechanism_is_supported(type))
 		return PKCS11_CKR_MECHANISM_INVALID;
 
-	info->flags = supported_mechanism_info_flag(type);
+	info.flags = supported_mechanism_info_flag(type);
 
-	supported_mechanism_key_size(type, &info->min_key_size,
-				     &info->max_key_size, false);
+	supported_mechanism_key_size(type, &info.min_key_size,
+				     &info.max_key_size, false);
 
-	out->memref.size = sizeof(struct pkcs11_mechanism_info);
+	TEE_MemMove(out->memref.buffer, &info, sizeof(info));
+	out->memref.size = sizeof(info);
 
 	IMSG("PKCS11 token %"PRIu32": mechanism 0x%"PRIx32" info", token_id, type);
 
@@ -966,13 +950,10 @@ static uint32_t open_ck_session(uintptr_t tee_session, TEE_Param *ctrl,
 	if (!ctrl || in || !out)
 		return PKCS11_BAD_PARAM;
 
-	if (out->memref.size < sizeof(uint32_t)) {
-		out->memref.size = sizeof(uint32_t);
+	if (out->memref.size < sizeof(session->handle)) {
+		out->memref.size = sizeof(session->handle);
 		return PKCS11_SHORT_BUFFER;
 	}
-
-	if (!ALIGNMENT_IS_OK(out->memref.buffer, uint32_t))
-		return PKCS11_BAD_PARAM;
 
 	serialargs_init(&ctrlargs, ctrl->memref.buffer, ctrl->memref.size);
 
@@ -1024,8 +1005,8 @@ static uint32_t open_ck_session(uintptr_t tee_session, TEE_Param *ctrl,
 	if (!readonly)
 		session->token->rw_session_count++;
 
-	*(uint32_t *)out->memref.buffer = session->handle;
-	out->memref.size = sizeof(uint32_t);
+	TEE_MemMove(out->memref.buffer, &session->handle, sizeof(session->handle));
+	out->memref.size = sizeof(session->handle);
 
 	IMSG("PKCS11 session %"PRIu32": open", session->handle);
 

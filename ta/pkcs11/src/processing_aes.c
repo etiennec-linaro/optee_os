@@ -32,26 +32,22 @@ uint32_t tee_init_ctr_operation(struct active_processing *processing,
 
 	rv = serialargs_get(&args, &incr_counter, sizeof(uint32_t));
 	if (rv)
-		goto bail;
+		return rv;
 
 	rv = serialargs_get_ptr(&args, &counter_bits, 16);
 	if (rv)
-		goto bail;
+		return rv;
 
 	if (incr_counter != 1) {
 		DMSG("Supports only 1 bit increment counter: %d",
 		     incr_counter);
 
-		rv = PKCS11_CKR_MECHANISM_PARAM_INVALID;
-		goto bail;
+		return PKCS11_CKR_MECHANISM_PARAM_INVALID;
 	}
 
 	TEE_CipherInit(processing->tee_op_handle, counter_bits, 16);
 
-	rv = PKCS11_OK;
-
-bail:
-	return rv;
+	return PKCS11_OK;
 }
 
 void tee_release_ctr_operation(struct active_processing *processing __unused)
@@ -464,16 +460,16 @@ uint32_t tee_init_ccm_operation(struct active_processing *processing,
 
 	rv = serialargs_get(&args, &data_len, sizeof(uint32_t));
 	if (rv)
-		goto bail;
+		return rv;
 
 	rv = serialargs_get(&args, &nonce_len, sizeof(uint32_t));
 	if (rv)
-		goto bail;
+		return rv;
 
 	// TODO: no need to copy nonce into secure world
 	rv = serialargs_alloc_and_get(&args, &nonce, nonce_len);
 	if (rv)
-		goto bail;
+		return rv;
 
 	rv = serialargs_get(&args, &aad_len, sizeof(uint32_t));
 	if (rv)
@@ -577,12 +573,12 @@ uint32_t tee_init_gcm_operation(struct active_processing *processing,
 
 	rv = serialargs_get(&args, &iv_len, sizeof(uint32_t));
 	if (rv)
-		goto bail;
+		return rv;
 
 	// TODO: no need to copy iv into secure world
 	rv = serialargs_alloc_and_get(&args, &iv, iv_len);
 	if (rv)
-		goto bail;
+		return rv;
 
 	rv = serialargs_get(&args, &aad_len, sizeof(uint32_t));
 	if (rv)

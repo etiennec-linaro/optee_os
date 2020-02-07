@@ -21,6 +21,12 @@
 #define PKCS11_NOT_FOUND		PKCS11_RV_NOT_FOUND
 #define PKCS11_NOT_IMPLEMENTED		PKCS11_RV_NOT_IMPLEMENTED
 
+/*
+ * TEE invocation parameter#0 is an in/out buffer of at least 32bit
+ * to store the TA PKCS#11 compliant return value.
+ */
+#define TEE_PARAM0_SIZE_MIN		sizeof(uint32_t)
+
 struct pkcs11_object;
 
 /*

@@ -126,8 +126,14 @@ void release_active_processing(struct pkcs11_session *session)
 }
 
 uint32_t entry_import_object(uintptr_t tee_session,
-			     TEE_Param *ctrl, TEE_Param *in, TEE_Param *out)
+			     uint32_t ptypes, TEE_Param *params)
 {
+        const uint32_t exp_pt = TEE_PARAM_TYPES(TEE_PARAM_TYPE_MEMREF_INOUT,
+                                                TEE_PARAM_TYPE_NONE,
+                                                TEE_PARAM_TYPE_MEMREF_OUTPUT,
+                                                TEE_PARAM_TYPE_NONE);
+	TEE_Param *ctrl = &params[0];
+	TEE_Param *out = &params[2];
 	uint32_t rv = 0;
 	struct serialargs ctrlargs;
 	uint32_t session_handle = 0;
@@ -143,13 +149,9 @@ uint32_t entry_import_object(uintptr_t tee_session,
 	 * Collect the arguments of the request
 	 */
 
-	if (!ctrl || in || !out)
+	if (ptypes != exp_pt ||
+	    out->memref.size != sizeof(obj_handle))
 		return PKCS11_BAD_PARAM;
-
-	if (out->memref.size < sizeof(obj_handle)) {
-		out->memref.size = sizeof(obj_handle);
-		return PKCS11_SHORT_BUFFER;
-	}
 
 	serialargs_init(&ctrlargs, ctrl->memref.buffer, ctrl->memref.size);
 
@@ -306,8 +308,14 @@ static uint32_t generate_random_key_value(struct pkcs11_attrs_head **head)
 }
 
 uint32_t entry_generate_secret(uintptr_t tee_session,
-			       TEE_Param *ctrl, TEE_Param *in, TEE_Param *out)
+			       uint32_t ptypes, TEE_Param *params)
 {
+        const uint32_t exp_pt = TEE_PARAM_TYPES(TEE_PARAM_TYPE_MEMREF_INOUT,
+                                                TEE_PARAM_TYPE_NONE,
+                                                TEE_PARAM_TYPE_MEMREF_OUTPUT,
+                                                TEE_PARAM_TYPE_NONE);
+	TEE_Param *ctrl = &params[0];
+	TEE_Param *out = &params[2];
 	uint32_t rv = 0;
 	struct serialargs ctrlargs;
 	uint32_t session_handle = 0;
@@ -320,13 +328,9 @@ uint32_t entry_generate_secret(uintptr_t tee_session,
 
 	TEE_MemFill(&ctrlargs, 0, sizeof(ctrlargs));
 
-	if (!ctrl || in || !out)
+	if (ptypes != exp_pt ||
+	    out->memref.size != sizeof(obj_handle))
 		return PKCS11_BAD_PARAM;
-
-	if (out->memref.size < sizeof(obj_handle)) {
-		out->memref.size = sizeof(obj_handle);
-		return PKCS11_SHORT_BUFFER;
-	}
 
 	serialargs_init(&ctrlargs, ctrl->memref.buffer, ctrl->memref.size);
 
@@ -485,8 +489,14 @@ bail:
 }
 
 uint32_t entry_generate_key_pair(uintptr_t teesess,
-				 TEE_Param *ctrl, TEE_Param *in, TEE_Param *out)
+				 uint32_t ptypes, TEE_Param *params)
 {
+        const uint32_t exp_pt = TEE_PARAM_TYPES(TEE_PARAM_TYPE_MEMREF_INOUT,
+                                                TEE_PARAM_TYPE_NONE,
+                                                TEE_PARAM_TYPE_MEMREF_OUTPUT,
+                                                TEE_PARAM_TYPE_NONE);
+	TEE_Param *ctrl = &params[0];
+	TEE_Param *out = &params[2];
 	uint32_t rv = 0;
 	struct serialargs ctrlargs;
 	uint32_t session_handle = 0;
@@ -502,11 +512,9 @@ uint32_t entry_generate_key_pair(uintptr_t teesess,
 
 	TEE_MemFill(&ctrlargs, 0, sizeof(ctrlargs));
 
-	if (!ctrl || in || !out)
+	if (ptypes != exp_pt ||
+	    out->memref.size != (sizeof(pubkey_handle) + sizeof(privkey_handle)))
 		return PKCS11_BAD_PARAM;
-
-	if (out->memref.size < (sizeof(pubkey_handle) + sizeof(privkey_handle)))
-		return PKCS11_SHORT_BUFFER;
 
 	serialargs_init(&ctrlargs, ctrl->memref.buffer, ctrl->memref.size);
 
@@ -658,10 +666,15 @@ bail:
  * The generic part come that all the commands uses the same
  * input/output invocation parameters format (ctrl/in/out).
  */
-uint32_t entry_processing_init(uintptr_t tee_session, TEE_Param *ctrl,
-				TEE_Param *in, TEE_Param *out,
-				enum processing_func function)
+uint32_t entry_processing_init(uintptr_t tee_session,
+			       uint32_t ptypes, TEE_Param *params,
+			       enum processing_func function)
 {
+        const uint32_t exp_pt = TEE_PARAM_TYPES(TEE_PARAM_TYPE_MEMREF_INOUT,
+                                                TEE_PARAM_TYPE_NONE,
+                                                TEE_PARAM_TYPE_NONE,
+                                                TEE_PARAM_TYPE_NONE);
+	TEE_Param *ctrl = &params[0];
 	uint32_t rv = 0;
 	struct serialargs ctrlargs;
 	uint32_t session_handle = 0;
@@ -672,7 +685,7 @@ uint32_t entry_processing_init(uintptr_t tee_session, TEE_Param *ctrl,
 
 	TEE_MemFill(&ctrlargs, 0, sizeof(ctrlargs));
 
-	if (!ctrl || in || out)
+	if (ptypes != exp_pt)
 		return PKCS11_BAD_PARAM;
 
 	serialargs_init(&ctrlargs, ctrl->memref.buffer, ctrl->memref.size);
@@ -758,11 +771,12 @@ bail:
  * The generic part come that all the commands uses the same
  * input/output invocation parameters format (ctrl/in/out).
  */
-uint32_t entry_processing_step(uintptr_t tee_session, TEE_Param *ctrl,
-				TEE_Param *in, TEE_Param *out,
-				enum processing_func function,
-				enum processing_step step)
+uint32_t entry_processing_step(uintptr_t tee_session,
+			       uint32_t ptypes, TEE_Param *params,
+			       enum processing_func function,
+			       enum processing_step step)
 {
+	TEE_Param *ctrl = &params[0];
 	uint32_t rv = 0;
 	struct serialargs ctrlargs;
 	uint32_t session_handle = 0;
@@ -771,7 +785,7 @@ uint32_t entry_processing_step(uintptr_t tee_session, TEE_Param *ctrl,
 
 	TEE_MemFill(&ctrlargs, 0, sizeof(ctrlargs));
 
-	if (!ctrl)
+	if (TEE_PARAM_TYPE_GET(ptypes, 0) != TEE_PARAM_TYPE_MEMREF_INOUT)
 		return PKCS11_BAD_PARAM;
 
 	serialargs_init(&ctrlargs, ctrl->memref.buffer, ctrl->memref.size);
@@ -796,9 +810,11 @@ uint32_t entry_processing_step(uintptr_t tee_session, TEE_Param *ctrl,
 		goto bail;
 
 	if (processing_is_tee_symm(mecha_type))
-		rv = step_symm_operation(session, function, step, in, out);
+		rv = step_symm_operation(session, function, step,
+					 ptypes, params);
 	else if (processing_is_tee_asymm(mecha_type))
-		rv = step_asymm_operation(session, function, step, in, out);
+		rv = step_asymm_operation(session, function, step,
+					  ptypes, params);
 	else
 		rv = PKCS11_CKR_MECHANISM_INVALID;
 
@@ -837,12 +853,13 @@ bail:
  * The generic part come that all the commands uses the same
  * input/output invocation parameters format (ctrl/in/out).
  */
-uint32_t entry_verify_oneshot(uintptr_t tee_session, TEE_Param *ctrl,
-				  TEE_Param *in, TEE_Param *in2,
-				  enum processing_func function,
-				  enum processing_step step)
+uint32_t entry_verify_oneshot(uintptr_t tee_session,
+			      uint32_t ptypes, TEE_Param *params,
+			      enum processing_func function,
+			      enum processing_step step)
 
 {
+	TEE_Param *ctrl = &params[0];
 	uint32_t rv = 0;
 	struct serialargs ctrlargs;
 	uint32_t session_handle = 0;
@@ -852,7 +869,7 @@ uint32_t entry_verify_oneshot(uintptr_t tee_session, TEE_Param *ctrl,
 	TEE_MemFill(&ctrlargs, 0, sizeof(ctrlargs));
 
 	assert(function == PKCS11_FUNCTION_VERIFY);
-	if (!ctrl)
+	if (TEE_PARAM_TYPE_GET(ptypes, 0) != TEE_PARAM_TYPE_MEMREF_INOUT)
 		return PKCS11_BAD_PARAM;
 
 	serialargs_init(&ctrlargs, ctrl->memref.buffer, ctrl->memref.size);
@@ -877,9 +894,11 @@ uint32_t entry_verify_oneshot(uintptr_t tee_session, TEE_Param *ctrl,
 		goto bail;
 
 	if (processing_is_tee_symm(mecha_type))
-		rv = step_symm_operation(session, function, step, in, in2);
+		rv = step_symm_operation(session, function, step,
+					 ptypes, params);
 	else if (processing_is_tee_asymm(mecha_type))
-		rv = step_asymm_operation(session, function, step, in, in2);
+		rv = step_asymm_operation(session, function, step,
+					  ptypes, params);
 	else
 		rv = PKCS11_CKR_MECHANISM_INVALID;
 
@@ -894,9 +913,15 @@ bail:
 	return rv;
 }
 
-uint32_t entry_derive_key(uintptr_t tee_session, TEE_Param *ctrl,
-			  TEE_Param *in, TEE_Param *out)
+uint32_t entry_derive_key(uintptr_t tee_session,
+			  uint32_t ptypes, TEE_Param *params)
 {
+        const uint32_t exp_pt = TEE_PARAM_TYPES(TEE_PARAM_TYPE_MEMREF_INOUT,
+                                                TEE_PARAM_TYPE_NONE,
+                                                TEE_PARAM_TYPE_MEMREF_OUTPUT,
+                                                TEE_PARAM_TYPE_NONE);
+	TEE_Param *ctrl = &params[0];
+	TEE_Param *out = &params[2];
 	uint32_t rv = 0;
 	struct serialargs ctrlargs;
 	uint32_t session_handle = 0;
@@ -912,13 +937,9 @@ uint32_t entry_derive_key(uintptr_t tee_session, TEE_Param *ctrl,
 
 	TEE_MemFill(&ctrlargs, 0, sizeof(ctrlargs));
 
-	if (!ctrl || in || !out)
+	if (ptypes != exp_pt ||
+	    out->memref.size != sizeof(out_handle))
 		return PKCS11_BAD_PARAM;
-
-	if (out->memref.size < sizeof(out_handle)) {
-		out->memref.size = sizeof(out_handle);
-		return PKCS11_SHORT_BUFFER;
-	}
 
 	serialargs_init(&ctrlargs, ctrl->memref.buffer, ctrl->memref.size);
 

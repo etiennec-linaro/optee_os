@@ -53,7 +53,7 @@
 /*
  * PKCS11_CMD_PING		Acknowledge TA presence and return version info
  *
- * Optional invocation parameter (if none, command simply returns with success)
+ * [out]	memref[0] = 32bit fine grain return code
  * [out]        memref[2] = [
  *                      32bit version major value (PKCS11_TA_VERSION_MAJOR),
  *                      32bit version minor value (PKCS11_TA_VERSION_MINOR),
@@ -65,6 +65,7 @@
 /*
  * PKCS11_CMD_SLOT_LIST - Get the table of the valid slot IDs
  *
+ * [out]	memref[0] = 32bit fine grain return code
  * [out]        memref[2] = 32bit array slot_ids[slot counts]
  *
  * The TA instance may represent several PKCS#11 slots and associated tokens.

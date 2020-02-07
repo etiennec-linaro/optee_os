@@ -17,32 +17,32 @@ struct active_processing;
  * Entry points from PKCS11 TA invocation commands
  */
 
-uint32_t entry_import_object(uintptr_t teesess, TEE_Param *ctrl,
-			     TEE_Param *in, TEE_Param *out);
+uint32_t entry_import_object(uintptr_t teesess,
+			     uint32_t ptypes, TEE_Param *params);
 
-uint32_t entry_generate_secret(uintptr_t teesess, TEE_Param *ctrl,
-			       TEE_Param *in, TEE_Param *out);
+uint32_t entry_generate_secret(uintptr_t teesess,
+			       uint32_t ptypes, TEE_Param *params);
 
-uint32_t entry_generate_key_pair(uintptr_t teesess, TEE_Param *ctrl,
-				 TEE_Param *in, TEE_Param *out);
+uint32_t entry_generate_key_pair(uintptr_t teesess,
+				 uint32_t ptypes, TEE_Param *params);
 
-uint32_t entry_processing_init(uintptr_t tee_session, TEE_Param *ctrl,
-				TEE_Param *in, TEE_Param *out,
-				enum processing_func function);
+uint32_t entry_processing_init(uintptr_t tee_session,
+			       uint32_t ptypes, TEE_Param *params,
+			       enum processing_func function);
 
-uint32_t entry_processing_step(uintptr_t tee_session, TEE_Param *ctrl,
-				TEE_Param *in, TEE_Param *out,
-				enum processing_func function,
-				enum processing_step step);
+uint32_t entry_processing_step(uintptr_t tee_session,
+			       uint32_t ptypes, TEE_Param *params,
+			       enum processing_func function,
+			       enum processing_step step);
 
 /* verify_oneshot is specific since it get 2 input data buffers */
-uint32_t entry_verify_oneshot(uintptr_t tee_session, TEE_Param *ctrl,
-				  TEE_Param *in1, TEE_Param *in2,
-				  enum processing_func function,
-				  enum processing_step step);
+uint32_t entry_verify_oneshot(uintptr_t tee_session,
+			      uint32_t ptypes, TEE_Param *params,
+			      enum processing_func function,
+			      enum processing_step step);
 
-uint32_t entry_derive_key(uintptr_t teesess, TEE_Param *ctrl,
-			  TEE_Param *in, TEE_Param *out);
+uint32_t entry_derive_key(uintptr_t teesess,
+			  uint32_t ptypes, TEE_Param *params);
 
 /*
  * Util
@@ -72,7 +72,7 @@ uint32_t init_symm_operation(struct pkcs11_session *session,
 uint32_t step_symm_operation(struct pkcs11_session *session,
 				enum processing_func function,
 				enum processing_step step,
-				TEE_Param *io1, TEE_Param *io2);
+				uint32_t ptypes, TEE_Param *params);
 
 void tee_release_ctr_operation(struct active_processing *processing);
 uint32_t tee_init_ctr_operation(struct active_processing *processing,
@@ -111,7 +111,7 @@ uint32_t do_symm_derivation(struct pkcs11_session *session,
 uint32_t step_asymm_operation(struct pkcs11_session *session,
 			      enum processing_func function,
 			      enum processing_step step,
-			      TEE_Param *io1, TEE_Param *io2);
+			      uint32_t ptypes, TEE_Param *params);
 
 uint32_t do_asymm_derivation(struct pkcs11_session *session,
 			     struct pkcs11_attribute_head *proc_params,

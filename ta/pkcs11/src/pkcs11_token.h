@@ -285,35 +285,32 @@ struct ck_token *pkcs11_session2token(struct pkcs11_session *session)
 /*
  * Entry point for the TA commands
  */
-uint32_t entry_ck_slot_list(TEE_Param *ctrl, TEE_Param *in, TEE_Param *out);
-uint32_t entry_ck_slot_info(TEE_Param *ctrl, TEE_Param *in, TEE_Param *out);
-uint32_t entry_ck_token_info(TEE_Param *ctrl, TEE_Param *in, TEE_Param *out);
+uint32_t entry_ck_slot_list(uint32_t ptypes, TEE_Param *params);
+uint32_t entry_ck_slot_info(uint32_t ptypes, TEE_Param *params);
+uint32_t entry_ck_token_info(uint32_t ptypes, TEE_Param *params);
 
-uint32_t entry_ck_token_initialize(TEE_Param *ctrl,
-				   TEE_Param *in, TEE_Param *out);
+uint32_t entry_ck_token_initialize(uint32_t ptypes, TEE_Param *params);
 
-uint32_t entry_ck_token_mecha_ids(TEE_Param *ctrl,
-				  TEE_Param *in, TEE_Param *out);
+uint32_t entry_ck_token_mecha_ids(uint32_t ptypes, TEE_Param *params);
 
-uint32_t entry_ck_token_mecha_info(TEE_Param *ctrl,
-				   TEE_Param *in, TEE_Param *out);
+uint32_t entry_ck_token_mecha_info(uint32_t ptypes, TEE_Param *params);
 
-uint32_t entry_ck_token_ro_session(uintptr_t teesess, TEE_Param *ctrl,
-				   TEE_Param *in, TEE_Param *out);
-uint32_t entry_ck_token_rw_session(uintptr_t teesess, TEE_Param *ctrl,
-				   TEE_Param *in, TEE_Param *out);
-uint32_t entry_ck_token_close_session(uintptr_t teesess, TEE_Param *ctrl,
-				      TEE_Param *in, TEE_Param *out);
-uint32_t entry_ck_token_close_all(uintptr_t teesess, TEE_Param *ctrl,
-				  TEE_Param *in, TEE_Param *out);
+uint32_t entry_ck_token_ro_session(uintptr_t teesess,
+				   uint32_t ptypes, TEE_Param *params);
+uint32_t entry_ck_token_rw_session(uintptr_t teesess,
+				   uint32_t ptypes, TEE_Param *params);
+uint32_t entry_ck_token_close_session(uintptr_t teesess,
+				      uint32_t ptypes, TEE_Param *params);
+uint32_t entry_ck_token_close_all(uintptr_t teesess,
+				  uint32_t ptypes, TEE_Param *params);
 
-uint32_t entry_init_pin(uintptr_t tee_session, TEE_Param *ctrl,
-			TEE_Param *in, TEE_Param *out);
-uint32_t entry_set_pin(uintptr_t tee_session, TEE_Param *ctrl,
-		       TEE_Param *in, TEE_Param *out);
-uint32_t entry_login(uintptr_t tee_session, TEE_Param *ctrl,
-		     TEE_Param *in, TEE_Param *out);
-uint32_t entry_logout(uintptr_t tee_session, TEE_Param *ctrl,
-		      TEE_Param *in, TEE_Param *out);
+uint32_t entry_init_pin(uintptr_t tee_session,
+			uint32_t ptypes, TEE_Param *params);
+uint32_t entry_set_pin(uintptr_t tee_session,
+		       uint32_t ptypes, TEE_Param *params);
+uint32_t entry_login(uintptr_t tee_session,
+		     uint32_t ptypes, TEE_Param *params);
+uint32_t entry_logout(uintptr_t tee_session,
+		      uint32_t ptypes, TEE_Param *params);
 
 #endif /*PKCS11_TA_PKCS11_TOKEN_H*/

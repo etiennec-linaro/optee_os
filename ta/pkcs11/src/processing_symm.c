@@ -309,19 +309,41 @@ uint32_t init_symm_operation(struct pkcs11_session *session,
 uint32_t step_symm_operation(struct pkcs11_session *session,
 			     enum processing_func function,
 			     enum processing_step step,
-			     TEE_Param *in, TEE_Param *io2)
+			     uint32_t ptypes, TEE_Param *params)
 {
 	uint32_t rv = PKCS11_ERROR;
 	TEE_Result res = TEE_ERROR_GENERIC;
-	void *in_buf = in ? in->memref.buffer : NULL;
-	size_t in_size = in ? in->memref.size : 0;
-	void *out_buf = io2 ? io2->memref.buffer : NULL;
-	uint32_t out_size = io2 ? io2->memref.size : 0;
+	void *in_buf = NULL;
+	size_t in_size = 0;
+	void *out_buf = NULL;
+	uint32_t out_size = 0;
 	uint32_t out_size2 = out_size;
-	void *in2_buf = io2 ? io2->memref.buffer : NULL;
-	uint32_t in2_size = io2 ? io2->memref.size : 0;
+	void *in2_buf = NULL;
+	uint32_t in2_size = 0;
 	bool output_data = false;
 	struct active_processing *proc = session->processing;
+
+	if (TEE_PARAM_TYPE_GET(ptypes, 1) == TEE_PARAM_TYPE_MEMREF_INPUT) {
+		in_buf = params[1].memref.buffer;
+		in_size = params[1].memref.size;
+		if (in_size && !in_buf)
+			return PKCS11_BAD_PARAM;
+	}
+	if (TEE_PARAM_TYPE_GET(ptypes, 2) == TEE_PARAM_TYPE_MEMREF_INPUT) {
+		in2_buf = params[2].memref.buffer;
+		in2_size = params[2].memref.size;
+		if (in2_size && !in2_buf)
+			return PKCS11_BAD_PARAM;
+	}
+	if (TEE_PARAM_TYPE_GET(ptypes, 2) == TEE_PARAM_TYPE_MEMREF_OUTPUT) {
+		out_buf = params[2].memref.buffer;
+		out_size = params[2].memref.size;
+		out_size2 = out_size;
+		if (out_size && !out_buf)
+			return PKCS11_BAD_PARAM;
+	}
+	if (TEE_PARAM_TYPE_GET(ptypes, 3) != TEE_PARAM_TYPE_NONE)
+			return PKCS11_BAD_PARAM;
 
 	switch (step) {
 	case PKCS11_FUNC_STEP_ONESHOT:
@@ -349,7 +371,7 @@ uint32_t step_symm_operation(struct pkcs11_session *session,
 		if (step == PKCS11_FUNC_STEP_FINAL)
 			break;
 
-		if (!in) {
+		if (!in_buf) {
 			DMSG("No input data");
 			return PKCS11_BAD_PARAM;
 		}
@@ -510,8 +532,9 @@ uint32_t step_symm_operation(struct pkcs11_session *session,
 
 bail:
 	if (output_data && (rv == PKCS11_OK || rv == PKCS11_SHORT_BUFFER)) {
-		if (io2)
-			io2->memref.size = out_size;
+		if (TEE_PARAM_TYPE_GET(ptypes, 2) == TEE_PARAM_TYPE_MEMREF_OUTPUT ||
+		    TEE_PARAM_TYPE_GET(ptypes, 2) == TEE_PARAM_TYPE_MEMREF_INOUT)
+			params[2].memref.size = out_size;
 		else
 			rv = PKCS11_ERROR;
 	}

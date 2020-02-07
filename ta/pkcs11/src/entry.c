@@ -3,6 +3,7 @@
  * Copyright (c) 2018-2020, Linaro Limited
  */
 
+#include <assert.h>
 #include <compiler.h>
 #include <pkcs11_ta.h>
 #include <tee_internal_api.h>
@@ -56,304 +57,271 @@ void TA_CloseSessionEntryPoint(void *tee_session)
 /*
  * Entry point for invocation command PKCS11_CMD_PING
  *
- * @ctrl - param memref[0] or NULL: expected NULL
- * @in - param memref[1] or NULL: expected NULL
- * @out - param memref[2] or NULL
- *
- * Return a PKCS11_CKR_* value
+ * Return a PKCS11_CKR_* value which is also loaded into the output param#0
  */
-static uint32_t entry_ping(TEE_Param *ctrl, TEE_Param *in, TEE_Param *out)
+static uint32_t entry_ping(uint32_t ptypes, TEE_Param *params)
 {
+        const uint32_t exp_pt = TEE_PARAM_TYPES(TEE_PARAM_TYPE_MEMREF_INOUT,
+                                                TEE_PARAM_TYPE_NONE,
+                                                TEE_PARAM_TYPE_MEMREF_OUTPUT,
+                                                TEE_PARAM_TYPE_NONE);
+	TEE_Param *out = &params[2];
 	const uint32_t ver[] = {
 		PKCS11_TA_VERSION_MAJOR,
 		PKCS11_TA_VERSION_MINOR,
 		PKCS11_TA_VERSION_PATCH,
 	};
-	size_t size = 0;
 
-	if (ctrl || in)
-		return PKCS11_BAD_PARAM;
-
-	if (!out)
-		return PKCS11_OK;
-
-	size = out->memref.size;
-	out->memref.size = sizeof(ver);
-
-	if (size < sizeof(ver))
-		return PKCS11_SHORT_BUFFER;
-
-	if (!ALIGNMENT_IS_OK(out->memref.buffer, uint32_t))
-		return PKCS11_BAD_PARAM;
+	if (ptypes != exp_pt ||
+	    params[0].memref.size != TEE_PARAM0_SIZE_MIN ||
+	    out->memref.size != sizeof(ver))
+		return PKCS11_CKR_ARGUMENTS_BAD;
 
 	TEE_MemMove(out->memref.buffer, ver, sizeof(ver));
 
-	return PKCS11_OK;
+	return PKCS11_CKR_OK;
 }
 
-static bool ctrl_stores_output_status(uint32_t ptypes, TEE_Param *ctrl)
+static bool __maybe_unused param_is_none(uint32_t ptypes, unsigned int index)
 {
-	return TEE_PARAM_TYPE_GET(ptypes, 0) == TEE_PARAM_TYPE_MEMREF_INOUT &&
-	       ALIGNMENT_IS_OK(ctrl->memref.buffer, uint32_t) &&
-	       ctrl->memref.size >= sizeof(uint32_t);
+	return TEE_PARAM_TYPE_GET(ptypes, index) ==
+	       TEE_PARAM_TYPE_NONE;
+}
+
+static bool __maybe_unused param_is_memref(uint32_t ptypes, unsigned int index)
+{
+	switch (TEE_PARAM_TYPE_GET(ptypes, index)) {
+	case TEE_PARAM_TYPE_MEMREF_INPUT:
+	case TEE_PARAM_TYPE_MEMREF_OUTPUT:
+	case TEE_PARAM_TYPE_MEMREF_INOUT:
+		return true;
+	default:
+		return false;
+	}
+}
+
+static bool __maybe_unused param_is_input(uint32_t ptypes, unsigned int index)
+{
+	return TEE_PARAM_TYPE_GET(ptypes, index) ==
+	       TEE_PARAM_TYPE_MEMREF_INPUT;
+}
+
+static bool __maybe_unused param_is_output(uint32_t ptypes, unsigned int index)
+{
+	return TEE_PARAM_TYPE_GET(ptypes, index) ==
+	       TEE_PARAM_TYPE_MEMREF_OUTPUT;
 }
 
 /*
  * Entry point for PKCS11 TA commands
  *
- * ABI: param#0 is the control buffer with serialized arguments.
- *	param#1 is an input/output data buffer
- *	param#2 is an input/output data buffer (also used to return handles)
- *	param#3 is not used
- *
- * Param#0 ctrl, if defined, is an in/out buffer, is used to send back to
- * the client a Cryptoki status ID that superseeds the TEE result code which
- * will be forced to TEE_SUCCESS. Note that some Cryptoki error states are
- * sent straight through TEE result code. See pkcs2tee_noerr().
+ * Param#0 (ctrl) is an output or an in/out buffer. Input data are serialized
+ * arguments for the invoked command while the output data is used to send
+ * back to the client a PKCS11 finer status ID than the GPD TEE result codes
+ * Client shall check the status ID from the parameter #0 output buffer together
+ * with the GPD TEE result code.
  */
 TEE_Result TA_InvokeCommandEntryPoint(void *tee_session, uint32_t cmd,
 				      uint32_t ptypes,
 				      TEE_Param params[TEE_NUM_PARAMS])
 {
-	TEE_Param *ctrl = NULL;
-	TEE_Param *p1_in = NULL;
-	TEE_Param __maybe_unused *p1_out = NULL;
-	TEE_Param *p2_in = NULL;
-	TEE_Param *p2_out = NULL;
 	uintptr_t teesess = (uintptr_t)tee_session;
-	TEE_Result res = TEE_ERROR_GENERIC;
 	uint32_t rc = 0;
 
-	/* Param#0: none or input/in-out buffer with serialized arguments */
+	DMSG("%s", id2str_ta_cmd(cmd));
+
+	/*
+	 * Param#0 must be either an output or an inout memref as used to
+	 * store the output return value for the invoked command.
+	 */
 	switch (TEE_PARAM_TYPE_GET(ptypes, 0)) {
-	case TEE_PARAM_TYPE_NONE:
-		break;
-	case TEE_PARAM_TYPE_MEMREF_INPUT:
-	case TEE_PARAM_TYPE_MEMREF_INOUT:
-		ctrl = &params[0];
-		break;
-	default:
-		goto bad_types;
-	}
-
-	/* Param#1: none or input/output/in-out data buffer */
-	switch (TEE_PARAM_TYPE_GET(ptypes, 1)) {
-	case TEE_PARAM_TYPE_NONE:
-		break;
-	case TEE_PARAM_TYPE_MEMREF_INPUT:
-		p1_in = &params[1];
-		break;
 	case TEE_PARAM_TYPE_MEMREF_OUTPUT:
-		p1_out = &params[1];
-		break;
 	case TEE_PARAM_TYPE_MEMREF_INOUT:
-		p1_in = &params[1];
-		p1_out = &params[1];
+		if (params[0].memref.size < sizeof(rc))
+			return TEE_ERROR_BAD_PARAMETERS;
 		break;
 	default:
-		goto bad_types;
+		return TEE_ERROR_BAD_PARAMETERS;
 	}
 
-	/* Param#2: none or input/output/in-out data buffer */
-	switch (TEE_PARAM_TYPE_GET(ptypes, 2)) {
-	case TEE_PARAM_TYPE_NONE:
-		break;
-	case TEE_PARAM_TYPE_MEMREF_INPUT:
-		p2_in = &params[2];
-		break;
-	case TEE_PARAM_TYPE_MEMREF_OUTPUT:
-		p2_out = &params[2];
-		break;
-	case TEE_PARAM_TYPE_MEMREF_INOUT:
-		p2_in = &params[2];
-		p2_out = &params[2];
-		break;
-	default:
-		goto bad_types;
-	}
+	/* Param#3 is not used */
+	if (TEE_PARAM_TYPE_GET(ptypes, 3) != TEE_PARAM_TYPE_NONE)
+		return TEE_ERROR_BAD_PARAMETERS;
 
-	/* Param#3: currently unused */
-	switch (TEE_PARAM_TYPE_GET(ptypes, 3)) {
-	case TEE_PARAM_TYPE_NONE:
-		break;
-	default:
-		goto bad_types;
-	}
-
-	DMSG("%s ctrl %"PRIu32"@%p, %s %"PRIu32"@%p, %s %"PRIu32"@%p",
+	DMSG("%s p#0 %"PRIu32"@%p, p#1 %s %"PRIu32"@%p, p#2 %s %"PRIu32"@%p",
 	     id2str_ta_cmd(cmd),
-	     ctrl ? ctrl->memref.size : 0, ctrl ? ctrl->memref.buffer : 0,
-	     p1_out ? "out" : (p1_in ? "in" : "---"),
-	     p1_out ? p1_out->memref.size : (p1_in ? p1_in->memref.size : 0),
-	     p1_out ? p1_out->memref.buffer :
-		      (p1_in ? p1_in->memref.buffer : NULL),
-	     p2_out ? "out" : (p2_in ? "in" : "---"),
-	     p2_out ? p2_out->memref.size : (p2_in ? p2_in->memref.size : 0),
-	     p2_out ? p2_out->memref.buffer :
-		      (p2_in ? p2_in->memref.buffer : NULL));
+	     params[0].memref.size, params[0].memref.buffer,
+	     param_is_input(ptypes, 1) ? "in" :
+	     param_is_output(ptypes, 1) ? "out" : "---",
+	     param_is_memref(ptypes, 1) ? params[1].memref.size : 0,
+	     param_is_memref(ptypes, 1) ? params[1].memref.buffer : NULL,
+	     param_is_input(ptypes, 2) ? "in" :
+	     param_is_output(ptypes, 2) ? "out" : "---",
+	     param_is_memref(ptypes, 2) ? params[2].memref.size : 0,
+	     param_is_memref(ptypes, 2) ? params[2].memref.buffer : NULL);
 
 	switch (cmd) {
 	case PKCS11_CMD_PING:
-		rc = entry_ping(ctrl, p1_in, p2_out);
+		rc = entry_ping(ptypes, params);
 		break;
 
 	case PKCS11_CMD_SLOT_LIST:
-		rc = entry_ck_slot_list(ctrl, p1_in, p2_out);
+		rc = entry_ck_slot_list(ptypes, params);
 		break;
 	case PKCS11_CMD_SLOT_INFO:
-		rc = entry_ck_slot_info(ctrl, p1_in, p2_out);
+		rc = entry_ck_slot_info(ptypes, params);
 		break;
 	case PKCS11_CMD_TOKEN_INFO:
-		rc = entry_ck_token_info(ctrl, p1_in, p2_out);
+		rc = entry_ck_token_info(ptypes, params);
 		break;
 	case PKCS11_CMD_INIT_TOKEN:
-		rc = entry_ck_token_initialize(ctrl, p1_in, p2_out);
+		rc = entry_ck_token_initialize(ptypes, params);
 		break;
 
 	case PKCS11_CMD_MECHANISM_IDS:
-		rc = entry_ck_token_mecha_ids(ctrl, p1_in, p2_out);
+		rc = entry_ck_token_mecha_ids(ptypes, params);
 		break;
 	case PKCS11_CMD_MECHANISM_INFO:
-		rc = entry_ck_token_mecha_info(ctrl, p1_in, p2_out);
+		rc = entry_ck_token_mecha_info(ptypes, params);
 		break;
 
 	case PKCS11_CMD_OPEN_RO_SESSION:
-		rc = entry_ck_token_ro_session(teesess, ctrl, p1_in, p2_out);
+		rc = entry_ck_token_ro_session(teesess, ptypes, params);
 		break;
 	case PKCS11_CMD_OPEN_RW_SESSION:
-		rc = entry_ck_token_rw_session(teesess, ctrl, p1_in, p2_out);
+		rc = entry_ck_token_rw_session(teesess, ptypes, params);
 		break;
 	case PKCS11_CMD_CLOSE_SESSION:
-		rc = entry_ck_token_close_session(teesess, ctrl, p1_in, p2_out);
+		rc = entry_ck_token_close_session(teesess, ptypes, params);
 		break;
 	case PKCS11_CMD_CLOSE_ALL_SESSIONS:
-		rc = entry_ck_token_close_all(teesess, ctrl, p1_in, p2_out);
+		rc = entry_ck_token_close_all(teesess, ptypes, params);
 		break;
 
 	case PKCS11_CMD_IMPORT_OBJECT:
-		rc = entry_import_object(teesess, ctrl, p1_in, p2_out);
+		rc = entry_import_object(teesess, ptypes, params);
 		break;
 	case PKCS11_CMD_DESTROY_OBJECT:
-		rc = entry_destroy_object(teesess, ctrl, p1_in, p2_out);
+		rc = entry_destroy_object(teesess, ptypes, params);
 		break;
 
 	case PKCS11_CMD_ENCRYPT_INIT:
-		rc = entry_processing_init(teesess, ctrl, p1_in, p2_out,
+		rc = entry_processing_init(teesess, ptypes, params,
 					   PKCS11_FUNCTION_ENCRYPT);
 		break;
 	case PKCS11_CMD_DECRYPT_INIT:
-		rc = entry_processing_init(teesess, ctrl, p1_in, p2_out,
+		rc = entry_processing_init(teesess, ptypes, params,
 					   PKCS11_FUNCTION_DECRYPT);
 		break;
 	case PKCS11_CMD_ENCRYPT_UPDATE:
-		rc = entry_processing_step(teesess, ctrl, p1_in, p2_out,
+		rc = entry_processing_step(teesess, ptypes, params,
 					   PKCS11_FUNCTION_ENCRYPT,
 					   PKCS11_FUNC_STEP_UPDATE);
 		break;
 	case PKCS11_CMD_DECRYPT_UPDATE:
-		rc = entry_processing_step(teesess, ctrl, p1_in, p2_out,
+		rc = entry_processing_step(teesess, ptypes, params,
 					   PKCS11_FUNCTION_DECRYPT,
 					   PKCS11_FUNC_STEP_UPDATE);
 		break;
 	case PKCS11_CMD_ENCRYPT_ONESHOT:
-		rc = entry_processing_step(teesess, ctrl, p1_in, p2_out,
+		rc = entry_processing_step(teesess, ptypes, params,
 					   PKCS11_FUNCTION_ENCRYPT,
 					   PKCS11_FUNC_STEP_ONESHOT);
 		break;
 	case PKCS11_CMD_DECRYPT_ONESHOT:
-		rc = entry_processing_step(teesess, ctrl, p1_in, p2_out,
+		rc = entry_processing_step(teesess, ptypes, params,
 					   PKCS11_FUNCTION_DECRYPT,
 					   PKCS11_FUNC_STEP_ONESHOT);
 		break;
 	case PKCS11_CMD_ENCRYPT_FINAL:
-		rc = entry_processing_step(teesess, ctrl, p1_in, p2_out,
+		rc = entry_processing_step(teesess, ptypes, params,
 					   PKCS11_FUNCTION_ENCRYPT,
 					   PKCS11_FUNC_STEP_FINAL);
 		break;
 	case PKCS11_CMD_DECRYPT_FINAL:
-		rc = entry_processing_step(teesess, ctrl, p1_in, p2_out,
+		rc = entry_processing_step(teesess, ptypes, params,
 					   PKCS11_FUNCTION_DECRYPT,
 					   PKCS11_FUNC_STEP_FINAL);
 		break;
 
 	case PKCS11_CMD_GENERATE_KEY:
-		rc = entry_generate_secret(teesess, ctrl, p1_in, p2_out);
+		rc = entry_generate_secret(teesess, ptypes, params);
 		break;
 
 	case PKCS11_CMD_SIGN_INIT:
-		rc = entry_processing_init(teesess, ctrl, p1_in, p2_out,
+		rc = entry_processing_init(teesess, ptypes, params,
 					   PKCS11_FUNCTION_SIGN);
 		break;
 	case PKCS11_CMD_VERIFY_INIT:
-		rc = entry_processing_init(teesess, ctrl, p1_in, p2_out,
+		rc = entry_processing_init(teesess, ptypes, params,
 					   PKCS11_FUNCTION_VERIFY);
 		break;
 	case PKCS11_CMD_SIGN_ONESHOT:
-		rc = entry_processing_step(teesess, ctrl, p1_in, p2_out,
+		rc = entry_processing_step(teesess, ptypes, params,
 					   PKCS11_FUNCTION_SIGN,
 					   PKCS11_FUNC_STEP_ONESHOT);
 		break;
 	case PKCS11_CMD_VERIFY_ONESHOT:
-		rc = entry_verify_oneshot(teesess, ctrl, p1_in, p2_in,
+		rc = entry_verify_oneshot(teesess, ptypes, params, // IN+IN
 					   PKCS11_FUNCTION_VERIFY,
 					   PKCS11_FUNC_STEP_ONESHOT);
 		break;
 	case PKCS11_CMD_SIGN_UPDATE:
-		rc = entry_processing_step(teesess, ctrl, p1_in, p2_out,
+		rc = entry_processing_step(teesess, ptypes, params,
 					   PKCS11_FUNCTION_SIGN,
 					   PKCS11_FUNC_STEP_UPDATE);
 		break;
 	case PKCS11_CMD_VERIFY_UPDATE:
-		rc = entry_processing_step(teesess, ctrl, p1_in, p2_out,
+		rc = entry_processing_step(teesess, ptypes, params,
 					   PKCS11_FUNCTION_VERIFY,
 					   PKCS11_FUNC_STEP_UPDATE);
 		break;
 	case PKCS11_CMD_SIGN_FINAL:
-		rc = entry_processing_step(teesess, ctrl, p1_in, p2_out,
+		rc = entry_processing_step(teesess, ptypes, params,
 					   PKCS11_FUNCTION_SIGN,
 					   PKCS11_FUNC_STEP_FINAL);
 		break;
 	case PKCS11_CMD_VERIFY_FINAL:
-		rc = entry_processing_step(teesess, ctrl, p1_in, p2_out,
+		rc = entry_processing_step(teesess, ptypes, params,
 					   PKCS11_FUNCTION_VERIFY,
 					   PKCS11_FUNC_STEP_FINAL);
 		break;
 
 	case PKCS11_CMD_FIND_OBJECTS_INIT:
-		rc = entry_find_objects_init(teesess, ctrl, p1_in, p2_out);
+		rc = entry_find_objects_init(teesess, ptypes, params);
 		break;
 
 	case PKCS11_CMD_FIND_OBJECTS:
-		rc = entry_find_objects(teesess, ctrl, p1_in, p2_out);
+		rc = entry_find_objects(teesess, ptypes, params);
 		break;
 
 	case PKCS11_CMD_FIND_OBJECTS_FINAL:
-		rc = entry_find_objects_final(teesess, ctrl, p1_in, p2_out);
+		rc = entry_find_objects_final(teesess, ptypes, params);
 		break;
 
 	case PKCS11_CMD_GET_ATTRIBUTE_VALUE:
-		rc = entry_get_attribute_value(teesess, ctrl, p1_in, p2_out);
+		rc = entry_get_attribute_value(teesess, ptypes, params);
 		break;
 
 	case PKCS11_CMD_INIT_PIN:
-		rc = entry_init_pin(teesess, ctrl, p1_in, p2_out);
+		rc = entry_init_pin(teesess, ptypes, params);
 		break;
 	case PKCS11_CMD_SET_PIN:
-		rc = entry_set_pin(teesess, ctrl, p1_in, p2_out);
+		rc = entry_set_pin(teesess, ptypes, params);
 		break;
 	case PKCS11_CMD_LOGIN:
-		rc = entry_login(teesess, ctrl, p1_in, p2_out);
+		rc = entry_login(teesess, ptypes, params);
 		break;
 	case PKCS11_CMD_LOGOUT:
-		rc = entry_logout(teesess, ctrl, p1_in, p2_out);
+		rc = entry_logout(teesess, ptypes, params);
 		break;
 
 	case PKCS11_CMD_GENERATE_KEY_PAIR:
-		rc = entry_generate_key_pair(teesess, ctrl, p1_in, p2_out);
+		rc = entry_generate_key_pair(teesess, ptypes, params);
 		break;
 
 	case PKCS11_CMD_DERIVE_KEY:
-		rc = entry_derive_key(teesess, ctrl, p1_in, p2_out);
+		rc = entry_derive_key(teesess, ptypes, params);
 		break;
 
 	default:
@@ -361,27 +329,13 @@ TEE_Result TA_InvokeCommandEntryPoint(void *tee_session, uint32_t cmd,
 		return TEE_ERROR_NOT_SUPPORTED;
 	}
 
-	if (ctrl_stores_output_status(ptypes, ctrl)) {
-		TEE_MemMove(ctrl->memref.buffer, &rc, sizeof(uint32_t));
-		ctrl->memref.size = sizeof(uint32_t);
+	DMSG("%s rc 0x%08"PRIx32"/%s", id2str_ta_cmd(cmd), rc, id2str_rc(rc));
 
-		res = pkcs2tee_noerr(rc);
+	params[0].memref.size = sizeof(rc);
+	TEE_MemMove(params[0].memref.buffer, &rc, sizeof(rc));
 
-		DMSG("%s rc 0x%08"PRIx32"/%s",
-		     id2str_ta_cmd(cmd), rc, id2str_rc(rc));
-	} else {
-		res = pkcs2tee_error(rc);
-		DMSG("%s rc 0x%08"PRIx32"/%s, TEE rc %"PRIx32,
-		     id2str_ta_cmd(cmd), rc, id2str_rc(rc), res);
-	}
-
-	return res;
-
-bad_types:
-	DMSG("Bad parameter types used at PKCS11 TA entry:");
-	DMSG("- parameter #0: formatted input, inout request buffer or none");
-	DMSG("- parameter #1: processed input data buffer or none");
-	DMSG("- parameter #2: processed output data buffer or none");
-	DMSG("- parameter #3: none");
-	return TEE_ERROR_BAD_PARAMETERS;
+	if (rc == PKCS11_CKR_BUFFER_TOO_SMALL)
+		return TEE_ERROR_SHORT_BUFFER;
+	else
+		return TEE_SUCCESS;
 }

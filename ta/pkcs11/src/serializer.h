@@ -35,6 +35,8 @@ uint32_t serialargs_alloc_get_attributes(struct serialargs *args,
 uint32_t serialargs_alloc_and_get(struct serialargs *args,
 				   void **out, size_t size);
 
+bool serialargs_remaining_bytes(struct serialargs *args);
+
 #define PKCS11_MAX_BOOLPROP_SHIFT	64
 #define PKCS11_MAX_BOOLPROP_ARRAY	(PKCS11_MAX_BOOLPROP_SHIFT / \
 					 sizeof(uint32_t))

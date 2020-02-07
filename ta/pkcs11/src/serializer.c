@@ -165,6 +165,11 @@ uint32_t serialargs_alloc_get_attributes(struct serialargs *args,
 	return PKCS11_OK;
 }
 
+bool serialargs_remaining_bytes(struct serialargs *args)
+{
+	return args->next < args->start + args->size;
+}
+
 /*
  * serialize - serialize input data in buffer
  *

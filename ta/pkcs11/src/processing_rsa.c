@@ -37,6 +37,9 @@ uint32_t pkcs2tee_proc_params_rsa_pss(struct active_processing *processing,
 	if (rv)
 		return rv;
 
+	if (serialargs_remaining_bytes(&args))
+		return PKCS11_BAD_PARAM;
+
 	processing->extra_ctx = TEE_Malloc(sizeof(uint32_t),
 						TEE_USER_MEM_HINT_NO_FILL_ZERO);
 	if (!processing->extra_ctx)
@@ -75,6 +78,9 @@ uint32_t pkcs2tee_algo_rsa_pss(uint32_t *tee_id,
 	rv = serialargs_get(&args, &salt_len, sizeof(uint32_t));
 	if (rv)
 		return rv;
+
+	if (serialargs_remaining_bytes(&args))
+		return PKCS11_BAD_PARAM;
 
 	switch (*tee_id) {
 	case TEE_ALG_RSASSA_PKCS1_PSS_MGF1_SHA1:
@@ -144,6 +150,9 @@ uint32_t tee_init_rsa_aes_key_wrap_operation(struct active_processing *proc,
 	if (rv)
 		return rv;
 
+	if (serialargs_remaining_bytes(&args))
+		return PKCS11_BAD_PARAM;
+
 	// TODO
 	(void)proc;
 	return PKCS11_ERROR;
@@ -181,6 +190,9 @@ uint32_t pkcs2tee_algo_rsa_oaep(uint32_t *tee_id,
 	rv = serialargs_get_ptr(&args, &source_data, source_size);
 	if (rv)
 		return rv;
+
+	if (serialargs_remaining_bytes(&args))
+		return PKCS11_BAD_PARAM;
 
 	switch (proc_params->id) {
 	case PKCS11_CKM_RSA_PKCS_OAEP:
@@ -263,6 +275,9 @@ uint32_t tee_init_rsa_oaep_operation(struct active_processing *processing,
 	rv = serialargs_get_ptr(&args, &source_data, source_size);
 	if (rv)
 		return rv;
+
+	if (serialargs_remaining_bytes(&args))
+		return PKCS11_BAD_PARAM;
 
 	// TODO
 	(void)processing;

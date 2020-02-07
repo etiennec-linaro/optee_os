@@ -38,6 +38,9 @@ uint32_t tee_init_ctr_operation(struct active_processing *processing,
 	if (rv)
 		return rv;
 
+	if (serialargs_remaining_bytes(&args))
+		return PKCS11_BAD_PARAM;
+
 	if (incr_counter != 1) {
 		DMSG("Supports only 1 bit increment counter: %d",
 		     incr_counter);
@@ -484,6 +487,11 @@ uint32_t tee_init_ccm_operation(struct active_processing *processing,
 	if (rv)
 		goto bail;
 
+	if (serialargs_remaining_bytes(&args)) {
+		rv = PKCS11_BAD_PARAM;
+		goto bail;
+	}
+
 	/* As per pkcs#11 mechanism specification */
 	if (data_len > 28 ||
 	    !nonce_len || nonce_len > 15 ||
@@ -592,6 +600,11 @@ uint32_t tee_init_gcm_operation(struct active_processing *processing,
 	rv = serialargs_get(&args, &tag_bitlen, sizeof(uint32_t));
 	if (rv)
 		goto bail;
+
+	if (serialargs_remaining_bytes(&args)) {
+		rv = PKCS11_BAD_PARAM;
+		goto bail;
+	}
 
 	tag_len = ROUNDUP(tag_bitlen, 8) / 8;
 

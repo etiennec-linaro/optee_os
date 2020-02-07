@@ -295,6 +295,9 @@ uint32_t entry_ck_token_initialize(TEE_Param *ctrl,
 	if (rv)
 		return rv;
 
+	if (serialargs_remaining_bytes(&ctrlargs))
+		return PKCS11_BAD_PARAM;
+
 	token = get_token(token_id);
 	if (!token)
 		return PKCS11_CKR_SLOT_ID_INVALID;
@@ -437,6 +440,9 @@ uint32_t entry_ck_slot_info(TEE_Param *ctrl, TEE_Param *in, TEE_Param *out)
 	if (rv)
 		return rv;
 
+	if (serialargs_remaining_bytes(&ctrlargs))
+		return PKCS11_BAD_PARAM;
+
 	token = get_token(token_id);
 	if (!token)
 		return PKCS11_CKR_SLOT_ID_INVALID;
@@ -488,6 +494,9 @@ uint32_t entry_ck_token_info(TEE_Param *ctrl, TEE_Param *in, TEE_Param *out)
 	rv = serialargs_get(&ctrlargs, &token_id, sizeof(uint32_t));
 	if (rv)
 		return rv;
+
+	if (serialargs_remaining_bytes(&ctrlargs))
+		return PKCS11_BAD_PARAM;
 
 	token = get_token(token_id);
 	if (!token)
@@ -553,6 +562,9 @@ uint32_t entry_ck_token_mecha_ids(TEE_Param *ctrl,
 	rv = serialargs_get(&ctrlargs, &token_id, sizeof(uint32_t));
 	if (rv)
 		return rv;
+
+	if (serialargs_remaining_bytes(&ctrlargs))
+		return PKCS11_BAD_PARAM;
 
 	token = get_token(token_id);
 	if (!token)
@@ -802,6 +814,9 @@ uint32_t entry_ck_token_mecha_info(TEE_Param *ctrl,
 	if (rv)
 		return rv;
 
+	if (serialargs_remaining_bytes(&ctrlargs))
+		return PKCS11_BAD_PARAM;
+
 	token = get_token(token_id);
 	if (!token)
 		return PKCS11_CKR_SLOT_ID_INVALID;
@@ -961,6 +976,9 @@ static uint32_t open_ck_session(uintptr_t tee_session, TEE_Param *ctrl,
 	if (rv)
 		return rv;
 
+	if (serialargs_remaining_bytes(&ctrlargs))
+		return PKCS11_BAD_PARAM;
+
 	token = get_token(token_id);
 	if (!token)
 		return PKCS11_CKR_SLOT_ID_INVALID;
@@ -1073,6 +1091,9 @@ uint32_t entry_ck_token_close_session(uintptr_t tee_session, TEE_Param *ctrl,
 	if (rv)
 		return rv;
 
+	if (serialargs_remaining_bytes(&ctrlargs))
+		return PKCS11_BAD_PARAM;
+
 	session = pkcs11_handle2session(session_handle, tee_session);
 	if (!session)
 		return PKCS11_CKR_SESSION_HANDLE_INVALID;
@@ -1103,6 +1124,9 @@ uint32_t entry_ck_token_close_all(uintptr_t tee_session, TEE_Param *ctrl,
 	rv = serialargs_get(&ctrlargs, &token_id, sizeof(uint32_t));
 	if (rv)
 		return rv;
+
+	if (serialargs_remaining_bytes(&ctrlargs))
+		return PKCS11_BAD_PARAM;
 
 	token = get_token(token_id);
 	if (!token)
@@ -1213,13 +1237,6 @@ uint32_t entry_init_pin(uintptr_t tee_session, TEE_Param *ctrl,
 	if (rv)
 		return rv;
 
-	session = pkcs11_handle2session(session_handle, tee_session);
-	if (!session)
-		return PKCS11_CKR_SESSION_HANDLE_INVALID;
-
-	if (!pkcs11_session_is_security_officer(session))
-		return PKCS11_CKR_USER_NOT_LOGGED_IN;
-
 	rv = serialargs_get(&ctrlargs, &pin_size, sizeof(uint32_t));
 	if (rv)
 		return rv;
@@ -1227,6 +1244,16 @@ uint32_t entry_init_pin(uintptr_t tee_session, TEE_Param *ctrl,
 	rv = serialargs_get_ptr(&ctrlargs, &pin, pin_size);
 	if (rv)
 		return rv;
+
+	if (serialargs_remaining_bytes(&ctrlargs))
+		return PKCS11_BAD_PARAM;
+
+	session = pkcs11_handle2session(session_handle, tee_session);
+	if (!session)
+		return PKCS11_CKR_SESSION_HANDLE_INVALID;
+
+	if (!pkcs11_session_is_security_officer(session))
+		return PKCS11_CKR_USER_NOT_LOGGED_IN;
 
 	assert(session->token->db_main->flags & PKCS11_CKFT_TOKEN_INITIALIZED);
 
@@ -1435,6 +1462,9 @@ uint32_t entry_set_pin(uintptr_t tee_session, TEE_Param *ctrl,
 	if (rv)
 		return rv;
 
+	if (serialargs_remaining_bytes(&ctrlargs))
+		return PKCS11_BAD_PARAM;
+
 	session = pkcs11_handle2session(session_handle, tee_session);
 	if (!session)
 		return PKCS11_CKR_SESSION_HANDLE_INVALID;
@@ -1492,10 +1522,6 @@ uint32_t entry_login(uintptr_t tee_session, TEE_Param *ctrl,
 	if (rv)
 		return rv;
 
-	session = pkcs11_handle2session(session_handle, tee_session);
-	if (!session)
-		return PKCS11_CKR_SESSION_HANDLE_INVALID;
-
 	rv = serialargs_get(&ctrlargs, &user_type, sizeof(uint32_t));
 	if (rv)
 		return rv;
@@ -1507,6 +1533,13 @@ uint32_t entry_login(uintptr_t tee_session, TEE_Param *ctrl,
 	rv = serialargs_get_ptr(&ctrlargs, &pin, pin_size);
 	if (rv)
 		return rv;
+
+	if (serialargs_remaining_bytes(&ctrlargs))
+		return PKCS11_BAD_PARAM;
+
+	session = pkcs11_handle2session(session_handle, tee_session);
+	if (!session)
+		return PKCS11_CKR_SESSION_HANDLE_INVALID;
 
 	client = tee_session2client(tee_session);
 
@@ -1605,6 +1638,9 @@ uint32_t entry_logout(uintptr_t tee_session, TEE_Param *ctrl,
 	rv = serialargs_get(&ctrlargs, &session_handle, sizeof(uint32_t));
 	if (rv)
 		return rv;
+
+	if (serialargs_remaining_bytes(&ctrlargs))
+		return PKCS11_BAD_PARAM;
 
 	session = pkcs11_handle2session(session_handle, tee_session);
 	if (!session)

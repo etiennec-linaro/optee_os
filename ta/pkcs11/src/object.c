@@ -287,6 +287,9 @@ uint32_t entry_destroy_object(uintptr_t tee_session, TEE_Param *ctrl,
 	if (rv)
 		return rv;
 
+	if (serialargs_remaining_bytes(&ctrlargs))
+		return PKCS11_BAD_PARAM;
+
 	session = pkcs11_handle2session(session_handle, tee_session);
 	if (!session)
 		return PKCS11_CKR_SESSION_HANDLE_INVALID;
@@ -439,6 +442,11 @@ uint32_t entry_find_objects_init(uintptr_t tee_session, TEE_Param *ctrl,
 	rv = serialargs_alloc_get_attributes(&ctrlargs, &template);
 	if (rv)
 		return rv;
+
+	if (serialargs_remaining_bytes(&ctrlargs)) {
+		rv = PKCS11_BAD_PARAM;
+		goto bail;
+	}
 
 	session = pkcs11_handle2session(session_handle, tee_session);
 	if (!session) {
@@ -616,6 +624,9 @@ uint32_t entry_find_objects(uintptr_t tee_session, TEE_Param *ctrl,
 	if (rv)
 		return rv;
 
+	if (serialargs_remaining_bytes(&ctrlargs))
+		return PKCS11_BAD_PARAM;
+
 	session = pkcs11_handle2session(session_handle, tee_session);
 	if (!session)
 		return PKCS11_CKR_SESSION_HANDLE_INVALID;
@@ -685,6 +696,9 @@ uint32_t entry_find_objects_final(uintptr_t tee_session, TEE_Param *ctrl,
 	if (rv)
 		return rv;
 
+	if (serialargs_remaining_bytes(&ctrlargs))
+		return PKCS11_BAD_PARAM;
+
 	session = pkcs11_handle2session(session_handle, tee_session);
 	if (!session)
 		return PKCS11_CKR_SESSION_HANDLE_INVALID;
@@ -735,6 +749,11 @@ uint32_t entry_get_attribute_value(uintptr_t tee_session, TEE_Param *ctrl,
 	rv = serialargs_alloc_get_attributes(&ctrlargs, &template);
 	if (rv)
 		return rv;
+
+	if (serialargs_remaining_bytes(&ctrlargs)) {
+		rv = PKCS11_BAD_PARAM;
+		goto bail;
+	}
 
 	session = pkcs11_handle2session(session_handle, tee_session);
 	if (!session) {

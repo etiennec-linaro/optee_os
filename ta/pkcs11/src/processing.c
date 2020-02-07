@@ -157,11 +157,16 @@ uint32_t entry_import_object(uintptr_t tee_session,
 	if (rv)
 		return rv;
 
-	rv = get_ready_session(&session, session_handle, tee_session);
+	rv = serialargs_alloc_get_attributes(&ctrlargs, &template);
 	if (rv)
 		return rv;
 
-	rv = serialargs_alloc_get_attributes(&ctrlargs, &template);
+	if (serialargs_remaining_bytes(&ctrlargs)) {
+		rv = PKCS11_BAD_PARAM;
+		goto bail;
+	}
+
+	rv = get_ready_session(&session, session_handle, tee_session);
 	if (rv)
 		goto bail;
 
@@ -325,11 +330,7 @@ uint32_t entry_generate_secret(uintptr_t tee_session,
 
 	serialargs_init(&ctrlargs, ctrl->memref.buffer, ctrl->memref.size);
 
-	rv = serialargs_get(&ctrlargs, &session_handle, sizeof(uint32_t));
-	if (rv)
-		return rv;
-
-	rv = get_ready_session(&session, session_handle, tee_session);
+	rv = serialargs_get(&ctrlargs, &session_handle, sizeof(session_handle));
 	if (rv)
 		return rv;
 
@@ -338,6 +339,15 @@ uint32_t entry_generate_secret(uintptr_t tee_session,
 		goto bail;
 
 	rv = serialargs_alloc_get_attributes(&ctrlargs, &template);
+	if (rv)
+		goto bail;
+
+	if (serialargs_remaining_bytes(&ctrlargs)) {
+		rv = PKCS11_BAD_PARAM;
+		goto bail;
+	}
+
+	rv = get_ready_session(&session, session_handle, tee_session);
 	if (rv)
 		goto bail;
 
@@ -504,23 +514,23 @@ uint32_t entry_generate_key_pair(uintptr_t teesess,
 	if (rv)
 		return rv;
 
-	rv = get_ready_session(&session, session_handle, teesess);
+	/* Get mechanism parameters */
+	rv = serialargs_alloc_get_one_attribute(&ctrlargs, &proc_params);
 	if (rv)
 		return rv;
 
-	/* Get mechanism parameters */
-	rv = serialargs_alloc_get_one_attribute(&ctrlargs, &proc_params);
+	/* Get and check public key attributes */
+	rv = serialargs_alloc_get_attributes(&ctrlargs, &template);
+	if (rv)
+		goto bail;
+
+	rv = get_ready_session(&session, session_handle, teesess);
 	if (rv)
 		goto bail;
 
 	rv = check_mechanism_against_processing(session, proc_params->id,
 						PKCS11_FUNCTION_GENERATE_PAIR,
 						PKCS11_FUNC_STEP_INIT);
-	if (rv)
-		goto bail;
-
-	/* Get and check public key attributes */
-	rv = serialargs_alloc_get_attributes(&ctrlargs, &template);
 	if (rv)
 		goto bail;
 
@@ -538,6 +548,11 @@ uint32_t entry_generate_key_pair(uintptr_t teesess,
 	rv = serialargs_alloc_get_attributes(&ctrlargs, &template);
 	if (rv)
 		goto bail;
+
+	if (serialargs_remaining_bytes(&ctrlargs)) {
+		rv = PKCS11_BAD_PARAM;
+		goto bail;
+	}
 
 	template_size = sizeof(*template) + template->attrs_size;
 
@@ -666,23 +681,30 @@ uint32_t entry_processing_init(uintptr_t tee_session, TEE_Param *ctrl,
 	if (rv)
 		return rv;
 
-	rv = get_ready_session(&session, session_handle, tee_session);
-	if (rv)
-		return rv;
-
 	rv = serialargs_get(&ctrlargs, &key_handle, sizeof(uint32_t));
 	if (rv)
 		return rv;
 
-	obj = pkcs11_handle2object(key_handle, session);
-	if (!obj)
-		return PKCS11_CKR_KEY_HANDLE_INVALID;
-
-	rv = set_processing_state(session, function, obj, NULL);
+	rv = serialargs_alloc_get_one_attribute(&ctrlargs, &proc_params);
 	if (rv)
 		return rv;
 
-	rv = serialargs_alloc_get_one_attribute(&ctrlargs, &proc_params);
+	if (serialargs_remaining_bytes(&ctrlargs)) {
+		rv = PKCS11_BAD_PARAM;
+		goto bail;
+	}
+
+	rv = get_ready_session(&session, session_handle, tee_session);
+	if (rv)
+		goto bail;
+
+	obj = pkcs11_handle2object(key_handle, session);
+	if (!obj) {
+		rv = PKCS11_CKR_KEY_HANDLE_INVALID;
+		goto bail;
+	}
+
+	rv = set_processing_state(session, function, obj, NULL);
 	if (rv)
 		goto bail;
 
@@ -757,6 +779,9 @@ uint32_t entry_processing_step(uintptr_t tee_session, TEE_Param *ctrl,
 	rv = serialargs_get(&ctrlargs, &session_handle, sizeof(uint32_t));
 	if (rv)
 		return rv;
+
+	if (serialargs_remaining_bytes(&ctrlargs))
+		return PKCS11_BAD_PARAM;
 
 	rv = get_active_session(&session, session_handle, tee_session,
 				function);
@@ -836,6 +861,9 @@ uint32_t entry_verify_oneshot(uintptr_t tee_session, TEE_Param *ctrl,
 	if (rv)
 		return rv;
 
+	if (serialargs_remaining_bytes(&ctrlargs))
+		return PKCS11_BAD_PARAM;
+
 	rv = get_active_session(&session, session_handle, tee_session,
 				function);
 	if (rv)
@@ -898,15 +926,24 @@ uint32_t entry_derive_key(uintptr_t tee_session, TEE_Param *ctrl,
 	if (rv)
 		return rv;
 
-	rv = get_ready_session(&session, session_handle, tee_session);
-	if (rv)
-		return rv;
-
 	rv = serialargs_alloc_get_one_attribute(&ctrlargs, &proc_params);
 	if (rv)
 		goto bail;
 
 	rv = serialargs_get(&ctrlargs, &parent_handle, sizeof(uint32_t));
+	if (rv)
+		goto bail;
+
+	rv = serialargs_alloc_get_attributes(&ctrlargs, &template);
+	if (rv)
+		goto bail;
+
+	if (serialargs_remaining_bytes(&ctrlargs)) {
+		rv = PKCS11_BAD_PARAM;
+		goto bail;
+	}
+
+	rv = get_ready_session(&session, session_handle, tee_session);
 	if (rv)
 		goto bail;
 
@@ -918,10 +955,6 @@ uint32_t entry_derive_key(uintptr_t tee_session, TEE_Param *ctrl,
 
 	rv = set_processing_state(session, PKCS11_FUNCTION_DERIVE,
 				  parent_obj, NULL);
-	if (rv)
-		goto bail;
-
-	rv = serialargs_alloc_get_attributes(&ctrlargs, &template);
 	if (rv)
 		goto bail;
 

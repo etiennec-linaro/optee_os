@@ -1031,6 +1031,8 @@ uint32_t pkcs2tee_algo_ecdh(uint32_t *tee_id,
 	if (rv)
 		return rv;
 
+	/* Remaining arguments are extracted by pkcs2tee_ecdh_param_pub() */
+
 	if (kdf != PKCS11_CKD_NULL) {
 		EMSG("Currently no support for hashed shared data");
 		return PKCS11_CKR_MECHANISM_PARAM_INVALID;
@@ -1071,7 +1073,7 @@ uint32_t pkcs2tee_ecdh_param_pub(struct pkcs11_attribute_head *proc_params,
 
 	serialargs_init(&args, proc_params->data, proc_params->size);
 
-	/* Skip KDF */
+	/* Skip KDF already extracted by pkcs2tee_algo_ecdh() */
 	rv = serialargs_get(&args, &temp, sizeof(uint32_t));
 	if (rv)
 		return rv;
@@ -1086,9 +1088,16 @@ uint32_t pkcs2tee_ecdh_param_pub(struct pkcs11_attribute_head *proc_params,
 	if (rv || !temp)
 		return rv;
 
+	rv = serialargs_get_ptr(&args, pub_data, temp);
+	if (rv)
+		return rv;
+
+	if (serialargs_remaining_bytes(&args))
+		return PKCS11_BAD_PARAM;
+
 	*pub_size = temp;
 
-	return serialargs_get_ptr(&args, pub_data, temp);
+	return PKCS11_CKR_OK;
 }
 
 uint32_t pkcs2tee_algo_ecdsa(uint32_t *tee_id,

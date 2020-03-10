@@ -63,10 +63,8 @@ static int process_response_event(const struct fwk_event *event)
     int status;
     struct fwk_event resp_event;
     struct clock_dev_ctx *ctx;
-    struct mod_clock_driver_resp_params *event_params =
-        (struct mod_clock_driver_resp_params *)event->params;
-    struct mod_clock_resp_params *resp_params =
-        (struct mod_clock_resp_params *)resp_event.params;
+    struct mod_clock_driver_resp_params *event_params = (void *)event->params;
+    struct mod_clock_resp_params *resp_params = (void *)resp_event.params;
 
     ctx = &module_ctx.dev_ctx_table[fwk_id_get_element_idx(event->target_id)];
 
@@ -139,8 +137,7 @@ void request_complete(fwk_id_t dev_id,
     int status;
     struct fwk_event event;
     struct clock_dev_ctx *ctx;
-    struct mod_clock_driver_resp_params *event_params =
-        (struct mod_clock_driver_resp_params *)event.params;
+    struct mod_clock_driver_resp_params *event_params = (void *)event.params;
 
     fwk_assert(fwk_module_is_valid_element_id(dev_id));
 

@@ -1,6 +1,6 @@
 /*
  * Arm SCP/MCP Software
- * Copyright (c) 2015-2019, Arm Limited and Contributors. All rights reserved.
+ * Copyright (c) 2015-2020, Arm Limited and Contributors. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  *
@@ -20,8 +20,11 @@
 #endif
 
 #define EVENT_COUNT 64
-#define NOTIFICATION_COUNT 64
 #define BIND_ROUND_MAX 1
+
+#ifndef NOTIFICATION_COUNT
+#define NOTIFICATION_COUNT 64
+#endif
 
 /* Pre-runtime phase stages */
 enum module_stage {
@@ -55,7 +58,7 @@ extern const struct fwk_module_config *module_config_table[];
 
 static struct context ctx;
 
-#ifdef BUILD_HOST
+#if defined(BUILD_HOST) || defined(BUILD_OPTEE)
 static const char err_msg_line[] = "[MOD] Error %d in %s @%d\n";
 static const char err_msg_func[] = "[MOD] Error %d in %s\n";
 #endif
@@ -616,32 +619,6 @@ const void *fwk_module_get_data(fwk_id_t id)
         return __fwk_module_get_ctx(id)->config->data;
 
     return NULL;
-}
-
-int fwk_module_check_call(fwk_id_t id)
-{
-    int status;
-    enum fwk_module_state state;
-
-    status = __fwk_module_get_state(id, &state);
-    if (status != FWK_SUCCESS)
-        goto error;
-
-    if (state == FWK_MODULE_STATE_UNINITIALIZED) {
-        status = FWK_E_INIT;
-        goto error;
-    }
-
-    if (state == FWK_MODULE_STATE_SUSPENDED) {
-        status = FWK_E_STATE;
-        goto error;
-    }
-
-    return FWK_SUCCESS;
-
-error:
-    FWK_HOST_PRINT(err_msg_func, status, __func__);
-    return status;
 }
 
 int fwk_module_bind(fwk_id_t target_id, fwk_id_t api_id, const void *api)

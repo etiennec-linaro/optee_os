@@ -20,3 +20,4 @@ else
 srcs-y += fwk_thread.c
 endif
 srcs-$(CFG_SCMI_SERVER_NOTIFICATION) += fwk_notification.c
+srcs-$(CFG_SCMI_SERVER_NOTIFICATION) += fwk_thread_delayed_resp.c

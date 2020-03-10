@@ -82,7 +82,7 @@ static TEE_Result scmi_server_initialize(void)
 {
 	int rc = __fwk_module_init();
 
-	FWK_HOST_PRINT("SCMI server init: %s (%d)", fwk_err2str(rc), rc);
+	FWK_HOST_PRINT("SCMI server init: %s (%d)", fwk_status_str(rc), rc);
 #ifdef BUILD_HAS_MULTITHREADING
 	FWK_HOST_PRINT("SCMI server supports multithread");
 #endif

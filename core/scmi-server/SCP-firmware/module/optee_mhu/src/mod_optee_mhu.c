@@ -84,7 +84,7 @@ void optee_mhu_signal_smt_message(unsigned int device_index,
 static int raise_interrupt(fwk_id_t slot_id)
 {
     /* There should be a message in the mailbox */
-    return fwk_module_check_call(slot_id);
+    return FWK_SUCCESS;
 }
 
 const struct mod_optee_smt_driver_api mhu_mod_smt_driver_api = {
@@ -189,6 +189,7 @@ static int mhu_start(fwk_id_t id)
     return FWK_SUCCESS;
 }
 
+/* OPTEE_MHU module definition */
 const struct fwk_module module_optee_mhu = {
     .name = "OPTEE_MHU",
     .type = FWK_MODULE_TYPE_DRIVER,

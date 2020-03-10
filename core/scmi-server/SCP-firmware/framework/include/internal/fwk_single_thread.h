@@ -1,6 +1,6 @@
 /*
  * Arm SCP/MCP Software
- * Copyright (c) 2015-2019, Arm Limited and Contributors. All rights reserved.
+ * Copyright (c) 2015-2020, Arm Limited and Contributors. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -19,6 +19,11 @@
 struct __fwk_thread_ctx {
     /* Thread framework component initialization completed flag */
     bool initialized;
+
+    /*
+     * Counter used to generate event cookies.
+     */
+    uint32_t event_cookie_counter;
 
     /*
      * Queue of event structures that are free to be filled in and linked

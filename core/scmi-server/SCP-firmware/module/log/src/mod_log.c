@@ -1,6 +1,6 @@
 /*
  * Arm SCP/MCP Software
- * Copyright (c) 2017-2019, Arm Limited and Contributors. All rights reserved.
+ * Copyright (c) 2017-2020, Arm Limited and Contributors. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -250,10 +250,6 @@ static int do_log(enum mod_log_group group, const char *fmt, ...)
     if ((log_config != NULL) && (log_driver == NULL))
         return FWK_E_STATE;
 
-    status = fwk_module_check_call(FWK_ID_MODULE(FWK_MODULE_IDX_LOG));
-    if (status != FWK_SUCCESS)
-        return status;
-
     if (!is_valid_group(group))
         return FWK_E_PARAM;
 
@@ -288,17 +284,13 @@ static int do_flush(void)
     if ((log_config != NULL) && (log_driver == NULL))
         return FWK_E_STATE;
 
-    status = fwk_module_check_call(FWK_ID_MODULE(FWK_MODULE_IDX_LOG));
-    if (status != FWK_SUCCESS)
-        return status;
-
     status = log_driver->flush(log_config->device_id);
     if (status != FWK_SUCCESS)
         return FWK_E_DEVICE;
 
     return FWK_SUCCESS;
 }
-#endif
+#endif /*BUILD_OPTEE*/
 
 static const struct mod_log_api module_api = {
     .log = do_log,
@@ -335,7 +327,7 @@ static int log_bind(fwk_id_t id, unsigned int round)
     if (round == 1)
         return FWK_SUCCESS;
 
-    /* No expected driver => we're done */
+    /* If there is no expected driver then we're done */
     if (log_config == NULL)
         return FWK_SUCCESS;
 

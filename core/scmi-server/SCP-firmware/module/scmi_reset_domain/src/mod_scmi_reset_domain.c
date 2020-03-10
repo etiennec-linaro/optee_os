@@ -297,12 +297,6 @@ static int reset_notify_handler(fwk_id_t service_id,
 static int scmi_reset_get_scmi_protocol_id(fwk_id_t protocol_id,
                                            uint8_t *scmi_protocol_id)
 {
-    int status = 0;
-
-    status = fwk_module_check_call(protocol_id);
-    if (status != FWK_SUCCESS)
-        return status;
-
     *scmi_protocol_id = SCMI_PROTOCOL_ID_RESET_DOMAIN;
 
     return FWK_SUCCESS;
@@ -314,12 +308,7 @@ static int scmi_reset_message_handler(fwk_id_t protocol_id,
                                       size_t payload_size,
                                       unsigned int message_id)
 {
-    int status = 0;
     int32_t return_value;
-
-    status = fwk_module_check_call(protocol_id);
-    if (status != FWK_SUCCESS)
-        return status;
 
     static_assert(FWK_ARRAY_SIZE(msg_handler_table) ==
         FWK_ARRAY_SIZE(payload_size_table),

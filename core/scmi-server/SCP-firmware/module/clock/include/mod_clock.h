@@ -1,6 +1,6 @@
 /*
  * Arm SCP/MCP Software
- * Copyright (c) 2017-2019, Arm Limited and Contributors. All rights reserved.
+ * Copyright (c) 2017-2020, Arm Limited and Contributors. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -398,6 +398,8 @@ struct mod_clock_api {
      *      achieve the given rate.
      *
      * \retval FWK_SUCCESS The operation succeeded.
+     * \retval FWK_PENDING The request is pending. The result for this operation
+     *      will be provided via a response event.
      * \retval FWK_E_PARAM The clock identifier was invalid.
      * \retval FWK_E_SUPPORT Deferred handling of asynchronous drivers is not
      *      supported.
@@ -414,6 +416,8 @@ struct mod_clock_api {
      * \param[out] rate The current clock rate in Hertz.
      *
      * \retval FWK_SUCCESS The operation succeeded.
+     * \retval FWK_PENDING The request is pending. The requested rate will be
+     *      provided via a response event.
      * \retval FWK_E_PARAM The clock identifier was invalid.
      * \retval FWK_E_PARAM The rate pointer was NULL.
      * \retval FWK_E_SUPPORT Deferred handling of asynchronous drivers is not
@@ -447,6 +451,8 @@ struct mod_clock_api {
      * \param state One of the valid clock states.
      *
      * \retval FWK_SUCCESS The operation succeeded.
+     * \retval FWK_PENDING The request is pending. The result for this operation
+     *      will be provided via a response event.
      * \retval FWK_E_PARAM The clock identifier was invalid.
      * \retval FWK_E_SUPPORT Deferred handling of asynchronous drivers is not
      *      supported.
@@ -462,6 +468,8 @@ struct mod_clock_api {
      * \param[out] state The current clock state.
      *
      * \retval FWK_SUCCESS The operation succeeded.
+     * \retval FWK_PENDING The request is pending. The requested state will be
+     *      provided via a response event.
      * \retval FWK_E_PARAM The clock identifier was invalid.
      * \retval FWK_E_PARAM The state pointer was NULL.
      * \retval FWK_E_SUPPORT Deferred handling of asynchronous drivers is not

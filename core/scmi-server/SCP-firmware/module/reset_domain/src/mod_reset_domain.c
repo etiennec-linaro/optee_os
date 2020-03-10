@@ -38,19 +38,17 @@ struct rd_mod_ctx {
  */
 static struct rd_mod_ctx module_ctx;
 
+static struct rd_dev_ctx *id2ctx(fwk_id_t reset_id)
+{
+    return &module_ctx.dev_ctx_table[fwk_id_get_element_idx(reset_id)];
+}
+
 /*
  * API functions
  */
 static int rd_autonomous(fwk_id_t reset_id, unsigned int state)
 {
-    int status = 0;
-    struct rd_dev_ctx *reset_ctx = NULL;
-
-    status = fwk_module_check_call(reset_id);
-    if (status != FWK_SUCCESS)
-        return status;
-
-    reset_ctx = &module_ctx.dev_ctx_table[fwk_id_get_element_idx(reset_id)];
+    struct rd_dev_ctx *reset_ctx = id2ctx(reset_id);
 
     return reset_ctx->driver_api->auto_domain(reset_ctx->config->driver_id,
                                               state);
@@ -58,28 +56,14 @@ static int rd_autonomous(fwk_id_t reset_id, unsigned int state)
 
 static int rd_assert(fwk_id_t reset_id)
 {
-    int status = 0;
-    struct rd_dev_ctx *reset_ctx = NULL;
-
-    status = fwk_module_check_call(reset_id);
-    if (status != FWK_SUCCESS)
-        return status;
-
-    reset_ctx = &module_ctx.dev_ctx_table[fwk_id_get_element_idx(reset_id)];
+    struct rd_dev_ctx *reset_ctx = id2ctx(reset_id);
 
     return reset_ctx->driver_api->assert_domain(reset_ctx->config->driver_id);
 }
 
 static int rd_deassert(fwk_id_t reset_id)
 {
-    int status = 0;
-    struct rd_dev_ctx *reset_ctx = NULL;
-
-    status = fwk_module_check_call(reset_id);
-    if (status != FWK_SUCCESS)
-        return status;
-
-    reset_ctx = &module_ctx.dev_ctx_table[fwk_id_get_element_idx(reset_id)];
+    struct rd_dev_ctx *reset_ctx = id2ctx(reset_id);
 
     return reset_ctx->driver_api->deassert_domain(reset_ctx->config->driver_id);
 }

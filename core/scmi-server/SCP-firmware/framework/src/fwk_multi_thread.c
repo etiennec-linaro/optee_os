@@ -246,6 +246,7 @@ static int put_event(struct __fwk_thread_ctx *target_thread_ctx,
         target_thread_ctx, event);
 
     if (event->is_delayed_response) {
+#ifdef BUILD_HAS_NOTIFICATION
         allocated_event = __fwk_thread_search_delayed_response(
             event->source_id, event->cookie);
         if (allocated_event == NULL)
@@ -258,6 +259,9 @@ static int put_event(struct __fwk_thread_ctx *target_thread_ctx,
         memcpy(allocated_event->params, event->params,
                sizeof(allocated_event->params));
         allocated_event->is_thread_wakeup_event = event->is_thread_wakeup_event;
+#else
+            return FWK_E_PANIC;
+#endif
     } else {
         allocated_event = duplicate_event(event);
         if (allocated_event == NULL)
@@ -326,12 +330,16 @@ static void process_event_requiring_response(struct fwk_event *event)
     if (!resp_event.is_delayed_response)
         put_event(source_thread_ctx, &resp_event);
     else {
+#ifdef BUILD_HAS_NOTIFICATION
         allocated_event = duplicate_event(&resp_event);
         if (allocated_event != NULL) {
             fwk_list_push_tail(
                 __fwk_thread_get_delayed_response_list(resp_event.source_id),
                 &allocated_event->slist_node);
         }
+#else
+        FWK_HOST_PRINT(err_msg_line, status, __LINE__);
+#endif
     }
 }
 

@@ -80,6 +80,7 @@ static int put_event(struct fwk_event *event)
     unsigned int interrupt;
 
     if (event->is_delayed_response) {
+#ifdef BUILD_HAS_NOTIFICATION
         allocated_event = __fwk_thread_search_delayed_response(
             event->source_id, event->cookie);
         if (allocated_event == NULL) {
@@ -95,6 +96,9 @@ static int put_event(struct fwk_event *event)
             allocated_event->params,
             event->params,
             sizeof(allocated_event->params));
+#else
+        return FWK_E_PANIC;
+#endif
     } else {
         allocated_event = duplicate_event(event);
         if (allocated_event == NULL)
@@ -146,6 +150,7 @@ static void process_next_event(void)
         if (!async_response_event.is_delayed_response)
             put_event(&async_response_event);
         else {
+#ifdef BUILD_HAS_NOTIFICATION
             allocated_event = duplicate_event(&async_response_event);
             if (allocated_event != NULL) {
                 fwk_list_push_tail(
@@ -153,6 +158,9 @@ static void process_next_event(void)
                         async_response_event.source_id),
                     &allocated_event->slist_node);
             }
+#else
+            FWK_HOST_PRINT(err_msg_line, status, __func__, __LINE__);
+#endif
         }
     } else {
         status = process_event(event, &async_response_event);

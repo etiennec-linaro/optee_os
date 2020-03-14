@@ -92,26 +92,6 @@
  */
 #define PKCS11_CMD_SLOT_INFO			2
 
-#define PKCS11_SLOT_DESC_SIZE			64
-#define PKCS11_SLOT_MANUFACTURER_SIZE		32
-#define PKCS11_SLOT_VERSION_SIZE			2
-
-struct pkcs11_slot_info {
-	uint8_t slotDescription[PKCS11_SLOT_DESC_SIZE];
-	uint8_t manufacturerID[PKCS11_SLOT_MANUFACTURER_SIZE];
-	uint32_t flags;
-	uint8_t hardwareVersion[PKCS11_SLOT_VERSION_SIZE];
-	uint8_t firmwareVersion[PKCS11_SLOT_VERSION_SIZE];
-};
-
-/*
- * Values for pkcs11_token_info::flags.
- * PKCS11_CKFS_<x> corresponds to cryptoki flag CKF_<x> related to slot flags.
- */
-#define PKCS11_CKFS_TOKEN_PRESENT		(1U << 0)
-#define PKCS11_CKFS_REMOVABLE_DEVICE		(1U << 1)
-#define PKCS11_CKFS_HW_SLOT			(1U << 2)
-
 /*
  * PKCS11_CMD_TOKEN_INFO - Get cryptoki structured token information
  *
@@ -124,55 +104,6 @@ struct pkcs11_slot_info {
  * the information about the target represented token.
  */
 #define PKCS11_CMD_TOKEN_INFO			3
-
-#define PKCS11_TOKEN_LABEL_SIZE			32
-#define PKCS11_TOKEN_MANUFACTURER_SIZE		32
-#define PKCS11_TOKEN_MODEL_SIZE			16
-#define PKCS11_TOKEN_SERIALNUM_SIZE		16
-
-struct pkcs11_token_info {
-	uint8_t label[PKCS11_TOKEN_LABEL_SIZE];
-	uint8_t manufacturerID[PKCS11_TOKEN_MANUFACTURER_SIZE];
-	uint8_t model[PKCS11_TOKEN_MODEL_SIZE];
-	uint8_t serialNumber[PKCS11_TOKEN_SERIALNUM_SIZE];
-	uint32_t flags;
-	uint32_t ulMaxSessionCount;
-	uint32_t ulSessionCount;
-	uint32_t ulMaxRwSessionCount;
-	uint32_t ulRwSessionCount;
-	uint32_t ulMaxPinLen;
-	uint32_t ulMinPinLen;
-	uint32_t ulTotalPublicMemory;
-	uint32_t ulFreePublicMemory;
-	uint32_t ulTotalPrivateMemory;
-	uint32_t ulFreePrivateMemory;
-	uint8_t hardwareVersion[2];
-	uint8_t firmwareVersion[2];
-	uint8_t utcTime[16];
-};
-
-/*
- * Values for pkcs11_token_info::flags.
- * PKCS11_CKFT_<x> corresponds to cryptoki CKF_<x> related to token flags.
- */
-#define PKCS11_CKFT_RNG					(1U << 0)
-#define PKCS11_CKFT_WRITE_PROTECTED			(1U << 1)
-#define PKCS11_CKFT_LOGIN_REQUIRED			(1U << 2)
-#define PKCS11_CKFT_USER_PIN_INITIALIZED		(1U << 3)
-#define PKCS11_CKFT_RESTORE_KEY_NOT_NEEDED		(1U << 4)
-#define PKCS11_CKFT_CLOCK_ON_TOKEN			(1U << 5)
-#define PKCS11_CKFT_PROTECTED_AUTHENTICATION_PATH	(1U << 6)
-#define PKCS11_CKFT_DUAL_CRYPTO_OPERATIONS		(1U << 7)
-#define PKCS11_CKFT_TOKEN_INITIALIZED			(1U << 8)
-#define PKCS11_CKFT_USER_PIN_COUNT_LOW			(1U << 9)
-#define PKCS11_CKFT_USER_PIN_FINAL_TRY			(1U << 10)
-#define PKCS11_CKFT_USER_PIN_LOCKED			(1U << 11)
-#define PKCS11_CKFT_USER_PIN_TO_BE_CHANGED		(1U << 12)
-#define PKCS11_CKFT_SO_PIN_COUNT_LOW			(1U << 13)
-#define PKCS11_CKFT_SO_PIN_FINAL_TRY			(1U << 14)
-#define PKCS11_CKFT_SO_PIN_LOCKED			(1U << 15)
-#define PKCS11_CKFT_SO_PIN_TO_BE_CHANGED		(1U << 16)
-#define PKCS11_CKFT_ERROR_STATE				(1U << 17)
 
 /*
  * PKCS11_CMD_MECHANISM_IDS - Get list of the supported mechanisms
@@ -198,36 +129,6 @@ struct pkcs11_token_info {
  * This command relates to the PKCS#11 API function C_GetMechanismInfo().
  */
 #define PKCS11_CMD_MECHANISM_INFO		5
-
-struct pkcs11_mechanism_info {
-	uint32_t min_key_size;
-	uint32_t max_key_size;
-	uint32_t flags;
-};
-
-/*
- * Values for pkcs11_mechanism_info::flags.
- * PKCS11_CKFM_<x> strictly matches cryptoki CKF_<x> related to mechanism flags.
- */
-#define PKCS11_CKFM_HW				(1U << 0)
-#define PKCS11_CKFM_ENCRYPT			(1U << 8)
-#define PKCS11_CKFM_DECRYPT			(1U << 9)
-#define PKCS11_CKFM_DIGEST			(1U << 10)
-#define PKCS11_CKFM_SIGN			(1U << 11)
-#define PKCS11_CKFM_SIGN_RECOVER		(1U << 12)
-#define PKCS11_CKFM_VERIFY			(1U << 13)
-#define PKCS11_CKFM_VERIFY_RECOVER		(1U << 14)
-#define PKCS11_CKFM_GENERATE			(1U << 15)
-#define PKCS11_CKFM_GENERATE_PAIR		(1U << 16)
-#define PKCS11_CKFM_WRAP			(1U << 17)
-#define PKCS11_CKFM_UNWRAP			(1U << 18)
-#define PKCS11_CKFM_DERIVE			(1U << 19)
-#define PKCS11_CKFM_EC_F_P			(1U << 20)
-#define PKCS11_CKFM_EC_F_2M			(1U << 21)
-#define PKCS11_CKFM_EC_ECPARAMETERS		(1U << 22)
-#define PKCS11_CKFM_EC_NAMEDCURVE		(1U << 23)
-#define PKCS11_CKFM_EC_UNCOMPRESS		(1U << 24)
-#define PKCS11_CKFM_EC_COMPRESS			(1U << 25)
 
 /*
  * PKCS11_CMD_INIT_TOKEN - Initialize PKCS#11 token
@@ -290,13 +191,6 @@ struct pkcs11_mechanism_info {
 #define PKCS11_CMD_LOGIN			9
 
 /*
- * Values for user identifier parameter in PKCS11_CMD_LOGIN
- */
-#define PKCS11_CKU_SO			0x000
-#define PKCS11_CKU_USER			0x001
-#define PKCS11_CKU_CONTEXT_SPECIFIC	0x002
-
-/*
  * PKCS11_CMD_LOGOUT - Log out from token
  *
  * [in]		memref[0] = [
@@ -353,13 +247,6 @@ struct pkcs11_mechanism_info {
  */
 #define PKCS11_CMD_SESSION_INFO			14
 
-struct pkcs11_session_info {
-	uint32_t slot_id;
-	uint32_t state;
-	uint32_t flags;
-	uint32_t error_code;
-};
-
 /*
  * PKCS11_CMD_CLOSE_ALL_SESSIONS - Close all client sessions on slot/token
  *
@@ -405,40 +292,6 @@ struct pkcs11_session_info {
  * This command relates to the PKCS#11 API function C_CreateObject().
  */
 #define PKCS11_CMD_IMPORT_OBJECT		18
-
-/*
- * pkcs11_object_head - Header of object whose data are serialized in memory
- *
- * An object is made of several attributes. Attributes are stored one next to
- * the other with byte alignment as a serialized byte arrays. Appended
- * attributes byte arrays are prepend with this header structure that
- * defines the number of attribute items and the overall byte size of byte
- * array field pkcs11_object_head::attrs.
- *
- * @attrs_size - byte size of whole byte array attrs[]
- * @attrs_count - number of attribute items stored in attrs[]
- * @attrs - then starts the attributes data
- */
-struct pkcs11_object_head {
-	uint32_t attrs_size;
-	uint32_t attrs_count;
-	uint8_t attrs[];
-};
-
-/*
- * Attribute reference in the TA ABI. Each attribute starts with a header
- * structure followed by the attribute value. The attribute byte size is
- * defined in the attribute header.
- *
- * @id - the 32bit identifier of the attribute, see PKCS11_CKA_<x>
- * @size - the 32bit value attribute byte size
- * @data - then starts the attribute value
- */
-struct pkcs11_attribute_head {
-	uint32_t id;
-	uint32_t size;
-	uint8_t data[];
-};
 
 /*
  * PKCS11_CMD_COPY_OBJECT - Duplicate an object possibly with new attributes
@@ -789,6 +642,171 @@ enum pkcs11_rc {
 };
 
 /*
+ * Arguments for PKCS11_CMD_SLOT_INFO
+ */
+#define PKCS11_SLOT_DESC_SIZE			64
+#define PKCS11_SLOT_MANUFACTURER_SIZE		32
+#define PKCS11_SLOT_VERSION_SIZE		2
+
+struct pkcs11_slot_info {
+	uint8_t slotDescription[PKCS11_SLOT_DESC_SIZE];
+	uint8_t manufacturerID[PKCS11_SLOT_MANUFACTURER_SIZE];
+	uint32_t flags;
+	uint8_t hardwareVersion[PKCS11_SLOT_VERSION_SIZE];
+	uint8_t firmwareVersion[PKCS11_SLOT_VERSION_SIZE];
+};
+
+/*
+ * Values for pkcs11_token_info::flags.
+ * PKCS11_CKFS_<x> corresponds to cryptoki flag CKF_<x> related to slot flags.
+ */
+#define PKCS11_CKFS_TOKEN_PRESENT		(1U << 0)
+#define PKCS11_CKFS_REMOVABLE_DEVICE		(1U << 1)
+#define PKCS11_CKFS_HW_SLOT			(1U << 2)
+
+#define PKCS11_TOKEN_LABEL_SIZE			32
+#define PKCS11_TOKEN_MANUFACTURER_SIZE		32
+#define PKCS11_TOKEN_MODEL_SIZE			16
+#define PKCS11_TOKEN_SERIALNUM_SIZE		16
+
+struct pkcs11_token_info {
+	uint8_t label[PKCS11_TOKEN_LABEL_SIZE];
+	uint8_t manufacturerID[PKCS11_TOKEN_MANUFACTURER_SIZE];
+	uint8_t model[PKCS11_TOKEN_MODEL_SIZE];
+	uint8_t serialNumber[PKCS11_TOKEN_SERIALNUM_SIZE];
+	uint32_t flags;
+	uint32_t ulMaxSessionCount;
+	uint32_t ulSessionCount;
+	uint32_t ulMaxRwSessionCount;
+	uint32_t ulRwSessionCount;
+	uint32_t ulMaxPinLen;
+	uint32_t ulMinPinLen;
+	uint32_t ulTotalPublicMemory;
+	uint32_t ulFreePublicMemory;
+	uint32_t ulTotalPrivateMemory;
+	uint32_t ulFreePrivateMemory;
+	uint8_t hardwareVersion[2];
+	uint8_t firmwareVersion[2];
+	uint8_t utcTime[16];
+};
+
+/*
+ * Values for pkcs11_token_info::flags.
+ * PKCS11_CKFT_<x> corresponds to cryptoki CKF_<x> related to token flags.
+ */
+#define PKCS11_CKFT_RNG					(1U << 0)
+#define PKCS11_CKFT_WRITE_PROTECTED			(1U << 1)
+#define PKCS11_CKFT_LOGIN_REQUIRED			(1U << 2)
+#define PKCS11_CKFT_USER_PIN_INITIALIZED		(1U << 3)
+#define PKCS11_CKFT_RESTORE_KEY_NOT_NEEDED		(1U << 5)
+#define PKCS11_CKFT_CLOCK_ON_TOKEN			(1U << 6)
+#define PKCS11_CKFT_PROTECTED_AUTHENTICATION_PATH	(1U << 8)
+#define PKCS11_CKFT_DUAL_CRYPTO_OPERATIONS		(1U << 9)
+#define PKCS11_CKFT_TOKEN_INITIALIZED			(1U << 10)
+#define PKCS11_CKFT_SECONDARY_AUTHENTICATION		(1U << 11)
+#define PKCS11_CKFT_USER_PIN_COUNT_LOW			(1U << 16)
+#define PKCS11_CKFT_USER_PIN_FINAL_TRY			(1U << 17)
+#define PKCS11_CKFT_USER_PIN_LOCKED			(1U << 18)
+#define PKCS11_CKFT_USER_PIN_TO_BE_CHANGED		(1U << 19)
+#define PKCS11_CKFT_SO_PIN_COUNT_LOW			(1U << 20)
+#define PKCS11_CKFT_SO_PIN_FINAL_TRY			(1U << 21)
+#define PKCS11_CKFT_SO_PIN_LOCKED			(1U << 22)
+#define PKCS11_CKFT_SO_PIN_TO_BE_CHANGED		(1U << 23)
+#define PKCS11_CKFT_ERROR_STATE				(1U << 24)
+
+/*
+ * Values for 32bit session flags argument to PKCS11_CMD_OPEN_SESSION
+ * and pkcs11_session_info::flags.
+ * PKCS11_CKFSS_<x> reflects CryptoKi client API session flags CKF_<x>.
+ */
+#define PKCS11_CKFSS_RW_SESSION				(1U << 1)
+#define PKCS11_CKFSS_SERIAL_SESSION			(1U << 2)
+
+/*
+ * Arguments for PKCS11_CMD_SESSION_INFO
+ */
+
+struct pkcs11_session_info {
+	uint32_t slot_id;
+	uint32_t state;
+	uint32_t flags;
+	uint32_t device_error;
+};
+
+/* Valid values for pkcs11_session_info::state */
+enum pkcs11_session_state_next {
+	PKCS11_CKS_RO_PUBLIC_SESSION = 0,
+	PKCS11_CKS_RO_USER_FUNCTIONS = 1,
+	PKCS11_CKS_RW_PUBLIC_SESSION = 2,
+	PKCS11_CKS_RW_USER_FUNCTIONS = 3,
+	PKCS11_CKS_RW_SO_FUNCTIONS = 4,
+};
+
+struct pkcs11_mechanism_info {
+	uint32_t min_key_size;
+	uint32_t max_key_size;
+	uint32_t flags;
+};
+
+/*
+ * Values for pkcs11_mechanism_info::flags.
+ * PKCS11_CKFM_<x> strictly matches cryptoki CKF_<x> related to mechanism flags.
+ */
+#define PKCS11_CKFM_HW				(1U << 0)
+#define PKCS11_CKFM_ENCRYPT			(1U << 8)
+#define PKCS11_CKFM_DECRYPT			(1U << 9)
+#define PKCS11_CKFM_DIGEST			(1U << 10)
+#define PKCS11_CKFM_SIGN			(1U << 11)
+#define PKCS11_CKFM_SIGN_RECOVER		(1U << 12)
+#define PKCS11_CKFM_VERIFY			(1U << 13)
+#define PKCS11_CKFM_VERIFY_RECOVER		(1U << 14)
+#define PKCS11_CKFM_GENERATE			(1U << 15)
+#define PKCS11_CKFM_GENERATE_PAIR		(1U << 16)
+#define PKCS11_CKFM_WRAP			(1U << 17)
+#define PKCS11_CKFM_UNWRAP			(1U << 18)
+#define PKCS11_CKFM_DERIVE			(1U << 19)
+#define PKCS11_CKFM_EC_F_P			(1U << 20)
+#define PKCS11_CKFM_EC_F_2M			(1U << 21)
+#define PKCS11_CKFM_EC_ECPARAMETERS		(1U << 22)
+#define PKCS11_CKFM_EC_NAMEDCURVE		(1U << 23)
+#define PKCS11_CKFM_EC_UNCOMPRESS		(1U << 24)
+#define PKCS11_CKFM_EC_COMPRESS			(1U << 25)
+
+/*
+ * pkcs11_object_head - Header of object whose data are serialized in memory
+ *
+ * An object is made of several attributes. Attributes are stored one next to
+ * the other with byte alignment as a serialized byte arrays. Appended
+ * attributes byte arrays are prepend with this header structure that
+ * defines the number of attribute items and the overall byte size of byte
+ * array field pkcs11_object_head::attrs.
+ *
+ * @attrs_size - byte size of whole byte array attrs[]
+ * @attrs_count - number of attribute items stored in attrs[]
+ * @attrs - then starts the attributes data
+ */
+struct pkcs11_object_head {
+	uint32_t attrs_size;
+	uint32_t attrs_count;
+	uint8_t attrs[];
+};
+
+/*
+ * Attribute reference in the TA ABI. Each attribute starts with a header
+ * structure followed by the attribute value. The attribute byte size is
+ * defined in the attribute header.
+ *
+ * @id - the 32bit identifier of the attribute, see PKCS11_CKA_<x>
+ * @size - the 32bit value attribute byte size
+ * @data - then starts the attribute value
+ */
+struct pkcs11_attribute_head {
+	uint32_t id;
+	uint32_t size;
+	uint8_t data[];
+};
+
+/*
  * Attribute identification IDs
  * Valid values for struct pkcs11_attribute_head::id
  *
@@ -1002,6 +1020,13 @@ enum pkcs11_mgf_id {
  * PKCS11_CKZ_<x> reltaes to cryptoki CKZ_<x>.
  */
 #define PKCS11_CKZ_DATA_SPECIFIED		0x0001
+
+/*
+ * Values for user identifier parameter in PKCS11_CMD_LOGIN
+ */
+#define PKCS11_CKU_SO			0x000
+#define PKCS11_CKU_USER			0x001
+#define PKCS11_CKU_CONTEXT_SPECIFIC	0x002
 
 /*
  * Processing parameters

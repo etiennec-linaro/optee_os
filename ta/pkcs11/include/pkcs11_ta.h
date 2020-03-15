@@ -182,7 +182,7 @@
 	 *
 	 * [in]  memref[0] = [
 	 *              32bit session handle,
-	 *              32bit user identifier,
+	 *              32bit user identifier, enum pkcs11_user_type
 	 *              32bit PIN byte size,
 	 *              byte array: PIN data
 	 *	 ]
@@ -1047,9 +1047,11 @@ enum pkcs11_mgf_id {
 /*
  * Values for user identifier parameter in PKCS11_CMD_LOGIN
  */
-#define PKCS11_CKU_SO			0x000
-#define PKCS11_CKU_USER			0x001
-#define PKCS11_CKU_CONTEXT_SPECIFIC	0x002
+enum pkcs11_user_type {
+	PKCS11_CKU_SO = 0x000,
+	PKCS11_CKU_USER = 0x001,
+	PKCS11_CKU_CONTEXT_SPECIFIC = 0x002,
+};
 
 /*
  * Processing parameters

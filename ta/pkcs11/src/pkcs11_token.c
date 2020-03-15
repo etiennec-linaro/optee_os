@@ -237,6 +237,10 @@ int set_processing_state(struct pkcs11_session *session,
 	return PKCS11_OK;
 }
 
+/*
+ * TODO: move to presistent token: 1 cipher_login_pin(token, uid, buf, size)
+ * for the open/cipher/close atomic operation to not let PIN handle open.
+ */
 static void cipher_pin(TEE_ObjectHandle key_handle, uint8_t *buf, size_t len)
 {
 	uint8_t iv[16] = { 0 };
@@ -272,17 +276,16 @@ uint32_t entry_ck_token_initialize(uint32_t ptypes, TEE_Param *params)
 						TEE_PARAM_TYPE_NONE);
 	TEE_Param *ctrl = &params[0];
 	uint32_t rv = 0;
-	struct serialargs ctrlargs;
+	struct serialargs ctrlargs = { };
 	uint32_t token_id = 0;
 	uint32_t pin_size = 0;
 	void *pin = NULL;
 	char label[PKCS11_TOKEN_LABEL_SIZE + 1] = { 0 };
-	struct ck_token *token;
+	struct ck_token *token = NULL;
 	uint8_t *cpin = NULL;
 	int pin_rc = 0;
-	struct pkcs11_client *client;
-
-	TEE_MemFill(&ctrlargs, 0, sizeof(ctrlargs));
+	struct pkcs11_client *client = NULL;
+	TEE_ObjectHandle key_hdl = TEE_HANDLE_NULL;
 
 	if (ptypes != exp_pt)
 		return PKCS11_BAD_PARAM;
@@ -326,10 +329,17 @@ uint32_t entry_ck_token_initialize(uint32_t ptypes, TEE_Param *params)
 
 	cpin = TEE_Malloc(PKCS11_TOKEN_PIN_SIZE, TEE_MALLOC_FILL_ZERO);
 	if (!cpin)
-		return PKCS11_MEMORY;
+		return PKCS11_CKR_DEVICE_MEMORY;
 
 	TEE_MemMove(cpin, pin, pin_size);
-	cipher_pin(token->pin_hdl[0], cpin, PKCS11_TOKEN_PIN_SIZE);
+
+	// TODO: move into a single cipher_login_pin(token, user, buf, sz)
+	if (open_pin_file(token, PKCS11_CKU_SO, &key_hdl)) {
+		rv = PKCS11_CKR_GENERAL_ERROR;
+		goto out;
+	}
+	cipher_pin(key_hdl, cpin, PKCS11_TOKEN_PIN_SIZE);
+	close_pin_file(key_hdl);
 
 	if (!token->db_main->so_pin_size) {
 		TEE_MemMove(token->db_main->so_pin, cpin,
@@ -373,8 +383,8 @@ uint32_t entry_ck_token_initialize(uint32_t ptypes, TEE_Param *params)
 					      so_pin_count),
 				     sizeof(token->db_main->so_pin_count));
 
-		TEE_Free(cpin);
-		return PKCS11_CKR_PIN_INCORRECT;
+		rv = PKCS11_CKR_PIN_INCORRECT;
+		goto out;
 	}
 
 	token->db_main->flags &= ~(PKCS11_CKFT_SO_PIN_COUNT_LOW |
@@ -397,9 +407,10 @@ inited:
 	label[PKCS11_TOKEN_LABEL_SIZE] = '\0';
 	IMSG("PKCS11 token %"PRIu32": initialized \"%s\"", token_id, label);
 
+out:
 	TEE_Free(cpin);
 
-	return PKCS11_OK;
+	return rv;
 }
 
 uint32_t entry_ck_slot_list(uint32_t ptypes, TEE_Param *params)
@@ -1186,12 +1197,15 @@ static uint32_t set_pin(struct pkcs11_session *session,
 			uint8_t *new_pin, size_t new_pin_size,
 			uint32_t user_type)
 {
+	enum pkcs11_user_type ck_user_type = user_type;
+	uint32_t rv = PKCS11_CKR_GENERAL_ERROR;
 	uint8_t *cpin = NULL;
 	uint32_t *pin_count = NULL;
 	uint32_t *pin_size = NULL;
 	uint8_t *pin = NULL;
-	TEE_ObjectHandle pin_key_hdl;
-	uint32_t flag_mask = 0;
+	TEE_ObjectHandle pin_key_hdl = TEE_HANDLE_NULL;
+	uint32_t flags_clear = 0;
+	uint32_t flags_set = 0;
 
 	TEE_MemFill(&pin_key_hdl, 0, sizeof(pin_key_hdl));
 
@@ -1204,56 +1218,62 @@ static uint32_t set_pin(struct pkcs11_session *session,
 	if (new_pin_size < 8 || new_pin_size > PKCS11_TOKEN_PIN_SIZE)
 		return PKCS11_CKR_PIN_LEN_RANGE;
 
-	switch (user_type) {
+	cpin = TEE_Malloc(PKCS11_TOKEN_PIN_SIZE, TEE_MALLOC_FILL_ZERO);
+	if (!cpin)
+		return PKCS11_MEMORY;
+
+	switch (ck_user_type) {
 	case PKCS11_CKU_SO:
 		pin = session->token->db_main->so_pin;
 		pin_size = &session->token->db_main->so_pin_size;
 		pin_count = &session->token->db_main->so_pin_count;
-		pin_key_hdl = session->token->pin_hdl[0];
-		flag_mask = PKCS11_CKFT_SO_PIN_COUNT_LOW |
-			    PKCS11_CKFT_SO_PIN_FINAL_TRY |
-			    PKCS11_CKFT_SO_PIN_LOCKED |
-			    PKCS11_CKFT_SO_PIN_TO_BE_CHANGED;
+		flags_clear = PKCS11_CKFT_SO_PIN_COUNT_LOW |
+			      PKCS11_CKFT_SO_PIN_FINAL_TRY |
+			      PKCS11_CKFT_SO_PIN_LOCKED |
+			      PKCS11_CKFT_SO_PIN_TO_BE_CHANGED;
 		break;
 	case PKCS11_CKU_USER:
 		pin = session->token->db_main->user_pin;
 		pin_size = &session->token->db_main->user_pin_size;
 		pin_count = &session->token->db_main->user_pin_count;
-		pin_key_hdl = session->token->pin_hdl[1];
-		flag_mask = PKCS11_CKFT_USER_PIN_COUNT_LOW |
-			    PKCS11_CKFT_USER_PIN_FINAL_TRY |
-			    PKCS11_CKFT_USER_PIN_LOCKED |
-			    PKCS11_CKFT_USER_PIN_TO_BE_CHANGED;
+		flags_clear = PKCS11_CKFT_USER_PIN_COUNT_LOW |
+			      PKCS11_CKFT_USER_PIN_FINAL_TRY |
+			      PKCS11_CKFT_USER_PIN_LOCKED |
+			      PKCS11_CKFT_USER_PIN_TO_BE_CHANGED;
+		flags_set = PKCS11_CKFT_USER_PIN_INITIALIZED;
 		break;
 	default:
-		return PKCS11_FAILED;
+		rv = PKCS11_FAILED;
+		goto out;
 	}
-
-	cpin = TEE_Malloc(PKCS11_TOKEN_PIN_SIZE, TEE_MALLOC_FILL_ZERO);
-	if (!cpin)
-		return PKCS11_MEMORY;
 
 	TEE_MemMove(cpin, new_pin, new_pin_size);
 
+	// TODO: move into a single cipher_login_pin(token, user, buf, sz)
+	if (open_pin_file(session->token, ck_user_type, &pin_key_hdl)) {
+		rv = PKCS11_CKR_GENERAL_ERROR;
+		goto out;
+	}
+	assert(pin_key_hdl != TEE_HANDLE_NULL);
 	cipher_pin(pin_key_hdl, cpin, PKCS11_TOKEN_PIN_SIZE);
+	close_pin_file(pin_key_hdl);
 
 	TEE_MemMove(pin, cpin, PKCS11_TOKEN_PIN_SIZE);
 	*pin_size = new_pin_size;
 	*pin_count = 0;
 
-	session->token->db_main->flags &= ~flag_mask;
+	session->token->db_main->flags &= ~flags_clear;
+	session->token->db_main->flags |= flags_set;
 
-	if (user_type == PKCS11_CKU_USER)
-		session->token->db_main->flags |=
-			PKCS11_CKFT_USER_PIN_INITIALIZED;
-
-	// Paranoia: Check unmodified old content is still valid
 	update_persistent_db(session->token, 0,
 			     sizeof(*session->token->db_main));
 
+	rv = PKCS11_CKR_OK;
+
+out:
 	TEE_Free(cpin);
 
-	return PKCS11_OK;
+	return rv;
 }
 
 /* ctrl=[session-handle][pin-size]{pin-arrays], in=unused, out=unused */
@@ -1311,6 +1331,7 @@ uint32_t entry_init_pin(uintptr_t tee_session,
 static uint32_t check_so_pin(struct pkcs11_session *session,
 			     uint8_t *pin, size_t pin_size)
 {
+	TEE_ObjectHandle pin_key_hdl = TEE_HANDLE_NULL;
 	struct ck_token *token = session->token;
 	uint8_t *cpin = NULL;
 	int pin_rc = 0;
@@ -1328,7 +1349,11 @@ static uint32_t check_so_pin(struct pkcs11_session *session,
 		return PKCS11_MEMORY;
 
 	TEE_MemMove(cpin, pin, pin_size);
-	cipher_pin(token->pin_hdl[0], cpin, PKCS11_TOKEN_PIN_SIZE);
+
+	// TODO: move into a single cipher_login_pin(token, user, buf, sz)
+	open_pin_file(token, PKCS11_CKU_SO, &pin_key_hdl);
+	cipher_pin(pin_key_hdl, cpin, PKCS11_TOKEN_PIN_SIZE);
+	close_pin_file(pin_key_hdl);
 
 	pin_rc = 0;
 
@@ -1391,6 +1416,7 @@ static uint32_t check_so_pin(struct pkcs11_session *session,
 static uint32_t check_user_pin(struct pkcs11_session *session,
 				uint8_t *pin, size_t pin_size)
 {
+	TEE_ObjectHandle pin_key_hdl = TEE_HANDLE_NULL;
 	struct ck_token *token = session->token;
 	uint8_t *cpin = NULL;
 	int pin_rc = 0;
@@ -1407,7 +1433,11 @@ static uint32_t check_user_pin(struct pkcs11_session *session,
 		return PKCS11_MEMORY;
 
 	TEE_MemMove(cpin, pin, pin_size);
-	cipher_pin(token->pin_hdl[1], cpin, PKCS11_TOKEN_PIN_SIZE);
+
+	// TODO: move into a single cipher_login_pin(token, user, buf, sz)
+	open_pin_file(token, PKCS11_CKU_USER, &pin_key_hdl);
+	cipher_pin(pin_key_hdl, cpin, PKCS11_TOKEN_PIN_SIZE);
+	close_pin_file(pin_key_hdl);
 
 	pin_rc = 0;
 
@@ -1598,7 +1628,7 @@ uint32_t entry_login(uintptr_t tee_session, uint32_t ptypes, TEE_Param *params)
 
 	client = tee_session2client(tee_session);
 
-	switch (user_type) {
+	switch ((enum pkcs11_user_type)user_type) {
 	case PKCS11_CKU_SO:
 		if (pkcs11_session_is_security_officer(session))
 			return PKCS11_CKR_USER_ALREADY_LOGGED_IN;

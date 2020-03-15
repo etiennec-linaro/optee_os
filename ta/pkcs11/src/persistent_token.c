@@ -21,70 +21,115 @@
  * each it is expected that a file of ID "UUID" is store in the OP-TEE secure
  * storage.
  */
+static TEE_Result get_db_file_name(struct ck_token *token,
+				   char *name, size_t size)
+{
+	int n = snprintf(name, size, "token.db.%1d", get_token_id(token));
 
-/* 'X' will be replaced by the token decimal id (up to 9!) */
-#define TOKEN_DB_FILE_BASE		"token.db.X"
+	if (n < 0 || (size_t)n >= size)
+		return TEE_ERROR_SECURITY;
+	else
+		return TEE_SUCCESS;
+}
 
-void close_persistent_db(struct ck_token *token)
+static TEE_Result open_db_file(struct ck_token *token,
+			       TEE_ObjectHandle *out_hdl)
+{
+	char file[32] = { };
+	TEE_Result res = TEE_ERROR_GENERIC;
+
+	res = get_db_file_name(token, file, sizeof(file));
+	if (res)
+		return res;
+
+	return TEE_OpenPersistentObject(TEE_STORAGE_PRIVATE, file, sizeof(file),
+					TEE_DATA_FLAG_ACCESS_READ |
+					TEE_DATA_FLAG_ACCESS_WRITE,
+					out_hdl);
+}
+
+static void close_db_file(TEE_ObjectHandle hdl)
+{
+	TEE_CloseObject(hdl);
+}
+
+static TEE_Result get_pin_file_name(struct ck_token *token,
+				    enum pkcs11_user_type user,
+				    char *name, size_t size)
 {
 	int n = 0;
 
-	for (n = 0; n < PKCS11_MAX_USERS; n++) {
-		TEE_CloseObject(token->pin_hdl[n]);
-		token->pin_hdl[n] = TEE_HANDLE_NULL;
-	}
+	COMPILE_TIME_ASSERT(PKCS11_MAX_USERS < 10);
 
-	TEE_CloseObject(token->db_hdl);
-	token->db_hdl = TEE_HANDLE_NULL;
+	n = snprintf(name, size,
+		     "token.db.%1d-pin%1d", get_token_id(token), user);
+
+	if (n < 0 || (size_t)n >= size)
+		return TEE_ERROR_SECURITY;
+	else
+		return TEE_SUCCESS;
 }
 
-int update_persistent_db(struct ck_token *token, size_t offset, size_t size)
+TEE_Result open_pin_file(struct ck_token *token, enum pkcs11_user_type user,
+			 TEE_ObjectHandle *out_hdl)
 {
-	unsigned int token_id = get_token_id(token);
-	char file[] = TOKEN_DB_FILE_BASE;
+	char file[32] = { };
+	TEE_Result res = TEE_ERROR_GENERIC;
+
+	res = get_pin_file_name(token, user, file, sizeof(file));
+	if (res)
+		return res;
+
+	return TEE_OpenPersistentObject(TEE_STORAGE_PRIVATE, file, sizeof(file),
+					0, out_hdl);
+}
+
+void close_pin_file(TEE_ObjectHandle hdl)
+{
+	TEE_CloseObject(hdl);
+}
+
+void close_persistent_db(struct ck_token *token __unused)
+{
+}
+
+uint32_t update_persistent_db(struct ck_token *token, size_t offset,
+			      size_t size)
+{
+	TEE_Result res = TEE_ERROR_GENERIC;
+	TEE_ObjectHandle db_hdl = TEE_HANDLE_NULL;
 	uint8_t *field = (uint8_t *)token->db_main + offset;
-	TEE_Result res = TEE_ERROR_GENERIC;
 
-	if (snprintf(file + sizeof(file) - 2, 2, "%1d", token_id) >= 2)
-		TEE_Panic(0);
+	res = open_db_file(token, &db_hdl);
+	if (!res)
+		res = TEE_SeekObjectData(db_hdl, offset, TEE_DATA_SEEK_SET);
+	if (!res)
+		res = TEE_WriteObjectData(db_hdl, field, size);
 
-	if (token->db_hdl == TEE_HANDLE_NULL)
-		return 1;
+	close_db_file(db_hdl);
 
-	res = TEE_SeekObjectData(token->db_hdl, offset, TEE_DATA_SEEK_SET);
-	if (res)
-		return tee2pkcs_error(res);
+	if (!res)
+		return PKCS11_CKR_OK;
 
-	res = TEE_WriteObjectData(token->db_hdl, field, size);
-	if (res)
-		return tee2pkcs_error(res);
+	return tee2pkcs_error(res);
 
-	return 0;
 }
 
-static void init_pin_keys(struct ck_token *token, unsigned int uid)
+static void init_pin_keys(struct ck_token *token, enum pkcs11_user_type user)
 {
 	TEE_Result res = TEE_ERROR_GENERIC;
-	unsigned int token_id = get_token_id(token);
-	TEE_ObjectHandle *key_hdl = &token->pin_hdl[uid];
-	char file[32] = { 0 };
+	TEE_ObjectHandle key_hdl = TEE_HANDLE_NULL;
 
-	assert(token_id < 10 && uid < 10);
+	res = open_pin_file(token, user, &key_hdl);
 
-	if (snprintf(file, 32, "token.db.%1d-pin%1d", token_id, uid) >= 32)
-		TEE_Panic(0);
-
-	res = TEE_OpenPersistentObject(TEE_STORAGE_PRIVATE,
-					file, sizeof(file), 0, key_hdl);
-	if (res == TEE_SUCCESS) {
+	if (res == TEE_SUCCESS)
 		DMSG("PIN key found");
-		return;
-	}
 
 	if (res == TEE_ERROR_ITEM_NOT_FOUND) {
-		TEE_Attribute attr;
+		TEE_Attribute attr = { };
 		TEE_ObjectHandle hdl = TEE_HANDLE_NULL;
-		uint8_t pin_key[16] = { 0 };
+		uint8_t pin_key[16] = { };
+		char file[32] = { };
 
 		TEE_MemFill(&attr, 0, sizeof(attr));
 
@@ -92,27 +137,32 @@ static void init_pin_keys(struct ck_token *token, unsigned int uid)
 		TEE_InitRefAttribute(&attr, TEE_ATTR_SECRET_VALUE,
 				     pin_key, sizeof(pin_key));
 
-		res = TEE_AllocateTransientObject(TEE_TYPE_AES, 128, key_hdl);
+		res = TEE_AllocateTransientObject(TEE_TYPE_AES, 128, &hdl);
 		if (res)
 			TEE_Panic(0);
 
-		res = TEE_PopulateTransientObject(*key_hdl, &attr, 1);
+		res = TEE_PopulateTransientObject(hdl, &attr, 1);
+		if (res)
+			TEE_Panic(0);
+
+		res = get_pin_file_name(token, user, file, sizeof(file));
 		if (res)
 			TEE_Panic(0);
 
 		res = TEE_CreatePersistentObject(TEE_STORAGE_PRIVATE,
-						 file, sizeof(file), 0,
-						 *key_hdl,
+						 file, sizeof(file), 0, hdl,
 						 pin_key, sizeof(pin_key),
-						 &hdl);
-		if (res)
-			TEE_Panic(0);
-
+						 &key_hdl);
 		TEE_CloseObject(hdl);
-		return;
+
+		if (res == TEE_SUCCESS)
+			DMSG("Token %u: PIN key created", get_token_id(token));
 	}
 
-	TEE_Panic(0);
+	if (res)
+		TEE_Panic(res);
+
+	close_pin_file(key_hdl);
 }
 
 /* UUID for persistent object */
@@ -169,9 +219,10 @@ uint32_t unregister_persistent_object(struct ck_token *token, TEE_UUID *uuid)
 	int count = 0;
 	struct token_persistent_objs *ptr;
 	TEE_Result res = TEE_ERROR_GENERIC;
+	TEE_ObjectHandle db_hdl = TEE_HANDLE_NULL;
 
 	if (!uuid)
-		return PKCS11_OK;
+		return PKCS11_CKR_OK;
 
 	for (index = (int)(token->db_objs->count) - 1; index >= 0; index--)
 		if (!TEE_MemCompare(token->db_objs->uuids + index,
@@ -179,23 +230,25 @@ uint32_t unregister_persistent_object(struct ck_token *token, TEE_UUID *uuid)
 			break;
 
 	if (index < 0) {
-		EMSG("Cannot unregister an invalid persistent object");
-		return PKCS11_NOT_FOUND;
+		DMSG("Cannot unregister an invalid persistent object");
+		return PKCS11_RV_NOT_FOUND;
 	}
 
 	ptr = TEE_Malloc(sizeof(struct token_persistent_objs) +
 			 ((token->db_objs->count - 1) * sizeof(TEE_UUID)),
 			 TEE_USER_MEM_HINT_NO_FILL_ZERO);
 	if (!ptr)
-		return PKCS11_MEMORY;
+		return PKCS11_CKR_DEVICE_MEMORY;
 
-	res = TEE_SeekObjectData(token->db_hdl,
-				 sizeof(struct token_persistent_main),
+	res = open_db_file(token, &db_hdl);
+	if (res)
+		goto out;
+
+	res = TEE_SeekObjectData(db_hdl, sizeof(struct token_persistent_main),
 				 TEE_DATA_SEEK_SET);
 	if (res) {
-		EMSG("Failed to read database");
-		TEE_Free(ptr);
-		return tee2pkcs_error(res);
+		DMSG("Failed to read database");
+		goto out;
 	}
 
 	TEE_MemMove(ptr, token->db_objs,
@@ -209,17 +262,22 @@ uint32_t unregister_persistent_object(struct ck_token *token, TEE_UUID *uuid)
 		    &token->db_objs->uuids[index + 1],
 		    count * sizeof(TEE_UUID));
 
-	res = TEE_WriteObjectData(token->db_hdl, ptr,
+	res = TEE_WriteObjectData(db_hdl, ptr,
 				  sizeof(struct token_persistent_objs) +
 				  ptr->count * sizeof(TEE_UUID));
-	if (res) {
-		EMSG("Failed to update database");
-		TEE_Free(ptr);
-		return tee2pkcs_error(res);
-	}
+	if (res)
+		DMSG("Failed to update database");
+
+out:
+	close_db_file(db_hdl);
 
 	TEE_Free(token->db_objs);
 	token->db_objs = ptr;
+
+	if (res) {
+		TEE_Free(ptr);
+		tee2pkcs_error(res);
+	}
 
 	return PKCS11_OK;
 }
@@ -230,6 +288,7 @@ uint32_t register_persistent_object(struct ck_token *token, TEE_UUID *uuid)
 	void *ptr = NULL;
 	size_t __maybe_unused size = 0;
 	TEE_Result res = TEE_ERROR_GENERIC;
+	TEE_ObjectHandle db_hdl = TEE_HANDLE_NULL;
 
 	for (count = (int)token->db_objs->count - 1; count >= 0; count--)
 		if (!TEE_MemCompare(token->db_objs->uuids + count, uuid,
@@ -241,7 +300,7 @@ uint32_t register_persistent_object(struct ck_token *token, TEE_UUID *uuid)
 			  sizeof(struct token_persistent_objs) +
 			  ((count + 1) * sizeof(TEE_UUID)));
 	if (!ptr)
-		return PKCS11_MEMORY;
+		return PKCS11_CKR_DEVICE_MEMORY;
 
 	token->db_objs = ptr;
 	TEE_MemMove(token->db_objs->uuids + count, uuid, sizeof(TEE_UUID));
@@ -250,27 +309,35 @@ uint32_t register_persistent_object(struct ck_token *token, TEE_UUID *uuid)
 	       sizeof(struct token_persistent_objs) +
 	       count * sizeof(TEE_UUID);
 
-	res = TEE_TruncateObjectData(token->db_hdl, size + sizeof(TEE_UUID));
+	res = open_db_file(token, &db_hdl);
 	if (res)
-		return tee2pkcs_error(res);
+		goto out;
 
-	res = TEE_SeekObjectData(token->db_hdl,
-				 sizeof(struct token_persistent_main),
+	res = TEE_TruncateObjectData(db_hdl, size + sizeof(TEE_UUID));
+	if (res)
+		goto out;
+
+	res = TEE_SeekObjectData(db_hdl, sizeof(struct token_persistent_main),
 				 TEE_DATA_SEEK_SET);
 	if (res)
-		return tee2pkcs_error(res);
+		goto out;
 
 	token->db_objs->count++;
 
-	res = TEE_WriteObjectData(token->db_hdl, token->db_objs,
+	res = TEE_WriteObjectData(db_hdl, token->db_objs,
 				  sizeof(struct token_persistent_objs) +
 				  token->db_objs->count * sizeof(TEE_UUID));
-	if (res) {
+	if (res)
 		token->db_objs->count--;
-		return tee2pkcs_error(res);
-	}
 
-	return PKCS11_OK;
+out:
+	if (db_hdl != TEE_HANDLE_NULL)
+		close_db_file(db_hdl);
+
+	if (!res)
+		return PKCS11_OK;
+
+	return tee2pkcs_error(res);
 }
 
 /*
@@ -281,19 +348,21 @@ struct ck_token *init_persistent_db(unsigned int token_id)
 {
 	struct ck_token *token = get_token(token_id);
 	TEE_Result res = TEE_ERROR_GENERIC;
-	char db_file[] = TOKEN_DB_FILE_BASE;
 	TEE_ObjectHandle db_hdl = TEE_HANDLE_NULL;
 	/* Copy persistent database: main db and object db */
 	struct token_persistent_main *db_main = NULL;
 	struct token_persistent_objs *db_objs = NULL;
-	int n = 0;
 	void *ptr = NULL;
 
 	if (!token)
 		return NULL;
 
-	for (n = 0; n < PKCS11_MAX_USERS; n++)
-		init_pin_keys(token, n);
+	COMPILE_TIME_ASSERT(PKCS11_CKU_SO == 0 &&
+			    PKCS11_CKU_USER == 1 &&
+			    PKCS11_MAX_USERS >= 2);
+
+	init_pin_keys(token, PKCS11_CKU_SO);
+	init_pin_keys(token, PKCS11_CKU_USER);
 
 	LIST_INIT(&token->object_list);
 
@@ -302,15 +371,8 @@ struct ck_token *init_persistent_db(unsigned int token_id)
 	if (!db_main || !db_objs)
 		goto error;
 
-	/* Persistent object ID is the string with last char replaced */
-	if (snprintf(db_file + sizeof(db_file) - 2, 2, "%1d", token_id) >= 2)
-		TEE_Panic(0);
+	res = open_db_file(token, &db_hdl);
 
-	res = TEE_OpenPersistentObject(TEE_STORAGE_PRIVATE,
-				       db_file, sizeof(db_file),
-				       TEE_DATA_FLAG_ACCESS_READ |
-				       TEE_DATA_FLAG_ACCESS_WRITE,
-				       &db_hdl);
 	if (res == TEE_SUCCESS) {
 		uint32_t size = 0;
 		size_t idx = 0;
@@ -358,6 +420,7 @@ struct ck_token *init_persistent_db(unsigned int token_id)
 		}
 
 	} else if (res == TEE_ERROR_ITEM_NOT_FOUND) {
+		char file[32] = { };
 
 		IMSG("PKCS11 token %u: init db", token_id);
 
@@ -376,9 +439,13 @@ struct ck_token *init_persistent_db(unsigned int token_id)
 				 PKCS11_CKFT_DUAL_CRYPTO_OPERATIONS |
 				 PKCS11_CKFT_LOGIN_REQUIRED;
 
+		res = get_db_file_name(token, file, sizeof(file));
+		if (res)
+			TEE_Panic(0);
+
 		/* 2 files: persistent state + persistent object references */
 		res = TEE_CreatePersistentObject(TEE_STORAGE_PRIVATE,
-						 db_file, sizeof(db_file),
+						 file, sizeof(file),
 						 TEE_DATA_FLAG_ACCESS_READ |
 						 TEE_DATA_FLAG_ACCESS_WRITE,
 						 TEE_HANDLE_NULL,
@@ -409,8 +476,7 @@ struct ck_token *init_persistent_db(unsigned int token_id)
 
 	token->db_main = db_main;
 	token->db_objs = db_objs;
-	token->db_hdl = db_hdl;
-	TEE_SeekObjectData(token->db_hdl, 0, TEE_DATA_SEEK_SET);
+	TEE_CloseObject(db_hdl);
 
 	return token;
 

@@ -14,3 +14,4 @@ srcs-y += processing_symm.c
 srcs-y += processing_ec.c
 srcs-y += processing_rsa.c
 srcs-y += processing_asymm.c
+srcs-y += token_capabilities.c

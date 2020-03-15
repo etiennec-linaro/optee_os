@@ -101,17 +101,14 @@ static TEE_Result pkcs11_token_init(unsigned int id)
 	struct ck_token *token = init_persistent_db(id);
 
 	if (!token)
-		return TEE_ERROR_GENERIC;
+		return TEE_ERROR_SECURITY;
 
-	if (token->state != PKCS11_TOKEN_RESET) {
-		/* Token is already in a valid state */
-		return TEE_SUCCESS;
+	if (token->state == PKCS11_TOKEN_RESET) {
+		/* As per PKCS#11 spec, token resets to read/write state */
+		token->state = PKCS11_TOKEN_READ_WRITE;
+		token->session_count = 0;
+		token->rw_session_count = 0;
 	}
-
-	/* Initialize the token runtime state */
-	token->state = PKCS11_TOKEN_READ_WRITE;
-	token->session_count = 0;
-	token->rw_session_count = 0;
 
 	return TEE_SUCCESS;
 }
@@ -261,7 +258,7 @@ static void cipher_pin(TEE_ObjectHandle key_handle, uint8_t *buf, size_t len)
 	TEE_CipherInit(tee_op_handle, iv, sizeof(iv));
 
 	res = TEE_CipherDoFinal(tee_op_handle, buf, len, buf, &size);
-	if (res || size != PKCS11_TOKEN_PIN_SIZE)
+	if (res || size != PKCS11_TOKEN_PIN_SIZE_MAX)
 		TEE_Panic(0);
 
 	TEE_FreeOperation(tee_op_handle);
@@ -300,7 +297,8 @@ uint32_t entry_ck_token_initialize(uint32_t ptypes, TEE_Param *params)
 	if (rv)
 		return rv;
 
-	if (pin_size < 8 || pin_size > PKCS11_TOKEN_PIN_SIZE)
+	if (pin_size < PKCS11_TOKEN_PIN_SIZE_MIN ||
+	    pin_size > PKCS11_TOKEN_PIN_SIZE_MAX)
 		return PKCS11_CKR_PIN_LEN_RANGE;
 
 	rv = serialargs_get(&ctrlargs, &label, PKCS11_TOKEN_LABEL_SIZE);
@@ -327,7 +325,7 @@ uint32_t entry_ck_token_initialize(uint32_t ptypes, TEE_Param *params)
 		if (!TAILQ_EMPTY(&client->session_list))
 			return PKCS11_CKR_SESSION_EXISTS;
 
-	cpin = TEE_Malloc(PKCS11_TOKEN_PIN_SIZE, TEE_MALLOC_FILL_ZERO);
+	cpin = TEE_Malloc(PKCS11_TOKEN_PIN_SIZE_MAX, TEE_MALLOC_FILL_ZERO);
 	if (!cpin)
 		return PKCS11_CKR_DEVICE_MEMORY;
 
@@ -338,12 +336,12 @@ uint32_t entry_ck_token_initialize(uint32_t ptypes, TEE_Param *params)
 		rv = PKCS11_CKR_GENERAL_ERROR;
 		goto out;
 	}
-	cipher_pin(key_hdl, cpin, PKCS11_TOKEN_PIN_SIZE);
+	cipher_pin(key_hdl, cpin, PKCS11_TOKEN_PIN_SIZE_MAX);
 	close_pin_file(key_hdl);
 
 	if (!token->db_main->so_pin_size) {
 		TEE_MemMove(token->db_main->so_pin, cpin,
-			    PKCS11_TOKEN_PIN_SIZE);
+			    PKCS11_TOKEN_PIN_SIZE_MAX);
 		token->db_main->so_pin_size = pin_size;
 
 		update_persistent_db(token,
@@ -361,7 +359,8 @@ uint32_t entry_ck_token_initialize(uint32_t ptypes, TEE_Param *params)
 	pin_rc = 0;
 	if (token->db_main->so_pin_size != pin_size)
 		pin_rc = 1;
-	if (buf_compare_ct(token->db_main->so_pin, cpin, PKCS11_TOKEN_PIN_SIZE))
+	if (buf_compare_ct(token->db_main->so_pin, cpin,
+			   PKCS11_TOKEN_PIN_SIZE_MAX))
 		pin_rc = 1;
 
 	if (pin_rc) {
@@ -420,25 +419,37 @@ uint32_t entry_ck_slot_list(uint32_t ptypes, TEE_Param *params)
 						TEE_PARAM_TYPE_MEMREF_OUTPUT,
 						TEE_PARAM_TYPE_NONE);
 	TEE_Param *out = &params[2];
-	const size_t out_size = sizeof(uint32_t) * TOKEN_COUNT;
-	uint32_t *id = NULL;
-	uint32_t n = 0;
+	uint32_t token_id = 0;
+	const size_t out_size = sizeof(token_id) * TOKEN_COUNT;
+	uint8_t *id = NULL;
 
 	if (ptypes != exp_pt ||
 	    params[0].memref.size != TEE_PARAM0_SIZE_MIN)
-		return PKCS11_BAD_PARAM;
+		return PKCS11_CKR_ARGUMENTS_BAD;
 
 	if (out->memref.size < out_size) {
 		out->memref.size = out_size;
-		return PKCS11_SHORT_BUFFER;
+
+		if (out->memref.buffer)
+			return PKCS11_CKR_BUFFER_TOO_SMALL;
+		else
+			return PKCS11_CKR_OK;
 	}
 
-	for (id = out->memref.buffer, n = 0; n < TOKEN_COUNT; n++, id++)
-		TEE_MemMove(id, &n, sizeof(uint32_t));
+	for (token_id = 0, id = out->memref.buffer; token_id < TOKEN_COUNT;
+	     token_id++, id += sizeof(token_id))
+		TEE_MemMove(id, &token_id, sizeof(token_id));
 
 	out->memref.size = out_size;
 
-	return PKCS11_OK;
+	return PKCS11_CKR_OK;
+}
+
+static void pad_str(uint8_t *str, size_t size)
+{
+	int n = strnlen((char *)str, size);
+
+	TEE_MemFill(str + n, ' ', size - n);
 }
 
 uint32_t entry_ck_slot_info(uint32_t ptypes, TEE_Param *params)
@@ -450,51 +461,45 @@ uint32_t entry_ck_slot_info(uint32_t ptypes, TEE_Param *params)
 	TEE_Param *ctrl = &params[0];
 	TEE_Param *out = &params[2];
 	uint32_t rv = 0;
-	struct serialargs ctrlargs;
+	struct serialargs ctrlargs = { };
 	uint32_t token_id = 0;
 	struct ck_token *token = NULL;
-	const char desc[] = PKCS11_SLOT_DESCRIPTION;
-	const char manuf[] = PKCS11_SLOT_MANUFACTURER;
-	const char hwver[2] = PKCS11_SLOT_HW_VERSION;
-	const char fwver[2] = PKCS11_SLOT_FW_VERSION;
-	struct pkcs11_slot_info info;
+	struct pkcs11_slot_info info = {
+		.slot_description = PKCS11_SLOT_DESCRIPTION,
+		.manufacturer_id = PKCS11_SLOT_MANUFACTURER,
+		.flags = PKCS11_CKFS_TOKEN_PRESENT,
+		.hardware_version = PKCS11_SLOT_HW_VERSION,
+		.firmware_version = PKCS11_SLOT_FW_VERSION,
+	};
 
-	TEE_MemFill(&ctrlargs, 0, sizeof(ctrlargs));
-	TEE_MemFill(&info, 0, sizeof(info));
+	COMPILE_TIME_ASSERT(sizeof(PKCS11_SLOT_DESCRIPTION) <=
+			    sizeof(info.slot_description));
+	COMPILE_TIME_ASSERT(sizeof(PKCS11_SLOT_MANUFACTURER) <=
+			    sizeof(info.manufacturer_id));
 
-	if (ptypes != exp_pt ||
-	    out->memref.size != sizeof(struct pkcs11_slot_info))
-		return PKCS11_BAD_PARAM;
+	if (ptypes != exp_pt || out->memref.size != sizeof(info))
+		return PKCS11_CKR_ARGUMENTS_BAD;
 
 	serialargs_init(&ctrlargs, ctrl->memref.buffer, ctrl->memref.size);
 
-	rv = serialargs_get(&ctrlargs, &token_id, sizeof(uint32_t));
+	rv = serialargs_get(&ctrlargs, &token_id, sizeof(token_id));
 	if (rv)
 		return rv;
 
 	if (serialargs_remaining_bytes(&ctrlargs))
-		return PKCS11_BAD_PARAM;
+		return PKCS11_CKR_ARGUMENTS_BAD;
 
 	token = get_token(token_id);
 	if (!token)
 		return PKCS11_CKR_SLOT_ID_INVALID;
 
-	TEE_MemFill(&info, 0, sizeof(info));
+	pad_str(info.slot_description, sizeof(info.slot_description));
+	pad_str(info.manufacturer_id, sizeof(info.manufacturer_id));
 
-	PADDED_STRING_COPY(info.slotDescription, desc);
-	PADDED_STRING_COPY(info.manufacturerID, manuf);
-
-	info.flags |= PKCS11_CKFS_TOKEN_PRESENT;
-	info.flags |= PKCS11_CKFS_REMOVABLE_DEVICE;
-	info.flags &= ~PKCS11_CKFS_HW_SLOT;
-
-	TEE_MemMove(&info.hardwareVersion, &hwver, sizeof(hwver));
-	TEE_MemMove(&info.firmwareVersion, &fwver, sizeof(fwver));
-
-	out->memref.size = sizeof(struct pkcs11_slot_info);
+	out->memref.size = sizeof(info);
 	TEE_MemMove(out->memref.buffer, &info, out->memref.size);
 
-	return PKCS11_OK;
+	return PKCS11_CKR_OK;
 }
 
 uint32_t entry_ck_token_info(uint32_t ptypes, TEE_Param *params)
@@ -506,69 +511,54 @@ uint32_t entry_ck_token_info(uint32_t ptypes, TEE_Param *params)
 	TEE_Param *ctrl = &params[0];
 	TEE_Param *out = &params[2];
 	uint32_t rv = 0;
-	struct serialargs ctrlargs;
+	struct serialargs ctrlargs = { };
 	uint32_t token_id = 0;
 	struct ck_token *token = NULL;
-	const char manuf[] = PKCS11_TOKEN_MANUFACTURER;
-	const char sernu[] = PKCS11_TOKEN_SERIAL_NUMBER;
-	const char model[] = PKCS11_TOKEN_MODEL;
-	const char hwver[] = PKCS11_TOKEN_HW_VERSION;
-	const char fwver[] = PKCS11_TOKEN_FW_VERSION;
-	struct pkcs11_token_info info;
+	struct pkcs11_token_info info = {
+		.manufacturer_id = PKCS11_TOKEN_MANUFACTURER,
+		.model = PKCS11_TOKEN_MODEL,
+		.serial_number = PKCS11_TOKEN_SERIAL_NUMBER,
+		.max_session_count = UINT32_MAX,
+		.max_rw_session_count = UINT32_MAX,
+		.max_pin_len = PKCS11_TOKEN_PIN_SIZE_MAX,
+		.min_pin_len = PKCS11_TOKEN_PIN_SIZE_MIN,
+		.total_public_memory = UINT32_MAX,
+		.free_public_memory = UINT32_MAX,
+		.total_private_memory = UINT32_MAX,
+		.free_private_memory = UINT32_MAX,
+		.hardware_version = PKCS11_TOKEN_HW_VERSION,
+		.firmware_version = PKCS11_TOKEN_FW_VERSION,
+	};
 
-	TEE_MemFill(&ctrlargs, 0, sizeof(ctrlargs));
-	TEE_MemFill(&info, 0, sizeof(info));
-
-	if (ptypes != exp_pt ||
-	    out->memref.size != sizeof(struct pkcs11_token_info))
-		return PKCS11_BAD_PARAM;
+	if (ptypes != exp_pt || out->memref.size != sizeof(info))
+		return PKCS11_CKR_ARGUMENTS_BAD;
 
 	serialargs_init(&ctrlargs, ctrl->memref.buffer, ctrl->memref.size);
 
-	rv = serialargs_get(&ctrlargs, &token_id, sizeof(uint32_t));
+	rv = serialargs_get(&ctrlargs, &token_id, sizeof(token_id));
 	if (rv)
 		return rv;
 
 	if (serialargs_remaining_bytes(&ctrlargs))
-		return PKCS11_BAD_PARAM;
+		return PKCS11_CKR_ARGUMENTS_BAD;
 
 	token = get_token(token_id);
 	if (!token)
 		return PKCS11_CKR_SLOT_ID_INVALID;
 
-	TEE_MemFill(&info, 0, sizeof(info));
+	pad_str(info.manufacturer_id, sizeof(info.manufacturer_id));
+	pad_str(info.model, sizeof(info.model));
+	pad_str(info.serial_number, sizeof(info.serial_number));
 
-	PADDED_STRING_COPY(info.label, token->db_main->label);
-	PADDED_STRING_COPY(info.manufacturerID, manuf);
-	PADDED_STRING_COPY(info.model, model);
-	PADDED_STRING_COPY(info.serialNumber, sernu);
+	TEE_MemMove(info.label, token->db_main->label, sizeof(info.label));
 
 	info.flags = token->db_main->flags;
+	info.session_count = token->session_count;
+	info.rw_session_count = token->rw_session_count;
 
-	/* TODO */
-	info.ulMaxSessionCount = ~0;
-	info.ulSessionCount = token->session_count;
-	info.ulMaxRwSessionCount = ~0;
-	info.ulRwSessionCount = token->rw_session_count;
-	/* TODO */
-	info.ulMaxPinLen = 128;
-	info.ulMinPinLen = 10;
-	/* TODO */
-	info.ulTotalPublicMemory = ~0;
-	info.ulFreePublicMemory = ~0;
-	info.ulTotalPrivateMemory = ~0;
-	info.ulFreePrivateMemory = ~0;
-
-	TEE_MemMove(&info.hardwareVersion, &hwver, sizeof(hwver));
-	TEE_MemMove(&info.firmwareVersion, &fwver, sizeof(hwver));
-
-	// TODO: get time and convert from reference into YYYYMMDDhhmmss/UTC
-	TEE_MemFill(info.utcTime, 0, sizeof(info.utcTime));
-
-	/* Return to caller with data */
 	TEE_MemMove(out->memref.buffer, &info, sizeof(info));
 
-	return PKCS11_OK;
+	return PKCS11_CKR_OK;
 }
 
 uint32_t entry_ck_token_mecha_ids(uint32_t ptypes, TEE_Param *params)
@@ -1215,10 +1205,11 @@ static uint32_t set_pin(struct pkcs11_session *session,
 	if (!pkcs11_session_is_read_write(session))
 		return PKCS11_CKR_SESSION_READ_ONLY;
 
-	if (new_pin_size < 8 || new_pin_size > PKCS11_TOKEN_PIN_SIZE)
+	if (new_pin_size < PKCS11_TOKEN_PIN_SIZE_MIN ||
+	    new_pin_size > PKCS11_TOKEN_PIN_SIZE_MAX)
 		return PKCS11_CKR_PIN_LEN_RANGE;
 
-	cpin = TEE_Malloc(PKCS11_TOKEN_PIN_SIZE, TEE_MALLOC_FILL_ZERO);
+	cpin = TEE_Malloc(PKCS11_TOKEN_PIN_SIZE_MAX, TEE_MALLOC_FILL_ZERO);
 	if (!cpin)
 		return PKCS11_MEMORY;
 
@@ -1255,10 +1246,10 @@ static uint32_t set_pin(struct pkcs11_session *session,
 		goto out;
 	}
 	assert(pin_key_hdl != TEE_HANDLE_NULL);
-	cipher_pin(pin_key_hdl, cpin, PKCS11_TOKEN_PIN_SIZE);
+	cipher_pin(pin_key_hdl, cpin, PKCS11_TOKEN_PIN_SIZE_MAX);
 	close_pin_file(pin_key_hdl);
 
-	TEE_MemMove(pin, cpin, PKCS11_TOKEN_PIN_SIZE);
+	TEE_MemMove(pin, cpin, PKCS11_TOKEN_PIN_SIZE_MAX);
 	*pin_size = new_pin_size;
 	*pin_count = 0;
 
@@ -1344,7 +1335,7 @@ static uint32_t check_so_pin(struct pkcs11_session *session,
 	if (token->db_main->flags & PKCS11_CKFT_SO_PIN_LOCKED)
 		return PKCS11_CKR_PIN_LOCKED;
 
-	cpin = TEE_Malloc(PKCS11_TOKEN_PIN_SIZE, TEE_MALLOC_FILL_ZERO);
+	cpin = TEE_Malloc(PKCS11_TOKEN_PIN_SIZE_MAX, TEE_MALLOC_FILL_ZERO);
 	if (!cpin)
 		return PKCS11_MEMORY;
 
@@ -1352,7 +1343,7 @@ static uint32_t check_so_pin(struct pkcs11_session *session,
 
 	// TODO: move into a single cipher_login_pin(token, user, buf, sz)
 	open_pin_file(token, PKCS11_CKU_SO, &pin_key_hdl);
-	cipher_pin(pin_key_hdl, cpin, PKCS11_TOKEN_PIN_SIZE);
+	cipher_pin(pin_key_hdl, cpin, PKCS11_TOKEN_PIN_SIZE_MAX);
 	close_pin_file(pin_key_hdl);
 
 	pin_rc = 0;
@@ -1360,7 +1351,8 @@ static uint32_t check_so_pin(struct pkcs11_session *session,
 	if (token->db_main->so_pin_size != pin_size)
 		pin_rc = 1;
 
-	if (buf_compare_ct(token->db_main->so_pin, cpin, PKCS11_TOKEN_PIN_SIZE))
+	if (buf_compare_ct(token->db_main->so_pin, cpin,
+			   PKCS11_TOKEN_PIN_SIZE_MAX))
 		pin_rc = 1;
 
 	TEE_Free(cpin);
@@ -1428,7 +1420,7 @@ static uint32_t check_user_pin(struct pkcs11_session *session,
 	if (token->db_main->flags & PKCS11_CKFT_USER_PIN_LOCKED)
 		return PKCS11_CKR_PIN_LOCKED;
 
-	cpin = TEE_Malloc(PKCS11_TOKEN_PIN_SIZE, TEE_MALLOC_FILL_ZERO);
+	cpin = TEE_Malloc(PKCS11_TOKEN_PIN_SIZE_MAX, TEE_MALLOC_FILL_ZERO);
 	if (!cpin)
 		return PKCS11_MEMORY;
 
@@ -1436,7 +1428,7 @@ static uint32_t check_user_pin(struct pkcs11_session *session,
 
 	// TODO: move into a single cipher_login_pin(token, user, buf, sz)
 	open_pin_file(token, PKCS11_CKU_USER, &pin_key_hdl);
-	cipher_pin(pin_key_hdl, cpin, PKCS11_TOKEN_PIN_SIZE);
+	cipher_pin(pin_key_hdl, cpin, PKCS11_TOKEN_PIN_SIZE_MAX);
 	close_pin_file(pin_key_hdl);
 
 	pin_rc = 0;
@@ -1445,7 +1437,7 @@ static uint32_t check_user_pin(struct pkcs11_session *session,
 		pin_rc = 1;
 
 	if (buf_compare_ct(token->db_main->user_pin, cpin,
-			   PKCS11_TOKEN_PIN_SIZE))
+			   PKCS11_TOKEN_PIN_SIZE_MAX))
 		pin_rc = 1;
 
 	TEE_Free(cpin);

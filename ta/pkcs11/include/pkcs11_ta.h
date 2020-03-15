@@ -665,11 +665,11 @@ enum pkcs11_rc {
 #define PKCS11_SLOT_VERSION_SIZE		2
 
 struct pkcs11_slot_info {
-	uint8_t slotDescription[PKCS11_SLOT_DESC_SIZE];
-	uint8_t manufacturerID[PKCS11_SLOT_MANUFACTURER_SIZE];
+	uint8_t slot_description[PKCS11_SLOT_DESC_SIZE];
+	uint8_t manufacturer_id[PKCS11_SLOT_MANUFACTURER_SIZE];
 	uint32_t flags;
-	uint8_t hardwareVersion[PKCS11_SLOT_VERSION_SIZE];
-	uint8_t firmwareVersion[PKCS11_SLOT_VERSION_SIZE];
+	uint8_t hardware_version[PKCS11_SLOT_VERSION_SIZE];
+	uint8_t firmware_version[PKCS11_SLOT_VERSION_SIZE];
 };
 
 /*
@@ -690,23 +690,23 @@ struct pkcs11_slot_info {
 
 struct pkcs11_token_info {
 	uint8_t label[PKCS11_TOKEN_LABEL_SIZE];
-	uint8_t manufacturerID[PKCS11_TOKEN_MANUFACTURER_SIZE];
+	uint8_t manufacturer_id[PKCS11_TOKEN_MANUFACTURER_SIZE];
 	uint8_t model[PKCS11_TOKEN_MODEL_SIZE];
-	uint8_t serialNumber[PKCS11_TOKEN_SERIALNUM_SIZE];
+	uint8_t serial_number[PKCS11_TOKEN_SERIALNUM_SIZE];
 	uint32_t flags;
-	uint32_t ulMaxSessionCount;
-	uint32_t ulSessionCount;
-	uint32_t ulMaxRwSessionCount;
-	uint32_t ulRwSessionCount;
-	uint32_t ulMaxPinLen;
-	uint32_t ulMinPinLen;
-	uint32_t ulTotalPublicMemory;
-	uint32_t ulFreePublicMemory;
-	uint32_t ulTotalPrivateMemory;
-	uint32_t ulFreePrivateMemory;
-	uint8_t hardwareVersion[2];
-	uint8_t firmwareVersion[2];
-	uint8_t utcTime[16];
+	uint32_t max_session_count;
+	uint32_t session_count;
+	uint32_t max_rw_session_count;
+	uint32_t rw_session_count;
+	uint32_t max_pin_len;
+	uint32_t min_pin_len;
+	uint32_t total_public_memory;
+	uint32_t free_public_memory;
+	uint32_t total_private_memory;
+	uint32_t free_private_memory;
+	uint8_t hardware_version[2];
+	uint8_t firmware_version[2];
+	uint8_t utc_time[16];
 };
 
 /*

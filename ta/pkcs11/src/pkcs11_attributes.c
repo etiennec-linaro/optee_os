@@ -991,7 +991,7 @@ uint32_t check_created_attrs_against_token(struct pkcs11_session *session,
 		return rc;
 
 	if (get_bool(head, PKCS11_CKA_TRUSTED) &&
-	    !pkcs11_session_is_security_officer(session)) {
+	    !pkcs11_session_is_so(session)) {
 		DMSG("Can't create trusted object");
 
 		return PKCS11_CKR_KEY_FUNCTION_NOT_PERMITTED;

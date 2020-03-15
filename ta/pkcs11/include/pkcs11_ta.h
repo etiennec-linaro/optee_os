@@ -769,7 +769,7 @@ struct pkcs11_session_info {
 };
 
 /* Valid values for pkcs11_session_info::state */
-enum pkcs11_session_state_next {
+enum pkcs11_session_state {
 	PKCS11_CKS_RO_PUBLIC_SESSION = 0,
 	PKCS11_CKS_RO_USER_FUNCTIONS = 1,
 	PKCS11_CKS_RW_PUBLIC_SESSION = 2,

@@ -32,15 +32,6 @@ enum pkcs11_token_state {
 	PKCS11_TOKEN_READ_ONLY,
 };
 
-enum pkcs11_session_state {
-	PKCS11_SESSION_RESET = 0,
-	PKCS11_SESSION_PUBLIC_READ_WRITE,
-	PKCS11_SESSION_PUBLIC_READ_ONLY,
-	PKCS11_SESSION_USER_READ_WRITE,
-	PKCS11_SESSION_USER_READ_ONLY,
-	PKCS11_SESSION_SO_READ_WRITE,
-};
-
 TAILQ_HEAD(client_list, pkcs11_client);
 TAILQ_HEAD(session_list, pkcs11_session);
 
@@ -239,7 +230,7 @@ void unregister_client(uintptr_t tee_session);
 
 void ck_token_close_tee_session(uintptr_t tee_session);
 struct pkcs11_session *pkcs11_handle2session(uint32_t handle,
-					  uintptr_t tee_session);
+					     struct pkcs11_client *client);
 
 static inline bool session_is_active(struct pkcs11_session *session)
 {
@@ -251,10 +242,29 @@ int set_processing_state(struct pkcs11_session *session,
 			 struct pkcs11_object *obj1,
 			 struct pkcs11_object *obj2);
 
-bool pkcs11_session_is_read_write(struct pkcs11_session *session);
-bool pkcs11_session_is_public(struct pkcs11_session *session);
-bool pkcs11_session_is_user(struct pkcs11_session *session);
-bool pkcs11_session_is_security_officer(struct pkcs11_session *session);
+static inline bool pkcs11_session_is_read_write(struct pkcs11_session *session)
+{
+	return session->state == PKCS11_CKS_RW_PUBLIC_SESSION ||
+	       session->state == PKCS11_CKS_RW_USER_FUNCTIONS ||
+	       session->state == PKCS11_CKS_RW_SO_FUNCTIONS;
+}
+
+static inline bool pkcs11_session_is_public(struct pkcs11_session *session)
+{
+	return session->state == PKCS11_CKS_RO_PUBLIC_SESSION ||
+	       session->state == PKCS11_CKS_RW_PUBLIC_SESSION;
+}
+
+static inline bool pkcs11_session_is_user(struct pkcs11_session *session)
+{
+	return session->state == PKCS11_CKS_RO_USER_FUNCTIONS ||
+	       session->state == PKCS11_CKS_RW_USER_FUNCTIONS;
+}
+
+static inline bool pkcs11_session_is_so(struct pkcs11_session *session)
+{
+	return session->state == PKCS11_CKS_RW_SO_FUNCTIONS;
+}
 
 static inline
 struct object_list *pkcs11_get_session_objects(struct pkcs11_session *session)

@@ -63,6 +63,12 @@ struct pkcs11_client *tee_session2client(uintptr_t tee_session)
 	return client;
 }
 
+struct pkcs11_session *pkcs11_handle2session(uint32_t handle,
+					     struct pkcs11_client *client)
+{
+	return handle_lookup(&client->session_handle_db, (int)handle);
+}
+
 uintptr_t register_client(void)
 {
 	struct pkcs11_client *client = NULL;
@@ -137,43 +143,6 @@ void pkcs11_deinit(void)
 
 	for (id = 0; id < TOKEN_COUNT; id++)
 		close_persistent_db(get_token(id));
-}
-
-bool pkcs11_session_is_read_write(struct pkcs11_session *session)
-{
-	switch (session->state) {
-	case PKCS11_SESSION_PUBLIC_READ_WRITE:
-	case PKCS11_SESSION_USER_READ_WRITE:
-	case PKCS11_SESSION_SO_READ_WRITE:
-		return true;
-	default:
-		return false;
-	}
-}
-
-bool pkcs11_session_is_security_officer(struct pkcs11_session *session)
-{
-	return session->state == PKCS11_SESSION_SO_READ_WRITE;
-}
-
-bool pkcs11_session_is_user(struct pkcs11_session *session)
-{
-	return session->state == PKCS11_SESSION_USER_READ_WRITE ||
-	       session->state == PKCS11_SESSION_USER_READ_ONLY;
-}
-
-bool pkcs11_session_is_public(struct pkcs11_session *session)
-{
-	return session->state == PKCS11_SESSION_PUBLIC_READ_WRITE ||
-	       session->state == PKCS11_SESSION_PUBLIC_READ_ONLY;
-}
-
-struct pkcs11_session *pkcs11_handle2session(uint32_t handle,
-					  uintptr_t tee_session)
-{
-	struct pkcs11_client *client = tee_session2client(tee_session);
-
-	return handle_lookup(&client->session_handle_db, (int)handle);
 }
 
 /*
@@ -770,12 +739,12 @@ uint32_t entry_ck_token_mecha_info(uint32_t ptypes, TEE_Param *params)
 	return PKCS11_CKR_OK;
 }
 
-/* Select the read-only/read-write state for session login state */
+/* Select the ReadOnly or ReadWrite state for session login state */
 static void set_session_state(struct pkcs11_client *client,
 			      struct pkcs11_session *session, bool readonly)
 {
 	struct pkcs11_session *sess = NULL;
-	enum pkcs11_session_state state = PKCS11_SESSION_RESET;
+	enum pkcs11_session_state state = PKCS11_CKS_RO_PUBLIC_SESSION;
 
 	/* Default to public session if no session already registered */
 	if (readonly)
@@ -784,55 +753,49 @@ static void set_session_state(struct pkcs11_client *client,
 		state = PKCS11_CKS_RW_PUBLIC_SESSION;
 
 	/*
-	 * No need to check all client session, only the first session on
+	 * No need to check all client sessions, the first found in
 	 * target token gives client login configuration.
 	 */
 	TAILQ_FOREACH(sess, &client->session_list, link) {
 		assert(sess != session);
 
-		if (sess->token != session->token)
-			continue;
-
-		switch (sess->state) {
-		case PKCS11_SESSION_PUBLIC_READ_WRITE:
-		case PKCS11_SESSION_PUBLIC_READ_ONLY:
-			state = PKCS11_SESSION_PUBLIC_READ_WRITE;
+		if (sess->token == session->token) {
+			state = sess->state;
 			break;
-		case PKCS11_SESSION_USER_READ_WRITE:
-		case PKCS11_SESSION_USER_READ_ONLY:
-			state = PKCS11_SESSION_USER_READ_WRITE;
-			break;
-		case PKCS11_SESSION_SO_READ_WRITE:
-			state = PKCS11_SESSION_SO_READ_WRITE;
-			break;
-		default:
-			TEE_Panic(0);
 		}
-		break;
-	 }
+	}
 
 	switch (state) {
-	case PKCS11_SESSION_USER_READ_WRITE:
-		session->state = readonly ? PKCS11_SESSION_USER_READ_ONLY :
-					  PKCS11_SESSION_USER_READ_WRITE;
+	case PKCS11_CKS_RW_PUBLIC_SESSION:
+	case PKCS11_CKS_RO_PUBLIC_SESSION:
+		if (readonly)
+			state = PKCS11_CKS_RO_PUBLIC_SESSION;
+		else
+			state = PKCS11_CKS_RW_PUBLIC_SESSION;
 		break;
-	case PKCS11_SESSION_SO_READ_WRITE:
-		/* SO cannot open read-only sessions */
+	case PKCS11_CKS_RO_USER_FUNCTIONS:
+	case PKCS11_CKS_RW_USER_FUNCTIONS:
+		if (readonly)
+			state = PKCS11_CKS_RO_USER_FUNCTIONS;
+		else
+			state = PKCS11_CKS_RW_USER_FUNCTIONS;
+		break;
+	case PKCS11_CKS_RW_SO_FUNCTIONS:
 		if (readonly)
 			TEE_Panic(0);
-
-		session->state = PKCS11_SESSION_PUBLIC_READ_ONLY;
+		else
+			state = PKCS11_CKS_RW_SO_FUNCTIONS;
 		break;
 	default:
-		session->state = readonly ? PKCS11_SESSION_PUBLIC_READ_ONLY :
-					  PKCS11_SESSION_PUBLIC_READ_WRITE;
-		break;
+		TEE_Panic(0);
 	}
+
+	session->state = state;
 }
 
 static void session_login_user(struct pkcs11_session *session)
 {
-	struct pkcs11_client *client = tee_session2client(session->tee_session);
+	struct pkcs11_client *client = session->client;
 	struct pkcs11_session *sess = NULL;
 
 	TAILQ_FOREACH(sess, &client->session_list, link) {
@@ -840,15 +803,15 @@ static void session_login_user(struct pkcs11_session *session)
 			continue;
 
 		if (pkcs11_session_is_read_write(sess))
-			sess->state = PKCS11_SESSION_USER_READ_WRITE;
+			sess->state = PKCS11_CKS_RW_USER_FUNCTIONS;
 		else
-			sess->state = PKCS11_SESSION_USER_READ_ONLY;
+			sess->state = PKCS11_CKS_RO_USER_FUNCTIONS;
 	}
 }
 
 static void session_login_so(struct pkcs11_session *session)
 {
-	struct pkcs11_client *client = tee_session2client(session->tee_session);
+	struct pkcs11_client *client = session->client;
 	struct pkcs11_session *sess = NULL;
 
 	TAILQ_FOREACH(sess, &client->session_list, link) {
@@ -856,7 +819,7 @@ static void session_login_so(struct pkcs11_session *session)
 			continue;
 
 		if (pkcs11_session_is_read_write(sess))
-			sess->state = PKCS11_SESSION_SO_READ_WRITE;
+			sess->state = PKCS11_CKS_RW_SO_FUNCTIONS;
 		else
 			TEE_Panic(0);
 	}
@@ -864,7 +827,7 @@ static void session_login_so(struct pkcs11_session *session)
 
 static void session_logout(struct pkcs11_session *session)
 {
-	struct pkcs11_client *client = tee_session2client(session->tee_session);
+	struct pkcs11_client *client = session->client;
 	struct pkcs11_session *sess = NULL;
 	struct pkcs11_object *obj = NULL;
 
@@ -882,9 +845,9 @@ static void session_logout(struct pkcs11_session *session)
 		}
 
 		if (pkcs11_session_is_read_write(sess))
-			sess->state = PKCS11_SESSION_PUBLIC_READ_WRITE;
+			sess->state = PKCS11_CKS_RW_PUBLIC_SESSION;
 		else
-			sess->state = PKCS11_SESSION_PUBLIC_READ_ONLY;
+			sess->state = PKCS11_CKS_RO_PUBLIC_SESSION;
 	}
 }
 
@@ -892,6 +855,7 @@ static void session_logout(struct pkcs11_session *session)
 static uint32_t open_ck_session(uintptr_t tee_session, uint32_t ptypes,
 				TEE_Param *params, bool readonly)
 {
+	struct pkcs11_client *client = tee_session2client(tee_session);
 	const uint32_t exp_pt = TEE_PARAM_TYPES(TEE_PARAM_TYPE_MEMREF_INOUT,
 						TEE_PARAM_TYPE_NONE,
 						TEE_PARAM_TYPE_MEMREF_OUTPUT,
@@ -899,26 +863,23 @@ static uint32_t open_ck_session(uintptr_t tee_session, uint32_t ptypes,
 	TEE_Param *ctrl = &params[0];
 	TEE_Param *out = &params[2];
 	uint32_t rv = 0;
-	struct serialargs ctrlargs;
+	struct serialargs ctrlargs = { };
 	uint32_t token_id = 0;
 	struct ck_token *token = NULL;
 	struct pkcs11_session *session = NULL;
-	struct pkcs11_client *client = NULL;
 
-	TEE_MemFill(&ctrlargs, 0, sizeof(ctrlargs));
-
-	if (ptypes != exp_pt ||
+	if (!client || ptypes != exp_pt ||
 	    out->memref.size != sizeof(session->handle))
-		return PKCS11_BAD_PARAM;
+		return PKCS11_CKR_ARGUMENTS_BAD;
 
 	serialargs_init(&ctrlargs, ctrl->memref.buffer, ctrl->memref.size);
 
-	rv = serialargs_get(&ctrlargs, &token_id, sizeof(uint32_t));
+	rv = serialargs_get(&ctrlargs, &token_id, sizeof(token_id));
 	if (rv)
 		return rv;
 
 	if (serialargs_remaining_bytes(&ctrlargs))
-		return PKCS11_BAD_PARAM;
+		return PKCS11_CKR_ARGUMENTS_BAD;
 
 	token = get_token(token_id);
 	if (!token)
@@ -927,26 +888,21 @@ static uint32_t open_ck_session(uintptr_t tee_session, uint32_t ptypes,
 	if (!readonly && token->state == PKCS11_TOKEN_READ_ONLY)
 		return PKCS11_CKR_TOKEN_WRITE_PROTECTED;
 
-	client = tee_session2client(tee_session);
-	if (!client) {
-		EMSG("Unexpected invalid TEE session handle");
-		return PKCS11_FAILED;
-	}
-
 	if (readonly) {
+		/* Specifically reject read-only session under SO login */
 		TAILQ_FOREACH(session, &client->session_list, link)
-			if (session->state == PKCS11_SESSION_SO_READ_WRITE)
+			if (pkcs11_session_is_so(session))
 				return PKCS11_CKR_SESSION_READ_WRITE_SO_EXISTS;
 	}
 
 	session = TEE_Malloc(sizeof(*session), TEE_MALLOC_FILL_ZERO);
 	if (!session)
-		return PKCS11_MEMORY;
+		return PKCS11_CKR_DEVICE_MEMORY;
 
 	session->handle = handle_get(&client->session_handle_db, session);
 	if (!session->handle) {
 		TEE_Free(session);
-		return PKCS11_MEMORY;
+		return PKCS11_CKR_DEVICE_MEMORY;
 	}
 
 	session->tee_session = tee_session;
@@ -1009,27 +965,26 @@ static void close_ck_session(struct pkcs11_session *session)
 
 	TEE_Free(session);
 
-	IMSG("PKCS11 session %"PRIu32": close", session->handle);
+	IMSG("Close PKCS11 session %"PRIu32, session->handle);
 }
 
 /* ctrl=[session-handle], in=unused, out=unused */
 uint32_t entry_ck_token_close_session(uintptr_t tee_session,
 				      uint32_t ptypes, TEE_Param *params)
 {
+	struct pkcs11_client *client = tee_session2client(tee_session);
 	const uint32_t exp_pt = TEE_PARAM_TYPES(TEE_PARAM_TYPE_MEMREF_INOUT,
 						TEE_PARAM_TYPE_NONE,
 						TEE_PARAM_TYPE_NONE,
 						TEE_PARAM_TYPE_NONE);
 	TEE_Param *ctrl = &params[0];
 	uint32_t rv = 0;
-	struct serialargs ctrlargs;
+	struct serialargs ctrlargs = { };
 	uint32_t session_handle = 0;
 	struct pkcs11_session *session = NULL;
 
-	TEE_MemFill(&ctrlargs, 0, sizeof(ctrlargs));
-
-	if (ptypes != exp_pt)
-		return PKCS11_BAD_PARAM;
+	if (!client || ptypes != exp_pt)
+		return PKCS11_CKR_ARGUMENTS_BAD;
 
 	serialargs_init(&ctrlargs, ctrl->memref.buffer, ctrl->memref.size);
 
@@ -1038,37 +993,35 @@ uint32_t entry_ck_token_close_session(uintptr_t tee_session,
 		return rv;
 
 	if (serialargs_remaining_bytes(&ctrlargs))
-		return PKCS11_BAD_PARAM;
+		return PKCS11_CKR_ARGUMENTS_BAD;
 
-	session = pkcs11_handle2session(session_handle, tee_session);
+	session = pkcs11_handle2session(session_handle, client);
 	if (!session)
 		return PKCS11_CKR_SESSION_HANDLE_INVALID;
 
 	close_ck_session(session);
 
-	return PKCS11_OK;
+	return PKCS11_CKR_OK;
 }
 
 uint32_t entry_ck_token_close_all(uintptr_t tee_session,
 				  uint32_t ptypes, TEE_Param *params)
 {
+	struct pkcs11_client *client = tee_session2client(tee_session);
 	const uint32_t exp_pt = TEE_PARAM_TYPES(TEE_PARAM_TYPE_MEMREF_INOUT,
 						TEE_PARAM_TYPE_NONE,
 						TEE_PARAM_TYPE_NONE,
 						TEE_PARAM_TYPE_NONE);
 	TEE_Param *ctrl = &params[0];
 	uint32_t rv = 0;
-	struct serialargs ctrlargs;
+	struct serialargs ctrlargs = { };
 	uint32_t token_id = 0;
 	struct ck_token *token = NULL;
 	struct pkcs11_session *session = NULL;
 	struct pkcs11_session *next = NULL;
-	struct pkcs11_client *client = tee_session2client(tee_session);
 
-	TEE_MemFill(&ctrlargs, 0, sizeof(ctrlargs));
-
-	if (ptypes != exp_pt)
-		return PKCS11_BAD_PARAM;
+	if (!client || ptypes != exp_pt)
+		return PKCS11_CKR_ARGUMENTS_BAD;
 
 	serialargs_init(&ctrlargs, ctrl->memref.buffer, ctrl->memref.size);
 
@@ -1077,19 +1030,19 @@ uint32_t entry_ck_token_close_all(uintptr_t tee_session,
 		return rv;
 
 	if (serialargs_remaining_bytes(&ctrlargs))
-		return PKCS11_BAD_PARAM;
+		return PKCS11_CKR_ARGUMENTS_BAD;
 
 	token = get_token(token_id);
 	if (!token)
 		return PKCS11_CKR_SLOT_ID_INVALID;
 
-	IMSG("PKCS11 sesssion %"PRIu32": close sessions", token_id);
+	IMSG("Close all sessions for PKCS11 token %"PRIu32, token_id);
 
 	TAILQ_FOREACH_SAFE(session, &client->session_list, link, next)
 		if (session->token == token)
 			close_ck_session(session);
 
-	return PKCS11_OK;
+	return PKCS11_CKR_OK;
 }
 
 static uint32_t set_pin(struct pkcs11_session *session,
@@ -1180,22 +1133,21 @@ out:
 uint32_t entry_init_pin(uintptr_t tee_session,
 			uint32_t ptypes, TEE_Param *params)
 {
-        const uint32_t exp_pt = TEE_PARAM_TYPES(TEE_PARAM_TYPE_MEMREF_INOUT,
+	struct pkcs11_client *client = tee_session2client(tee_session);
+	const uint32_t exp_pt = TEE_PARAM_TYPES(TEE_PARAM_TYPE_MEMREF_INOUT,
 						TEE_PARAM_TYPE_NONE,
 						TEE_PARAM_TYPE_NONE,
 						TEE_PARAM_TYPE_NONE);
 	TEE_Param *ctrl = &params[0];
 	uint32_t rv = 0;
-	struct serialargs ctrlargs;
+	struct serialargs ctrlargs = { };
 	uint32_t session_handle = 0;
 	struct pkcs11_session *session = NULL;
 	uint32_t pin_size = 0;
 	void *pin = NULL;
 
-	TEE_MemFill(&ctrlargs, 0, sizeof(ctrlargs));
-
-	if (ptypes != exp_pt)
-		return PKCS11_BAD_PARAM;
+	if (!client || ptypes != exp_pt)
+		return PKCS11_CKR_ARGUMENTS_BAD;
 
 	serialargs_init(&ctrlargs, ctrl->memref.buffer, ctrl->memref.size);
 
@@ -1214,11 +1166,11 @@ uint32_t entry_init_pin(uintptr_t tee_session,
 	if (serialargs_remaining_bytes(&ctrlargs))
 		return PKCS11_BAD_PARAM;
 
-	session = pkcs11_handle2session(session_handle, tee_session);
+	session = pkcs11_handle2session(session_handle, client);
 	if (!session)
 		return PKCS11_CKR_SESSION_HANDLE_INVALID;
 
-	if (!pkcs11_session_is_security_officer(session))
+	if (!pkcs11_session_is_so(session))
 		return PKCS11_CKR_USER_NOT_LOGGED_IN;
 
 	assert(session->token->db_main->flags & PKCS11_CKFT_TOKEN_INITIALIZED);
@@ -1403,13 +1355,14 @@ static uint32_t check_user_pin(struct pkcs11_session *session,
 uint32_t entry_set_pin(uintptr_t tee_session,
 		       uint32_t ptypes, TEE_Param *params)
 {
+	struct pkcs11_client *client = tee_session2client(tee_session);
 	const uint32_t exp_pt = TEE_PARAM_TYPES(TEE_PARAM_TYPE_MEMREF_INOUT,
 						TEE_PARAM_TYPE_NONE,
 						TEE_PARAM_TYPE_NONE,
 						TEE_PARAM_TYPE_NONE);
 	TEE_Param *ctrl = &params[0];
 	uint32_t rv = 0;
-	struct serialargs ctrlargs;
+	struct serialargs ctrlargs = { };
 	uint32_t session_handle = 0;
 	struct pkcs11_session *session = NULL;
 	uint32_t old_pin_size = 0;
@@ -1417,10 +1370,8 @@ uint32_t entry_set_pin(uintptr_t tee_session,
 	void *old_pin = NULL;
 	void *pin = NULL;
 
-	TEE_MemFill(&ctrlargs, 0, sizeof(ctrlargs));
-
-	if (ptypes != exp_pt)
-		return PKCS11_BAD_PARAM;
+	if (!client || ptypes != exp_pt)
+		return PKCS11_CKR_ARGUMENTS_BAD;
 
 	serialargs_init(&ctrlargs, ctrl->memref.buffer, ctrl->memref.size);
 
@@ -1447,14 +1398,14 @@ uint32_t entry_set_pin(uintptr_t tee_session,
 	if (serialargs_remaining_bytes(&ctrlargs))
 		return PKCS11_BAD_PARAM;
 
-	session = pkcs11_handle2session(session_handle, tee_session);
+	session = pkcs11_handle2session(session_handle, client);
 	if (!session)
 		return PKCS11_CKR_SESSION_HANDLE_INVALID;
 
 	if (!pkcs11_session_is_read_write(session))
 		return PKCS11_CKR_SESSION_READ_ONLY;
 
-	if (pkcs11_session_is_security_officer(session)) {
+	if (pkcs11_session_is_so(session)) {
 		if (!(session->token->db_main->flags &
 		      PKCS11_CKFT_TOKEN_INITIALIZED))
 			return PKCS11_ERROR;
@@ -1482,24 +1433,22 @@ uint32_t entry_set_pin(uintptr_t tee_session,
 /* ctrl=[session][user_type][pin-size]{pin], in=unused, out=unused */
 uint32_t entry_login(uintptr_t tee_session, uint32_t ptypes, TEE_Param *params)
 {
+	struct pkcs11_client *client = tee_session2client(tee_session);
 	const uint32_t exp_pt = TEE_PARAM_TYPES(TEE_PARAM_TYPE_MEMREF_INOUT,
 						TEE_PARAM_TYPE_NONE,
 						TEE_PARAM_TYPE_NONE,
 						TEE_PARAM_TYPE_NONE);
 	TEE_Param *ctrl = &params[0];
 	uint32_t rv = 0;
-	struct serialargs ctrlargs;
+	struct serialargs ctrlargs = { };
 	uint32_t session_handle = 0;
 	struct pkcs11_session *session = NULL;
 	struct pkcs11_session *sess = NULL;
-	struct pkcs11_client *client = NULL;
 	uint32_t user_type = 0;
 	uint32_t pin_size = 0;
 	void *pin = NULL;
 
-	TEE_MemFill(&ctrlargs, 0, sizeof(ctrlargs));
-
-	if (ptypes != exp_pt)
+	if (!client || ptypes != exp_pt)
 		return PKCS11_BAD_PARAM;
 
 	serialargs_init(&ctrlargs, ctrl->memref.buffer, ctrl->memref.size);
@@ -1523,15 +1472,13 @@ uint32_t entry_login(uintptr_t tee_session, uint32_t ptypes, TEE_Param *params)
 	if (serialargs_remaining_bytes(&ctrlargs))
 		return PKCS11_BAD_PARAM;
 
-	session = pkcs11_handle2session(session_handle, tee_session);
+	session = pkcs11_handle2session(session_handle, client);
 	if (!session)
 		return PKCS11_CKR_SESSION_HANDLE_INVALID;
 
-	client = tee_session2client(tee_session);
-
 	switch ((enum pkcs11_user_type)user_type) {
 	case PKCS11_CKU_SO:
-		if (pkcs11_session_is_security_officer(session))
+		if (pkcs11_session_is_so(session))
 			return PKCS11_CKR_USER_ALREADY_LOGGED_IN;
 
 		if (pkcs11_session_is_user(session))
@@ -1557,7 +1504,7 @@ uint32_t entry_login(uintptr_t tee_session, uint32_t ptypes, TEE_Param *params)
 		break;
 
 	case PKCS11_CKU_USER:
-		if (pkcs11_session_is_security_officer(session))
+		if (pkcs11_session_is_so(session))
 			return PKCS11_CKR_USER_ANOTHER_ALREADY_LOGGED_IN;
 
 		if (pkcs11_session_is_user(session))
@@ -1581,9 +1528,9 @@ uint32_t entry_login(uintptr_t tee_session, uint32_t ptypes, TEE_Param *params)
 			return PKCS11_CKR_FUNCTION_FAILED;
 
 		assert(pkcs11_session_is_user(session) ||
-			pkcs11_session_is_security_officer(session));
+			pkcs11_session_is_so(session));
 
-		if (pkcs11_session_is_security_officer(session))
+		if (pkcs11_session_is_so(session))
 			rv = check_so_pin(session, pin, pin_size);
 		else
 			rv = check_user_pin(session, pin, pin_size);
@@ -1608,19 +1555,18 @@ uint32_t entry_login(uintptr_t tee_session, uint32_t ptypes, TEE_Param *params)
 /* ctrl=[session], in=unused, out=unused */
 uint32_t entry_logout(uintptr_t tee_session, uint32_t ptypes, TEE_Param *params)
 {
+	struct pkcs11_client *client = tee_session2client(tee_session);
 	const uint32_t exp_pt = TEE_PARAM_TYPES(TEE_PARAM_TYPE_MEMREF_INOUT,
 						TEE_PARAM_TYPE_NONE,
 						TEE_PARAM_TYPE_NONE,
 						TEE_PARAM_TYPE_NONE);
 	TEE_Param *ctrl = &params[0];
 	uint32_t rv = 0;
-	struct serialargs ctrlargs;
+	struct serialargs ctrlargs = { };
 	uint32_t session_handle = 0;
 	struct pkcs11_session *session = NULL;
 
-	TEE_MemFill(&ctrlargs, 0, sizeof(ctrlargs));
-
-	if (ptypes != exp_pt)
+	if (!client || ptypes != exp_pt)
 		return PKCS11_BAD_PARAM;
 
 	serialargs_init(&ctrlargs, ctrl->memref.buffer, ctrl->memref.size);
@@ -1632,7 +1578,7 @@ uint32_t entry_logout(uintptr_t tee_session, uint32_t ptypes, TEE_Param *params)
 	if (serialargs_remaining_bytes(&ctrlargs))
 		return PKCS11_BAD_PARAM;
 
-	session = pkcs11_handle2session(session_handle, tee_session);
+	session = pkcs11_handle2session(session_handle, client);
 	if (!session)
 		return PKCS11_CKR_SESSION_HANDLE_INVALID;
 
@@ -1645,4 +1591,3 @@ uint32_t entry_logout(uintptr_t tee_session, uint32_t ptypes, TEE_Param *params)
 
 	return PKCS11_OK;
 }
-

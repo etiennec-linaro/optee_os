@@ -14,19 +14,19 @@
 
 #include "attributes.h"
 #include "object.h"
-#include "pkcs11_token.h"
 #include "pkcs11_attributes.h"
+#include "pkcs11_helpers.h"
+#include "pkcs11_token.h"
 #include "processing.h"
 #include "serializer.h"
-#include "pkcs11_helpers.h"
 
 static uint32_t get_ready_session(struct pkcs11_session **sess,
 				  uint32_t session_handle,
-				  uintptr_t tee_session)
+				  struct pkcs11_client *client)
 {
 	struct pkcs11_session *session = NULL;
 
-	session = pkcs11_handle2session(session_handle, tee_session);
+	session = pkcs11_handle2session(session_handle, client);
 	if (!session)
 		return PKCS11_CKR_SESSION_HANDLE_INVALID;
 
@@ -71,13 +71,13 @@ static bool func_matches_state(enum processing_func function,
 
 static uint32_t get_active_session(struct pkcs11_session **sess,
 				  uint32_t session_handle,
-				  uintptr_t tee_session,
+				  struct pkcs11_client *client,
 				  enum processing_func function)
 {
 	struct pkcs11_session *session = NULL;
 	uint32_t rv = PKCS11_CKR_OPERATION_NOT_INITIALIZED;
 
-	session = pkcs11_handle2session(session_handle, tee_session);
+	session = pkcs11_handle2session(session_handle, client);
 	if (!session)
 		return PKCS11_CKR_SESSION_HANDLE_INVALID;
 
@@ -128,6 +128,7 @@ void release_active_processing(struct pkcs11_session *session)
 uint32_t entry_import_object(uintptr_t tee_session,
 			     uint32_t ptypes, TEE_Param *params)
 {
+	struct pkcs11_client *client = tee_session2client(tee_session);
         const uint32_t exp_pt = TEE_PARAM_TYPES(TEE_PARAM_TYPE_MEMREF_INOUT,
 						TEE_PARAM_TYPE_NONE,
 						TEE_PARAM_TYPE_MEMREF_OUTPUT,
@@ -135,7 +136,7 @@ uint32_t entry_import_object(uintptr_t tee_session,
 	TEE_Param *ctrl = &params[0];
 	TEE_Param *out = &params[2];
 	uint32_t rv = 0;
-	struct serialargs ctrlargs;
+	struct serialargs ctrlargs = { };
 	uint32_t session_handle = 0;
 	struct pkcs11_session *session = NULL;
 	struct pkcs11_attrs_head *head = NULL;
@@ -143,13 +144,11 @@ uint32_t entry_import_object(uintptr_t tee_session,
 	size_t template_size = 0;
 	uint32_t obj_handle = 0;
 
-	TEE_MemFill(&ctrlargs, 0, sizeof(ctrlargs));
-
 	/*
 	 * Collect the arguments of the request
 	 */
 
-	if (ptypes != exp_pt ||
+	if (!client || ptypes != exp_pt ||
 	    out->memref.size != sizeof(obj_handle))
 		return PKCS11_BAD_PARAM;
 
@@ -168,7 +167,7 @@ uint32_t entry_import_object(uintptr_t tee_session,
 		goto bail;
 	}
 
-	rv = get_ready_session(&session, session_handle, tee_session);
+	rv = get_ready_session(&session, session_handle, client);
 	if (rv)
 		goto bail;
 
@@ -310,6 +309,7 @@ static uint32_t generate_random_key_value(struct pkcs11_attrs_head **head)
 uint32_t entry_generate_secret(uintptr_t tee_session,
 			       uint32_t ptypes, TEE_Param *params)
 {
+	struct pkcs11_client *client = tee_session2client(tee_session);
         const uint32_t exp_pt = TEE_PARAM_TYPES(TEE_PARAM_TYPE_MEMREF_INOUT,
 						TEE_PARAM_TYPE_NONE,
 						TEE_PARAM_TYPE_MEMREF_OUTPUT,
@@ -317,7 +317,7 @@ uint32_t entry_generate_secret(uintptr_t tee_session,
 	TEE_Param *ctrl = &params[0];
 	TEE_Param *out = &params[2];
 	uint32_t rv = 0;
-	struct serialargs ctrlargs;
+	struct serialargs ctrlargs = { };
 	uint32_t session_handle = 0;
 	struct pkcs11_session *session = NULL;
 	struct pkcs11_attribute_head *proc_params = NULL;
@@ -326,9 +326,7 @@ uint32_t entry_generate_secret(uintptr_t tee_session,
 	size_t template_size = 0;
 	uint32_t obj_handle = 0;
 
-	TEE_MemFill(&ctrlargs, 0, sizeof(ctrlargs));
-
-	if (ptypes != exp_pt ||
+	if (!client || ptypes != exp_pt ||
 	    out->memref.size != sizeof(obj_handle))
 		return PKCS11_BAD_PARAM;
 
@@ -351,7 +349,7 @@ uint32_t entry_generate_secret(uintptr_t tee_session,
 		goto bail;
 	}
 
-	rv = get_ready_session(&session, session_handle, tee_session);
+	rv = get_ready_session(&session, session_handle, client);
 	if (rv)
 		goto bail;
 
@@ -488,9 +486,10 @@ bail:
 	return rv;
 }
 
-uint32_t entry_generate_key_pair(uintptr_t teesess,
+uint32_t entry_generate_key_pair(uintptr_t tee_session,
 				 uint32_t ptypes, TEE_Param *params)
 {
+	struct pkcs11_client *client = tee_session2client(tee_session);
         const uint32_t exp_pt = TEE_PARAM_TYPES(TEE_PARAM_TYPE_MEMREF_INOUT,
 						TEE_PARAM_TYPE_NONE,
 						TEE_PARAM_TYPE_MEMREF_OUTPUT,
@@ -498,7 +497,7 @@ uint32_t entry_generate_key_pair(uintptr_t teesess,
 	TEE_Param *ctrl = &params[0];
 	TEE_Param *out = &params[2];
 	uint32_t rv = 0;
-	struct serialargs ctrlargs;
+	struct serialargs ctrlargs = { };
 	uint32_t session_handle = 0;
 	struct pkcs11_session *session = NULL;
 	struct pkcs11_attribute_head *proc_params = NULL;
@@ -509,11 +508,9 @@ uint32_t entry_generate_key_pair(uintptr_t teesess,
 	uint32_t pubkey_handle = 0;
 	uint32_t privkey_handle = 0;
 	uint32_t *hdl_ptr = NULL;
+	size_t out_ref_size = sizeof(pubkey_handle) + sizeof(privkey_handle);
 
-	TEE_MemFill(&ctrlargs, 0, sizeof(ctrlargs));
-
-	if (ptypes != exp_pt ||
-	    out->memref.size != (sizeof(pubkey_handle) + sizeof(privkey_handle)))
+	if (!client || ptypes != exp_pt || out->memref.size != out_ref_size)
 		return PKCS11_BAD_PARAM;
 
 	serialargs_init(&ctrlargs, ctrl->memref.buffer, ctrl->memref.size);
@@ -532,7 +529,7 @@ uint32_t entry_generate_key_pair(uintptr_t teesess,
 	if (rv)
 		goto bail;
 
-	rv = get_ready_session(&session, session_handle, teesess);
+	rv = get_ready_session(&session, session_handle, client);
 	if (rv)
 		goto bail;
 
@@ -641,7 +638,6 @@ uint32_t entry_generate_key_pair(uintptr_t teesess,
 
 	TEE_MemMove(hdl_ptr, &pubkey_handle, sizeof(pubkey_handle));
 	TEE_MemMove(hdl_ptr + 1, &privkey_handle, sizeof(privkey_handle));
-	out->memref.size = sizeof(pubkey_handle) + sizeof(privkey_handle);
 
 	IMSG("PKCS11 session %"PRIu32": create key pair 0x%"PRIx32"/0x%"PRIx32,
 	     session_handle, privkey_handle, pubkey_handle);
@@ -670,22 +666,21 @@ uint32_t entry_processing_init(uintptr_t tee_session,
 			       uint32_t ptypes, TEE_Param *params,
 			       enum processing_func function)
 {
+	struct pkcs11_client *client = tee_session2client(tee_session);
         const uint32_t exp_pt = TEE_PARAM_TYPES(TEE_PARAM_TYPE_MEMREF_INOUT,
 						TEE_PARAM_TYPE_NONE,
 						TEE_PARAM_TYPE_NONE,
 						TEE_PARAM_TYPE_NONE);
 	TEE_Param *ctrl = &params[0];
 	uint32_t rv = 0;
-	struct serialargs ctrlargs;
+	struct serialargs ctrlargs = { };
 	uint32_t session_handle = 0;
 	struct pkcs11_session *session = NULL;
 	struct pkcs11_attribute_head *proc_params = NULL;
 	uint32_t key_handle = 0;
 	struct pkcs11_object *obj = NULL;
 
-	TEE_MemFill(&ctrlargs, 0, sizeof(ctrlargs));
-
-	if (ptypes != exp_pt)
+	if (!client || ptypes != exp_pt)
 		return PKCS11_BAD_PARAM;
 
 	serialargs_init(&ctrlargs, ctrl->memref.buffer, ctrl->memref.size);
@@ -707,7 +702,7 @@ uint32_t entry_processing_init(uintptr_t tee_session,
 		goto bail;
 	}
 
-	rv = get_ready_session(&session, session_handle, tee_session);
+	rv = get_ready_session(&session, session_handle, client);
 	if (rv)
 		goto bail;
 
@@ -776,16 +771,16 @@ uint32_t entry_processing_step(uintptr_t tee_session,
 			       enum processing_func function,
 			       enum processing_step step)
 {
+	struct pkcs11_client *client = tee_session2client(tee_session);
 	TEE_Param *ctrl = &params[0];
 	uint32_t rv = 0;
-	struct serialargs ctrlargs;
+	struct serialargs ctrlargs = { };
 	uint32_t session_handle = 0;
 	struct pkcs11_session *session = NULL;
 	uint32_t mecha_type = 0;
 
-	TEE_MemFill(&ctrlargs, 0, sizeof(ctrlargs));
-
-	if (TEE_PARAM_TYPE_GET(ptypes, 0) != TEE_PARAM_TYPE_MEMREF_INOUT)
+	if (!client ||
+	    TEE_PARAM_TYPE_GET(ptypes, 0) != TEE_PARAM_TYPE_MEMREF_INOUT)
 		return PKCS11_BAD_PARAM;
 
 	serialargs_init(&ctrlargs, ctrl->memref.buffer, ctrl->memref.size);
@@ -797,8 +792,7 @@ uint32_t entry_processing_step(uintptr_t tee_session,
 	if (serialargs_remaining_bytes(&ctrlargs))
 		return PKCS11_BAD_PARAM;
 
-	rv = get_active_session(&session, session_handle, tee_session,
-				function);
+	rv = get_active_session(&session, session_handle, client, function);
 	if (rv)
 		return rv;
 
@@ -859,17 +853,17 @@ uint32_t entry_verify_oneshot(uintptr_t tee_session,
 			      enum processing_step step)
 
 {
+	struct pkcs11_client *client = tee_session2client(tee_session);
 	TEE_Param *ctrl = &params[0];
 	uint32_t rv = 0;
-	struct serialargs ctrlargs;
+	struct serialargs ctrlargs = { };
 	uint32_t session_handle = 0;
 	struct pkcs11_session *session = NULL;
 	uint32_t mecha_type = 0;
 
-	TEE_MemFill(&ctrlargs, 0, sizeof(ctrlargs));
-
 	assert(function == PKCS11_FUNCTION_VERIFY);
-	if (TEE_PARAM_TYPE_GET(ptypes, 0) != TEE_PARAM_TYPE_MEMREF_INOUT)
+	if (!client ||
+	    TEE_PARAM_TYPE_GET(ptypes, 0) != TEE_PARAM_TYPE_MEMREF_INOUT)
 		return PKCS11_BAD_PARAM;
 
 	serialargs_init(&ctrlargs, ctrl->memref.buffer, ctrl->memref.size);
@@ -881,8 +875,7 @@ uint32_t entry_verify_oneshot(uintptr_t tee_session,
 	if (serialargs_remaining_bytes(&ctrlargs))
 		return PKCS11_BAD_PARAM;
 
-	rv = get_active_session(&session, session_handle, tee_session,
-				function);
+	rv = get_active_session(&session, session_handle, client, function);
 	if (rv)
 		return rv;
 
@@ -916,6 +909,7 @@ bail:
 uint32_t entry_derive_key(uintptr_t tee_session,
 			  uint32_t ptypes, TEE_Param *params)
 {
+	struct pkcs11_client *client = tee_session2client(tee_session);
         const uint32_t exp_pt = TEE_PARAM_TYPES(TEE_PARAM_TYPE_MEMREF_INOUT,
 						TEE_PARAM_TYPE_NONE,
 						TEE_PARAM_TYPE_MEMREF_OUTPUT,
@@ -923,7 +917,7 @@ uint32_t entry_derive_key(uintptr_t tee_session,
 	TEE_Param *ctrl = &params[0];
 	TEE_Param *out = &params[2];
 	uint32_t rv = 0;
-	struct serialargs ctrlargs;
+	struct serialargs ctrlargs = { };
 	uint32_t session_handle = 0;
 	struct pkcs11_session *session = NULL;
 	struct pkcs11_attribute_head *proc_params = NULL;
@@ -935,9 +929,7 @@ uint32_t entry_derive_key(uintptr_t tee_session,
 	uint32_t out_handle = 0;
 	uint32_t __maybe_unused mecha_id = 0;
 
-	TEE_MemFill(&ctrlargs, 0, sizeof(ctrlargs));
-
-	if (ptypes != exp_pt ||
+	if (!client || ptypes != exp_pt ||
 	    out->memref.size != sizeof(out_handle))
 		return PKCS11_BAD_PARAM;
 
@@ -964,7 +956,7 @@ uint32_t entry_derive_key(uintptr_t tee_session,
 		goto bail;
 	}
 
-	rv = get_ready_session(&session, session_handle, tee_session);
+	rv = get_ready_session(&session, session_handle, client);
 	if (rv)
 		goto bail;
 

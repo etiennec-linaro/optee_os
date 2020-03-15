@@ -61,10 +61,10 @@ void TA_CloseSessionEntryPoint(void *tee_session)
  */
 static uint32_t entry_ping(uint32_t ptypes, TEE_Param *params)
 {
-        const uint32_t exp_pt = TEE_PARAM_TYPES(TEE_PARAM_TYPE_MEMREF_INOUT,
-                                                TEE_PARAM_TYPE_NONE,
-                                                TEE_PARAM_TYPE_MEMREF_OUTPUT,
-                                                TEE_PARAM_TYPE_NONE);
+	const uint32_t exp_pt = TEE_PARAM_TYPES(TEE_PARAM_TYPE_MEMREF_INOUT,
+						TEE_PARAM_TYPE_NONE,
+						TEE_PARAM_TYPE_MEMREF_OUTPUT,
+						TEE_PARAM_TYPE_NONE);
 	TEE_Param *out = &params[2];
 	const uint32_t ver[] = {
 		PKCS11_TA_VERSION_MAJOR,

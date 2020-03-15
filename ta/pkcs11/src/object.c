@@ -266,9 +266,9 @@ uint32_t entry_destroy_object(uintptr_t tee_session,
 			      uint32_t ptypes, TEE_Param *params)
 {
         const uint32_t exp_pt = TEE_PARAM_TYPES(TEE_PARAM_TYPE_MEMREF_INOUT,
-                                                TEE_PARAM_TYPE_NONE,
-                                                TEE_PARAM_TYPE_NONE,
-                                                TEE_PARAM_TYPE_NONE);
+						TEE_PARAM_TYPE_NONE,
+						TEE_PARAM_TYPE_NONE,
+						TEE_PARAM_TYPE_NONE);
 	TEE_Param *ctrl = &params[0];
 	struct serialargs ctrlargs;
 	uint32_t session_handle = 0;
@@ -425,9 +425,9 @@ uint32_t entry_find_objects_init(uintptr_t tee_session,
 				 uint32_t ptypes, TEE_Param *params)
 {
         const uint32_t exp_pt = TEE_PARAM_TYPES(TEE_PARAM_TYPE_MEMREF_INOUT,
-                                                TEE_PARAM_TYPE_NONE,
-                                                TEE_PARAM_TYPE_NONE,
-                                                TEE_PARAM_TYPE_NONE);
+						TEE_PARAM_TYPE_NONE,
+						TEE_PARAM_TYPE_NONE,
+						TEE_PARAM_TYPE_NONE);
 	TEE_Param *ctrl = &params[0];
 	uint32_t rv = 0;
 	struct serialargs ctrlargs;
@@ -611,9 +611,9 @@ uint32_t entry_find_objects(uintptr_t tee_session,
 			    uint32_t ptypes, TEE_Param *params)
 {
         const uint32_t exp_pt = TEE_PARAM_TYPES(TEE_PARAM_TYPE_MEMREF_INOUT,
-                                                TEE_PARAM_TYPE_NONE,
-                                                TEE_PARAM_TYPE_MEMREF_OUTPUT,
-                                                TEE_PARAM_TYPE_NONE);
+						TEE_PARAM_TYPE_NONE,
+						TEE_PARAM_TYPE_MEMREF_OUTPUT,
+						TEE_PARAM_TYPE_NONE);
 	TEE_Param *ctrl = &params[0];
 	TEE_Param *out = &params[2];
 	uint32_t rv = 0;
@@ -697,9 +697,9 @@ uint32_t entry_find_objects_final(uintptr_t tee_session,
 				  uint32_t ptypes, TEE_Param *params)
 {
         const uint32_t exp_pt = TEE_PARAM_TYPES(TEE_PARAM_TYPE_MEMREF_INOUT,
-                                                TEE_PARAM_TYPE_NONE,
-                                                TEE_PARAM_TYPE_NONE,
-                                                TEE_PARAM_TYPE_NONE);
+						TEE_PARAM_TYPE_NONE,
+						TEE_PARAM_TYPE_NONE,
+						TEE_PARAM_TYPE_NONE);
 	TEE_Param *ctrl = &params[0];
 	uint32_t rv = 0;
 	struct serialargs ctrlargs;
@@ -739,9 +739,9 @@ uint32_t entry_get_attribute_value(uintptr_t tee_session,
 				   uint32_t ptypes, TEE_Param *params)
 {
         const uint32_t exp_pt = TEE_PARAM_TYPES(TEE_PARAM_TYPE_MEMREF_INOUT,
-                                                TEE_PARAM_TYPE_NONE,
-                                                TEE_PARAM_TYPE_MEMREF_OUTPUT,
-                                                TEE_PARAM_TYPE_NONE);
+						TEE_PARAM_TYPE_NONE,
+						TEE_PARAM_TYPE_MEMREF_OUTPUT,
+						TEE_PARAM_TYPE_NONE);
 	TEE_Param *ctrl = &params[0];
 	TEE_Param *out = &params[2];
 	uint32_t rv = 0;

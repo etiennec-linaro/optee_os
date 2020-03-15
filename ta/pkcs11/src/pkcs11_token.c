@@ -258,9 +258,9 @@ static void cipher_pin(TEE_ObjectHandle key_handle, uint8_t *buf, size_t len)
 uint32_t entry_ck_token_initialize(uint32_t ptypes, TEE_Param *params)
 {
         const uint32_t exp_pt = TEE_PARAM_TYPES(TEE_PARAM_TYPE_MEMREF_INOUT,
-                                                TEE_PARAM_TYPE_NONE,
-                                                TEE_PARAM_TYPE_NONE,
-                                                TEE_PARAM_TYPE_NONE);
+						TEE_PARAM_TYPE_NONE,
+						TEE_PARAM_TYPE_NONE,
+						TEE_PARAM_TYPE_NONE);
 	TEE_Param *ctrl = &params[0];
 	uint32_t rv = 0;
 	struct serialargs ctrlargs;
@@ -395,10 +395,10 @@ inited:
 
 uint32_t entry_ck_slot_list(uint32_t ptypes, TEE_Param *params)
 {
-        const uint32_t exp_pt = TEE_PARAM_TYPES(TEE_PARAM_TYPE_MEMREF_INOUT,
-                                                TEE_PARAM_TYPE_NONE,
-                                                TEE_PARAM_TYPE_MEMREF_OUTPUT,
-                                                TEE_PARAM_TYPE_NONE);
+	const uint32_t exp_pt = TEE_PARAM_TYPES(TEE_PARAM_TYPE_MEMREF_INOUT,
+						TEE_PARAM_TYPE_NONE,
+						TEE_PARAM_TYPE_MEMREF_OUTPUT,
+						TEE_PARAM_TYPE_NONE);
 	TEE_Param *out = &params[2];
 	const size_t out_size = sizeof(uint32_t) * TOKEN_COUNT;
 	uint32_t *id = NULL;
@@ -423,10 +423,10 @@ uint32_t entry_ck_slot_list(uint32_t ptypes, TEE_Param *params)
 
 uint32_t entry_ck_slot_info(uint32_t ptypes, TEE_Param *params)
 {
-        const uint32_t exp_pt = TEE_PARAM_TYPES(TEE_PARAM_TYPE_MEMREF_INOUT,
-                                                TEE_PARAM_TYPE_NONE,
-                                                TEE_PARAM_TYPE_MEMREF_OUTPUT,
-                                                TEE_PARAM_TYPE_NONE);
+	const uint32_t exp_pt = TEE_PARAM_TYPES(TEE_PARAM_TYPE_MEMREF_INOUT,
+						TEE_PARAM_TYPE_NONE,
+						TEE_PARAM_TYPE_MEMREF_OUTPUT,
+						TEE_PARAM_TYPE_NONE);
 	TEE_Param *ctrl = &params[0];
 	TEE_Param *out = &params[2];
 	uint32_t rv = 0;
@@ -479,10 +479,10 @@ uint32_t entry_ck_slot_info(uint32_t ptypes, TEE_Param *params)
 
 uint32_t entry_ck_token_info(uint32_t ptypes, TEE_Param *params)
 {
-        const uint32_t exp_pt = TEE_PARAM_TYPES(TEE_PARAM_TYPE_MEMREF_INOUT,
-                                                TEE_PARAM_TYPE_NONE,
-                                                TEE_PARAM_TYPE_MEMREF_OUTPUT,
-                                                TEE_PARAM_TYPE_NONE);
+	const uint32_t exp_pt = TEE_PARAM_TYPES(TEE_PARAM_TYPE_MEMREF_INOUT,
+						TEE_PARAM_TYPE_NONE,
+						TEE_PARAM_TYPE_MEMREF_OUTPUT,
+						TEE_PARAM_TYPE_NONE);
 	TEE_Param *ctrl = &params[0];
 	TEE_Param *out = &params[2];
 	uint32_t rv = 0;
@@ -553,10 +553,10 @@ uint32_t entry_ck_token_info(uint32_t ptypes, TEE_Param *params)
 
 uint32_t entry_ck_token_mecha_ids(uint32_t ptypes, TEE_Param *params)
 {
-        const uint32_t exp_pt = TEE_PARAM_TYPES(TEE_PARAM_TYPE_MEMREF_INOUT,
-                                                TEE_PARAM_TYPE_NONE,
-                                                TEE_PARAM_TYPE_MEMREF_OUTPUT,
-                                                TEE_PARAM_TYPE_NONE);
+	const uint32_t exp_pt = TEE_PARAM_TYPES(TEE_PARAM_TYPE_MEMREF_INOUT,
+						TEE_PARAM_TYPE_NONE,
+						TEE_PARAM_TYPE_MEMREF_OUTPUT,
+						TEE_PARAM_TYPE_NONE);
 	TEE_Param *ctrl = &params[0];
 	TEE_Param *out = &params[2];
 	uint32_t rv = 0;
@@ -805,10 +805,10 @@ static void supported_mechanism_key_size(uint32_t proc_id,
 
 uint32_t entry_ck_token_mecha_info(uint32_t ptypes, TEE_Param *params)
 {
-        const uint32_t exp_pt = TEE_PARAM_TYPES(TEE_PARAM_TYPE_MEMREF_INOUT,
-                                                TEE_PARAM_TYPE_NONE,
-                                                TEE_PARAM_TYPE_MEMREF_OUTPUT,
-                                                TEE_PARAM_TYPE_NONE);
+	const uint32_t exp_pt = TEE_PARAM_TYPES(TEE_PARAM_TYPE_MEMREF_INOUT,
+						TEE_PARAM_TYPE_NONE,
+						TEE_PARAM_TYPE_MEMREF_OUTPUT,
+						TEE_PARAM_TYPE_NONE);
 	TEE_Param *ctrl = &params[0];
 	TEE_Param *out = &params[2];
 	uint32_t rv = 0;
@@ -973,10 +973,10 @@ static void session_logout(struct pkcs11_session *session)
 static uint32_t open_ck_session(uintptr_t tee_session, uint32_t ptypes,
 				TEE_Param *params, bool readonly)
 {
-        const uint32_t exp_pt = TEE_PARAM_TYPES(TEE_PARAM_TYPE_MEMREF_INOUT,
-                                                TEE_PARAM_TYPE_NONE,
-                                                TEE_PARAM_TYPE_MEMREF_OUTPUT,
-                                                TEE_PARAM_TYPE_NONE);
+	const uint32_t exp_pt = TEE_PARAM_TYPES(TEE_PARAM_TYPE_MEMREF_INOUT,
+						TEE_PARAM_TYPE_NONE,
+						TEE_PARAM_TYPE_MEMREF_OUTPUT,
+						TEE_PARAM_TYPE_NONE);
 	TEE_Param *ctrl = &params[0];
 	TEE_Param *out = &params[2];
 	uint32_t rv = 0;
@@ -1097,10 +1097,10 @@ static void close_ck_session(struct pkcs11_session *session)
 uint32_t entry_ck_token_close_session(uintptr_t tee_session,
 				      uint32_t ptypes, TEE_Param *params)
 {
-        const uint32_t exp_pt = TEE_PARAM_TYPES(TEE_PARAM_TYPE_MEMREF_INOUT,
-                                                TEE_PARAM_TYPE_NONE,
-                                                TEE_PARAM_TYPE_NONE,
-                                                TEE_PARAM_TYPE_NONE);
+	const uint32_t exp_pt = TEE_PARAM_TYPES(TEE_PARAM_TYPE_MEMREF_INOUT,
+						TEE_PARAM_TYPE_NONE,
+						TEE_PARAM_TYPE_NONE,
+						TEE_PARAM_TYPE_NONE);
 	TEE_Param *ctrl = &params[0];
 	uint32_t rv = 0;
 	struct serialargs ctrlargs;
@@ -1133,10 +1133,10 @@ uint32_t entry_ck_token_close_session(uintptr_t tee_session,
 uint32_t entry_ck_token_close_all(uintptr_t tee_session,
 				  uint32_t ptypes, TEE_Param *params)
 {
-        const uint32_t exp_pt = TEE_PARAM_TYPES(TEE_PARAM_TYPE_MEMREF_INOUT,
-                                                TEE_PARAM_TYPE_NONE,
-                                                TEE_PARAM_TYPE_NONE,
-                                                TEE_PARAM_TYPE_NONE);
+	const uint32_t exp_pt = TEE_PARAM_TYPES(TEE_PARAM_TYPE_MEMREF_INOUT,
+						TEE_PARAM_TYPE_NONE,
+						TEE_PARAM_TYPE_NONE,
+						TEE_PARAM_TYPE_NONE);
 	TEE_Param *ctrl = &params[0];
 	uint32_t rv = 0;
 	struct serialargs ctrlargs;
@@ -1252,9 +1252,9 @@ uint32_t entry_init_pin(uintptr_t tee_session,
 			uint32_t ptypes, TEE_Param *params)
 {
         const uint32_t exp_pt = TEE_PARAM_TYPES(TEE_PARAM_TYPE_MEMREF_INOUT,
-                                                TEE_PARAM_TYPE_NONE,
-                                                TEE_PARAM_TYPE_NONE,
-                                                TEE_PARAM_TYPE_NONE);
+						TEE_PARAM_TYPE_NONE,
+						TEE_PARAM_TYPE_NONE,
+						TEE_PARAM_TYPE_NONE);
 	TEE_Param *ctrl = &params[0];
 	uint32_t rv = 0;
 	struct serialargs ctrlargs;
@@ -1463,10 +1463,10 @@ static uint32_t check_user_pin(struct pkcs11_session *session,
 uint32_t entry_set_pin(uintptr_t tee_session,
 		       uint32_t ptypes, TEE_Param *params)
 {
-        const uint32_t exp_pt = TEE_PARAM_TYPES(TEE_PARAM_TYPE_MEMREF_INOUT,
-                                                TEE_PARAM_TYPE_NONE,
-                                                TEE_PARAM_TYPE_NONE,
-                                                TEE_PARAM_TYPE_NONE);
+	const uint32_t exp_pt = TEE_PARAM_TYPES(TEE_PARAM_TYPE_MEMREF_INOUT,
+						TEE_PARAM_TYPE_NONE,
+						TEE_PARAM_TYPE_NONE,
+						TEE_PARAM_TYPE_NONE);
 	TEE_Param *ctrl = &params[0];
 	uint32_t rv = 0;
 	struct serialargs ctrlargs;
@@ -1542,10 +1542,10 @@ uint32_t entry_set_pin(uintptr_t tee_session,
 /* ctrl=[session][user_type][pin-size]{pin], in=unused, out=unused */
 uint32_t entry_login(uintptr_t tee_session, uint32_t ptypes, TEE_Param *params)
 {
-        const uint32_t exp_pt = TEE_PARAM_TYPES(TEE_PARAM_TYPE_MEMREF_INOUT,
-                                                TEE_PARAM_TYPE_NONE,
-                                                TEE_PARAM_TYPE_NONE,
-                                                TEE_PARAM_TYPE_NONE);
+	const uint32_t exp_pt = TEE_PARAM_TYPES(TEE_PARAM_TYPE_MEMREF_INOUT,
+						TEE_PARAM_TYPE_NONE,
+						TEE_PARAM_TYPE_NONE,
+						TEE_PARAM_TYPE_NONE);
 	TEE_Param *ctrl = &params[0];
 	uint32_t rv = 0;
 	struct serialargs ctrlargs;
@@ -1668,10 +1668,10 @@ uint32_t entry_login(uintptr_t tee_session, uint32_t ptypes, TEE_Param *params)
 /* ctrl=[session], in=unused, out=unused */
 uint32_t entry_logout(uintptr_t tee_session, uint32_t ptypes, TEE_Param *params)
 {
-        const uint32_t exp_pt = TEE_PARAM_TYPES(TEE_PARAM_TYPE_MEMREF_INOUT,
-                                                TEE_PARAM_TYPE_NONE,
-                                                TEE_PARAM_TYPE_NONE,
-                                                TEE_PARAM_TYPE_NONE);
+	const uint32_t exp_pt = TEE_PARAM_TYPES(TEE_PARAM_TYPE_MEMREF_INOUT,
+						TEE_PARAM_TYPE_NONE,
+						TEE_PARAM_TYPE_NONE,
+						TEE_PARAM_TYPE_NONE);
 	TEE_Param *ctrl = &params[0];
 	uint32_t rv = 0;
 	struct serialargs ctrlargs;

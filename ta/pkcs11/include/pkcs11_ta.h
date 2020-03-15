@@ -205,6 +205,20 @@
 #define PKCS11_CMD_LOGOUT			10
 
 	/*
+	 * PKCS11_CMD_OPEN_SESSION - Open read-only session
+	 *
+	 * [in]  memref[0] = [
+	 *              32bit slot ID,
+	 *              32bit flags, PKCS11_CKFSS_*
+	 *	 ]
+	 * [out] memref[0] = 32bit return code, enum pkcs11_rc
+	 * [out] memref[2] = 32bit session handle
+	 *
+	 * This command relates to the PKCS#11 API function C_OpenSession().
+	 */
+#define PKCS11_CMD_OPEN_SESSION			103
+
+	/*
 	 * PKCS11_CMD_OPEN_RO_SESSION - Open read-only session
 	 *
 	 * [in]  memref[0] = 32bit slot ID

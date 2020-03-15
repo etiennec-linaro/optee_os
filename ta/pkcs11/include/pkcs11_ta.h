@@ -55,538 +55,540 @@
  * Param#3 is currently unused and reserved for evolution of the API.
  */
 
-/*
- * PKCS11_CMD_PING		Acknowledge TA presence and return version info
- *
- * [out]	memref[0] = 32bit fine grain return code
- * [out]        memref[2] = [
- *                      32bit version major value (PKCS11_TA_VERSION_MAJOR),
- *                      32bit version minor value (PKCS11_TA_VERSION_MINOR),
- *                      32bit version patch value (PKCS11_TA_VERSION_PATCH),
- *              ]
- */
+	/*
+	 * PKCS11_CMD_PING		Ack TA presence and return version info
+	 *
+	 * [in]  memref[0] = 32bit, unused, must be 0
+	 * [out] memref[0] = 32bit return code, enum pkcs11_rc
+	 * [out] memref[2] = [
+	 *              32bit version major value,
+	 *              32bit version minor value
+	 *              32bit version patch value
+	 *       ]
+	 */
 #define PKCS11_CMD_PING				0
 
-/*
- * PKCS11_CMD_SLOT_LIST - Get the table of the valid slot IDs
- *
- * [out]	memref[0] = 32bit fine grain return code
- * [out]        memref[2] = 32bit array slot_ids[slot counts]
- *
- * The TA instance may represent several PKCS#11 slots and associated tokens.
- * This command relates the PKCS#11 API function C_GetSlotList() and returns
- * the valid IDs recognized by the trusted application.
- */
+	/*
+	 * PKCS11_CMD_SLOT_LIST - Get the table of the valid slot IDs
+	 *
+	 * [in]  memref[0] = 32bit, unused, must be 0
+	 * [out] memref[0] = 32bit return code, enum pkcs11_rc
+	 * [out] memref[2] = 32bit array slot_ids[slot counts]
+	 *
+	 * The TA instance may represent several PKCS#11 slots and
+	 * associated tokens. This commadn reports the IDs of embedded tokens.
+	 * This command relates the PKCS#11 API function C_GetSlotList().
+	 */
 #define PKCS11_CMD_SLOT_LIST			1
 
-/*
- * PKCS11_CMD_SLOT_INFO - Get cryptoki structured slot information
- *
- * [in]		memref[0] = 32bit slot ID
- * [out]	memref[0] = 32bit fine grain return code
- * [out]        memref[2] = (struct pkcs11_slot_info)info
- *
- * The TA instance may represent several PKCS#11 slots and associated tokens.
- * This command relates the PKCS#11 API function C_GetSlotInfo() and returns
- * the information about the target slot.
- */
+	/*
+	 * PKCS11_CMD_SLOT_INFO - Get cryptoki structured slot information
+	 *
+	 * [in]	 memref[0] = 32bit slot ID
+	 * [out] memref[0] = 32bit return code, enum pkcs11_rc
+	 * [out] memref[2] = (struct pkcs11_slot_info)info
+	 *
+	 * The TA instance may represent several PKCS#11 slots/tokens.
+	 * This command relates the PKCS#11 API function C_GetSlotInfo().
+	 */
 #define PKCS11_CMD_SLOT_INFO			2
 
-/*
- * PKCS11_CMD_TOKEN_INFO - Get cryptoki structured token information
- *
- * [in]		memref[0] = 32bit slot ID
- * [out]	memref[0] = 32bit fine grain return code
- * [out]        memref[2] = (struct pkcs11_token_info)info
- *
- * The TA instance may represent several PKCS#11 slots and associated tokens.
- * This command relates the PKCS#11 API function C_GetTokenInfo() and returns
- * the information about the target represented token.
- */
+	/*
+	 * PKCS11_CMD_TOKEN_INFO - Get cryptoki structured token information
+	 *
+	 * [in]	 memref[0] = 32bit slot ID
+	 * [out] memref[0] = 32bit return code, enum pkcs11_rc
+	 * [out] memref[2] = (struct pkcs11_token_info)info
+	 *
+	 * The TA instance may represent several PKCS#11 slots/tokens.
+	 * This command relates the PKCS#11 API function C_GetTokenInfo().
+	 */
 #define PKCS11_CMD_TOKEN_INFO			3
 
-/*
- * PKCS11_CMD_MECHANISM_IDS - Get list of the supported mechanisms
- *
- * [in]		memref[0] = 32bit slot ID
- * [out]	memref[0] = 32bit fine grain return code
- * [out]        memref[2] = 32bit array mechanism IDs
- *
- * This command relates to the PKCS#11 API function C_GetMechanismList().
- */
+	/*
+	 * PKCS11_CMD_MECHANISM_IDS - Get list of the supported mechanisms
+	 *
+	 * [in]	 memref[0] = 32bit slot ID
+	 * [out] memref[0] = 32bit return code, enum pkcs11_rc
+	 * [out] memref[2] = 32bit array mechanism IDs
+	 *
+	 * This command relates to the PKCS#11 API function
+	 * C_GetMechanismList().
+	 */
 #define PKCS11_CMD_MECHANISM_IDS		4
 
-/*
- * PKCS11_CMD_MECHANISM_INFO - Get information on a specific mechanism
- *
- * [in]		memref[0] = [
- *			32bit slot ID,
- *			32bit mechanism ID
- *		]
- * [out]	memref[0] = 32bit fine grain return code
- * [out]        memref[2] = (struct pkcs11_mechanism_info)info
- *
- * This command relates to the PKCS#11 API function C_GetMechanismInfo().
- */
+	/*
+	 * PKCS11_CMD_MECHANISM_INFO - Get information on a specific mechanism
+	 *
+	 * [in]  memref[0] = [
+	 *              32bit slot ID,
+	 *              32bit mechanism ID (PKCS11_CKM_*)
+	 *       ]
+	 * [out] memref[0] = 32bit return code, enum pkcs11_rc
+	 * [out] memref[2] = (struct pkcs11_mechanism_info)info
+	 *
+	 * This command relates to the PKCS#11 API function
+	 * C_GetMechanismInfo().
+	 */
 #define PKCS11_CMD_MECHANISM_INFO		5
 
-/*
- * PKCS11_CMD_INIT_TOKEN - Initialize PKCS#11 token
- *
- * [in]		memref[0] = [
- *			32bit slot ID,
- *			32bit PIN length,
- *			byte array label[32]
- *			byte array PIN[PIN length],
- *		]
- * [out]	memref[0] = 32bit fine grain return code
- *
- * This command relates to the PKCS#11 API function C_InitToken().
- */
+	/*
+	 * PKCS11_CMD_INIT_TOKEN - Initialize PKCS#11 token
+	 *
+	 * [in]  memref[0] = [
+	 *              32bit slot ID,
+	 *              32bit PIN length,
+	 *              byte array label[32]
+	 *              byte array PIN[PIN length],
+	 *	 ]
+	 * [out] memref[0] = 32bit return code, enum pkcs11_rc
+	 *
+	 * This command relates to the PKCS#11 API function C_InitToken().
+	 */
 #define PKCS11_CMD_INIT_TOKEN			6
 
-/*
- * PKCS11_CMD_INIT_PIN - Initialize user PIN
- *
- * [in]		memref[0] = [
- *			32bit session handle,
- *			32bit PIN byte size,
- *			byte array: PIN data
- *		]
- * [out]	memref[0] = 32bit fine grain return code
- *
- * This command relates to the PKCS#11 API function C_InitPIN().
- */
+	/*
+	 * PKCS11_CMD_INIT_PIN - Initialize user PIN
+	 *
+	 * [in]  memref[0] = [
+	 *              32bit session handle,
+	 *              32bit PIN byte size,
+	 *              byte array: PIN data
+	 *	 ]
+	 * [out] memref[0] = 32bit return code, enum pkcs11_rc
+	 *
+	 * This command relates to the PKCS#11 API function C_InitPIN().
+	 */
 #define PKCS11_CMD_INIT_PIN			7
 
-/*
- * PKCS11_CMD_SET_PIN - Change user PIN
- *
- * [in]		memref[0] = [
- *			32bit session handle,
- *			32bit old PIN byte size,
- *			32bit new PIN byte size,
- *			byte array: PIN data,
- *			byte array: new PIN data,
- *		]
- * [out]	memref[0] = 32bit fine grain return code
- *
- * This command relates to the PKCS#11 API function C_SetPIN().
- */
+	/*
+	 * PKCS11_CMD_SET_PIN - Change user PIN
+	 *
+	 * [in]	 memref[0] = [
+	 *              32bit session handle,
+	 *              32bit old PIN byte size,
+	 *              32bit new PIN byte size,
+	 *              byte array: PIN data,
+	 *              byte array: new PIN data,
+	 *       ]
+	 * [out] memref[0] = 32bit return code, enum pkcs11_rc
+	 *
+	 * This command relates to the PKCS#11 API function C_SetPIN().
+	 */
 #define PKCS11_CMD_SET_PIN			8
 
-/*
- * PKCS11_CMD_LOGIN - Initialize user PIN
- *
- * [in]		memref[0] = [
- *			32bit session handle,
- *			32bit user identifier,
- *			32bit PIN byte size,
- *			byte array: PIN data
- *		]
- * [out]	memref[0] = 32bit fine grain return code
- *
- * This command relates to the PKCS#11 API function C_Login().
- */
+	/*
+	 * PKCS11_CMD_LOGIN - Initialize user PIN
+	 *
+	 * [in]  memref[0] = [
+	 *              32bit session handle,
+	 *              32bit user identifier,
+	 *              32bit PIN byte size,
+	 *              byte array: PIN data
+	 *	 ]
+	 * [out] memref[0] = 32bit return code, enum pkcs11_rc
+	 *
+	 * This command relates to the PKCS#11 API function C_Login().
+	 */
 #define PKCS11_CMD_LOGIN			9
 
-/*
- * PKCS11_CMD_LOGOUT - Log out from token
- *
- * [in]		memref[0] = [
- *			32bit session handle,
- *		]
- * [out]	memref[0] = 32bit fine grain return code
- *
- * This command relates to the PKCS#11 API function C_Logout().
- */
+	/*
+	 * PKCS11_CMD_LOGOUT - Log out from token
+	 *
+	 * [in]  memref[0] = [
+	 *              32bit session handle,
+	 *	 ]
+	 * [out] memref[0] = 32bit return code, enum pkcs11_rc
+	 *
+	 * This command relates to the PKCS#11 API function C_Logout().
+	 */
 #define PKCS11_CMD_LOGOUT			10
 
-/*
- * PKCS11_CMD_OPEN_RO_SESSION - Open read-only session
- *
- * [in]		memref[0] = 32bit slot ID
- * [out]	memref[0] = 32bit fine grain return code
- * [out]	memref[2] = 32bit session handle
- *
- * This commands relates to the PKCS#11 API function C_OpenSession() for a
- * read-only session.
- */
+	/*
+	 * PKCS11_CMD_OPEN_RO_SESSION - Open read-only session
+	 *
+	 * [in]  memref[0] = 32bit slot ID
+	 * [out] memref[0] = 32bit return code, enum pkcs11_rc
+	 * [out] memref[2] = 32bit session handle
+	 *
+	 * This command relates to the PKCS#11 API function C_OpenSession() for a
+	 * read-only session.
+	 */
 #define PKCS11_CMD_OPEN_RO_SESSION		11
 
-/*
- * PKCS11_CMD_OPEN_RW_SESSION - Open read/write session
- *
- * [in]		memref[0] = 32bit slot
- * [out]	memref[0] = 32bit fine grain return code
- * [out]	memref[2] = 32bit session handle
- *
- * This commands relates to the PKCS#11 API function C_OpenSession() for a
- * read/write session.
- */
+	/*
+	 * PKCS11_CMD_OPEN_RW_SESSION - Open read/write session
+	 *
+	 * [in]  memref[0] = 32bit slot
+	 * [out] memref[0] = 32bit return code, enum pkcs11_rc
+	 * [out] memref[2] = 32bit session handle
+	 *
+	 * This command relates to the PKCS#11 API function C_OpenSession() for a
+	 * read/write session.
+	 */
 #define PKCS11_CMD_OPEN_RW_SESSION		12
 
-/*
- * PKCS11_CMD_CLOSE_SESSION - Close an opened session
- *
- * [in]		memref[0] = 32bit session handle
- * [out]	memref[0] = 32bit fine grain return code
- *
- * This commands relates to the PKCS#11 API function C_CloseSession().
- */
+	/*
+	 * PKCS11_CMD_CLOSE_SESSION - Close an opened session
+	 *
+	 * [in]  memref[0] = 32bit session handle
+	 * [out] memref[0] = 32bit return code, enum pkcs11_rc
+	 *
+	 * This command relates to the PKCS#11 API function C_CloseSession().
+	 */
 #define PKCS11_CMD_CLOSE_SESSION		13
 
-/*
- * PKCS11_CMD_SESSION_INFO - Get Cryptoki information on a session
- *
- * [in]		memref[0] = 32bit session handle
- * [out]	memref[0] = 32bit fine grain return code
- * [out]        memref[2] = (struct pkcs11_session_info)info
- *
- * This command relates to the PKCS#11 API function C_GetSessionInfo().
- */
+	/*
+	 * PKCS11_CMD_SESSION_INFO - Get Cryptoki information on a session
+	 *
+	 * [in]  memref[0] = 32bit session handle
+	 * [out] memref[0] = 32bit return code, enum pkcs11_rc
+	 * [out] memref[2] = (struct pkcs11_session_info)info
+	 *
+	 * This command relates to the PKCS#11 API function C_GetSessionInfo().
+	 */
 #define PKCS11_CMD_SESSION_INFO			14
 
-/*
- * PKCS11_CMD_CLOSE_ALL_SESSIONS - Close all client sessions on slot/token
- *
- * [in]		memref[0] = 32bit slot
- * [out]	memref[0] = 32bit fine grain return code
- *
- * This command relates to the PKCS#11 API function C_CloseAllSessions().
- */
+	/*
+	 * PKCS11_CMD_CLOSE_ALL_SESSIONS - Close all client sessions on slot/token
+	 *
+	 * [in]  memref[0] = 32bit slot
+	 * [out] memref[0] = 32bit return code, enum pkcs11_rc
+	 *
+	 * This command relates to the PKCS#11 API function C_CloseAllSessions().
+	 */
 #define PKCS11_CMD_CLOSE_ALL_SESSIONS		15
 
-/*
- * PKCS11_CMD_GET_SESSION_STATE - Retrieve the session state for later restore
- *
- * [in]		memref[0] = 32bit session handle
- * [out]	memref[0] = 32bit fine grain return code
- * [out]	memref[2] = byte array containing session state binary blob
- *
- * This command relates to the PKCS#11 API function C_GetOperationState().
- */
+	/*
+	 * PKCS11_CMD_GET_SESSION_STATE - Retrieve the session state for later restore
+	 *
+	 * [in]  memref[0] = 32bit session handle
+	 * [out] memref[0] = 32bit return code, enum pkcs11_rc
+	 * [out] memref[2] = byte array containing session state binary blob
+	 *
+	 * This command relates to the PKCS#11 API function C_GetOperationState().
+	 */
 #define PKCS11_CMD_GET_SESSION_STATE		16
 
-/*
- * PKCS11_CMD_SET_SESSION_STATE - Retrieve the session state for later restore
- *
- * [in]		memref[0] = 32bit session handle
- * [out]	memref[0] = 32bit fine grain return code
- * [in]		memref[1] = byte array containing session state binary blob
- *
- * This command relates to the PKCS#11 API function C_SetOperationState().
- */
+	/*
+	 * PKCS11_CMD_SET_SESSION_STATE - Retrieve the session state for later restore
+	 *
+	 * [in]  memref[0] = 32bit session handle
+	 * [out] memref[0] = 32bit return code, enum pkcs11_rc
+	 * [in]  memref[1] = byte array containing session state binary blob
+	 *
+	 * This command relates to the PKCS#11 API function C_SetOperationState().
+	 */
 #define PKCS11_CMD_SET_SESSION_STATE		17
 
-/*
- * PKCS11_CMD_IMPORT_OBJECT - Import a raw object in the session or token
- *
- * [in]		memref[0] = [
- *			32bit session handle,
- *			(struct pkcs11_object_head)attribs + attributes data
- *		]
- * [out]	memref[0] = 32bit fine grain return code
- * [out]	memref[2] = 32bit object handle
- *
- * This command relates to the PKCS#11 API function C_CreateObject().
- */
+	/*
+	 * PKCS11_CMD_IMPORT_OBJECT - Import a raw object in the session or token
+	 *
+	 * [in]  memref[0] = [
+	 *              32bit session handle,
+	 *              (struct pkcs11_object_head)attribs + attributes data
+	 *	 ]
+	 * [out] memref[0] = 32bit return code, enum pkcs11_rc
+	 * [out] memref[2] = 32bit object handle
+	 *
+	 * This command relates to the PKCS#11 API function C_CreateObject().
+	 */
 #define PKCS11_CMD_IMPORT_OBJECT		18
 
-/*
- * PKCS11_CMD_COPY_OBJECT - Duplicate an object possibly with new attributes
- *
- * [in]		memref[0] = [
- *			32bit session handle,
- *			32bit object handle,
- *			(struct pkcs11_object_head)attribs + attributes data,
- *		]
- * [out]	memref[0] = 32bit fine grain return code
- * [out]	memref[2] = 32bit object handle
- *
- * This command relates to the PKCS#11 API function C_CopyObject().
- */
+	/*
+	 * PKCS11_CMD_COPY_OBJECT - Duplicate an object possibly with new attributes
+	 *
+	 * [in]  memref[0] = [
+	 *              32bit session handle,
+	 *              32bit object handle,
+	 *              (struct pkcs11_object_head)attribs + attributes data,
+	 *	 ]
+	 * [out] memref[0] = 32bit return code, enum pkcs11_rc
+	 * [out] memref[2] = 32bit object handle
+	 *
+	 * This command relates to the PKCS#11 API function C_CopyObject().
+	 */
 #define PKCS11_CMD_COPY_OBJECT			19
 
-/*
- * PKCS11_CMD_DESTROY_OBJECT - Destroy an object
- *
- * [in]		memref[0] = [
- *			32bit session handle,
- *			32bit object handle
- *		]
- * [out]	memref[0] = 32bit fine grain return code
- *
- * This command relates to the PKCS#11 API function C_DestroyObject().
- */
+	/*
+	 * PKCS11_CMD_DESTROY_OBJECT - Destroy an object
+	 *
+	 * [in]  memref[0] = [
+	 *              32bit session handle,
+	 *              32bit object handle
+	 *	 ]
+	 * [out] memref[0] = 32bit return code, enum pkcs11_rc
+	 *
+	 * This command relates to the PKCS#11 API function C_DestroyObject().
+	 */
 #define PKCS11_CMD_DESTROY_OBJECT		20
 
-/*
- * PKCS11_CMD_FIND_OBJECTS_INIT - Initialize an object search
- *
- * [in]		memref[0] = [
- *			32bit session handle,
- *			(struct pkcs11_object_head)attribs + attributes data
- *		]
- * [out]	memref[0] = 32bit fine grain return code
- *
- * This command relates to the PKCS#11 API function C_FindOjectsInit().
- */
+	/*
+	 * PKCS11_CMD_FIND_OBJECTS_INIT - Initialize an object search
+	 *
+	 * [in]  memref[0] = [
+	 *              32bit session handle,
+	 *              (struct pkcs11_object_head)attribs + attributes data
+	 *	 ]
+	 * [out] memref[0] = 32bit return code, enum pkcs11_rc
+	 *
+	 * This command relates to the PKCS#11 API function C_FindOjectsInit().
+	 */
 #define PKCS11_CMD_FIND_OBJECTS_INIT		21
 
-/*
- * PKCS11_CMD_FIND_OBJECTS - Get handles of matching objects
- *
- * [in]		memref[0] = 32bit session handle
- * [out]	memref[0] = 32bit fine grain return code
- * [out]	memref[2] = 32bit array object_handle_array[N]
- *
- * This command relates to the PKCS#11 API function C_FindOjects().
- * The size of object_handle_array depends on the size of the output buffer
- * provided by the client.
- */
+	/*
+	 * PKCS11_CMD_FIND_OBJECTS - Get handles of matching objects
+	 *
+	 * [in]  memref[0] = 32bit session handle
+	 * [out] memref[0] = 32bit return code, enum pkcs11_rc
+	 * [out] memref[2] = 32bit array object_handle_array[N]
+	 *
+	 * This command relates to the PKCS#11 API function C_FindOjects().
+	 * The size of object_handle_array depends on the size of the output buffer
+	 * provided by the client.
+	 */
 #define PKCS11_CMD_FIND_OBJECTS			22
 
-/*
- * PKCS11_CMD_FIND_OBJECTS_FINAL - Finalize current objects search
- *
- * [in]		memref[0] = 32bit session handle
- * [out]	memref[0] = 32bit fine grain return code
- *
- * This command relates to the PKCS#11 API function C_FindOjectsFinal().
- */
+	/*
+	 * PKCS11_CMD_FIND_OBJECTS_FINAL - Finalize current objects search
+	 *
+	 * [in]  memref[0] = 32bit session handle
+	 * [out] memref[0] = 32bit return code, enum pkcs11_rc
+	 *
+	 * This command relates to the PKCS#11 API function C_FindOjectsFinal().
+	 */
 #define PKCS11_CMD_FIND_OBJECTS_FINAL		23
 
-/*
- * PKCS11_CMD_GET_OBJECT_SIZE - Get byte size used by object in the TEE
- *
- * [in]		memref[0] = [
- *			32bit session handle,
- *			32bit object handle
- *		]
- * [out]	memref[0] = 32bit fine grain return code
- * [out]	memref[2] = 32bit object_byte_size
- *
- * This command relates to the PKCS#11 API function C_GetObjectSize().
- */
+	/*
+	 * PKCS11_CMD_GET_OBJECT_SIZE - Get byte size used by object in the TEE
+	 *
+	 * [in]  memref[0] = [
+	 *              32bit session handle,
+	 *              32bit object handle
+	 *	 ]
+	 * [out] memref[0] = 32bit return code, enum pkcs11_rc
+	 * [out] memref[2] = 32bit object_byte_size
+	 *
+	 * This command relates to the PKCS#11 API function C_GetObjectSize().
+	 */
 #define PKCS11_CMD_GET_OBJECT_SIZE		24
 
-/*
- * PKCS11_CMD_GET_ATTRIBUTE_VALUE - Get the value of object attribute(s)
- *
- * [in]		memref[0] = [
- *			32bit session handle,
- *			32bit object handle,
- *			(struct pkcs11_object_head)attribs + attributes data
- *		]
- * [out]	memref[0] = 32bit fine grain return code
- * [out]	memref[2] = (struct pkcs11_object_head)attribs + attributes data
- *
- * This command relates to the PKCS#11 API function C_GetAttributeValue.
- * Caller provides an attribute template as 3rd argument in memref[0]
- * (referred here as attribs + attributes data). Upon successful completion,
- * the TA returns the provided template filled with expected data through
- * output argument memref[2] (referred here again as attribs + attributes data).
- */
+	/*
+	 * PKCS11_CMD_GET_ATTRIBUTE_VALUE - Get the value of object attribute(s)
+	 *
+	 * [in]  memref[0] = [
+	 *              32bit session handle,
+	 *              32bit object handle,
+	 *              (struct pkcs11_object_head)attribs + attributes data
+	 *	 ]
+	 * [out] memref[0] = 32bit return code, enum pkcs11_rc
+	 * [out] memref[2] = (struct pkcs11_object_head)attribs + attributes data
+	 *
+	 * This command relates to the PKCS#11 API function C_GetAttributeValue.
+	 * Caller provides an attribute template as 3rd argument in memref[0]
+	 * (referred here as attribs + attributes data). Upon successful completion,
+	 * the TA returns the provided template filled with expected data through
+	 * output argument memref[2] (referred here again as attribs + attributes data).
+	 */
 #define PKCS11_CMD_GET_ATTRIBUTE_VALUE		25
 
-/*
- * PKCS11_CMD_SET_ATTRIBUTE_VALUE - Set the value for object attribute(s)
- *
- * [in]		memref[0] = [
- *			32bit session handle,
- *			32bit object handle,
- *			(struct pkcs11_object_head)attribs + attributes data
- *		]
- * [out]	memref[0] = 32bit fine grain return code
- *
- * This command relates to the PKCS#11 API function C_SetAttributeValue().
- */
+	/*
+	 * PKCS11_CMD_SET_ATTRIBUTE_VALUE - Set the value for object attribute(s)
+	 *
+	 * [in]  memref[0] = [
+	 *              32bit session handle,
+	 *              32bit object handle,
+	 *              (struct pkcs11_object_head)attribs + attributes data
+	 *	 ]
+	 * [out] memref[0] = 32bit return code, enum pkcs11_rc
+	 *
+	 * This command relates to the PKCS#11 API function C_SetAttributeValue().
+	 */
 #define PKCS11_CMD_SET_ATTRIBUTE_VALUE		26
 
-/*
- * PKCS11_CMD_GENERATE_KEY - Generate a symmetric key or domain parameters
- *
- * [in]		memref[0] = [
- *			32bit session handle,
- *			(struct pkcs11_attribute_head)mechanism + mecha params,
- *			(struct pkcs11_object_head)attribs + attributes data
- *		]
- * [out]	memref[0] = 32bit fine grain return code
- * [out]	memref[2] = 32bit object handle
- *
- * This command relates to the PKCS#11 API functions C_GenerateKey().
- */
+	/*
+	 * PKCS11_CMD_GENERATE_KEY - Generate a symmetric key or domain parameters
+	 *
+	 * [in]  memref[0] = [
+	 *              32bit session handle,
+	 *              (struct pkcs11_attribute_head)mechanism + mecha params,
+	 *              (struct pkcs11_object_head)attribs + attributes data
+	 *	 ]
+	 * [out] memref[0] = 32bit return code, enum pkcs11_rc
+	 * [out] memref[2] = 32bit object handle
+	 *
+	 * This command relates to the PKCS#11 API functions C_GenerateKey().
+	 */
 #define PKCS11_CMD_GENERATE_KEY			27
 
-/*
- * PKCS11_CMD_ENCRYPT_INIT - Initialize encryption processing
- * PKCS11_CMD_DECRYPT_INIT - Initialize decryption processing
- *
- * [in]		memref[0] = [
- *			32bit session handle,
- *			32bit object handle of the key,
- *			(struct pkcs11_attribute_head)mechanism + mecha params
- *		]
- * [out]	memref[0] = 32bit fine grain return code
- *
- * These commands relate to the PKCS#11 API functions C_EncryptInit() and
- * C_DecryptInit().
- */
+	/*
+	 * PKCS11_CMD_ENCRYPT_INIT - Initialize encryption processing
+	 * PKCS11_CMD_DECRYPT_INIT - Initialize decryption processing
+	 *
+	 * [in]  memref[0] = [
+	 *              32bit session handle,
+	 *              32bit object handle of the key,
+	 *              (struct pkcs11_attribute_head)mechanism + mecha params
+	 *	 ]
+	 * [out] memref[0] = 32bit return code, enum pkcs11_rc
+	 *
+	 * These commands relate to the PKCS#11 API functions C_EncryptInit() and
+	 * C_DecryptInit().
+	 */
 #define PKCS11_CMD_ENCRYPT_INIT			28
 #define PKCS11_CMD_DECRYPT_INIT			29
 
-/*
- * PKCS11_CMD_ENCRYPT_UPDATE - Update encryption processing
- * PKCS11_CMD_DECRYPT_UPDATE - Update decryption processing
- *
- * [in]		memref[0] = 32bit session handle
- * [out]	memref[0] = 32bit fine grain return code
- * [in]		memref[1] = input data to be processed
- * [out]	memref[2] = output processed data
- *
- * These commands relate to the PKCS#11 API functions C_EncryptUpdate() and
- * C_DecryptUpdate().
- */
+	/*
+	 * PKCS11_CMD_ENCRYPT_UPDATE - Update encryption processing
+	 * PKCS11_CMD_DECRYPT_UPDATE - Update decryption processing
+	 *
+	 * [in]  memref[0] = 32bit session handle
+	 * [out] memref[0] = 32bit return code, enum pkcs11_rc
+	 * [in]  memref[1] = input data to be processed
+	 * [out] memref[2] = output processed data
+	 *
+	 * These commands relate to the PKCS#11 API functions C_EncryptUpdate() and
+	 * C_DecryptUpdate().
+	 */
 #define PKCS11_CMD_ENCRYPT_UPDATE		30
 #define PKCS11_CMD_DECRYPT_UPDATE		31
 
-/*
- * PKCS11_CMD_ENCRYPT_FINAL - Finalize encryption processing
- * PKCS11_CMD_DECRYPT_FINAL - Finalize decryption processing
- *
- * [in]		memref[0] = 32bit session handle
- * [out]	memref[0] = 32bit fine grain return code
- * [out]	memref[2] = output processed data
- *
- * These commands relate to the PKCS#11 API functions C_EncryptFinal() and
- * C_DecryptFinal().
- */
+	/*
+	 * PKCS11_CMD_ENCRYPT_FINAL - Finalize encryption processing
+	 * PKCS11_CMD_DECRYPT_FINAL - Finalize decryption processing
+	 *
+	 * [in]  memref[0] = 32bit session handle
+	 * [out] memref[0] = 32bit return code, enum pkcs11_rc
+	 * [out] memref[2] = output processed data
+	 *
+	 * These commands relate to the PKCS#11 API functions C_EncryptFinal() and
+	 * C_DecryptFinal().
+	 */
 #define PKCS11_CMD_ENCRYPT_FINAL		32
 #define PKCS11_CMD_DECRYPT_FINAL		33
 
-/*
- * PKCS11_CMD_ENCRYPT_ONESHOT - Update and finalize encryption processing
- * PKCS11_CMD_DECRYPT_ONESHOT - Update and finalize decryption processing
- *
- * [in]		memref[0] = 32bit session handle
- * [out]	memref[0] = 32bit fine grain return code
- * [in]		memref[1] = input data to be processed
- * [out]	memref[2] = output processed data
- *
- * These commands relate to the PKCS#11 API functions C_Encrypt and
- * C_Decrypt.
- */
+	/*
+	 * PKCS11_CMD_ENCRYPT_ONESHOT - Update and finalize encryption processing
+	 * PKCS11_CMD_DECRYPT_ONESHOT - Update and finalize decryption processing
+	 *
+	 * [in]  memref[0] = 32bit session handle
+	 * [out] memref[0] = 32bit return code, enum pkcs11_rc
+	 * [in]  memref[1] = input data to be processed
+	 * [out] memref[2] = output processed data
+	 *
+	 * These commands relate to the PKCS#11 API functions C_Encrypt and
+	 * C_Decrypt.
+	 */
 #define PKCS11_CMD_ENCRYPT_ONESHOT		34
 #define PKCS11_CMD_DECRYPT_ONESHOT		35
 
-/*
- * PKCS11_CMD_SIGN_INIT - Initialize a signature computation processing
- * PKCS11_CMD_VERIFY_INIT - Initialize a signature verification processing
- *
- * [in]		memref[0] = [
- *			32bit session handle,
- *			32bit key handle,
- *			(struct pkcs11_attribute_head)mechanism + mecha params,
- *		]
- * [out]	memref[0] = 32bit fine grain return code
- *
- * These commands relate to the PKCS#11 API functions C_SignInit() and
- * C_VerifyInit().
- */
+	/*
+	 * PKCS11_CMD_SIGN_INIT - Initialize a signature computation processing
+	 * PKCS11_CMD_VERIFY_INIT - Initialize a signature verification processing
+	 *
+	 * [in]  memref[0] = [
+	 *              32bit session handle,
+	 *              32bit key handle,
+	 *              (struct pkcs11_attribute_head)mechanism + mecha params,
+	 *	 ]
+	 * [out] memref[0] = 32bit return code, enum pkcs11_rc
+	 *
+	 * These commands relate to the PKCS#11 API functions C_SignInit() and
+	 * C_VerifyInit().
+	 */
 #define PKCS11_CMD_SIGN_INIT			36
 #define PKCS11_CMD_VERIFY_INIT			37
 
-/*
- * PKCS11_CMD_SIGN_UPDATE - Update a signature computation processing
- * PKCS11_CMD_VERIFY_UPDATE - Update a signature verification processing
- *
- * [in]		memref[0] = 32bit session handle
- * [in]		memref[1] = input data to be processed
- * [out]	memref[0] = 32bit fine grain return code
- *
- * These commands relate to the PKCS#11 API functions C_SignUpdate() and
- * C_VerifyUpdate().
- */
+	/*
+	 * PKCS11_CMD_SIGN_UPDATE - Update a signature computation processing
+	 * PKCS11_CMD_VERIFY_UPDATE - Update a signature verification processing
+	 *
+	 * [in]  memref[0] = 32bit session handle
+	 * [in]  memref[1] = input data to be processed
+	 * [out] memref[0] = 32bit return code, enum pkcs11_rc
+	 *
+	 * These commands relate to the PKCS#11 API functions C_SignUpdate() and
+	 * C_VerifyUpdate().
+	 */
 #define PKCS11_CMD_SIGN_UPDATE			38
 #define PKCS11_CMD_VERIFY_UPDATE		39
 
-/*
- * PKCS11_CMD_SIGN_FINAL - Finalize a signature computation processing
- * PKCS11_CMD_VERIFY_FINAL - Finalize a signature verification processing
- *
- * [in]		memref[0] = 32bit session handle
- * [out]	memref[0] = 32bit fine grain return code
- * [out]	memref[2] = output processed data
- *
- * These commands relate to the PKCS#11 API functions C_SignFinal() and
- * C_VerifyFinal.
- */
+	/*
+	 * PKCS11_CMD_SIGN_FINAL - Finalize a signature computation processing
+	 * PKCS11_CMD_VERIFY_FINAL - Finalize a signature verification processing
+	 *
+	 * [in]  memref[0] = 32bit session handle
+	 * [out] memref[0] = 32bit return code, enum pkcs11_rc
+	 * [out] memref[2] = output processed data
+	 *
+	 * These commands relate to the PKCS#11 API functions C_SignFinal() and
+	 * C_VerifyFinal.
+	 */
 #define PKCS11_CMD_SIGN_FINAL			40
 #define PKCS11_CMD_VERIFY_FINAL			41
 
-/*
- * PKCS11_CMD_SIGN_ONESHOT - Update and finalize a signature computation
- *
- * [in]		memref[0] = 32bit session handle
- * [out]	memref[0] = 32bit fine grain return code
- * [in]		memref[1] = input data to be processed
- * [out]	memref[2] = byte array: generated signature
- *
- * This command relates to the PKCS#11 API function C_Sign().
- */
+	/*
+	 * PKCS11_CMD_SIGN_ONESHOT - Update and finalize a signature computation
+	 *
+	 * [in]  memref[0] = 32bit session handle
+	 * [out] memref[0] = 32bit return code, enum pkcs11_rc
+	 * [in]  memref[1] = input data to be processed
+	 * [out] memref[2] = byte array: generated signature
+	 *
+	 * This command relates to the PKCS#11 API function C_Sign().
+	 */
 #define PKCS11_CMD_SIGN_ONESHOT			42
 
-/*
- * PKCS11_CMD_VERIFY_ONESHOT - Update and finalize a signature verification
- *
- * [in]		memref[0] = 32bit session handle
- * [out]	memref[0] = 32bit fine grain return code
- * [in]		memref[1] = input data to be processed
- * [in]		memref[2] = input signature to be processed
- *
- * This command relates to the PKCS#11 API function C_Verify().
- */
+	/*
+	 * PKCS11_CMD_VERIFY_ONESHOT - Update and finalize a signature verification
+	 *
+	 * [in]  memref[0] = 32bit session handle
+	 * [out] memref[0] = 32bit return code, enum pkcs11_rc
+	 * [in]  memref[1] = input data to be processed
+	 * [in]  memref[2] = input signature to be processed
+	 *
+	 * This command relates to the PKCS#11 API function C_Verify().
+	 */
 #define PKCS11_CMD_VERIFY_ONESHOT		43
 
-/*
- * PKCS11_CMD_DERIVE_KEY - Derive a key from already provisioned parent key
- *
- * [in]		memref[0] = [
- *			32bit session handle,
- *			(struct pkcs11_attribute_head)mechanism + mecha params,
- *			32bit key handle,
- *			(struct pkcs11_object_head)attribs + attributes data
- *		]
- * [out]	memref[0] = 32bit fine grain return code
- * [out]	memref[2] = 32bit object handle
- *
- * This command relates to the PKCS#11 API functions C_DeriveKey().
- */
+	/*
+	 * PKCS11_CMD_DERIVE_KEY - Derive a key from already provisioned parent key
+	 *
+	 * [in]	 memref[0] = [
+	 *              32bit session handle,
+	 *              (struct pkcs11_attribute_head)mechanism + mecha params,
+	 *              32bit key handle,
+	 *              (struct pkcs11_object_head)attribs + attributes data
+	 *	 ]
+	 * [out] memref[0] = 32bit return code, enum pkcs11_rc
+	 * [out] memref[2] = 32bit object handle
+	 *
+	 * This command relates to the PKCS#11 API functions C_DeriveKey().
+	 */
 #define PKCS11_CMD_DERIVE_KEY			44
 
-/*
- * PKCS11_CMD_GENERATE_KEY_PAIR - Generate an asymmetric key pair
- *
- * [in]		memref[0] = [
- *			32bit session handle,
- *			(struct pkcs11_attribute_head)mechanism + mecha params,
- *			(struct pkcs11_object_head)pubkey_attribs + attributes,
- *			(struct pkcs11_object_head)privkeyattribs + attributes,
- *		]
- * [out]	memref[0] = 32bit fine grain return code
- * [out]	memref[2] = [
- *			32bit public key handle,
- *			32bit prive key handle
- *		]
- *
- * This command relates to the PKCS#11 API functions C_GenerateKeyPair().
- */
+	/*
+	 * PKCS11_CMD_GENERATE_KEY_PAIR - Generate an asymmetric key pair
+	 *
+	 * [in]  memref[0] = [
+	 *              32bit session handle,
+	 *              (struct pkcs11_attribute_head)mechanism + mecha params,
+	 *              (struct pkcs11_object_head)pubkey_attribs + attributes,
+	 *              (struct pkcs11_object_head)privkeyattribs + attributes,
+	 *	 ]
+	 * [out] memref[0] = 32bit return code, enum pkcs11_rc
+	 * [out] memref[2] = [
+	 *              32bit public key handle,
+	 *              32bit prive key handle
+	 *	 ]
+	 *
+	 * This command relates to the PKCS#11 API functions C_GenerateKeyPair().
+	 */
 #define PKCS11_CMD_GENERATE_KEY_PAIR		45
 
 /*
  * Command return codes
- * PKCS11_CKR_<x> relates cryptoki CKR_<x> in meaning if not in value.
+ * PKCS11_<x> relates CryptoKi client API CKR_<x>
  */
 enum pkcs11_rc {
 	PKCS11_CKR_OK				= 0,

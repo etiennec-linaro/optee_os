@@ -220,19 +220,17 @@ struct pkcs11_session {
 };
 
 /* Initialize static token instance(s) from default/persistent database */
-int pkcs11_init(void);
+TEE_Result pkcs11_init(void);
 void pkcs11_deinit(void);
 
-/* Return token instance from token identifier */
+/* Speculation safe lookup of token instance from token identifier */
 struct ck_token *get_token(unsigned int token_id);
 
 /* Return token identified from token instance address */
 unsigned int get_token_id(struct ck_token *token);
 
-/* Initialize target token database */
-struct ck_token *init_token_db(unsigned int token_id);
-
-/* Persistent database update */
+/* Access to persistent database */
+struct ck_token *init_persistent_db(unsigned int token_id);
 int update_persistent_db(struct ck_token *token, size_t offset, size_t size);
 void close_persistent_db(struct ck_token *token);
 

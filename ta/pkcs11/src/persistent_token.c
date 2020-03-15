@@ -277,7 +277,7 @@ uint32_t register_persistent_object(struct ck_token *token, TEE_UUID *uuid)
  * Return the token instance, either initialized from reset or initialized
  * from the token persistent state if found.
  */
-struct ck_token *init_token_db(unsigned int token_id)
+struct ck_token *init_persistent_db(unsigned int token_id)
 {
 	struct ck_token *token = get_token(token_id);
 	TEE_Result res = TEE_ERROR_GENERIC;

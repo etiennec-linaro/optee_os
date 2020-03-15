@@ -21,13 +21,9 @@ struct tee_session {
 	int foo;
 };
 
-
 TEE_Result TA_CreateEntryPoint(void)
 {
-	if (pkcs11_init())
-		return TEE_ERROR_SECURITY;
-
-	return TEE_SUCCESS;
+	return pkcs11_init();
 }
 
 void TA_DestroyEntryPoint(void)
@@ -128,7 +124,8 @@ TEE_Result TA_InvokeCommandEntryPoint(void *tee_session, uint32_t cmd,
 	uintptr_t teesess = (uintptr_t)tee_session;
 	uint32_t rc = 0;
 
-	DMSG("%s", id2str_ta_cmd(cmd));
+	/* All command handlers will check only against 4 parameters */
+	COMPILE_TIME_ASSERT(TEE_NUM_PARAMS == 4);
 
 	/*
 	 * Param#0 must be either an output or an inout memref as used to
@@ -143,10 +140,6 @@ TEE_Result TA_InvokeCommandEntryPoint(void *tee_session, uint32_t cmd,
 	default:
 		return TEE_ERROR_BAD_PARAMETERS;
 	}
-
-	/* Param#3 is not used */
-	if (TEE_PARAM_TYPE_GET(ptypes, 3) != TEE_PARAM_TYPE_NONE)
-		return TEE_ERROR_BAD_PARAMETERS;
 
 	DMSG("%s p#0 %"PRIu32"@%p, p#1 %s %"PRIu32"@%p, p#2 %s %"PRIu32"@%p",
 	     id2str_ta_cmd(cmd),
@@ -331,8 +324,8 @@ TEE_Result TA_InvokeCommandEntryPoint(void *tee_session, uint32_t cmd,
 
 	DMSG("%s rc 0x%08"PRIx32"/%s", id2str_ta_cmd(cmd), rc, id2str_rc(rc));
 
-	params[0].memref.size = sizeof(rc);
 	TEE_MemMove(params[0].memref.buffer, &rc, sizeof(rc));
+	params[0].memref.size = sizeof(rc);
 
 	if (rc == PKCS11_CKR_BUFFER_TOO_SMALL)
 		return TEE_ERROR_SHORT_BUFFER;

@@ -4,20 +4,22 @@
  */
 
 #include <assert.h>
+#include <confine_array_index.h>
 #include <pkcs11_ta.h>
 #include <string.h>
 #include <string_ext.h>
 #include <sys/queue.h>
+#include <tee_api_types.h>
 #include <tee_internal_api_extensions.h>
 #include <util.h>
 
 #include "attributes.h"
 #include "handle.h"
-#include "pkcs11_token.h"
 #include "pkcs11_attributes.h"
+#include "pkcs11_helpers.h"
+#include "pkcs11_token.h"
 #include "processing.h"
 #include "serializer.h"
-#include "pkcs11_helpers.h"
 
 /* Provide 3 slots/tokens, ID is token index */
 #define TOKEN_COUNT	3
@@ -29,32 +31,31 @@ static struct client_list pkcs11_client_list;
 
 static void close_ck_session(struct pkcs11_session *session);
 
-/* Static allocation of tokens runtime instances */
 struct ck_token *get_token(unsigned int token_id)
 {
-	if (token_id > TOKEN_COUNT)
-		return NULL;
+	if (token_id < TOKEN_COUNT)
+		return &ck_token[confine_array_index(token_id, TOKEN_COUNT)];
 
-	return &ck_token[token_id];
+	return NULL;
 }
 
 unsigned int get_token_id(struct ck_token *token)
 {
-	assert(token >= ck_token && token < &ck_token[TOKEN_COUNT]);
+	ptrdiff_t id = token - ck_token;
 
-	return token - ck_token;
+	assert(id >= 0 && id < TOKEN_COUNT);
+	return id;
 }
 
-/* Client */
 struct pkcs11_client *tee_session2client(uintptr_t tee_session)
 {
-	struct pkcs11_client *client;
+	struct pkcs11_client *client = NULL;
 
 	TAILQ_FOREACH(client, &pkcs11_client_list, link)
 		if (client == (void *)tee_session)
-			return client;
+			break;
 
-	return NULL;
+	return client;
 }
 
 uintptr_t register_client(void)
@@ -79,7 +80,7 @@ void unregister_client(uintptr_t tee_session)
 	struct pkcs11_session *next = NULL;
 
 	if (!client) {
-		EMSG("Unexpected invalid TEE session handle");
+		EMSG("Invalid TEE session handle");
 		return;
 	}
 
@@ -91,16 +92,16 @@ void unregister_client(uintptr_t tee_session)
 	TEE_Free(client);
 }
 
-static int pkcs11_token_init(unsigned int id)
+static TEE_Result pkcs11_token_init(unsigned int id)
 {
-	struct ck_token *token = init_token_db(id);
+	struct ck_token *token = init_persistent_db(id);
 
 	if (!token)
-		return 1;
+		return TEE_ERROR_GENERIC;
 
 	if (token->state != PKCS11_TOKEN_RESET) {
 		/* Token is already in a valid state */
-		return 0;
+		return TEE_SUCCESS;
 	}
 
 	/* Initialize the token runtime state */
@@ -108,20 +109,24 @@ static int pkcs11_token_init(unsigned int id)
 	token->session_count = 0;
 	token->rw_session_count = 0;
 
-	return 0;
+	return TEE_SUCCESS;
 }
 
-int pkcs11_init(void)
+TEE_Result pkcs11_init(void)
 {
 	unsigned int id = 0;
+	TEE_Result ret = TEE_ERROR_GENERIC;
 
-	for (id = 0; id < TOKEN_COUNT; id++)
-		if (pkcs11_token_init(id))
-			return 1;
+	for (id = 0; id < TOKEN_COUNT; id++) {
+		ret = pkcs11_token_init(id);
+		if (ret)
+			break;
+	}
 
-	TAILQ_INIT(&pkcs11_client_list);
+	if (!ret)
+		TAILQ_INIT(&pkcs11_client_list);
 
-	return 0;
+	return ret;
 }
 
 void pkcs11_deinit(void)

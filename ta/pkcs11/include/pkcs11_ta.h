@@ -673,13 +673,16 @@ struct pkcs11_slot_info {
 };
 
 /*
- * Values for pkcs11_token_info::flags.
- * PKCS11_CKFS_<x> corresponds to cryptoki flag CKF_<x> related to slot flags.
+ * Values for pkcs11_slot_info::flags.
+ * PKCS11_CKFS_<x> reflects CryptoKi client API slot flags CKF_<x>.
  */
 #define PKCS11_CKFS_TOKEN_PRESENT		(1U << 0)
 #define PKCS11_CKFS_REMOVABLE_DEVICE		(1U << 1)
 #define PKCS11_CKFS_HW_SLOT			(1U << 2)
 
+/*
+ * Arguments for PKCS11_CMD_TOKEN_INFO
+ */
 #define PKCS11_TOKEN_LABEL_SIZE			32
 #define PKCS11_TOKEN_MANUFACTURER_SIZE		32
 #define PKCS11_TOKEN_MODEL_SIZE			16
@@ -708,7 +711,7 @@ struct pkcs11_token_info {
 
 /*
  * Values for pkcs11_token_info::flags.
- * PKCS11_CKFT_<x> corresponds to cryptoki CKF_<x> related to token flags.
+ * PKCS11_CKFT_<x> reflects CryptoKi client API token flags CKF_<x>.
  */
 #define PKCS11_CKFT_RNG					(1U << 0)
 #define PKCS11_CKFT_WRITE_PROTECTED			(1U << 1)
@@ -758,6 +761,10 @@ enum pkcs11_session_state_next {
 	PKCS11_CKS_RW_SO_FUNCTIONS = 4,
 };
 
+/*
+ * Arguments for PKCS11_CMD_MECHANISM_INFO
+ */
+
 struct pkcs11_mechanism_info {
 	uint32_t min_key_size;
 	uint32_t max_key_size;
@@ -766,7 +773,7 @@ struct pkcs11_mechanism_info {
 
 /*
  * Values for pkcs11_mechanism_info::flags.
- * PKCS11_CKFM_<x> strictly matches cryptoki CKF_<x> related to mechanism flags.
+ * PKCS11_CKFM_<x> reflects CryptoKi client API mechanism flags CKF_<x>.
  */
 #define PKCS11_CKFM_HW				(1U << 0)
 #define PKCS11_CKFM_ENCRYPT			(1U << 8)
@@ -933,8 +940,8 @@ enum pkcs11_key_type {
 };
 
 /*
- * Valid values for attribute PKCS11_CKA_MECHANISM_TYPE
- * PKCS11_CKM_<x> corresponds to cryptoki CKM_<x>.
+ * Valid values for mechanism IDs
+ * PKCS11_CKM_<x> reflects CryptoKi client API mechanism IDs CKM_<x>.
  */
 enum pkcs11_mechanism_id {
 	PKCS11_CKM_AES_ECB			= 0x000,

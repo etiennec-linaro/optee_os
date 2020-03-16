@@ -63,14 +63,11 @@ TAILQ_HEAD(session_list, pkcs11_session);
  */
 struct token_persistent_main {
 	uint32_t version;
-
 	uint8_t label[PKCS11_TOKEN_LABEL_SIZE];
 	uint32_t flags;
-
 	uint32_t so_pin_count;
 	uint32_t so_pin_size;
 	uint8_t so_pin[PKCS11_TOKEN_PIN_SIZE_MAX];
-
 	uint32_t user_pin_count;
 	uint32_t user_pin_size;
 	uint8_t user_pin[PKCS11_TOKEN_PIN_SIZE_MAX];
@@ -90,26 +87,18 @@ struct token_persistent_objs {
 /*
  * Runtime state of the token, complies with pkcs11
  *
- * @login_state - Pkcs11 login is public, user, SO or custom
- * @db_hld - TEE handle on the persistent database object or TEE_HANDLE_NULL
- * @pin_hld - TEE handles on PIN ciphering keys
- * @db_main - Volatile copy of the persistent main database
+ * @state - Pkcs11 login is public, user, SO or custom
  * @session_count - Counter for opened Pkcs11 sessions
  * @rw_session_count - Count for opened Pkcs11 read/write sessions
- * @session_state - Login state of the token
- * @session_list - Head of the list of the sessions owned by the token
+ * @object_list - List of the object owned by the token
+ * @db_main - Volatile copy of the persistent main database
+ * @db_objs - Volatile copy of the persistent object database
  */
 struct ck_token {
 	enum pkcs11_token_state state;
 	uint32_t session_count;
 	uint32_t rw_session_count;
-
 	struct object_list object_list;
-
-	/* Open handles to token database */
-	TEE_ObjectHandle db_hdl;
-	/*  Open handles to PIN keys */
-	TEE_ObjectHandle pin_hdl[PKCS11_MAX_USERS];
 	/* Copy in RAM of the persistent database */
 	struct token_persistent_main *db_main;
 	struct token_persistent_objs *db_objs;
@@ -190,15 +179,16 @@ struct pkcs11_client {
 /*
  * Structure tracking the PKCS#11 sessions
  *
- * @link - list of the session belonging to a client
+ * @link - List of the session belonging to a client
  * @tee_session - TEE session handle used by PKCS11 session client
- * @client - client the session belongs to (FIXME: redundant with tee_session)
- * @token - token this session belongs to
- * @handle - identifier of the session published to the client
- * @object_list - entry of the session objects list
- * @object_handle_db - database for object handles published by the session
+ * @client - Client the session belongs to (FIXME: redundant with tee_session)
+ * @token - Token this session belongs to
+ * @handle - Identifier of the session published to the client
+ * @object_list - Entry of the session objects list
+ * @object_handle_db - Database for object handles published by the session
  * @state - R/W SO, R/W user, RO user, R/W public, RO public.
- * @find_ctx - point to active search context (null if no active search)
+ * @processing - Reference to initialized processing context if any
+ * @find_ctx - Reference to active search context (null if no active search)
  */
 struct pkcs11_session {
 	TAILQ_ENTRY(pkcs11_session) link;

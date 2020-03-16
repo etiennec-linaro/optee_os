@@ -559,28 +559,6 @@ bool key_type_is_asymm_key(uint32_t id)
 	}
 }
 
-bool mechanism_is_valid(uint32_t id)
-{
-	size_t n = 0;
-
-	for (n = 0; n < ARRAY_SIZE(processing_ids); n++)
-		if (id == processing_ids[n].id)
-			return true;
-
-	return false;
-}
-
-bool mechanism_is_supported(uint32_t id)
-{
-	size_t n = 0;
-
-	for (n = 0; n < ARRAY_SIZE(processing_ids); n++)
-		if (processing_ids[n].id == id)
-			return processing_ids[n].supported;
-
-	return false;
-}
-
 size_t get_supported_mechanisms(uint32_t *array, size_t array_count)
 {
 	size_t n = 0;
@@ -686,21 +664,6 @@ const char *id2str_attr(uint32_t id)
 
 		/* Skip PKCS11_ prefix */
 		return (char *)attr_ids[n].string + strlen("PKCS11_CKA_");
-	}
-
-	return unknown;
-}
-
-static const char *id2str_mechanism_type(uint32_t id)
-{
-	size_t n = 0;
-
-	for (n = 0; n < ARRAY_SIZE(processing_ids); n++) {
-		if (id != processing_ids[n].id)
-			continue;
-
-		/* Skip PKCS11_ prefix */
-		return (char *)processing_ids[n].string + strlen("PKCS11_CKM_");
 	}
 
 	return unknown;

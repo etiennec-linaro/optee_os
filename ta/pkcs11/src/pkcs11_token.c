@@ -20,6 +20,7 @@
 #include "pkcs11_token.h"
 #include "processing.h"
 #include "serializer.h"
+#include "token_capabilities.h"
 
 /* Provide 3 slots/tokens, ID is token index */
 #ifndef CFG_PKCS11_TA_TOKEN_COUNT
@@ -561,6 +562,20 @@ uint32_t entry_ck_token_info(uint32_t ptypes, TEE_Param *params)
 	return PKCS11_CKR_OK;
 }
 
+static void dmsg_print_supported_mechanism(unsigned int token_id __maybe_unused,
+					   uint32_t *mecha_array __maybe_unused,
+					   size_t count __maybe_unused)
+{
+	size_t __maybe_unused n = 0;
+
+	if (TRACE_LEVEL < TRACE_DEBUG)
+		return;
+
+	for (n = 0; n < count; n++)
+		DMSG("PKCS11 token %"PRIu32": mechanism 0x%04"PRIx32": %s",
+		     token_id, mecha_array[n], id2str_proc(mecha_array[n]));
+}
+
 uint32_t entry_ck_token_mecha_ids(uint32_t ptypes, TEE_Param *params)
 {
 	const uint32_t exp_pt = TEE_PARAM_TYPES(TEE_PARAM_TYPE_MEMREF_INOUT,
@@ -570,195 +585,86 @@ uint32_t entry_ck_token_mecha_ids(uint32_t ptypes, TEE_Param *params)
 	TEE_Param *ctrl = &params[0];
 	TEE_Param *out = &params[2];
 	uint32_t rv = 0;
-	struct serialargs ctrlargs;
+	struct serialargs ctrlargs = { };
 	uint32_t token_id = 0;
-	struct ck_token *token = NULL;
-	uint32_t mechanisms_count = (uint32_t)get_supported_mechanisms(NULL, 0);
-	size_t __maybe_unused count = 0;
-
-	TEE_MemFill(&ctrlargs, 0, sizeof(ctrlargs));
+	struct ck_token __maybe_unused *token = NULL;
+	size_t count = 0;
+	uint32_t *array = NULL;
 
 	if (ptypes != exp_pt)
-		return PKCS11_BAD_PARAM;
-
-	if (out->memref.size < mechanisms_count * sizeof(uint32_t)) {
-		out->memref.size = mechanisms_count * sizeof(uint32_t);
-		return PKCS11_SHORT_BUFFER;
-	}
+		return PKCS11_CKR_ARGUMENTS_BAD;
 
 	serialargs_init(&ctrlargs, ctrl->memref.buffer, ctrl->memref.size);
 
-	rv = serialargs_get(&ctrlargs, &token_id, sizeof(uint32_t));
+	rv = serialargs_get(&ctrlargs, &token_id, sizeof(token_id));
 	if (rv)
 		return rv;
 
 	if (serialargs_remaining_bytes(&ctrlargs))
-		return PKCS11_BAD_PARAM;
+		return PKCS11_CKR_ARGUMENTS_BAD;
 
 	token = get_token(token_id);
 	if (!token)
 		return PKCS11_CKR_SLOT_ID_INVALID;
 
-	out->memref.size = sizeof(uint32_t) *
-			   get_supported_mechanisms(out->memref.buffer,
-						    mechanisms_count);
+	count = out->memref.size / sizeof(*array);
+	array = tee_malloc_mechanism_list(&count);
 
-	assert(out->memref.size == mechanisms_count * sizeof(uint32_t));
-
-#ifdef DEBUG
-	for (count = 0; count < mechanisms_count; count++) {
-		IMSG("PKCS11 token %"PRIu32": mechanism 0x%04"PRIx32": %s",
-		     token_id, ((uint32_t *)out->memref.buffer)[count],
-		     id2str_proc(((uint32_t *)out->memref.buffer)[count]));
-	}
-#endif
-
-	return PKCS11_OK;
-}
-
-static uint32_t supported_mechanism_info_flag(uint32_t proc_id)
-{
-	uint32_t flags = 0;
-
-	switch (proc_id) {
-	case PKCS11_CKM_GENERIC_SECRET_KEY_GEN:
-	case PKCS11_CKM_AES_KEY_GEN:
-		flags = PKCS11_CKFM_GENERATE;
-		break;
-	case PKCS11_CKM_AES_ECB:
-	case PKCS11_CKM_AES_CBC:
-	case PKCS11_CKM_AES_CBC_PAD:
-		flags = PKCS11_CKFM_ENCRYPT | PKCS11_CKFM_DECRYPT |
-			PKCS11_CKFM_WRAP | PKCS11_CKFM_UNWRAP |
-			PKCS11_CKFM_DERIVE;
-		break;
-	case PKCS11_CKM_AES_CTR:
-	case PKCS11_CKM_AES_CTS:
-	case PKCS11_CKM_AES_GCM:
-	case PKCS11_CKM_AES_CCM:
-		flags = PKCS11_CKFM_ENCRYPT | PKCS11_CKFM_DECRYPT |
-			PKCS11_CKFM_WRAP | PKCS11_CKFM_UNWRAP;
-		break;
-	case PKCS11_CKM_AES_GMAC:
-		flags = PKCS11_CKFM_SIGN | PKCS11_CKFM_VERIFY |
-			PKCS11_CKFM_DERIVE;
-		break;
-	case PKCS11_CKM_AES_CMAC:
-	case PKCS11_CKM_AES_CMAC_GENERAL:
-	case PKCS11_CKM_MD5_HMAC:
-	case PKCS11_CKM_SHA_1_HMAC:
-	case PKCS11_CKM_SHA224_HMAC:
-	case PKCS11_CKM_SHA256_HMAC:
-	case PKCS11_CKM_SHA384_HMAC:
-	case PKCS11_CKM_SHA512_HMAC:
-	case PKCS11_CKM_AES_XCBC_MAC:
-		flags = PKCS11_CKFM_SIGN | PKCS11_CKFM_VERIFY;
-		break;
-	case PKCS11_CKM_AES_ECB_ENCRYPT_DATA:
-	case PKCS11_CKM_AES_CBC_ENCRYPT_DATA:
-		flags = PKCS11_CKFM_DERIVE;
-		break;
-	case PKCS11_CKM_EC_KEY_PAIR_GEN:
-	case PKCS11_CKM_RSA_PKCS_KEY_PAIR_GEN:
-		flags = PKCS11_CKFM_GENERATE_KEY_PAIR;
-		break;
-	case PKCS11_CKM_ECDSA:
-	case PKCS11_CKM_ECDSA_SHA1:
-	case PKCS11_CKM_ECDSA_SHA224:
-	case PKCS11_CKM_ECDSA_SHA256:
-	case PKCS11_CKM_ECDSA_SHA384:
-	case PKCS11_CKM_ECDSA_SHA512:
-		flags = PKCS11_CKFM_SIGN | PKCS11_CKFM_VERIFY;
-		break;
-	case PKCS11_CKM_ECDH1_DERIVE:
-	case PKCS11_CKM_ECDH1_COFACTOR_DERIVE:
-	case PKCS11_CKM_ECMQV_DERIVE:
-		flags = PKCS11_CKFM_DERIVE;
-		break;
-	case PKCS11_CKM_ECDH_AES_KEY_WRAP:
-		flags = PKCS11_CKFM_WRAP | PKCS11_CKFM_UNWRAP;
-		break;
-	case PKCS11_CKM_RSA_PKCS:
-	case PKCS11_CKM_RSA_X_509:
-		flags = PKCS11_CKFM_ENCRYPT | PKCS11_CKFM_DECRYPT |
-			PKCS11_CKFM_SIGN | PKCS11_CKFM_VERIFY |
-			PKCS11_CKFM_SIGN_RECOVER | PKCS11_CKFM_VERIFY_RECOVER |
-			PKCS11_CKFM_WRAP | PKCS11_CKFM_UNWRAP;
-		break;
-	case PKCS11_CKM_RSA_9796:
-		flags = PKCS11_CKFM_SIGN | PKCS11_CKFM_VERIFY |
-			PKCS11_CKFM_SIGN_RECOVER | PKCS11_CKFM_VERIFY_RECOVER;
-		break;
-
-	case PKCS11_CKM_RSA_PKCS_OAEP:
-		flags = PKCS11_CKFM_ENCRYPT | PKCS11_CKFM_DECRYPT |
-			PKCS11_CKFM_WRAP | PKCS11_CKFM_UNWRAP;
-		break;
-	case PKCS11_CKM_RSA_PKCS_PSS:
-	case PKCS11_CKM_SHA1_RSA_PKCS:
-	case PKCS11_CKM_SHA224_RSA_PKCS:
-	case PKCS11_CKM_SHA256_RSA_PKCS:
-	case PKCS11_CKM_SHA384_RSA_PKCS:
-	case PKCS11_CKM_SHA512_RSA_PKCS:
-	case PKCS11_CKM_SHA1_RSA_PKCS_PSS:
-	case PKCS11_CKM_SHA224_RSA_PKCS_PSS:
-	case PKCS11_CKM_SHA256_RSA_PKCS_PSS:
-	case PKCS11_CKM_SHA384_RSA_PKCS_PSS:
-	case PKCS11_CKM_SHA512_RSA_PKCS_PSS:
-		flags = PKCS11_CKFM_SIGN | PKCS11_CKFM_VERIFY;
-		break;
-	case PKCS11_CKM_RSA_AES_KEY_WRAP:
-		flags = PKCS11_CKFM_WRAP | PKCS11_CKFM_UNWRAP;
-		break;
-	default:
-		TEE_Panic(proc_id);
-		break;
+	if (out->memref.size < count * sizeof(*array)) {
+		assert(!array);
+		out->memref.size = count * sizeof(*array);
+		return PKCS11_CKR_BUFFER_TOO_SMALL;
 	}
 
-	assert(check_pkcs11_mechanism_flags(proc_id, flags) == 0);
+	if (!array)
+		return PKCS11_CKR_DEVICE_MEMORY;
 
-	return flags;
+	dmsg_print_supported_mechanism(token_id, array, count);
+
+	out->memref.size = count * sizeof(*array);
+	TEE_MemMove(out->memref.buffer, array, out->memref.size);
+
+	TEE_Free(array);
+
+	return rv;
 }
 
 static void supported_mechanism_key_size(uint32_t proc_id,
 					 uint32_t *max_key_size,
-					 uint32_t *min_key_size,
-					 bool bit_size_only)
+					 uint32_t *min_key_size)
 {
-	uint32_t mult = bit_size_only ? 8 : 1;
-
 	switch (proc_id) {
 	case PKCS11_CKM_GENERIC_SECRET_KEY_GEN:
 		*min_key_size = 1;		/* in bits */
 		*max_key_size = 4096;		/* in bits */
 		break;
 	case PKCS11_CKM_MD5_HMAC:
-		*min_key_size = 16 * mult;
-		*max_key_size = 16 * mult;
+		*min_key_size = 16;
+		*max_key_size = 16;
 		break;
 	case PKCS11_CKM_SHA_1_HMAC:
-		*min_key_size = 20 * mult;
-		*max_key_size = 20 * mult;
+		*min_key_size = 20;
+		*max_key_size = 20;
 		break;
 	case PKCS11_CKM_SHA224_HMAC:
-		*min_key_size = 28 * mult;
-		*max_key_size = 28 * mult;
+		*min_key_size = 28;
+		*max_key_size = 28;
 		break;
 	case PKCS11_CKM_SHA256_HMAC:
-		*min_key_size = 32 * mult;
-		*max_key_size = 32 * mult;
+		*min_key_size = 32;
+		*max_key_size = 32;
 		break;
 	case PKCS11_CKM_SHA384_HMAC:
-		*min_key_size = 48 * mult;
-		*max_key_size = 48 * mult;
+		*min_key_size = 48;
+		*max_key_size = 48;
 		break;
 	case PKCS11_CKM_SHA512_HMAC:
-		*min_key_size = 64 * mult;
-		*max_key_size = 64 * mult;
+		*min_key_size = 64;
+		*max_key_size = 64;
 		break;
 	case PKCS11_CKM_AES_XCBC_MAC:
-		*min_key_size = 28 * mult;
-		*max_key_size = 28 * mult;
+		*min_key_size = 28;
+		*max_key_size = 28;
 		break;
 	case PKCS11_CKM_AES_KEY_GEN:
 	case PKCS11_CKM_AES_ECB:
@@ -771,8 +677,8 @@ static void supported_mechanism_key_size(uint32_t proc_id,
 	case PKCS11_CKM_AES_GMAC:
 	case PKCS11_CKM_AES_CMAC:
 	case PKCS11_CKM_AES_CMAC_GENERAL:
-		*min_key_size = 16 * mult;
-		*max_key_size = 32 * mult;
+		*min_key_size = 16;
+		*max_key_size = 32;
 		break;
 	case PKCS11_CKM_EC_KEY_PAIR_GEN:
 	case PKCS11_CKM_ECDSA:
@@ -822,17 +728,14 @@ uint32_t entry_ck_token_mecha_info(uint32_t ptypes, TEE_Param *params)
 	TEE_Param *ctrl = &params[0];
 	TEE_Param *out = &params[2];
 	uint32_t rv = 0;
-	struct serialargs ctrlargs;
+	struct serialargs ctrlargs = { };
 	uint32_t token_id = 0;
 	uint32_t type = 0;
 	struct ck_token *token = NULL;
 	struct pkcs11_mechanism_info info = { };
 
-	TEE_MemFill(&ctrlargs, 0, sizeof(ctrlargs));
-
-	if (ptypes != exp_pt ||
-	    out->memref.size != sizeof(info))
-		return PKCS11_BAD_PARAM;
+	if (ptypes != exp_pt || out->memref.size != sizeof(info))
+		return PKCS11_CKR_ARGUMENTS_BAD;
 
 	serialargs_init(&ctrlargs, ctrl->memref.buffer, ctrl->memref.size);
 
@@ -845,26 +748,26 @@ uint32_t entry_ck_token_mecha_info(uint32_t ptypes, TEE_Param *params)
 		return rv;
 
 	if (serialargs_remaining_bytes(&ctrlargs))
-		return PKCS11_BAD_PARAM;
+		return PKCS11_CKR_ARGUMENTS_BAD;
 
 	token = get_token(token_id);
 	if (!token)
 		return PKCS11_CKR_SLOT_ID_INVALID;
 
-	if (!mechanism_is_supported(type))
+	if (!mechanism_is_valid(type))
 		return PKCS11_CKR_MECHANISM_INVALID;
 
-	info.flags = supported_mechanism_info_flag(type);
+	info.flags = mechanism_supported_flags(type);
 
 	supported_mechanism_key_size(type, &info.min_key_size,
-				     &info.max_key_size, false);
+				     &info.max_key_size);
 
 	TEE_MemMove(out->memref.buffer, &info, sizeof(info));
-	out->memref.size = sizeof(info);
 
-	IMSG("PKCS11 token %"PRIu32": mechanism 0x%"PRIx32" info", token_id, type);
+	DMSG("PKCS11 token %"PRIu32": mechanism 0x%"PRIx32" info",
+	     token_id, type);
 
-	return PKCS11_OK;
+	return PKCS11_CKR_OK;
 }
 
 /* Select the read-only/read-write state for session login state */
@@ -873,6 +776,12 @@ static void set_session_state(struct pkcs11_client *client,
 {
 	struct pkcs11_session *sess = NULL;
 	enum pkcs11_session_state state = PKCS11_SESSION_RESET;
+
+	/* Default to public session if no session already registered */
+	if (readonly)
+		state = PKCS11_CKS_RO_PUBLIC_SESSION;
+	else
+		state = PKCS11_CKS_RW_PUBLIC_SESSION;
 
 	/*
 	 * No need to check all client session, only the first session on

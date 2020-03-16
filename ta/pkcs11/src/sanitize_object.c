@@ -13,9 +13,10 @@
 #include <trace.h>
 
 #include "attributes.h"
+#include "pkcs11_helpers.h"
 #include "sanitize_object.h"
 #include "serializer.h"
-#include "pkcs11_helpers.h"
+#include "token_capabilities.h"
 
 /*
  * Functions to generate a serialized object.

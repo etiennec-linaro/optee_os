@@ -11,6 +11,8 @@
 #include <stddef.h>
 #include <tee_internal_api.h>
 
+#include <token_capabilities.h>
+
 /* Short aliases for return code */
 #define PKCS11_OK			PKCS11_CKR_OK
 #define PKCS11_ERROR			PKCS11_CKR_GENERAL_ERROR
@@ -68,12 +70,6 @@ bool key_type_is_asymm_key(uint32_t key_type_id);
 /* Boolprop flag shift position if @attribute_id is boolean, else -1 */
 int pkcs11_attr2boolprop_shift(uint32_t attribute_id);
 
-/* Return true if @id identifies a valid mechanism ID */
-bool mechanism_is_valid(uint32_t mechaism_id);
-
-/* Return true if @id identifies a supported mechanism */
-bool mechanism_is_supported(uint32_t mechanism_id);
-
 /*
  * Get the list the the supported mechanism
  *
@@ -114,4 +110,8 @@ const char *id2str_token_flag(uint32_t id);
 const char *id2str_proc(uint32_t id);
 const char *id2str_function(uint32_t id);
 
+static inline const char *id2str_mechanism_type(enum pkcs11_mechanism_id id)
+{
+	return mechanism_string_id(id);
+}
 #endif /*PKCS11_TA_PKCS11_HELPERS_H*/

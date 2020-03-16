@@ -800,7 +800,7 @@ struct pkcs11_mechanism_info {
 #define PKCS11_CKFM_VERIFY			(1U << 13)
 #define PKCS11_CKFM_VERIFY_RECOVER		(1U << 14)
 #define PKCS11_CKFM_GENERATE			(1U << 15)
-#define PKCS11_CKFM_GENERATE_PAIR		(1U << 16)
+#define PKCS11_CKFM_GENERATE_KEY_PAIR		(1U << 16)
 #define PKCS11_CKFM_WRAP			(1U << 17)
 #define PKCS11_CKFM_UNWRAP			(1U << 18)
 #define PKCS11_CKFM_DERIVE			(1U << 19)

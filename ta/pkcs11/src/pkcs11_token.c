@@ -660,7 +660,7 @@ static uint32_t supported_mechanism_info_flag(uint32_t proc_id)
 		break;
 	case PKCS11_CKM_EC_KEY_PAIR_GEN:
 	case PKCS11_CKM_RSA_PKCS_KEY_PAIR_GEN:
-		flags = PKCS11_CKFM_GENERATE_PAIR;
+		flags = PKCS11_CKFM_GENERATE_KEY_PAIR;
 		break;
 	case PKCS11_CKM_ECDSA:
 	case PKCS11_CKM_ECDSA_SHA1:

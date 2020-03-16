@@ -57,7 +57,7 @@ struct pkcs11_mechachism_modes {
 			 (_ver ? PKCS11_CKFM_VERIFY : 0) |		\
 			 (_vr ? PKCS11_CKFM_VERIFY_RECOVER : 0) |	\
 			 (_gen ? PKCS11_CKFM_GENERATE : 0) |		\
-			 (_gpa ? PKCS11_CKFM_GENERATE_PAIR : 0) |	\
+			 (_gpa ? PKCS11_CKFM_GENERATE_KEY_PAIR : 0) |	\
 			 (_wra ? PKCS11_CKFM_WRAP : 0) |		\
 			 (_unw ? PKCS11_CKFM_UNWRAP : 0) |		\
 			 (_der ? PKCS11_CKFM_DERIVE : 0) |		\
@@ -162,7 +162,7 @@ static uint32_t pkcs11_func2ckfm(enum processing_func function)
 	case PKCS11_FUNCTION_GENERATE:
 		return PKCS11_CKFM_GENERATE;
 	case PKCS11_FUNCTION_GENERATE_PAIR:
-		return PKCS11_CKFM_GENERATE_PAIR;
+		return PKCS11_CKFM_GENERATE_KEY_PAIR;
 	case PKCS11_FUNCTION_DERIVE:
 		return PKCS11_CKFM_DERIVE;
 	case PKCS11_FUNCTION_WRAP:
@@ -195,7 +195,8 @@ int check_pkcs11_mechanism_flags(uint32_t mechanism_type, uint32_t flags)
 			      PKCS11_CKFM_DERIVE | PKCS11_CKFM_DIGEST |
 			      PKCS11_CKFM_SIGN | PKCS11_CKFM_SIGN_RECOVER |
 			      PKCS11_CKFM_VERIFY | PKCS11_CKFM_VERIFY_RECOVER |
-			      PKCS11_CKFM_GENERATE | PKCS11_CKFM_GENERATE_PAIR |
+			      PKCS11_CKFM_GENERATE |
+			      PKCS11_CKFM_GENERATE_KEY_PAIR |
 			      PKCS11_CKFM_WRAP | PKCS11_CKFM_UNWRAP);
 
 	for (n = 0; n < ARRAY_SIZE(pkcs11_modes); n++) {

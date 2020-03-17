@@ -851,9 +851,8 @@ static void session_logout(struct pkcs11_session *session)
 	}
 }
 
-/* ctrl=[slot-id], in=unused, out=[session-handle] */
-static uint32_t open_ck_session(uintptr_t tee_session, uint32_t ptypes,
-				TEE_Param *params, bool readonly)
+uint32_t entry_ck_open_session(uintptr_t tee_session,
+			       uint32_t ptypes, TEE_Param *params)
 {
 	struct pkcs11_client *client = tee_session2client(tee_session);
 	const uint32_t exp_pt = TEE_PARAM_TYPES(TEE_PARAM_TYPE_MEMREF_INOUT,
@@ -865,8 +864,10 @@ static uint32_t open_ck_session(uintptr_t tee_session, uint32_t ptypes,
 	uint32_t rv = 0;
 	struct serialargs ctrlargs = { };
 	uint32_t token_id = 0;
+	uint32_t flags = 0;
 	struct ck_token *token = NULL;
 	struct pkcs11_session *session = NULL;
+	bool readonly = false;
 
 	if (!client || ptypes != exp_pt ||
 	    out->memref.size != sizeof(session->handle))
@@ -878,12 +879,24 @@ static uint32_t open_ck_session(uintptr_t tee_session, uint32_t ptypes,
 	if (rv)
 		return rv;
 
+	rv = serialargs_get(&ctrlargs, &flags, sizeof(flags));
+	if (rv)
+		return rv;
+
 	if (serialargs_remaining_bytes(&ctrlargs))
 		return PKCS11_CKR_ARGUMENTS_BAD;
 
 	token = get_token(token_id);
 	if (!token)
 		return PKCS11_CKR_SLOT_ID_INVALID;
+
+	/* Sanitize session flags */
+	if (!(flags & PKCS11_CKFSS_SERIAL_SESSION) ||
+	    (flags & ~(PKCS11_CKFSS_RW_SESSION |
+		       PKCS11_CKFSS_SERIAL_SESSION)))
+		return PKCS11_CKR_ARGUMENTS_BAD;
+
+	readonly = !(flags & PKCS11_CKFSS_RW_SESSION);
 
 	if (!readonly && token->state == PKCS11_TOKEN_READ_ONLY)
 		return PKCS11_CKR_TOKEN_WRITE_PROTECTED;
@@ -920,26 +933,12 @@ static uint32_t open_ck_session(uintptr_t tee_session, uint32_t ptypes,
 	if (!readonly)
 		session->token->rw_session_count++;
 
-	TEE_MemMove(out->memref.buffer, &session->handle, sizeof(session->handle));
-	out->memref.size = sizeof(session->handle);
+	TEE_MemMove(out->memref.buffer, &session->handle,
+		    sizeof(session->handle));
 
-	IMSG("PKCS11 session %"PRIu32": open", session->handle);
+	DMSG("Open PKCS11 session %"PRIu32, session->handle);
 
-	return PKCS11_OK;
-}
-
-/* ctrl=[slot-id], in=unused, out=[session-handle] */
-uint32_t entry_ck_token_ro_session(uintptr_t tee_session,
-				   uint32_t ptypes, TEE_Param *params)
-{
-	return open_ck_session(tee_session, ptypes, params, true);
-}
-
-/* ctrl=[slot-id], in=unused, out=[session-handle] */
-uint32_t entry_ck_token_rw_session(uintptr_t tee_session,
-				   uint32_t ptypes, TEE_Param *params)
-{
-	return open_ck_session(tee_session, ptypes, params, false);
+	return PKCS11_CKR_OK;
 }
 
 static void close_ck_session(struct pkcs11_session *session)
@@ -968,9 +967,8 @@ static void close_ck_session(struct pkcs11_session *session)
 	IMSG("Close PKCS11 session %"PRIu32, session->handle);
 }
 
-/* ctrl=[session-handle], in=unused, out=unused */
-uint32_t entry_ck_token_close_session(uintptr_t tee_session,
-				      uint32_t ptypes, TEE_Param *params)
+uint32_t entry_ck_close_session(uintptr_t tee_session,
+				uint32_t ptypes, TEE_Param *params)
 {
 	struct pkcs11_client *client = tee_session2client(tee_session);
 	const uint32_t exp_pt = TEE_PARAM_TYPES(TEE_PARAM_TYPE_MEMREF_INOUT,
@@ -1004,8 +1002,8 @@ uint32_t entry_ck_token_close_session(uintptr_t tee_session,
 	return PKCS11_CKR_OK;
 }
 
-uint32_t entry_ck_token_close_all(uintptr_t tee_session,
-				  uint32_t ptypes, TEE_Param *params)
+uint32_t entry_ck_close_all_sessions(uintptr_t tee_session,
+				     uint32_t ptypes, TEE_Param *params)
 {
 	struct pkcs11_client *client = tee_session2client(tee_session);
 	const uint32_t exp_pt = TEE_PARAM_TYPES(TEE_PARAM_TYPE_MEMREF_INOUT,

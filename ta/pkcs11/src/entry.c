@@ -178,17 +178,20 @@ TEE_Result TA_InvokeCommandEntryPoint(void *tee_session, uint32_t cmd,
 		rc = entry_ck_token_mecha_info(ptypes, params);
 		break;
 
+	case PKCS11_CMD_OPEN_SESSION:
+		rc = entry_ck_open_session(teesess, ptypes, params);
+		break;
 	case PKCS11_CMD_OPEN_RO_SESSION:
-		rc = entry_ck_token_ro_session(teesess, ptypes, params);
+		TEE_Panic(PKCS11_CMD_OPEN_RO_SESSION);
 		break;
 	case PKCS11_CMD_OPEN_RW_SESSION:
-		rc = entry_ck_token_rw_session(teesess, ptypes, params);
+		TEE_Panic(PKCS11_CMD_OPEN_RW_SESSION);
 		break;
 	case PKCS11_CMD_CLOSE_SESSION:
-		rc = entry_ck_token_close_session(teesess, ptypes, params);
+		rc = entry_ck_close_session(teesess, ptypes, params);
 		break;
 	case PKCS11_CMD_CLOSE_ALL_SESSIONS:
-		rc = entry_ck_token_close_all(teesess, ptypes, params);
+		rc = entry_ck_close_all_sessions(teesess, ptypes, params);
 		break;
 
 	case PKCS11_CMD_IMPORT_OBJECT:

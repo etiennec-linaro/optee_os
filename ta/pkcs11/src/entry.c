@@ -193,6 +193,9 @@ TEE_Result TA_InvokeCommandEntryPoint(void *tee_session, uint32_t cmd,
 	case PKCS11_CMD_CLOSE_ALL_SESSIONS:
 		rc = entry_ck_close_all_sessions(teesess, ptypes, params);
 		break;
+	case PKCS11_CMD_SESSION_INFO:
+		rc = entry_ck_session_info(teesess, ptypes, params);
+		break;
 
 	case PKCS11_CMD_IMPORT_OBJECT:
 		rc = entry_import_object(teesess, ptypes, params);

@@ -301,6 +301,8 @@ uint32_t entry_ck_close_session(uintptr_t teesess,
 				uint32_t ptypes, TEE_Param *params);
 uint32_t entry_ck_close_all_sessions(uintptr_t teesess,
 				     uint32_t ptypes, TEE_Param *params);
+uint32_t entry_ck_session_info(uintptr_t teesess,
+			       uint32_t ptypes, TEE_Param *params);
 
 uint32_t entry_init_pin(uintptr_t tee_session,
 			uint32_t ptypes, TEE_Param *params);

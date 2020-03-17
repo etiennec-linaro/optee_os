@@ -1043,6 +1043,52 @@ uint32_t entry_ck_close_all_sessions(uintptr_t tee_session,
 	return PKCS11_CKR_OK;
 }
 
+uint32_t entry_ck_session_info(uintptr_t tee_session,
+			       uint32_t ptypes, TEE_Param *params)
+{
+	struct pkcs11_client *client = tee_session2client(tee_session);
+	const uint32_t exp_pt = TEE_PARAM_TYPES(TEE_PARAM_TYPE_MEMREF_INOUT,
+						TEE_PARAM_TYPE_NONE,
+						TEE_PARAM_TYPE_MEMREF_OUTPUT,
+						TEE_PARAM_TYPE_NONE);
+	TEE_Param *ctrl = &params[0];
+	TEE_Param *out = &params[2];
+	uint32_t rv = 0;
+	struct serialargs ctrlargs = { };
+	uint32_t session_handle = 0;
+	struct pkcs11_session *session = NULL;
+	struct pkcs11_session_info info = {
+		.flags = PKCS11_CKFSS_SERIAL_SESSION,
+	};
+
+	if (!client || ptypes != exp_pt || out->memref.size != sizeof(info))
+		return PKCS11_CKR_ARGUMENTS_BAD;
+
+	serialargs_init(&ctrlargs, ctrl->memref.buffer, ctrl->memref.size);
+
+	rv = serialargs_get(&ctrlargs, &session_handle, sizeof(uint32_t));
+	if (rv)
+		return rv;
+
+	if (serialargs_remaining_bytes(&ctrlargs))
+		return PKCS11_CKR_ARGUMENTS_BAD;
+
+	session = pkcs11_handle2session(session_handle, client);
+	if (!session)
+		return PKCS11_CKR_SESSION_HANDLE_INVALID;
+
+	info.slot_id = get_token_id(session->token);
+	info.state = session->state;
+	if (pkcs11_session_is_read_write(session))
+		info.flags |= PKCS11_CKFSS_RW_SESSION;
+
+	TEE_MemMove(out->memref.buffer, &info, sizeof(info));
+
+	DMSG("Get find on PKCS11 session %"PRIu32, session->handle);
+
+	return PKCS11_CKR_OK;
+}
+
 static uint32_t set_pin(struct pkcs11_session *session,
 			uint8_t *new_pin, size_t new_pin_size,
 			uint32_t user_type)

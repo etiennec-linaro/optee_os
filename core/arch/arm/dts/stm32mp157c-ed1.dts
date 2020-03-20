@@ -270,5 +270,5 @@
 
 &rcc {
 	status = "okay";
-	secure-status = "disable";
+	secure-status = "okay";
 };

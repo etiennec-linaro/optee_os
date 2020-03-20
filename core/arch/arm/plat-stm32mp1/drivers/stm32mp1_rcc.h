@@ -543,7 +543,9 @@ static inline bool stm32_rcc_is_secure(void)
 
 static inline bool stm32_rcc_is_mckprot(void)
 {
-	return io_read32(stm32_rcc_base() + RCC_TZCR) & RCC_TZCR_MCKPROT;
+	const uint32_t mask = RCC_TZCR_TZEN | RCC_TZCR_MCKPROT;
+
+	return (io_read32(stm32_rcc_base() + RCC_TZCR) & mask) == mask;
 }
 #endif /*__ASSEMBLER__*/
 

@@ -547,3 +547,8 @@ CFG_SHOW_CONF_ON_BOOT ?= n
 # to a TA, so a TPM Service could use it to extend any measurement
 # taken before the service was up and running.
 CFG_CORE_TPM_EVENT_LOG ?= n
+
+# Embeds a SCMI server in core with dedicated PTA as interface to
+# non-secure world. Configuration expects a targe so-called product in
+# the SCMI server implmentation thru CFG_SCMI_SERVER_PRODUCT.
+CFG_SCMI_SERVER ?= n

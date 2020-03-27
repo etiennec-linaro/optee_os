@@ -593,3 +593,8 @@ CFG_SCMI_MSG_DRIVERS ?= n
 CFG_SCMI_MSG_CLOCK ?= n
 CFG_SCMI_MSG_RESET_DOMAIN ?= n
 CFG_SCMI_MSG_SMT ?= n
+
+# Embeds a SCMI server in core with dedicated PTA as interface to
+# non-secure world. Configuration expects a targe so-called product in
+# the SCMI server implmentation thru CFG_SCMI_SERVER_PRODUCT.
+CFG_SCMI_SERVER ?= n

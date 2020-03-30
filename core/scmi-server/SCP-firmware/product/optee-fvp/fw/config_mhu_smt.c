@@ -54,7 +54,7 @@ struct fwk_module_config config_optee_mhu = {
 
 #define SCMI_PAYLOAD_SIZE       (128)
 
-#define SCMI_SHM_BASE		CFG_STM32MP1_SCMI_SHM_BASE
+#define SCMI_SHM_BASE		CFG_FVP_SCMI_SHM_BASE
 
 #define PSCI_SHM_BASE		SCMI_SHM_BASE
 #define OSPM_0_SHM_BASE		(SCMI_SHM_BASE + SCMI_PAYLOAD_SIZE)
@@ -109,9 +109,11 @@ static const struct fwk_element *smt_get_element_table(fwk_id_t module_id)
 
 	/* All shared memory is mapped MEM_AREA_IO_NSEC */
 	for (n = 0; n < ARRAY_SIZE(smt_element_table); n++) {
-		const void *data = smt_element_table[n].data;
-		struct mod_optee_smt_channel_config *cfg = data;
-		void *va = phys_to_virt(cfg->mailbox_address, MEM_AREA_IO_NSEC);
+		struct mod_optee_smt_channel_config *cfg = NULL;
+		void *va = NULL;
+
+		cfg = (void *)smt_element_table[n].data;
+		va = phys_to_virt(cfg->mailbox_address, MEM_AREA_IO_NSEC);
 
 		cfg->mailbox_address = (vaddr_t)va;
 	}

@@ -91,12 +91,13 @@ fwk_id_t fwk_id_build_module_id(fwk_id_t id)
     return FWK_ID_MODULE(id.common.module_idx);
 }
 
-fwk_id_t fwk_id_build_element_id(fwk_id_t id, unsigned int element_idx)
+void fwk_id_build_element_id(fwk_id_t *dst, fwk_id_t id,
+                             unsigned int element_idx)
 {
     assert(id.common.type != __FWK_ID_TYPE_INVALID);
     assert(id.common.type < __FWK_ID_TYPE_COUNT);
 
-    return FWK_ID_ELEMENT(id.common.module_idx, element_idx);
+    *dst = FWK_ID_ELEMENT(id.common.module_idx, element_idx);
 }
 
 fwk_id_t fwk_id_build_api_id(fwk_id_t id, unsigned int api_idx)

@@ -1,0 +1,10 @@
+srcs-y += config_log.c
+srcs-y += config_mhu_smt.c
+srcs-y += config_scmi.c
+srcs-$(CFG_SCMI_SERVER_CLOCK) += config_clock.c config_scmi_clock.c
+srcs-$(CFG_SCMI_SERVER_DVFS) += config_dvfs.c
+srcs-$(CFG_SCMI_SERVER_PERF) += config_scmi_perf.c
+srcs-$(CFG_SCMI_SERVER_MOCK_PSU) += config_psu.c config_mock_psu.c
+srcs-$(CFG_SCMI_SERVER_POWER_DOMAIN) += config_power_domain.c
+srcs-y += config_ppu_v0.c
+srcs-y += config_vpll.c

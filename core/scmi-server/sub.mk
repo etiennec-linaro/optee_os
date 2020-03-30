@@ -16,14 +16,22 @@ scmi-server-scp-path = SCP-firmware
 
 scmi-server-generic-modules-y += log scmi optee_smt optee_mhu
 scmi-server-generic-modules-$(CFG_SCMI_SERVER_CLOCK) += clock scmi_clock
-scmi-server-generic-modules-$(CFG_SCMI_SERVER_RESET_DOMAIN) += reset_domain scmi_reset_domain
+scmi-server-generic-modules-$(CFG_SCMI_SERVER_DVFS) += dvfs
+scmi-server-generic-modules-$(CFG_SCMI_SERVER_MOCK_PSU) += psu mock_psu
+scmi-server-generic-modules-$(CFG_SCMI_SERVER_PERF) += scmi_perf
 scmi-server-generic-modules-$(CFG_SCMI_SERVER_POWER_DOMAIN) += power_domain scmi_power_domain
+scmi-server-generic-modules-$(CFG_SCMI_SERVER_RESET_DOMAIN) += reset_domain scmi_reset_domain
+scmi-server-generic-modules-$(CFG_SCMI_SERVER_TIMER) += timer
 
 # Some modules header files must be visible
 # (Alternate: use incdirs-lib$(libname)-$(sm) to list libs headers pathes)
 global-incdirs-y += $(scmi-server-scp-path)/module/clock/include
-global-incdirs-y += $(scmi-server-scp-path)/module/reset_domain/include
+global-incdirs-y += $(scmi-server-scp-path)/module/dvfs/include
+global-incdirs-y += $(scmi-server-scp-path)/module/mock_psu/include
 global-incdirs-y += $(scmi-server-scp-path)/module/power_domain/include
+global-incdirs-y += $(scmi-server-scp-path)/module/psu/include
+global-incdirs-y += $(scmi-server-scp-path)/module/reset_domain/include
+global-incdirs-y += $(scmi-server-scp-path)/module/timer/include
 
 # Product is expected to provide a sub.mk at $(scmi-server-product-path)
 # and fill scmi-server-generic-modules, scmi-server-product-modules, eventually
@@ -63,6 +71,8 @@ $(eval $(call define-if-enable,BUILD_HAS_NOTIFICATION,CFG_SCMI_SERVER_NOTIFICATI
 $(eval $(call define-as-binary,BUILD_HAS_MOD_CLOCK,CFG_SCMI_SERVER_CLOCK))
 $(eval $(call define-as-binary,BUILD_HAS_MOD_POWER_DOMAIN,CFG_SCMI_SERVER_POWER_DOMAIN))
 $(eval $(call define-as-binary,BUILD_HAS_MOD_RESET_DOMAIN,CFG_SCMI_SERVER_RESET_DOMAIN))
+$(eval $(call define-as-binary,BUILD_HAS_MOD_SYSTEM_POWER,CFG_SCMI_SERVER_SYSTEM_POWER))
+$(eval $(call define-as-binary,BUILD_HAS_MOD_TIMER,CFG_SCMI_SERVER_TIMER))
 
 srcs-y += scmi_server.c
 subdirs-y += $(scmi-server-scp-path)/framework/src

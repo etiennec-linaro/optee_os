@@ -8,9 +8,10 @@
 #include <fwk_element.h>
 #include <fwk_module.h>
 #include <mod_ppu_v0.h>
-#include <config_ppu_v0.h>
 #include <fake_irq.h>
 #include <fake_mmap.h>
+
+#include "config_ppu_v0.h"
 
 uint32_t vppu_regdbg[16];
 uint32_t vppu_regdpu0[16];

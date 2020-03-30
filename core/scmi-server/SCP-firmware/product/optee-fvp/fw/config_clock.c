@@ -14,8 +14,9 @@
 #include <mod_system_pll.h>
 #include <mod_pik_clock.h>
 #include <mod_power_domain.h>
-#include <config_power_domain.h>
-#include <clock_devices.h>
+
+#include "clock_devices.h"
+#include "config_power_domain.h"
 
 static struct fwk_element clock_dev_desc_table[] = {
     [CLOCK_DEV_IDX_BIG] = {

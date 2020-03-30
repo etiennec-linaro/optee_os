@@ -33,6 +33,10 @@ global-incdirs-y += $(scmi-server-scp-path)/module/psu/include
 global-incdirs-y += $(scmi-server-scp-path)/module/reset_domain/include
 global-incdirs-y += $(scmi-server-scp-path)/module/timer/include
 
+# Needed by product/optee-fvp. TODO: define that from .../optee-fvp/
+global-incdirs-y += $(scmi-server-scp-path)/module/css_clock/include
+global-incdirs-y += $(scmi-server-scp-path)/module/pik_clock/include
+
 # Product is expected to provide a sub.mk at $(scmi-server-product-path)
 # and fill scmi-server-generic-modules, scmi-server-product-modules, eventually
 # some srcs-y, incdirs-y...

@@ -9,8 +9,9 @@
 #include <fwk_macros.h>
 #include <fwk_module.h>
 #include <fwk_module_idx.h>
-#include <config_dvfs.h>
 #include <mod_dvfs.h>
+
+#include "config_dvfs.h"
 
 static const struct mod_dvfs_domain_config cpu_group_little = {
     .psu_id = FWK_ID_ELEMENT_INIT(FWK_MODULE_IDX_PSU, 0),

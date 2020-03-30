@@ -343,16 +343,13 @@ static int create_event_request(fwk_id_t clock_id,
     int status;
     union event_request_data request_data;
     unsigned int clock_dev_idx = fwk_id_get_element_idx(clock_id);
-    struct event_request_params *params;
-
-    if (!clock_ops_is_available(clock_dev_idx))
-        return FWK_E_BUSY;
-
     struct fwk_event event = {
         .target_id = fwk_module_id_scmi_clock,
     };
+    struct event_request_params *params = (void *)event.params;
 
-    params = (struct event_request_params *)event.params;
+    if (!clock_ops_is_available(clock_dev_idx))
+        return FWK_E_BUSY;
 
     switch (request) {
     case SCMI_CLOCK_REQUEST_GET_STATE:
@@ -1023,7 +1020,7 @@ static int scmi_clock_process_bind_request(fwk_id_t source_id,
 
 static int process_request_event(const struct fwk_event *event)
 {
-    struct event_request_params *params;
+    struct event_request_params *params = (void *)event->params;
     unsigned int clock_dev_idx;
     int status;
     enum mod_clock_state clock_state;
@@ -1032,7 +1029,6 @@ static int process_request_event(const struct fwk_event *event)
     struct event_set_state_request_data set_state_data;
     fwk_id_t service_id;
 
-    params = (struct event_request_params *)event->params;
     clock_dev_idx = fwk_id_get_element_idx(params->clock_dev_id);
     service_id = clock_ops_get_service(clock_dev_idx);
 
@@ -1102,8 +1098,7 @@ static int process_request_event(const struct fwk_event *event)
 
 static int process_response_event(const struct fwk_event *event)
 {
-    struct mod_clock_resp_params *params =
-        (struct mod_clock_resp_params *)event->params;
+    struct mod_clock_resp_params *params = (void *)event->params;
     unsigned int clock_dev_idx;
     fwk_id_t service_id;
     enum scmi_clock_request_type request;

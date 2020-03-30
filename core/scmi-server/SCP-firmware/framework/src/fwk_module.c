@@ -113,7 +113,8 @@ static int init_elements(struct fwk_module_ctx *module_ctx,
 
         element_ctx = &module_ctx->element_ctx_table[element_idx];
         element = &element_table[element_idx];
-        element_id = fwk_id_build_element_id(module_ctx->id, element_idx);
+
+        fwk_id_build_element_id(&element_id, module_ctx->id, element_idx);
         ctx.bind_id = element_id;
 
         /* Each element must have a valid pointer to specific data */
@@ -260,7 +261,7 @@ static int bind_elements(struct fwk_module_ctx *module_ctx,
     for (element_idx = 0; element_idx < module_ctx->element_count;
          element_idx++) {
 
-        ctx.bind_id = fwk_id_build_element_id(module_ctx->id, element_idx);
+        fwk_id_build_element_id(&ctx.bind_id, module_ctx->id, element_idx);
         status = module->bind(ctx.bind_id, round);
         if (!fwk_expect(status == FWK_SUCCESS)) {
             FWK_HOST_PRINT(err_msg_func, status, __func__);
@@ -328,8 +329,10 @@ static int start_elements(struct fwk_module_ctx *module_ctx)
          element_idx++) {
 
         if (module->start != NULL) {
-            status = module->start(
-                fwk_id_build_element_id(module_ctx->id, element_idx));
+            fwk_id_t id;
+
+            fwk_id_build_element_id(&id, module_ctx->id, element_idx);
+            status = module->start(id);
             if (!fwk_expect(status == FWK_SUCCESS)) {
                 FWK_HOST_PRINT(err_msg_func, status, __func__);
                 return status;

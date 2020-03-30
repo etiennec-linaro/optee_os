@@ -82,13 +82,13 @@ static void mod_mock_psu_alarm_callback(uintptr_t element_idx)
 {
     int status;
 
-    fwk_id_t element_id = fwk_id_build_element_id(
-        fwk_module_id_mock_psu, element_idx);
+    fwk_id_t element_id;
 
     const struct mod_mock_psu_element_cfg *cfg;
     struct mod_mock_psu_element_ctx *ctx;
     struct mod_psu_driver_response response;
 
+    fwk_id_build_element_id(&element_id, fwk_module_id_mock_psu, element_idx);
     status = mod_mock_psu_get_cfg_ctx(element_id, &cfg, &ctx);
     if (!fwk_expect(status == FWK_SUCCESS))
         return;

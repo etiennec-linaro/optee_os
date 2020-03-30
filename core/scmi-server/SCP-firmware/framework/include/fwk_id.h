@@ -458,7 +458,7 @@ fwk_id_t fwk_id_build_module_id(fwk_id_t id);
  *
  * \return Element identifier associated with the element index for the module.
  */
-fwk_id_t fwk_id_build_element_id(fwk_id_t id, unsigned int element_idx);
+void fwk_id_build_element_id(fwk_id_t *dst, fwk_id_t id, unsigned int element_idx);
 
 /*!
  * \brief Retrieve the identifier of an API for a given identifier and

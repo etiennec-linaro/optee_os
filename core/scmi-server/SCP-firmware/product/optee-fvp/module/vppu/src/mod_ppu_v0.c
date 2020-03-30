@@ -9,8 +9,9 @@
  */
 
 #include <stdint.h>
-#include <fwk_id.h>
 #include <fwk_assert.h>
+#include <fwk_host.h>
+#include <fwk_id.h>
 #include <fwk_macros.h>
 #include <fwk_mm.h>
 #include <fwk_module.h>
@@ -18,11 +19,11 @@
 #include <mod_log.h>
 #include <mod_power_domain.h>
 #include <mod_ppu_v0.h>
-#include <ppu_v0.h>
 #if BUILD_HAS_MOD_SYSTEM_POWER
 #include <mod_system_power.h>
 #endif
-#include <fwk_host.h>
+
+#include "ppu_v0.h"
 
 /* Power domain context */
 struct ppu_v0_pd_ctx {
@@ -104,10 +105,6 @@ static int pd_set_state(fwk_id_t pd_id, unsigned int state)
     int status;
     struct ppu_v0_pd_ctx *pd_ctx;
 
-    status = fwk_module_check_call(pd_id);
-    if (status != FWK_SUCCESS)
-        return status;
-
     pd_ctx = ppu_v0_ctx.pd_ctx_table + fwk_id_get_element_idx(pd_id);
 
     fwk_assert(pd_ctx->pd_driver_input_api != NULL);
@@ -133,17 +130,15 @@ static int pd_set_state(fwk_id_t pd_id, unsigned int state)
         return FWK_E_PARAM;
     }
 
+    if (status != FWK_SUCCESS)
+	    return FWK_E_PANIC;
+
     return FWK_SUCCESS;
 }
 
 static int pd_get_state(fwk_id_t pd_id, unsigned int *state)
 {
-    int status;
     struct ppu_v0_pd_ctx *pd_ctx;
-
-    status = fwk_module_check_call(pd_id);
-    if (status != FWK_SUCCESS)
-        return status;
 
     pd_ctx = ppu_v0_ctx.pd_ctx_table + fwk_id_get_element_idx(pd_id);
 
@@ -154,10 +149,6 @@ static int pd_reset(fwk_id_t pd_id)
 {
     int status;
     struct ppu_v0_pd_ctx *pd_ctx;
-
-    status = fwk_module_check_call(pd_id);
-    if (status != FWK_SUCCESS)
-        return status;
 
     pd_ctx = ppu_v0_ctx.pd_ctx_table + fwk_id_get_element_idx(pd_id);
 

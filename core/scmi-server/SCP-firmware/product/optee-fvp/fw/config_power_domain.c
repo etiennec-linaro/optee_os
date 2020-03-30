@@ -12,13 +12,14 @@
 #include <fwk_mm.h>
 #include <fwk_module.h>
 #include <fwk_module_idx.h>
-#include <config_power_domain.h>
-#include <config_ppu_v0.h>
 //#include <mod_system_power.h>
 #include <mod_power_domain.h>
 //#include <mod_ppu_v1.h>
 //#include <sgm775_core.h>
 #include <fwk_host.h>
+
+#include "config_power_domain.h"
+#include "config_ppu_v0.h"
 
 static const char *core_pd_name_table[] = {
     "CLUS0CORE0", "CLUS0CORE1", "CLUS0CORE2", "CLUS0CORE3",
@@ -198,7 +199,8 @@ static struct fwk_element sgm775_power_domain_static_element_table[] = {
     },
 };
 
-unsigned int host_core_get_count(void) {
+static unsigned int host_core_get_count(void)
+{
 	return 1;
 }
 

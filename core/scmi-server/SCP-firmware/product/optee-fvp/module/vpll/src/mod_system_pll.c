@@ -8,11 +8,11 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <fwk_element.h>
-#include <fwk_errno.h>
+#include <fwk_host.h>
 #include <fwk_macros.h>
 #include <fwk_mm.h>
 #include <fwk_module.h>
-#include <fwk_host.h>
+#include <fwk_status.h>
 #include <mod_clock.h>
 #include <mod_system_pll.h>
 #include <mod_power_domain.h>
@@ -217,13 +217,8 @@ static int system_pll_power_state_change(
     fwk_id_t dev_id,
     unsigned int state)
 {
-    int status;
     uint64_t rate;
     struct system_pll_dev_ctx *ctx;
-
-    status = fwk_module_check_call(dev_id);
-    if (status != FWK_SUCCESS)
-        return status;
 
     ctx = module_ctx.dev_ctx_table + fwk_id_get_element_idx(dev_id);
 
@@ -249,12 +244,7 @@ static int system_pll_power_state_pending_change(
     unsigned int current_state,
     unsigned int next_state)
 {
-    int status;
     struct system_pll_dev_ctx *ctx;
-
-    status = fwk_module_check_call(dev_id);
-    if (status != FWK_SUCCESS)
-        return status;
 
     ctx = module_ctx.dev_ctx_table + fwk_id_get_element_idx(dev_id);
 

@@ -10,43 +10,43 @@
 #include <fwk_macros.h>
 #include <fwk_module.h>
 #include <fwk_module_idx.h>
-#include <spci_scmi.h>
-#include <mod_scmi.h>
 #include <internal/scmi.h>
 #include <mod_host_mailbox.h>
+#include <mod_scmi.h>
+#include <scmi_agents.h>
 
 static const struct fwk_element service_table[] = {
-    [SPCI_SCMI_SERVICE_IDX_PSCI] = {
+    [SCMI_SERVICE_IDX_PSCI] = {
         .name = "SERVICE0",
         .data = &((struct mod_scmi_service_config) {
             .transport_id = FWK_ID_ELEMENT_INIT(FWK_MODULE_IDX_HMBX,
-                                                SPCI_SCMI_SERVICE_IDX_PSCI),
+                                                SCMI_SERVICE_IDX_PSCI),
             .transport_api_id = FWK_ID_API_INIT(FWK_MODULE_IDX_HMBX,
                                                 MOD_SMT_API_IDX_SCMI_TRANSPORT),
             .scmi_agent_id = SCMI_AGENT_ID_PSCI,
         }),
     },
-    [SPCI_SCMI_SERVICE_IDX_OSPM_0] = {
+    [SCMI_SERVICE_IDX_OSPM_0] = {
         .name = "SERVICE1",
         .data = &((struct mod_scmi_service_config) {
             .transport_id = FWK_ID_ELEMENT_INIT(FWK_MODULE_IDX_HMBX,
-                                                SPCI_SCMI_SERVICE_IDX_OSPM_0),
+                                                SCMI_SERVICE_IDX_OSPM_0),
             .transport_api_id = FWK_ID_API_INIT(FWK_MODULE_IDX_HMBX,
                                                 MOD_SMT_API_IDX_SCMI_TRANSPORT),
             .scmi_agent_id = SCMI_AGENT_ID_OSPM,
         }),
     },
-    [SPCI_SCMI_SERVICE_IDX_OSPM_1] = {
+    [SCMI_SERVICE_IDX_OSPM_1] = {
         .name = "SERVICE2",
         .data = &((struct mod_scmi_service_config) {
             .transport_id = FWK_ID_ELEMENT_INIT(FWK_MODULE_IDX_HMBX,
-                                                SPCI_SCMI_SERVICE_IDX_OSPM_1),
+                                                SCMI_SERVICE_IDX_OSPM_1),
             .transport_api_id = FWK_ID_API_INIT(FWK_MODULE_IDX_HMBX,
                                                 MOD_SMT_API_IDX_SCMI_TRANSPORT),
             .scmi_agent_id = SCMI_AGENT_ID_OSPM,
         }),
     },
-    [SPCI_SCMI_SERVICE_IDX_COUNT] = { 0 }
+    [SCMI_SERVICE_IDX_COUNT] = { 0 }
 };
 
 static const struct fwk_element *get_service_table(fwk_id_t module_id)

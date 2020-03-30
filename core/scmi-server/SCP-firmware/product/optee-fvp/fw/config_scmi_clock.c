@@ -6,13 +6,15 @@
  */
 
 #include <stdint.h>
+
 #include <fwk_element.h>
 #include <fwk_macros.h>
 #include <fwk_module.h>
 #include <fwk_module_idx.h>
 #include <mod_scmi_clock.h>
-#include <spci_scmi.h>
-#include <clock_devices.h>
+#include <scmi_agents.h>
+
+#include "clock_devices.h"
 
 static const struct mod_scmi_clock_device agent_device_table_ospm[] = {
     {

@@ -6,11 +6,13 @@
  */
 
 #include <stdint.h>
+
 #include <fwk_element.h>
 #include <fwk_module.h>
-#include <config_dvfs.h>
-#include <spci_scmi.h>
 #include <mod_scmi_perf.h>
+#include <scmi_agents.h>
+
+#include "config_dvfs.h"
 
 static const struct mod_scmi_perf_domain_config domains[] = {
     [DVFS_ELEMENT_IDX_LITTLE] = {

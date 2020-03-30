@@ -19,7 +19,11 @@
 #include <fwk_mm.h>
 #include <fwk_module.h>
 #include <fwk_module_idx.h>
+#ifdef BUILD_HAS_MULTITHREADING
 #include <fwk_multi_thread.h>
+#else
+#include <fwk_thread.h>
+#endif
 #include <fwk_notification.h>
 #include <fwk_status.h>
 #include <fwk_thread.h>
@@ -739,8 +743,12 @@ static void respond(struct pd_ctx *pd, int status)
     if (!pd->response.pending)
         return;
 
-    status = fwk_thread_get_delayed_response(
-        pd->id, pd->response.cookie, &resp_event);
+#ifdef BUILD_HAS_MULTITHREADING
+    status = fwk_thread_get_delayed_response(pd->id, pd->response.cookie,
+                                             &resp_event);
+#else
+    status = FWK_E_PARAM;
+#endif
     pd->response.pending = false;
 
     if (status != FWK_SUCCESS)
@@ -1275,6 +1283,8 @@ static int pd_get_domain_parent_id(fwk_id_t pd_id, fwk_id_t *parent_pd_id)
 }
 
 /* Functions specific to the restricted API */
+static int pd_process_event(const struct fwk_event *event,
+                            struct fwk_event *resp);
 
 static int pd_set_state(fwk_id_t pd_id, unsigned int state)
 {
@@ -1303,7 +1313,11 @@ static int pd_set_state(fwk_id_t pd_id, unsigned int state)
     req_params->composite_state = (level << MOD_PD_CS_LEVEL_SHIFT) |
                                   (state << mod_pd_cs_level_state_shift[level]);
 
+#ifdef BUILD_HAS_MULTITHREADING
     status = fwk_thread_put_event_and_wait(&req, &resp);
+#else
+    status = pd_process_event(&req, &resp);
+#endif
     if (status != FWK_SUCCESS)
         return status;
 
@@ -1363,7 +1377,11 @@ static int pd_set_composite_state(fwk_id_t pd_id, uint32_t composite_state)
 
     req_params->composite_state = composite_state;
 
+#ifdef BUILD_HAS_MULTITHREADING
     status = fwk_thread_put_event_and_wait(&req, &resp);
+#else
+    status = pd_process_event(&req, &resp);
+#endif
     if (status != FWK_SUCCESS)
         return status;
 
@@ -1416,7 +1434,11 @@ static int pd_get_state(fwk_id_t pd_id, unsigned int *state)
 
     req_params->composite = false;
 
+#ifdef BUILD_HAS_MULTITHREADING
     status = fwk_thread_put_event_and_wait(&req, &resp);
+#else
+    status = pd_process_event(&req, &resp);
+#endif
     if (status != FWK_SUCCESS)
         return status;
 
@@ -1448,7 +1470,11 @@ static int pd_get_composite_state(fwk_id_t pd_id, unsigned int *composite_state)
 
     req_params->composite = true;
 
+#ifdef BUILD_HAS_MULTITHREADING
     status = fwk_thread_put_event_and_wait(&req, &resp);
+#else
+    status = pd_process_event(&req, &resp);
+#endif
     if (status != FWK_SUCCESS)
         return status;
 
@@ -1472,7 +1498,11 @@ static int pd_reset(fwk_id_t pd_id)
         .target_id = pd_id,
     };
 
+#ifdef BUILD_HAS_MULTITHREADING
     status = fwk_thread_put_event_and_wait(&req, &resp);
+#else
+    status = pd_process_event(&req, &resp);
+#endif
     if (status != FWK_SUCCESS)
         return status;
 
@@ -1496,7 +1526,11 @@ static int pd_system_suspend(unsigned int state)
 
     req_params->state = state;
 
+#ifdef BUILD_HAS_MULTITHREADING
     status = fwk_thread_put_event_and_wait(&req, &resp);
+#else
+    status = pd_process_event(&req, &resp);
+#endif
     if (status != FWK_SUCCESS)
         return status;
 
@@ -1520,7 +1554,11 @@ static int pd_system_shutdown(enum mod_pd_system_shutdown system_shutdown)
 
     req_params->system_shutdown = system_shutdown;
 
+#ifdef BUILD_HAS_MULTITHREADING
     status = fwk_thread_put_event_and_wait(&req, &resp);
+#else
+    status = pd_process_event(&req, &resp);
+#endif
     if (status != FWK_SUCCESS)
         return status;
 
@@ -1623,7 +1661,11 @@ static int pd_init(fwk_id_t module_id, unsigned int dev_count,
     mod_pd_ctx.pd_count = dev_count;
     mod_pd_ctx.system_pd_ctx = &mod_pd_ctx.pd_ctx_table[dev_count - 1];
 
+#ifdef BUILD_HAS_MULTITHREADING
     return fwk_thread_create(module_id);
+#else
+    return FWK_SUCCESS;
+#endif
 }
 
 static int pd_power_domain_init(fwk_id_t pd_id, unsigned int unused,

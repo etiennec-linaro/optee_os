@@ -14,6 +14,8 @@
 #include <fwk_module_idx.h>
 #ifdef BUILD_HAS_MULTITHREADING
 #include <fwk_multi_thread.h>
+#else
+#include <fwk_thread.h>
 #endif
 #include <fwk_notification.h>
 #include <mod_clock.h>

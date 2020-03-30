@@ -356,6 +356,8 @@ static int mod_psu_process_bind_request(
         *api = &mod_psu_driver_response_api;
 
         break;
+    default:
+	assert(0);
     }
 
     return FWK_SUCCESS;

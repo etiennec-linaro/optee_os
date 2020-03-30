@@ -23,9 +23,10 @@ enum scmi_service_idx {
 };
 
 enum scmi_channel_device_idx {
-    SCMI_CHANNEL_DEVICE_IDX_PSCI,
+    // TODO: change this: current code support device#0 only
     SCMI_CHANNEL_DEVICE_IDX_OSPM_0,
     SCMI_CHANNEL_DEVICE_IDX_OSPM_1,
+    SCMI_CHANNEL_DEVICE_IDX_PSCI,
     SCMI_CHANNEL_DEVICE_IDX_COUNT
 };
 

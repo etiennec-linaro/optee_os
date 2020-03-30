@@ -11,7 +11,7 @@
 #include <fwk_module.h>
 #include <fwk_module_idx.h>
 #include <internal/scmi.h>
-#include <mod_host_mailbox.h>
+#include <mod_optee_smt.h>
 #include <mod_scmi.h>
 #include <scmi_agents.h>
 
@@ -19,30 +19,30 @@ static const struct fwk_element service_table[] = {
     [SCMI_SERVICE_IDX_PSCI] = {
         .name = "SERVICE0",
         .data = &((struct mod_scmi_service_config) {
-            .transport_id = FWK_ID_ELEMENT_INIT(FWK_MODULE_IDX_HMBX,
+            .transport_id = FWK_ID_ELEMENT_INIT(FWK_MODULE_IDX_OPTEE_SMT,
                                                 SCMI_SERVICE_IDX_PSCI),
-            .transport_api_id = FWK_ID_API_INIT(FWK_MODULE_IDX_HMBX,
-                                                MOD_SMT_API_IDX_SCMI_TRANSPORT),
+            .transport_api_id = FWK_ID_API_INIT(FWK_MODULE_IDX_OPTEE_SMT,
+                                                MOD_OPTEE_SMT_API_IDX_SCMI_TRANSPORT),
             .scmi_agent_id = SCMI_AGENT_ID_PSCI,
         }),
     },
     [SCMI_SERVICE_IDX_OSPM_0] = {
         .name = "SERVICE1",
         .data = &((struct mod_scmi_service_config) {
-            .transport_id = FWK_ID_ELEMENT_INIT(FWK_MODULE_IDX_HMBX,
+            .transport_id = FWK_ID_ELEMENT_INIT(FWK_MODULE_IDX_OPTEE_SMT,
                                                 SCMI_SERVICE_IDX_OSPM_0),
-            .transport_api_id = FWK_ID_API_INIT(FWK_MODULE_IDX_HMBX,
-                                                MOD_SMT_API_IDX_SCMI_TRANSPORT),
+            .transport_api_id = FWK_ID_API_INIT(FWK_MODULE_IDX_OPTEE_SMT,
+                                                MOD_OPTEE_SMT_API_IDX_SCMI_TRANSPORT),
             .scmi_agent_id = SCMI_AGENT_ID_OSPM,
         }),
     },
     [SCMI_SERVICE_IDX_OSPM_1] = {
         .name = "SERVICE2",
         .data = &((struct mod_scmi_service_config) {
-            .transport_id = FWK_ID_ELEMENT_INIT(FWK_MODULE_IDX_HMBX,
+            .transport_id = FWK_ID_ELEMENT_INIT(FWK_MODULE_IDX_OPTEE_SMT,
                                                 SCMI_SERVICE_IDX_OSPM_1),
-            .transport_api_id = FWK_ID_API_INIT(FWK_MODULE_IDX_HMBX,
-                                                MOD_SMT_API_IDX_SCMI_TRANSPORT),
+            .transport_api_id = FWK_ID_API_INIT(FWK_MODULE_IDX_OPTEE_SMT,
+                                                MOD_OPTEE_SMT_API_IDX_SCMI_TRANSPORT),
             .scmi_agent_id = SCMI_AGENT_ID_OSPM,
         }),
     },

@@ -676,8 +676,7 @@ static bool initiate_power_state_pre_transition_notification(struct pd_ctx *pd)
     if (pd->power_state_pre_transition_notification_ctx.pending_responses != 0)
         return true;
 
-    params = (struct mod_pd_power_state_pre_transition_notification_params *)
-        notification_event.params;
+    params = (void *)notification_event.params;
     params->current_state = pd->current_state;
     params->target_state = state;
     fwk_notification_notify(&notification_event,
@@ -742,9 +741,9 @@ static void respond(struct pd_ctx *pd, int status)
 {
     struct fwk_event resp_event;
     const struct pd_set_state_request *req_params =
-        (struct pd_set_state_request *)(&resp_event.params);
+        (void *)(&resp_event.params);
     struct pd_set_state_response *resp_params =
-        (struct pd_set_state_response *)(&resp_event.params);
+        (void *)(&resp_event.params);
 
     if (!pd->response.pending)
         return;
@@ -777,8 +776,7 @@ static void process_set_state_request(struct pd_ctx *lowest_pd,
     struct pd_set_state_request *req_params, struct fwk_event *resp_event)
 {
     int status;
-    struct pd_set_state_response *resp_params =
-        (struct pd_set_state_response *)resp_event->params;
+    struct pd_set_state_response *resp_params = (void *)resp_event->params;
     uint32_t composite_state;
     bool up;
     enum mod_pd_level lowest_level, highest_level, level;
@@ -928,8 +926,7 @@ static int complete_system_suspend(struct pd_ctx *target_pd)
     unsigned int composite_state = 0;
     struct pd_ctx *pd = target_pd;
     struct fwk_event resp_event;
-    struct pd_set_state_response *resp_params =
-        (struct pd_set_state_response *)(&resp_event.params);
+    struct pd_set_state_response *resp_params = (void *)&resp_event.params;
 
     /*
      * Traverse the PD tree bottom-up from current power domain to the top
@@ -1110,8 +1107,7 @@ static void process_power_state_transition_report(struct pd_ctx *pd,
 
 #ifdef BUILD_HAS_NOTIFICATION
     if (pd->power_state_transition_notification_ctx.pending_responses == 0) {
-        params = (struct mod_pd_power_state_transition_notification_params *)
-            notification_event.params;
+        params = (void *)notification_event.params;
         params->state = new_state;
         pd->power_state_transition_notification_ctx.state = new_state;
         fwk_notification_notify(&notification_event,
@@ -1305,10 +1301,8 @@ static int pd_set_state(fwk_id_t pd_id, unsigned int state)
     enum mod_pd_level level;
     struct fwk_event req;
     struct fwk_event resp;
-    struct pd_set_state_request *req_params =
-        (struct pd_set_state_request *)(&req.params);
-    struct pd_set_state_response *resp_params =
-        (struct pd_set_state_response *)(&resp.params);
+    struct pd_set_state_request *req_params = (void *)&req.params;
+    struct pd_set_state_response *resp_params = (void *)&resp.params;
 
     pd = &mod_pd_ctx.pd_ctx_table[fwk_id_get_element_idx(pd_id)];
 
@@ -1342,8 +1336,7 @@ static int pd_set_state_async(fwk_id_t pd_id,
     struct pd_ctx *pd;
     enum mod_pd_level level;
     struct fwk_event req;
-    struct pd_set_state_request *req_params =
-        (struct pd_set_state_request *)(&req.params);
+    struct pd_set_state_request *req_params = (void *)&req.params;
 
     pd = &mod_pd_ctx.pd_ctx_table[fwk_id_get_element_idx(pd_id)];
 
@@ -1371,10 +1364,8 @@ static int pd_set_composite_state(fwk_id_t pd_id, uint32_t composite_state)
     struct pd_ctx *pd;
     struct fwk_event req;
     struct fwk_event resp;
-    struct pd_set_state_request *req_params =
-        (struct pd_set_state_request *)(&req.params);
-    struct pd_set_state_response *resp_params =
-        (struct pd_set_state_response *)(&resp.params);
+    struct pd_set_state_request *req_params = (void *)&req.params;
+    struct pd_set_state_response *resp_params = (void *)&resp.params;
 
     pd = &mod_pd_ctx.pd_ctx_table[fwk_id_get_element_idx(pd_id)];
 
@@ -1406,8 +1397,7 @@ static int pd_set_composite_state_async(fwk_id_t pd_id,
 {
     struct pd_ctx *pd;
     struct fwk_event req;
-    struct pd_set_state_request *req_params =
-                               (struct pd_set_state_request *)(&req.params);
+    struct pd_set_state_request *req_params = (void *)&req.params;
 
     pd = &mod_pd_ctx.pd_ctx_table[fwk_id_get_element_idx(pd_id)];
 
@@ -1431,10 +1421,8 @@ static int pd_get_state(fwk_id_t pd_id, unsigned int *state)
     int status;
     struct fwk_event req;
     struct fwk_event resp;
-    struct pd_get_state_request *req_params =
-        (struct pd_get_state_request *)(&req.params);
-    struct pd_get_state_response *resp_params =
-        (struct pd_get_state_response *)(&resp.params);
+    struct pd_get_state_request *req_params = (void *)&req.params;
+    struct pd_get_state_response *resp_params = (void *)&resp.params;
 
     if (state == NULL)
         return FWK_E_PARAM;
@@ -1467,10 +1455,8 @@ static int pd_get_composite_state(fwk_id_t pd_id, unsigned int *composite_state)
     int status;
     struct fwk_event req;
     struct fwk_event resp;
-    struct pd_get_state_request *req_params =
-        (struct pd_get_state_request *)(&req.params);
-    struct pd_get_state_response *resp_params =
-        (struct pd_get_state_response *)(&resp.params);
+    struct pd_get_state_request *req_params = (void *)&req.params;
+    struct pd_get_state_response *resp_params = (void *)&resp.params;
 
     if (composite_state == NULL)
         return FWK_E_PARAM;
@@ -1503,7 +1489,7 @@ static int pd_reset(fwk_id_t pd_id)
     int status;
     struct fwk_event req;
     struct fwk_event resp;
-    struct pd_response *resp_params = (struct pd_response *)(&resp.params);
+    struct pd_response *resp_params = (void *)(&resp.params);
 
     req = (struct fwk_event) {
         .id = FWK_ID_EVENT(FWK_MODULE_IDX_POWER_DOMAIN, PD_EVENT_IDX_RESET),
@@ -1526,9 +1512,8 @@ static int pd_system_suspend(unsigned int state)
     int status;
     struct fwk_event req;
     struct fwk_event resp;
-    struct pd_system_suspend_request *req_params =
-        (struct pd_system_suspend_request *)(&req.params);
-    struct pd_response *resp_params = (struct pd_response *)(&resp.params);
+    struct pd_system_suspend_request *req_params = (void *)&req.params;
+    struct pd_response *resp_params = (void *)&resp.params;
 
     req = (struct fwk_event) {
         .id = FWK_ID_EVENT(FWK_MODULE_IDX_POWER_DOMAIN,
@@ -1554,9 +1539,8 @@ static int pd_system_shutdown(enum mod_pd_system_shutdown system_shutdown)
     int status;
     struct fwk_event req;
     struct fwk_event resp;
-    struct pd_system_shutdown_request *req_params =
-        (struct pd_system_shutdown_request *)(&req.params);
-    struct pd_response *resp_params = (struct pd_response *)(&resp.params);
+    struct pd_system_shutdown_request *req_params = (void *)&req.params;
+    struct pd_response *resp_params = (void *)&resp.params;
 
     req = (struct fwk_event) {
         .id = FWK_ID_EVENT(FWK_MODULE_IDX_POWER_DOMAIN,
@@ -1601,7 +1585,7 @@ static int report_power_state_transition(const struct pd_ctx *pd,
 {
     struct fwk_event report;
     struct pd_power_state_transition_report *report_params =
-        (struct pd_power_state_transition_report *)(&report.params);
+        (void *)&report.params;
 
     report = (struct fwk_event){
         .source_id = pd->driver_id,
@@ -1685,8 +1669,7 @@ static int pd_power_domain_init(fwk_id_t pd_id, unsigned int unused,
 {
     static uint64_t max_tree_pos = MOD_PD_INVALID_TREE_POS;
 
-    const struct mod_power_domain_element_config *pd_config =
-        (const struct mod_power_domain_element_config *)config;
+    const struct mod_power_domain_element_config *pd_config = (void *)config;
     struct pd_ctx *pd;
     unsigned int state;
 
@@ -1877,46 +1860,42 @@ static int pd_process_event(const struct fwk_event *event,
     case PD_EVENT_IDX_SET_STATE:
         assert(pd != NULL);
 
-        process_set_state_request(pd,
-            (struct pd_set_state_request *)event->params, resp);
+        process_set_state_request(pd, (void *)event->params, resp);
 
         return FWK_SUCCESS;
 
     case PD_EVENT_IDX_GET_STATE:
         assert(pd != NULL);
 
-        process_get_state_request(pd,
-            (struct pd_get_state_request *)event->params,
-            (struct pd_get_state_response *)resp->params);
+        process_get_state_request(pd, (void *)event->params,
+                                  (void *)resp->params);
 
         return FWK_SUCCESS;
 
     case PD_EVENT_IDX_RESET:
         assert(pd != NULL);
 
-        process_reset_request(pd, (struct pd_response *)resp->params);
+        process_reset_request(pd, (void *)resp->params);
 
         return FWK_SUCCESS;
 
     case PD_EVENT_IDX_REPORT_POWER_STATE_TRANSITION:
         assert(pd != NULL);
 
-        process_power_state_transition_report(pd,
-            (struct pd_power_state_transition_report *)event->params);
+        process_power_state_transition_report(pd, (void *)event->params);
 
         return FWK_SUCCESS;
 
     case PD_EVENT_IDX_SYSTEM_SUSPEND:
-        process_system_suspend_request(
-            (struct pd_system_suspend_request *)event->params,
-            (struct pd_response *)resp->params);
+        process_system_suspend_request((void *)event->params,
+                                       (void *)resp->params);
 
         return FWK_SUCCESS;
 
     case PD_EVENT_IDX_SYSTEM_SHUTDOWN:
         process_system_shutdown_request(
-            (struct pd_system_shutdown_request *)event->params,
-            (struct pd_response *)resp->params);
+            (struct pd_system_shutdown_request *)(void *)event->params,
+            (struct pd_response *)(void *)resp->params);
 
         return FWK_SUCCESS;
 
@@ -2020,8 +1999,7 @@ static int process_power_state_transition_notification_response(
     notification_event.response_requested = true;
     notification_event.source_id = FWK_ID_NONE;
 
-    params = (struct mod_pd_power_state_transition_notification_params *)
-        notification_event.params;
+    params = (void *)notification_event.params;
     params->state = pd->current_state;
 
     pd->power_state_transition_notification_ctx.state = pd->current_state;
@@ -2054,8 +2032,7 @@ static int pd_process_notification(const struct fwk_event *event,
         return process_power_state_transition_notification_response(pd);
 
     return process_power_state_pre_transition_notification_response(pd,
-        (struct mod_pd_power_state_pre_transition_notification_resp_params *)
-        event->params);
+        (void *)event->params);
 }
 #endif /* BUILD_HAS_NOTIFICATION */
 

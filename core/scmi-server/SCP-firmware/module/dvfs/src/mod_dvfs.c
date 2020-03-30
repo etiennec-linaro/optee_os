@@ -22,7 +22,9 @@
 #include <mod_dvfs.h>
 #include <mod_power_domain.h>
 #include <mod_psu.h>
+#if BUILD_HAS_MOD_TIMER
 #include <mod_timer.h>
+#endif
 
 /*
  * Maximum number of attempts to complete a request
@@ -102,9 +104,10 @@ struct mod_dvfs_domain_ctx {
         /* Clock API */
         const struct mod_clock_api *clock;
 
+#if BUILD_HAS_MOD_TIMER
         /* Alarm API for pending requests */
         const struct mod_timer_alarm_api *alarm_api;
-
+#endif
     } apis;
 
     /* Number of operating points */
@@ -286,6 +289,7 @@ static void dvfs_flush_pending_request(struct mod_dvfs_domain_ctx *ctx)
     ctx->pending_request = (struct mod_dvfs_request){ 0 };
 }
 
+#if BUILD_HAS_MOD_TIMER
 static void alarm_callback(uintptr_t param)
 {
     struct fwk_event req;
@@ -301,6 +305,7 @@ static void alarm_callback(uintptr_t param)
 
     fwk_thread_put_event(&req);
 }
+#endif
 
 static int dvfs_handle_pending_request(struct mod_dvfs_domain_ctx *ctx)
 {
@@ -310,11 +315,15 @@ static int dvfs_handle_pending_request(struct mod_dvfs_domain_ctx *ctx)
         return FWK_SUCCESS;
 
     if (ctx->config->retry_ms > 0) {
+#if BUILD_HAS_MOD_TIMER
         status = ctx->apis.alarm_api->start(ctx->config->alarm_id,
             ctx->config->retry_ms, MOD_TIMER_ALARM_TYPE_ONCE,
             alarm_callback, (uintptr_t)ctx);
         if (status == FWK_SUCCESS)
             ctx->state = DVFS_DOMAIN_STATE_RETRY;
+#else
+        assert(0);
+#endif
     } else {
         /*
          * If this domain does not have a timeout configured we start
@@ -1052,10 +1061,14 @@ dvfs_bind_element(fwk_id_t domain_id, unsigned int round)
 
     /* Bind to the alarm HAL if required */
     if (ctx->config->retry_ms > 0) {
+#if BUILD_HAS_MOD_TIMER
         status = fwk_module_bind(ctx->config->alarm_id, MOD_TIMER_API_ID_ALARM,
             &ctx->apis.alarm_api);
         if (status != FWK_SUCCESS)
             return FWK_E_PANIC;
+#else
+        return FWK_E_PANIC;
+#endif
     }
 
     return FWK_SUCCESS;

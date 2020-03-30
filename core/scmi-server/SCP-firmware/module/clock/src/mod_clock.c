@@ -57,7 +57,7 @@ static struct clock_ctx module_ctx;
 /*
  * Utility functions
  */
-
+#ifdef BUILD_HAS_NOTIFICATION
 static int process_response_event(const struct fwk_event *event)
 {
     int status;
@@ -80,6 +80,7 @@ static int process_response_event(const struct fwk_event *event)
 
     return fwk_thread_put_event(&resp_event);
 }
+#endif /* BUILD_HAS_NOTIFICATION */
 
 static int process_request_event(const struct fwk_event *event,
                                  struct fwk_event *resp_event)
@@ -636,8 +637,10 @@ static int clock_process_event(const struct fwk_event *event,
     switch (event_idx) {
     case CLOCK_EVENT_IDX_REQUEST:
         return process_request_event(event, resp_event);
+#ifdef BUILD_HAS_NOTIFICATION
     case CLOCK_EVENT_IDX_RESPONSE:
         return process_response_event(event);
+#endif
     default:
         return FWK_E_PANIC;
     }

@@ -22,7 +22,8 @@ static const struct mod_scmi_clock_device agent_device_table_ospm[] = {
         .permissions = MOD_SCMI_CLOCK_PERM_ATTRIBUTES |
                        MOD_SCMI_CLOCK_PERM_DESCRIBE_RATES |
                        MOD_SCMI_CLOCK_PERM_GET_RATE |
-                       MOD_SCMI_CLOCK_PERM_SET_RATE,
+                       MOD_SCMI_CLOCK_PERM_SET_RATE |
+                       MOD_SCMI_CLOCK_PERM_SET_CONFIG,
     },
     {
         /* DPU */
@@ -31,7 +32,8 @@ static const struct mod_scmi_clock_device agent_device_table_ospm[] = {
         .permissions = MOD_SCMI_CLOCK_PERM_ATTRIBUTES |
                        MOD_SCMI_CLOCK_PERM_DESCRIBE_RATES |
                        MOD_SCMI_CLOCK_PERM_GET_RATE |
-                       MOD_SCMI_CLOCK_PERM_SET_RATE,
+                       MOD_SCMI_CLOCK_PERM_SET_RATE |
+                       MOD_SCMI_CLOCK_PERM_SET_CONFIG,
     },
     {
         /* PIXEL_0 */
@@ -40,7 +42,8 @@ static const struct mod_scmi_clock_device agent_device_table_ospm[] = {
         .permissions = MOD_SCMI_CLOCK_PERM_ATTRIBUTES |
                        MOD_SCMI_CLOCK_PERM_DESCRIBE_RATES |
                        MOD_SCMI_CLOCK_PERM_GET_RATE |
-                       MOD_SCMI_CLOCK_PERM_SET_RATE,
+                       MOD_SCMI_CLOCK_PERM_SET_RATE |
+                       MOD_SCMI_CLOCK_PERM_SET_CONFIG,
     },
     {
         /* PIXEL_1 */
@@ -49,7 +52,8 @@ static const struct mod_scmi_clock_device agent_device_table_ospm[] = {
         .permissions = MOD_SCMI_CLOCK_PERM_ATTRIBUTES |
                        MOD_SCMI_CLOCK_PERM_DESCRIBE_RATES |
                        MOD_SCMI_CLOCK_PERM_GET_RATE |
-                       MOD_SCMI_CLOCK_PERM_SET_RATE,
+                       MOD_SCMI_CLOCK_PERM_SET_RATE |
+                       MOD_SCMI_CLOCK_PERM_SET_CONFIG,
     },
 };
 

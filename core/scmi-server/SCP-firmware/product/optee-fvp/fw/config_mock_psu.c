@@ -9,31 +9,33 @@
 #include <fwk_module.h>
 #include <mod_mock_psu.h>
 
+#include "config_mock_psu.h"
+
 static const struct fwk_element element_table[] = {
-    {
+    [CONFIG_MOCK_PSU_ELEMENT_IDX_CPU_GROUP_LITTLE] = {
         .name = "CPU_GROUP_LITTLE",
-        .data = &(const struct mod_mock_psu_device_config) {
+        .data = &(const struct mod_mock_psu_element_cfg) {
             .default_enabled = true,
             .default_voltage = 100,
         },
     },
-    {
+    [CONFIG_MOCK_PSU_ELEMENT_IDX_CPU_GROUP_BIG] = {
         .name = "CPU_GROUP_BIG",
-        .data = &(const struct mod_mock_psu_device_config) {
+        .data = &(const struct mod_mock_psu_element_cfg) {
             .default_enabled = true,
             .default_voltage = 100,
         },
     },
-    {
+    [CONFIG_MOCK_PSU_ELEMENT_IDX_GPU] = {
         .name = "GPU",
-        .data = &(const struct mod_mock_psu_device_config) {
+        .data = &(const struct mod_mock_psu_element_cfg) {
             .default_enabled = true,
             .default_voltage = 100,
         },
     },
-    {
+    [CONFIG_MOCK_PSU_ELEMENT_IDX_VPU] = {
         .name = "VPU",
-        .data = &(const struct mod_mock_psu_device_config) {
+        .data = &(const struct mod_mock_psu_element_cfg) {
             .default_enabled = true,
             .default_voltage = 100,
         },

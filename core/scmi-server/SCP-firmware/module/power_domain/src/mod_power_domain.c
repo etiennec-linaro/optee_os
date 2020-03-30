@@ -882,10 +882,16 @@ static void process_set_state_request(struct pd_ctx *lowest_pd,
         return;
 
     if (pd_in_charge_of_response != NULL) {
+#ifdef BUILD_HAS_NOTIFICATION
         resp_event->is_delayed_response = true;
         resp_event->source_id = pd_in_charge_of_response->id;
         pd_in_charge_of_response->response.pending = true;
         pd_in_charge_of_response->response.cookie = resp_event->cookie;
+#else
+        mod_pd_ctx.log_api->log(MOD_LOG_GROUP_ERROR,
+				"Notification not supported (in %s @%d)",
+				__func__, __LINE__);
+#endif
     } else {
         resp_params->status = status;
         resp_params->composite_state = composite_state;

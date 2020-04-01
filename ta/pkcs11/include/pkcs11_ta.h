@@ -729,6 +729,13 @@ struct pkcs11_token_info {
 #define PKCS11_CKFT_SO_PIN_TO_BE_CHANGED		(1U << 23)
 #define PKCS11_CKFT_ERROR_STATE				(1U << 24)
 
+/* Values for user identity */
+enum pkcs11_user_type {
+	PKCS11_CKU_SO = 0x000,
+	PKCS11_CKU_USER = 0x001,
+	PKCS11_CKU_CONTEXT_SPECIFIC = 0x002,
+};
+
 /*
  * Values for 32bit session flags argument to PKCS11_CMD_OPEN_SESSION
  * and pkcs11_session_info::flags.
@@ -1077,15 +1084,6 @@ enum pkcs11_mgf_id {
  * PKCS11_CKZ_<x> reltaes to cryptoki CKZ_<x>.
  */
 #define PKCS11_CKZ_DATA_SPECIFIED		0x0001
-
-/*
- * Values for user identifier parameter in PKCS11_CMD_LOGIN
- */
-enum pkcs11_user_type {
-	PKCS11_CKU_SO = 0x000,
-	PKCS11_CKU_USER = 0x001,
-	PKCS11_CKU_CONTEXT_SPECIFIC = 0x002,
-};
 
 /*
  * Processing parameters

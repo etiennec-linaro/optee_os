@@ -277,11 +277,6 @@ uint32_t entry_ck_token_initialize(uint32_t ptypes, TEE_Param *params);
 uint32_t entry_ck_token_mecha_ids(uint32_t ptypes, TEE_Param *params);
 
 uint32_t entry_ck_token_mecha_info(uint32_t ptypes, TEE_Param *params);
-
-uint32_t entry_ck_token_ro_session(uintptr_t teesess,
-				   uint32_t ptypes, TEE_Param *params);
-uint32_t entry_ck_token_rw_session(uintptr_t teesess,
-				   uint32_t ptypes, TEE_Param *params);
 uint32_t entry_ck_open_session(struct pkcs11_client *client,
 			       uint32_t ptypes, TEE_Param *params);
 uint32_t entry_ck_close_session(struct pkcs11_client *client,

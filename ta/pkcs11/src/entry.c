@@ -12,9 +12,9 @@
 
 #include "handle.h"
 #include "object.h"
+#include "pkcs11_helpers.h"
 #include "pkcs11_token.h"
 #include "processing.h"
-#include "pkcs11_helpers.h"
 
 TEE_Result TA_CreateEntryPoint(void)
 {
@@ -180,12 +180,6 @@ TEE_Result TA_InvokeCommandEntryPoint(void *tee_session, uint32_t cmd,
 
 	case PKCS11_CMD_OPEN_SESSION:
 		rc = entry_ck_open_session(client, ptypes, params);
-		break;
-	case PKCS11_CMD_OPEN_RO_SESSION:
-		TEE_Panic(PKCS11_CMD_OPEN_RO_SESSION);
-		break;
-	case PKCS11_CMD_OPEN_RW_SESSION:
-		TEE_Panic(PKCS11_CMD_OPEN_RW_SESSION);
 		break;
 	case PKCS11_CMD_CLOSE_SESSION:
 		rc = entry_ck_close_session(client, ptypes, params);

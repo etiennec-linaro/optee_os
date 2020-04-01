@@ -218,29 +218,7 @@
 	 */
 #define PKCS11_CMD_OPEN_SESSION			103
 
-	/*
-	 * PKCS11_CMD_OPEN_RO_SESSION - Open read-only session
-	 *
-	 * [in]  memref[0] = 32bit slot ID
-	 * [out] memref[0] = 32bit return code, enum pkcs11_rc
-	 * [out] memref[2] = 32bit session handle
-	 *
-	 * This command relates to the PKCS#11 API function C_OpenSession() for a
-	 * read-only session.
 	 */
-#define PKCS11_CMD_OPEN_RO_SESSION		11
-
-	/*
-	 * PKCS11_CMD_OPEN_RW_SESSION - Open read/write session
-	 *
-	 * [in]  memref[0] = 32bit slot
-	 * [out] memref[0] = 32bit return code, enum pkcs11_rc
-	 * [out] memref[2] = 32bit session handle
-	 *
-	 * This command relates to the PKCS#11 API function C_OpenSession() for a
-	 * read/write session.
-	 */
-#define PKCS11_CMD_OPEN_RW_SESSION		12
 
 	/*
 	 * PKCS11_CMD_CLOSE_SESSION - Close an opened session

@@ -16,11 +16,6 @@
 #include "processing.h"
 #include "pkcs11_helpers.h"
 
-/* Client session context: currently only use the allocated address */
-struct tee_session {
-	int foo;
-};
-
 TEE_Result TA_CreateEntryPoint(void)
 {
 	return pkcs11_init();
@@ -35,19 +30,21 @@ TEE_Result TA_OpenSessionEntryPoint(uint32_t __unused param_types,
 				    TEE_Param __unused params[4],
 				    void **tee_session)
 {
-	uintptr_t client = register_client();
+	struct pkcs11_client *client = register_client();
 
 	if (!client)
 		return TEE_ERROR_OUT_OF_MEMORY;
 
-	*tee_session = (void *)client;
+	*tee_session = client;
 
 	return TEE_SUCCESS;
 }
 
 void TA_CloseSessionEntryPoint(void *tee_session)
 {
-	unregister_client((uintptr_t)tee_session);
+	struct pkcs11_client *client = tee_session2client(tee_session);
+
+	unregister_client(client);
 }
 
 /*
@@ -121,8 +118,11 @@ TEE_Result TA_InvokeCommandEntryPoint(void *tee_session, uint32_t cmd,
 				      uint32_t ptypes,
 				      TEE_Param params[TEE_NUM_PARAMS])
 {
-	uintptr_t teesess = (uintptr_t)tee_session;
+	struct pkcs11_client *client = tee_session2client(tee_session);
 	uint32_t rc = 0;
+
+	if (!client)
+		return TEE_ERROR_SECURITY;
 
 	/* All command handlers will check only against 4 parameters */
 	COMPILE_TIME_ASSERT(TEE_NUM_PARAMS == 4);

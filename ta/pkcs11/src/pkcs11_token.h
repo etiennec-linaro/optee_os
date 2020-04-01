@@ -35,6 +35,8 @@ enum pkcs11_token_state {
 TAILQ_HEAD(client_list, pkcs11_client);
 TAILQ_HEAD(session_list, pkcs11_session);
 
+struct pkcs11_client;
+
 #define PKCS11_MAX_USERS		2
 #define PKCS11_TOKEN_PIN_SIZE_MAX	128
 #define PKCS11_TOKEN_PIN_SIZE_MIN	10
@@ -156,23 +158,10 @@ struct pkcs11_find_objects {
 };
 
 /*
- * Structure tracking client applications
- *
- * @link - chained list of registered client applications
- * @sessions - list of the PKCS11 sessions opened by the client application
- */
-struct pkcs11_client {
-	TAILQ_ENTRY(pkcs11_client) link;
-	struct session_list session_list;
-	struct handle_db session_handle_db;
-};
-
-/*
  * Structure tracking the PKCS#11 sessions
  *
  * @link - List of the session belonging to a client
- * @tee_session - TEE session handle used by PKCS11 session client
- * @client - Client the session belongs to (FIXME: redundant with tee_session)
+ * @client - Client the session belongs to
  * @token - Token this session belongs to
  * @handle - Identifier of the session published to the client
  * @object_list - Entry of the session objects list
@@ -183,7 +172,6 @@ struct pkcs11_client {
  */
 struct pkcs11_session {
 	TAILQ_ENTRY(pkcs11_session) link;
-	uintptr_t tee_session;
 	struct pkcs11_client *client;
 	struct ck_token *token;
 	uint32_t handle;
@@ -224,11 +212,10 @@ uint32_t get_persistent_objects_list(struct ck_token *token,
 /*
  * Pkcs11 session support
  */
-struct pkcs11_client *tee_session2client(uintptr_t tee_session);
-uintptr_t register_client(void);
-void unregister_client(uintptr_t tee_session);
+struct pkcs11_client *tee_session2client(void *tee_session);
+struct pkcs11_client *register_client(void);
+void unregister_client(struct pkcs11_client *client);
 
-void ck_token_close_tee_session(uintptr_t tee_session);
 struct pkcs11_session *pkcs11_handle2session(uint32_t handle,
 					     struct pkcs11_client *client);
 

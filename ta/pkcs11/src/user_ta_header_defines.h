@@ -14,16 +14,12 @@
 					 TA_FLAG_MULTI_SESSION | \
 					 TA_FLAG_INSTANCE_KEEP_ALIVE)
 
-#define TA_STACK_SIZE			(2 * 1024)
+#define TA_STACK_SIZE			(4 * 1024)
 #define TA_DATA_SIZE			(16 * 1024)
 
-#define TA_CURRENT_TA_EXT_PROPERTIES \
-    { "gp.ta.description", USER_TA_PROP_TYPE_STRING, \
-        "PKCS#11 trusted application" }, \
-    { "gp.ta.version", USER_TA_PROP_TYPE_U32, \
-      &(const uint32_t){ (PKCS11_TA_VERSION_MAJOR << 2) | \
-		         PKCS11_TA_VERSION_MINOR \
-      } \
-    }
+#define TA_DESCRIPTION			"PKCS#11 trusted application"
+#define TA_VERSION			TO_STR(PKCS11_TA_VERSION_MAJOR) "." \
+					TO_STR(PKCS11_TA_VERSION_MINOR) "." \
+					TO_STR(PKCS11_TA_VERSION_PATCH)
 
 #endif /*USER_TA_HEADER_DEFINES_H*/

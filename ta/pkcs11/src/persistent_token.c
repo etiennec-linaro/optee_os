@@ -13,6 +13,8 @@
 #include "pkcs11_token.h"
 #include "pkcs11_helpers.h"
 
+#define PERSISTENT_OBJECT_ID_LEN	32
+
 /*
  * Token persistent objects
  *
@@ -24,7 +26,7 @@
 static TEE_Result get_db_file_name(struct ck_token *token,
 				   char *name, size_t size)
 {
-	int n = snprintf(name, size, "token.db.%1d", get_token_id(token));
+	int n = snprintf(name, size, "token.db.%u", get_token_id(token));
 
 	if (n < 0 || (size_t)n >= size)
 		return TEE_ERROR_SECURITY;
@@ -35,7 +37,7 @@ static TEE_Result get_db_file_name(struct ck_token *token,
 static TEE_Result open_db_file(struct ck_token *token,
 			       TEE_ObjectHandle *out_hdl)
 {
-	char file[32] = { };
+	char file[PERSISTENT_OBJECT_ID_LEN] = { };
 	TEE_Result res = TEE_ERROR_GENERIC;
 
 	res = get_db_file_name(token, file, sizeof(file));
@@ -48,21 +50,12 @@ static TEE_Result open_db_file(struct ck_token *token,
 					out_hdl);
 }
 
-static void close_db_file(TEE_ObjectHandle hdl)
-{
-	TEE_CloseObject(hdl);
-}
-
 static TEE_Result get_pin_file_name(struct ck_token *token,
 				    enum pkcs11_user_type user,
 				    char *name, size_t size)
 {
-	int n = 0;
-
-	COMPILE_TIME_ASSERT(PKCS11_MAX_USERS < 10);
-
-	n = snprintf(name, size,
-		     "token.db.%1d-pin%1d", get_token_id(token), user);
+	int n = snprintf(name, size,
+			 "token.db.%u-pin%d", get_token_id(token), user);
 
 	if (n < 0 || (size_t)n >= size)
 		return TEE_ERROR_SECURITY;
@@ -73,7 +66,7 @@ static TEE_Result get_pin_file_name(struct ck_token *token,
 TEE_Result open_pin_file(struct ck_token *token, enum pkcs11_user_type user,
 			 TEE_ObjectHandle *out_hdl)
 {
-	char file[32] = { };
+	char file[PERSISTENT_OBJECT_ID_LEN] = { };
 	TEE_Result res = TEE_ERROR_GENERIC;
 
 	res = get_pin_file_name(token, user, file, sizeof(file));
@@ -84,14 +77,6 @@ TEE_Result open_pin_file(struct ck_token *token, enum pkcs11_user_type user,
 					0, out_hdl);
 }
 
-void close_pin_file(TEE_ObjectHandle hdl)
-{
-	TEE_CloseObject(hdl);
-}
-
-void close_persistent_db(struct ck_token *token __unused)
-{
-}
 
 uint32_t update_persistent_db(struct ck_token *token, size_t offset,
 			      size_t size)
@@ -106,7 +91,7 @@ uint32_t update_persistent_db(struct ck_token *token, size_t offset,
 	if (!res)
 		res = TEE_WriteObjectData(db_hdl, field, size);
 
-	close_db_file(db_hdl);
+	TEE_CloseObject(db_hdl);
 
 	if (!res)
 		return PKCS11_CKR_OK;
@@ -129,7 +114,7 @@ static void init_pin_keys(struct ck_token *token, enum pkcs11_user_type user)
 		TEE_Attribute attr = { };
 		TEE_ObjectHandle hdl = TEE_HANDLE_NULL;
 		uint8_t pin_key[16] = { };
-		char file[32] = { };
+		char file[PERSISTENT_OBJECT_ID_LEN] = { };
 
 		TEE_MemFill(&attr, 0, sizeof(attr));
 
@@ -162,7 +147,14 @@ static void init_pin_keys(struct ck_token *token, enum pkcs11_user_type user)
 	if (res)
 		TEE_Panic(res);
 
-	close_pin_file(key_hdl);
+	TEE_CloseObject(key_hdl);
+}
+
+/*
+ * Release resources relate to persistent database
+ */
+void close_persistent_db(struct ck_token *token __unused)
+{
 }
 
 /* UUID for persistent object */
@@ -269,7 +261,7 @@ uint32_t unregister_persistent_object(struct ck_token *token, TEE_UUID *uuid)
 		DMSG("Failed to update database");
 
 out:
-	close_db_file(db_hdl);
+	TEE_CloseObject(db_hdl);
 
 	TEE_Free(token->db_objs);
 	token->db_objs = ptr;
@@ -332,7 +324,7 @@ uint32_t register_persistent_object(struct ck_token *token, TEE_UUID *uuid)
 
 out:
 	if (db_hdl != TEE_HANDLE_NULL)
-		close_db_file(db_hdl);
+		TEE_CloseObject(db_hdl);
 
 	if (!res)
 		return PKCS11_OK;
@@ -357,12 +349,10 @@ struct ck_token *init_persistent_db(unsigned int token_id)
 	if (!token)
 		return NULL;
 
-	COMPILE_TIME_ASSERT(PKCS11_CKU_SO == 0 &&
-			    PKCS11_CKU_USER == 1 &&
-			    PKCS11_MAX_USERS >= 2);
-
 	init_pin_keys(token, PKCS11_CKU_SO);
 	init_pin_keys(token, PKCS11_CKU_USER);
+	COMPILE_TIME_ASSERT(PKCS11_CKU_SO == 0 && PKCS11_CKU_USER == 1 &&
+			    PKCS11_MAX_USERS >= 2);
 
 	LIST_INIT(&token->object_list);
 
@@ -443,7 +433,7 @@ struct ck_token *init_persistent_db(unsigned int token_id)
 		if (res)
 			TEE_Panic(0);
 
-		/* 2 files: persistent state + persistent object references */
+		/* Object stores persistent state + persistent object references */
 		res = TEE_CreatePersistentObject(TEE_STORAGE_PRIVATE,
 						 file, sizeof(file),
 						 TEE_DATA_FLAG_ACCESS_READ |
@@ -451,8 +441,10 @@ struct ck_token *init_persistent_db(unsigned int token_id)
 						 TEE_HANDLE_NULL,
 						 db_main, sizeof(*db_main),
 						 &db_hdl);
-		if (res)
-			TEE_Panic(0);
+		if (res) {
+			EMSG("Failed to create db: %"PRIx32, res);
+			goto error;
+		}
 
 		res = TEE_TruncateObjectData(db_hdl, sizeof(*db_main) +
 						     sizeof(*db_objs));
@@ -470,8 +462,7 @@ struct ck_token *init_persistent_db(unsigned int token_id)
 			TEE_Panic(0);
 
 	} else {
-		/* Can't do anything... */
-		return NULL;
+		goto error;
 	}
 
 	token->db_main = db_main;

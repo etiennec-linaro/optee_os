@@ -316,7 +316,7 @@ uint32_t entry_ck_token_initialize(uint32_t ptypes, TEE_Param *params)
 		goto out;
 	}
 	cipher_pin(key_hdl, cpin, PKCS11_TOKEN_PIN_SIZE_MAX);
-	close_pin_file(key_hdl);
+	TEE_CloseObject(key_hdl);
 
 	if (!token->db_main->so_pin_size) {
 		TEE_MemMove(token->db_main->so_pin, cpin,
@@ -1157,7 +1157,7 @@ static uint32_t set_pin(struct pkcs11_session *session,
 	}
 	assert(pin_key_hdl != TEE_HANDLE_NULL);
 	cipher_pin(pin_key_hdl, cpin, PKCS11_TOKEN_PIN_SIZE_MAX);
-	close_pin_file(pin_key_hdl);
+	TEE_CloseObject(pin_key_hdl);
 
 	TEE_MemMove(pin, cpin, PKCS11_TOKEN_PIN_SIZE_MAX);
 	*pin_size = new_pin_size;
@@ -1252,7 +1252,7 @@ static uint32_t check_so_pin(struct pkcs11_session *session,
 	// TODO: move into a single cipher_login_pin(token, user, buf, sz)
 	open_pin_file(token, PKCS11_CKU_SO, &pin_key_hdl);
 	cipher_pin(pin_key_hdl, cpin, PKCS11_TOKEN_PIN_SIZE_MAX);
-	close_pin_file(pin_key_hdl);
+	TEE_CloseObject(pin_key_hdl);
 
 	pin_rc = 0;
 
@@ -1337,7 +1337,7 @@ static uint32_t check_user_pin(struct pkcs11_session *session,
 	// TODO: move into a single cipher_login_pin(token, user, buf, sz)
 	open_pin_file(token, PKCS11_CKU_USER, &pin_key_hdl);
 	cipher_pin(pin_key_hdl, cpin, PKCS11_TOKEN_PIN_SIZE_MAX);
-	close_pin_file(pin_key_hdl);
+	TEE_CloseObject(pin_key_hdl);
 
 	pin_rc = 0;
 

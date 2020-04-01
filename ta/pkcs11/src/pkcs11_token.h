@@ -199,7 +199,6 @@ void close_persistent_db(struct ck_token *token);
 
 TEE_Result open_pin_file(struct ck_token *token, enum pkcs11_user_type user,
 			 TEE_ObjectHandle *out_hdl);
-void close_pin_file(TEE_ObjectHandle hdl);
 
 /* Token persistent objects */
 uint32_t create_object_uuid(struct ck_token *token, struct pkcs11_object *obj);

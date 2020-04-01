@@ -4,7 +4,10 @@
  */
 
 #include <pkcs11_internal_abi.h>
+#include <pkcs11_ta.h>
+#include <stdbool.h>
 #include <stddef.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 #include <string_ext.h>
@@ -30,14 +33,14 @@ uint32_t serialargs_get(struct serialargs *args, void *out, size_t size)
 	if (args->next + size > args->start + args->size) {
 		EMSG("arg too short: full %zd, remain %zd, expect %zd",
 		     args->size, args->size - (args->next - args->start), size);
-		return PKCS11_BAD_PARAM;
+		return PKCS11_CKR_ARGUMENTS_BAD;
 	}
 
 	TEE_MemMove(out, args->next, size);
 
 	args->next += size;
 
-	return PKCS11_OK;
+	return PKCS11_CKR_OK;
 }
 
 uint32_t serialargs_alloc_and_get(struct serialargs *args,
@@ -47,25 +50,25 @@ uint32_t serialargs_alloc_and_get(struct serialargs *args,
 
 	if (!size) {
 		*out = NULL;
-		return PKCS11_OK;
+		return PKCS11_CKR_OK;
 	}
 
 	if (args->next + size > args->start + args->size) {
 		EMSG("arg too short: full %zd, remain %zd, expect %zd",
 		     args->size, args->size - (args->next - args->start), size);
-		return PKCS11_BAD_PARAM;
+		return PKCS11_CKR_ARGUMENTS_BAD;
 	}
 
 	ptr = TEE_Malloc(size, TEE_MALLOC_FILL_ZERO);
 	if (!ptr)
-		return PKCS11_MEMORY;
+		return PKCS11_CKR_DEVICE_MEMORY;
 
 	TEE_MemMove(ptr, args->next, size);
 
 	args->next += size;
 	*out = ptr;
 
-	return PKCS11_OK;
+	return PKCS11_CKR_OK;
 }
 
 uint32_t serialargs_get_ptr(struct serialargs *args, void **out, size_t size)
@@ -74,19 +77,19 @@ uint32_t serialargs_get_ptr(struct serialargs *args, void **out, size_t size)
 
 	if (!size) {
 		*out = NULL;
-		return PKCS11_OK;
+		return PKCS11_CKR_OK;
 	}
 
 	if (args->next + size > args->start + args->size) {
 		EMSG("arg too short: full %zd, remain %zd, expect %zd",
 		     args->size, args->size - (args->next - args->start), size);
-		return PKCS11_BAD_PARAM;
+		return PKCS11_CKR_ARGUMENTS_BAD;
 	}
 
 	args->next += size;
 	*out = ptr;
 
-	return PKCS11_OK;
+	return PKCS11_CKR_OK;
 }
 
 uint32_t serialargs_alloc_get_one_attribute(struct serialargs *args,
@@ -102,7 +105,7 @@ uint32_t serialargs_alloc_get_one_attribute(struct serialargs *args,
 		EMSG("arg too short: full %zd, remain %zd, expect at least %zd",
 		     args->size, args->size - (args->next - args->start),
 		     out_size);
-		return PKCS11_BAD_PARAM;
+		return PKCS11_CKR_ARGUMENTS_BAD;
 	}
 
 	TEE_MemMove(&head, args->next, out_size);
@@ -112,19 +115,19 @@ uint32_t serialargs_alloc_get_one_attribute(struct serialargs *args,
 		EMSG("arg too short: full %zd, remain %zd, expect %zd",
 		     args->size, args->size - (args->next - args->start),
 		     out_size);
-		return PKCS11_BAD_PARAM;
+		return PKCS11_CKR_ARGUMENTS_BAD;
 	}
 
 	pref = TEE_Malloc(out_size, TEE_USER_MEM_HINT_NO_FILL_ZERO);
 	if (!pref)
-		return PKCS11_MEMORY;
+		return PKCS11_CKR_DEVICE_MEMORY;
 
 	TEE_MemMove(pref, args->next, out_size);
 	args->next += out_size;
 
 	*out = pref;
 
-	return PKCS11_OK;
+	return PKCS11_CKR_OK;
 }
 
 uint32_t serialargs_alloc_get_attributes(struct serialargs *args,
@@ -140,7 +143,7 @@ uint32_t serialargs_alloc_get_attributes(struct serialargs *args,
 		EMSG("arg too short: full %zd, remain %zd, expect at least %zd",
 		     args->size, args->size - (args->next - args->start),
 		     attr_size);
-		return PKCS11_BAD_PARAM;
+		return PKCS11_CKR_ARGUMENTS_BAD;
 	}
 
 	TEE_MemMove(&attr, args->next, attr_size);
@@ -150,19 +153,19 @@ uint32_t serialargs_alloc_get_attributes(struct serialargs *args,
 		EMSG("arg too short: full %zd, remain %zd, expect %zd",
 		     args->size, args->size - (args->next - args->start),
 		     attr_size);
-		return PKCS11_BAD_PARAM;
+		return PKCS11_CKR_ARGUMENTS_BAD;
 	}
 
 	pattr = TEE_Malloc(attr_size, TEE_USER_MEM_HINT_NO_FILL_ZERO);
 	if (!pattr)
-		return PKCS11_MEMORY;
+		return PKCS11_CKR_DEVICE_MEMORY;
 
 	TEE_MemMove(pattr, args->next, attr_size);
 	args->next += attr_size;
 
 	*out = pattr;
 
-	return PKCS11_OK;
+	return PKCS11_CKR_OK;
 }
 
 bool serialargs_remaining_bytes(struct serialargs *args)
@@ -183,12 +186,12 @@ uint32_t serialize(char **bstart, size_t *blen, void *data, size_t len)
 
 	buf = TEE_Realloc(*bstart, nlen);
 	if (!buf)
-		return PKCS11_MEMORY;
+		return PKCS11_CKR_DEVICE_MEMORY;
 
 	TEE_MemMove(buf + *blen, data, len);
 
 	*blen = nlen;
 	*bstart = buf;
 
-	return PKCS11_OK;
+	return PKCS11_CKR_OK;
 }

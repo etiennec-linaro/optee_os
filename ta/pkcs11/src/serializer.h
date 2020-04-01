@@ -7,8 +7,9 @@
 #define PKCS11_TA_SERIALIZER_H
 
 #include <pkcs11_internal_abi.h>
-#include <stdint.h>
+#include <stdbool.h>
 #include <stddef.h>
+#include <stdint.h>
 #include <tee_internal_api.h>
 
 /*
@@ -33,7 +34,7 @@ uint32_t serialargs_alloc_get_attributes(struct serialargs *args,
 					 struct pkcs11_object_head **out);
 
 uint32_t serialargs_alloc_and_get(struct serialargs *args,
-				   void **out, size_t size);
+				  void **out, size_t size);
 
 bool serialargs_remaining_bytes(struct serialargs *args);
 

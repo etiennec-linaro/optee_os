@@ -769,34 +769,32 @@ static void set_session_state(struct pkcs11_client *client,
 		assert(sess != session);
 
 		if (sess->token == session->token) {
-			state = sess->state;
+			switch (sess->state) {
+			case PKCS11_CKS_RW_PUBLIC_SESSION:
+			case PKCS11_CKS_RO_PUBLIC_SESSION:
+				if (readonly)
+					state = PKCS11_CKS_RO_PUBLIC_SESSION;
+				else
+					state = PKCS11_CKS_RW_PUBLIC_SESSION;
+				break;
+			case PKCS11_CKS_RO_USER_FUNCTIONS:
+			case PKCS11_CKS_RW_USER_FUNCTIONS:
+				if (readonly)
+					state = PKCS11_CKS_RO_USER_FUNCTIONS;
+				else
+					state = PKCS11_CKS_RW_USER_FUNCTIONS;
+				break;
+			case PKCS11_CKS_RW_SO_FUNCTIONS:
+				if (readonly)
+					TEE_Panic(0);
+				else
+					state = PKCS11_CKS_RW_SO_FUNCTIONS;
+				break;
+			default:
+				TEE_Panic(0);
+			}
 			break;
 		}
-	}
-
-	switch (state) {
-	case PKCS11_CKS_RW_PUBLIC_SESSION:
-	case PKCS11_CKS_RO_PUBLIC_SESSION:
-		if (readonly)
-			state = PKCS11_CKS_RO_PUBLIC_SESSION;
-		else
-			state = PKCS11_CKS_RW_PUBLIC_SESSION;
-		break;
-	case PKCS11_CKS_RO_USER_FUNCTIONS:
-	case PKCS11_CKS_RW_USER_FUNCTIONS:
-		if (readonly)
-			state = PKCS11_CKS_RO_USER_FUNCTIONS;
-		else
-			state = PKCS11_CKS_RW_USER_FUNCTIONS;
-		break;
-	case PKCS11_CKS_RW_SO_FUNCTIONS:
-		if (readonly)
-			TEE_Panic(0);
-		else
-			state = PKCS11_CKS_RW_SO_FUNCTIONS;
-		break;
-	default:
-		TEE_Panic(0);
 	}
 
 	session->state = state;

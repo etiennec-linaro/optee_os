@@ -55,6 +55,7 @@
  * Param#3 is currently unused and reserved for evolution of the API.
  */
 
+enum pkcs11_ta_cmd {
 	/*
 	 * PKCS11_CMD_PING		Ack TA presence and return version info
 	 *
@@ -66,7 +67,7 @@
 	 *              32bit version patch value
 	 *       ]
 	 */
-#define PKCS11_CMD_PING				0
+	PKCS11_CMD_PING = 0,
 
 	/*
 	 * PKCS11_CMD_SLOT_LIST - Get the table of the valid slot IDs
@@ -79,7 +80,7 @@
 	 * associated tokens. This commadn reports the IDs of embedded tokens.
 	 * This command relates the PKCS#11 API function C_GetSlotList().
 	 */
-#define PKCS11_CMD_SLOT_LIST			1
+	PKCS11_CMD_SLOT_LIST = 1,
 
 	/*
 	 * PKCS11_CMD_SLOT_INFO - Get cryptoki structured slot information
@@ -91,7 +92,7 @@
 	 * The TA instance may represent several PKCS#11 slots/tokens.
 	 * This command relates the PKCS#11 API function C_GetSlotInfo().
 	 */
-#define PKCS11_CMD_SLOT_INFO			2
+	PKCS11_CMD_SLOT_INFO = 2,
 
 	/*
 	 * PKCS11_CMD_TOKEN_INFO - Get cryptoki structured token information
@@ -103,7 +104,7 @@
 	 * The TA instance may represent several PKCS#11 slots/tokens.
 	 * This command relates the PKCS#11 API function C_GetTokenInfo().
 	 */
-#define PKCS11_CMD_TOKEN_INFO			3
+	PKCS11_CMD_TOKEN_INFO = 3,
 
 	/*
 	 * PKCS11_CMD_MECHANISM_IDS - Get list of the supported mechanisms
@@ -115,7 +116,7 @@
 	 * This command relates to the PKCS#11 API function
 	 * C_GetMechanismList().
 	 */
-#define PKCS11_CMD_MECHANISM_IDS		4
+	PKCS11_CMD_MECHANISM_IDS = 4,
 
 	/*
 	 * PKCS11_CMD_MECHANISM_INFO - Get information on a specific mechanism
@@ -130,7 +131,53 @@
 	 * This command relates to the PKCS#11 API function
 	 * C_GetMechanismInfo().
 	 */
-#define PKCS11_CMD_MECHANISM_INFO		5
+	PKCS11_CMD_MECHANISM_INFO = 5,
+
+	/*
+	 * PKCS11_CMD_OPEN_SESSION - Open a session
+	 *
+	 * [in]  memref[0] = [
+	 *              32bit slot ID,
+	 *              32bit session flags,
+	 *       ]
+	 * [out] memref[0] = 32bit return code, enum pkcs11_rc
+	 * [out] memref[2] = 32bit session handle
+	 *
+	 * This command relates to the PKCS#11 API function C_OpenSession().
+	 */
+	PKCS11_CMD_OPEN_SESSION = 6,
+
+	/*
+	 * PKCS11_CMD_CLOSE_SESSION - Close an opened session
+	 *
+	 * [in]  memref[0] = 32bit session handle
+	 * [out] memref[0] = 32bit return code, enum pkcs11_rc
+	 *
+	 * This command relates to the PKCS#11 API function C_CloseSession().
+	 */
+	PKCS11_CMD_CLOSE_SESSION = 7,
+
+	/*
+	 * PKCS11_CMD_CLOSE_ALL_SESSIONS - Close all client sessions on token
+	 *
+	 * [in]	 memref[0] = 32bit slot ID
+	 * [out] memref[0] = 32bit return code, enum pkcs11_rc
+	 *
+	 * This command relates to the PKCS#11 API function
+	 * C_CloseAllSessions().
+	 */
+	PKCS11_CMD_CLOSE_ALL_SESSIONS = 8,
+
+	/*
+	 * PKCS11_CMD_SESSION_INFO - Get Cryptoki information on a session
+	 *
+	 * [in]  memref[0] = 32bit session handle
+	 * [out] memref[0] = 32bit return code, enum pkcs11_rc
+	 * [out] memref[2] = (struct pkcs11_session_info)info
+	 *
+	 * This command relates to the PKCS#11 API function C_GetSessionInfo().
+	 */
+	PKCS11_CMD_SESSION_INFO = 9,
 
 	/*
 	 * PKCS11_CMD_INIT_TOKEN - Initialize PKCS#11 token
@@ -145,7 +192,7 @@
 	 *
 	 * This command relates to the PKCS#11 API function C_InitToken().
 	 */
-#define PKCS11_CMD_INIT_TOKEN			6
+	PKCS11_CMD_INIT_TOKEN = 106,
 
 	/*
 	 * PKCS11_CMD_INIT_PIN - Initialize user PIN
@@ -159,7 +206,7 @@
 	 *
 	 * This command relates to the PKCS#11 API function C_InitPIN().
 	 */
-#define PKCS11_CMD_INIT_PIN			7
+	PKCS11_CMD_INIT_PIN = 107,
 
 	/*
 	 * PKCS11_CMD_SET_PIN - Change user PIN
@@ -173,9 +220,10 @@
 	 *       ]
 	 * [out] memref[0] = 32bit return code, enum pkcs11_rc
 	 *
-	 * This command relates to the PKCS#11 API function C_SetPIN().
+	 * This command relates to the PKCS#11 API function
+	 * C_CloseAllSessions().
 	 */
-#define PKCS11_CMD_SET_PIN			8
+	PKCS11_CMD_SET_PIN = 108,
 
 	/*
 	 * PKCS11_CMD_LOGIN - Initialize user PIN
@@ -190,7 +238,7 @@
 	 *
 	 * This command relates to the PKCS#11 API function C_Login().
 	 */
-#define PKCS11_CMD_LOGIN			9
+	PKCS11_CMD_LOGIN = 109,
 
 	/*
 	 * PKCS11_CMD_LOGOUT - Log out from token
@@ -202,54 +250,7 @@
 	 *
 	 * This command relates to the PKCS#11 API function C_Logout().
 	 */
-#define PKCS11_CMD_LOGOUT			10
-
-	/*
-	 * PKCS11_CMD_OPEN_SESSION - Open read-only session
-	 *
-	 * [in]  memref[0] = [
-	 *              32bit slot ID,
-	 *              32bit flags, PKCS11_CKFSS_*
-	 *	 ]
-	 * [out] memref[0] = 32bit return code, enum pkcs11_rc
-	 * [out] memref[2] = 32bit session handle
-	 *
-	 * This command relates to the PKCS#11 API function C_OpenSession().
-	 */
-#define PKCS11_CMD_OPEN_SESSION			103
-
-	 */
-
-	/*
-	 * PKCS11_CMD_CLOSE_SESSION - Close an opened session
-	 *
-	 * [in]  memref[0] = 32bit session handle
-	 * [out] memref[0] = 32bit return code, enum pkcs11_rc
-	 *
-	 * This command relates to the PKCS#11 API function C_CloseSession().
-	 */
-#define PKCS11_CMD_CLOSE_SESSION		13
-
-	/*
-	 * PKCS11_CMD_SESSION_INFO - Get Cryptoki information on a session
-	 *
-	 * [in]  memref[0] = 32bit session handle
-	 * [out] memref[0] = 32bit return code, enum pkcs11_rc
-	 * [out] memref[2] = (struct pkcs11_session_info)info
-	 *
-	 * This command relates to the PKCS#11 API function C_GetSessionInfo().
-	 */
-#define PKCS11_CMD_SESSION_INFO			14
-
-	/*
-	 * PKCS11_CMD_CLOSE_ALL_SESSIONS - Close all client sessions on slot/token
-	 *
-	 * [in]  memref[0] = 32bit slot
-	 * [out] memref[0] = 32bit return code, enum pkcs11_rc
-	 *
-	 * This command relates to the PKCS#11 API function C_CloseAllSessions().
-	 */
-#define PKCS11_CMD_CLOSE_ALL_SESSIONS		15
+	PKCS11_CMD_LOGOUT = 110,
 
 	/*
 	 * PKCS11_CMD_GET_SESSION_STATE - Retrieve the session state for later restore
@@ -260,7 +261,7 @@
 	 *
 	 * This command relates to the PKCS#11 API function C_GetOperationState().
 	 */
-#define PKCS11_CMD_GET_SESSION_STATE		16
+	PKCS11_CMD_GET_SESSION_STATE = 116,
 
 	/*
 	 * PKCS11_CMD_SET_SESSION_STATE - Retrieve the session state for later restore
@@ -271,7 +272,7 @@
 	 *
 	 * This command relates to the PKCS#11 API function C_SetOperationState().
 	 */
-#define PKCS11_CMD_SET_SESSION_STATE		17
+	PKCS11_CMD_SET_SESSION_STATE = 117,
 
 	/*
 	 * PKCS11_CMD_IMPORT_OBJECT - Import a raw object in the session or token
@@ -285,7 +286,7 @@
 	 *
 	 * This command relates to the PKCS#11 API function C_CreateObject().
 	 */
-#define PKCS11_CMD_IMPORT_OBJECT		18
+	PKCS11_CMD_IMPORT_OBJECT = 118,
 
 	/*
 	 * PKCS11_CMD_COPY_OBJECT - Duplicate an object possibly with new attributes
@@ -300,7 +301,7 @@
 	 *
 	 * This command relates to the PKCS#11 API function C_CopyObject().
 	 */
-#define PKCS11_CMD_COPY_OBJECT			19
+	PKCS11_CMD_COPY_OBJECT = 119,
 
 	/*
 	 * PKCS11_CMD_DESTROY_OBJECT - Destroy an object
@@ -313,7 +314,7 @@
 	 *
 	 * This command relates to the PKCS#11 API function C_DestroyObject().
 	 */
-#define PKCS11_CMD_DESTROY_OBJECT		20
+	PKCS11_CMD_DESTROY_OBJECT = 120,
 
 	/*
 	 * PKCS11_CMD_FIND_OBJECTS_INIT - Initialize an object search
@@ -326,7 +327,7 @@
 	 *
 	 * This command relates to the PKCS#11 API function C_FindOjectsInit().
 	 */
-#define PKCS11_CMD_FIND_OBJECTS_INIT		21
+	PKCS11_CMD_FIND_OBJECTS_INIT = 121,
 
 	/*
 	 * PKCS11_CMD_FIND_OBJECTS - Get handles of matching objects
@@ -339,7 +340,7 @@
 	 * The size of object_handle_array depends on the size of the output buffer
 	 * provided by the client.
 	 */
-#define PKCS11_CMD_FIND_OBJECTS			22
+	PKCS11_CMD_FIND_OBJECTS = 122,
 
 	/*
 	 * PKCS11_CMD_FIND_OBJECTS_FINAL - Finalize current objects search
@@ -349,7 +350,7 @@
 	 *
 	 * This command relates to the PKCS#11 API function C_FindOjectsFinal().
 	 */
-#define PKCS11_CMD_FIND_OBJECTS_FINAL		23
+	PKCS11_CMD_FIND_OBJECTS_FINAL = 123,
 
 	/*
 	 * PKCS11_CMD_GET_OBJECT_SIZE - Get byte size used by object in the TEE
@@ -363,7 +364,7 @@
 	 *
 	 * This command relates to the PKCS#11 API function C_GetObjectSize().
 	 */
-#define PKCS11_CMD_GET_OBJECT_SIZE		24
+	PKCS11_CMD_GET_OBJECT_SIZE = 124,
 
 	/*
 	 * PKCS11_CMD_GET_ATTRIBUTE_VALUE - Get the value of object attribute(s)
@@ -382,7 +383,7 @@
 	 * the TA returns the provided template filled with expected data through
 	 * output argument memref[2] (referred here again as attribs + attributes data).
 	 */
-#define PKCS11_CMD_GET_ATTRIBUTE_VALUE		25
+	PKCS11_CMD_GET_ATTRIBUTE_VALUE = 125,
 
 	/*
 	 * PKCS11_CMD_SET_ATTRIBUTE_VALUE - Set the value for object attribute(s)
@@ -396,7 +397,7 @@
 	 *
 	 * This command relates to the PKCS#11 API function C_SetAttributeValue().
 	 */
-#define PKCS11_CMD_SET_ATTRIBUTE_VALUE		26
+	PKCS11_CMD_SET_ATTRIBUTE_VALUE = 126,
 
 	/*
 	 * PKCS11_CMD_GENERATE_KEY - Generate a symmetric key or domain parameters
@@ -411,7 +412,7 @@
 	 *
 	 * This command relates to the PKCS#11 API functions C_GenerateKey().
 	 */
-#define PKCS11_CMD_GENERATE_KEY			27
+	PKCS11_CMD_GENERATE_KEY = 127,
 
 	/*
 	 * PKCS11_CMD_ENCRYPT_INIT - Initialize encryption processing
@@ -427,8 +428,8 @@
 	 * These commands relate to the PKCS#11 API functions C_EncryptInit() and
 	 * C_DecryptInit().
 	 */
-#define PKCS11_CMD_ENCRYPT_INIT			28
-#define PKCS11_CMD_DECRYPT_INIT			29
+	PKCS11_CMD_ENCRYPT_INIT = 128,
+	PKCS11_CMD_DECRYPT_INIT = 129,
 
 	/*
 	 * PKCS11_CMD_ENCRYPT_UPDATE - Update encryption processing
@@ -442,8 +443,8 @@
 	 * These commands relate to the PKCS#11 API functions C_EncryptUpdate() and
 	 * C_DecryptUpdate().
 	 */
-#define PKCS11_CMD_ENCRYPT_UPDATE		30
-#define PKCS11_CMD_DECRYPT_UPDATE		31
+	PKCS11_CMD_ENCRYPT_UPDATE = 130,
+	PKCS11_CMD_DECRYPT_UPDATE = 131,
 
 	/*
 	 * PKCS11_CMD_ENCRYPT_FINAL - Finalize encryption processing
@@ -456,8 +457,8 @@
 	 * These commands relate to the PKCS#11 API functions C_EncryptFinal() and
 	 * C_DecryptFinal().
 	 */
-#define PKCS11_CMD_ENCRYPT_FINAL		32
-#define PKCS11_CMD_DECRYPT_FINAL		33
+	PKCS11_CMD_ENCRYPT_FINAL = 132,
+	PKCS11_CMD_DECRYPT_FINAL = 133,
 
 	/*
 	 * PKCS11_CMD_ENCRYPT_ONESHOT - Update and finalize encryption processing
@@ -471,8 +472,8 @@
 	 * These commands relate to the PKCS#11 API functions C_Encrypt and
 	 * C_Decrypt.
 	 */
-#define PKCS11_CMD_ENCRYPT_ONESHOT		34
-#define PKCS11_CMD_DECRYPT_ONESHOT		35
+	PKCS11_CMD_ENCRYPT_ONESHOT = 134,
+	PKCS11_CMD_DECRYPT_ONESHOT = 135,
 
 	/*
 	 * PKCS11_CMD_SIGN_INIT - Initialize a signature computation processing
@@ -488,8 +489,8 @@
 	 * These commands relate to the PKCS#11 API functions C_SignInit() and
 	 * C_VerifyInit().
 	 */
-#define PKCS11_CMD_SIGN_INIT			36
-#define PKCS11_CMD_VERIFY_INIT			37
+	PKCS11_CMD_SIGN_INIT = 136,
+	PKCS11_CMD_VERIFY_INIT = 137,
 
 	/*
 	 * PKCS11_CMD_SIGN_UPDATE - Update a signature computation processing
@@ -502,8 +503,8 @@
 	 * These commands relate to the PKCS#11 API functions C_SignUpdate() and
 	 * C_VerifyUpdate().
 	 */
-#define PKCS11_CMD_SIGN_UPDATE			38
-#define PKCS11_CMD_VERIFY_UPDATE		39
+	PKCS11_CMD_SIGN_UPDATE = 138,
+	PKCS11_CMD_VERIFY_UPDATE = 139,
 
 	/*
 	 * PKCS11_CMD_SIGN_FINAL - Finalize a signature computation processing
@@ -516,8 +517,8 @@
 	 * These commands relate to the PKCS#11 API functions C_SignFinal() and
 	 * C_VerifyFinal.
 	 */
-#define PKCS11_CMD_SIGN_FINAL			40
-#define PKCS11_CMD_VERIFY_FINAL			41
+	PKCS11_CMD_SIGN_FINAL = 140,
+	PKCS11_CMD_VERIFY_FINAL = 141,
 
 	/*
 	 * PKCS11_CMD_SIGN_ONESHOT - Update and finalize a signature computation
@@ -529,7 +530,7 @@
 	 *
 	 * This command relates to the PKCS#11 API function C_Sign().
 	 */
-#define PKCS11_CMD_SIGN_ONESHOT			42
+	PKCS11_CMD_SIGN_ONESHOT = 142,
 
 	/*
 	 * PKCS11_CMD_VERIFY_ONESHOT - Update and finalize a signature verification
@@ -541,7 +542,7 @@
 	 *
 	 * This command relates to the PKCS#11 API function C_Verify().
 	 */
-#define PKCS11_CMD_VERIFY_ONESHOT		43
+	PKCS11_CMD_VERIFY_ONESHOT = 143,
 
 	/*
 	 * PKCS11_CMD_DERIVE_KEY - Derive a key from already provisioned parent key
@@ -557,7 +558,7 @@
 	 *
 	 * This command relates to the PKCS#11 API functions C_DeriveKey().
 	 */
-#define PKCS11_CMD_DERIVE_KEY			44
+	PKCS11_CMD_DERIVE_KEY = 144,
 
 	/*
 	 * PKCS11_CMD_GENERATE_KEY_PAIR - Generate an asymmetric key pair
@@ -576,7 +577,8 @@
 	 *
 	 * This command relates to the PKCS#11 API functions C_GenerateKeyPair().
 	 */
-#define PKCS11_CMD_GENERATE_KEY_PAIR		45
+	PKCS11_CMD_GENERATE_KEY_PAIR = 145,
+};
 
 /*
  * Command return codes

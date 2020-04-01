@@ -969,7 +969,7 @@ static void close_ck_session(struct pkcs11_session *session)
 
 	TEE_Free(session);
 
-	IMSG("Close PKCS11 session %"PRIu32, session->handle);
+	DMSG("Close PKCS11 session %"PRIu32, session->handle);
 }
 
 uint32_t entry_ck_close_session(struct pkcs11_client *client,
@@ -1037,7 +1037,7 @@ uint32_t entry_ck_close_all_sessions(struct pkcs11_client *client,
 	if (!token)
 		return PKCS11_CKR_SLOT_ID_INVALID;
 
-	IMSG("Close all sessions for PKCS11 token %"PRIu32, token_id);
+	DMSG("Close all sessions for PKCS11 token %"PRIu32, token_id);
 
 	TAILQ_FOREACH_SAFE(session, &client->session_list, link, next)
 		if (session->token == token)

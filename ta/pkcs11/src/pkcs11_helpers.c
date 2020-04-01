@@ -743,7 +743,7 @@ const char *id2str_proc(uint32_t id)
 	if (str != unknown)
 		return str;
 
-	return id2str_mechanism_type(id);
+	return id2str_mechanism(id);
 }
 
 const char *id2str_proc_flag(uint32_t id)
@@ -783,7 +783,7 @@ const char *id2str_attr_value(uint32_t id, size_t size, void *value)
 		return id2str_key_type(type);
 
 	if (id == PKCS11_CKA_MECHANISM_TYPE)
-		return id2str_mechanism_type(type);
+		return id2str_mechanism(type);
 
 	return str_unknown;
 }

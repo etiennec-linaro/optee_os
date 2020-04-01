@@ -110,7 +110,7 @@ const char *id2str_token_flag(uint32_t id);
 const char *id2str_proc(uint32_t id);
 const char *id2str_function(uint32_t id);
 
-static inline const char *id2str_mechanism_type(enum pkcs11_mechanism_id id)
+static inline const char *id2str_mechanism(enum pkcs11_mechanism_id id)
 {
 	return mechanism_string_id(id);
 }

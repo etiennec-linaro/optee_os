@@ -541,7 +541,7 @@ uint32_t entry_ck_token_info(uint32_t ptypes, TEE_Param *params)
 }
 
 static void dmsg_print_supported_mechanism(unsigned int token_id __maybe_unused,
-					   uint32_t *mecha_array __maybe_unused,
+					   uint32_t *array __maybe_unused,
 					   size_t count __maybe_unused)
 {
 	size_t __maybe_unused n = 0;
@@ -551,7 +551,7 @@ static void dmsg_print_supported_mechanism(unsigned int token_id __maybe_unused,
 
 	for (n = 0; n < count; n++)
 		DMSG("PKCS11 token %"PRIu32": mechanism 0x%04"PRIx32": %s",
-		     token_id, mecha_array[n], id2str_proc(mecha_array[n]));
+		     token_id, array[n], id2str_mechanism(array[n]));
 }
 
 uint32_t entry_ck_token_mecha_ids(uint32_t ptypes, TEE_Param *params)

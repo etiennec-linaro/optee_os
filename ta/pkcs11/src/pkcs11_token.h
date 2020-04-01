@@ -282,22 +282,21 @@ uint32_t entry_ck_token_ro_session(uintptr_t teesess,
 				   uint32_t ptypes, TEE_Param *params);
 uint32_t entry_ck_token_rw_session(uintptr_t teesess,
 				   uint32_t ptypes, TEE_Param *params);
-uint32_t entry_ck_open_session(uintptr_t tee_session,
+uint32_t entry_ck_open_session(struct pkcs11_client *client,
 			       uint32_t ptypes, TEE_Param *params);
-uint32_t entry_ck_close_session(uintptr_t teesess,
+uint32_t entry_ck_close_session(struct pkcs11_client *client,
 				uint32_t ptypes, TEE_Param *params);
-uint32_t entry_ck_close_all_sessions(uintptr_t teesess,
+uint32_t entry_ck_close_all_sessions(struct pkcs11_client *client,
 				     uint32_t ptypes, TEE_Param *params);
-uint32_t entry_ck_session_info(uintptr_t teesess,
+uint32_t entry_ck_session_info(struct pkcs11_client *client,
 			       uint32_t ptypes, TEE_Param *params);
-
-uint32_t entry_init_pin(uintptr_t tee_session,
+uint32_t entry_init_pin(struct pkcs11_client *client,
 			uint32_t ptypes, TEE_Param *params);
-uint32_t entry_set_pin(uintptr_t tee_session,
+uint32_t entry_set_pin(struct pkcs11_client *client,
 		       uint32_t ptypes, TEE_Param *params);
-uint32_t entry_login(uintptr_t tee_session,
+uint32_t entry_login(struct pkcs11_client *client,
 		     uint32_t ptypes, TEE_Param *params);
-uint32_t entry_logout(uintptr_t tee_session,
+uint32_t entry_logout(struct pkcs11_client *client,
 		      uint32_t ptypes, TEE_Param *params);
 
 #endif /*PKCS11_TA_PKCS11_TOKEN_H*/

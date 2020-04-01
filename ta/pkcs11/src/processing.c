@@ -125,10 +125,9 @@ void release_active_processing(struct pkcs11_session *session)
 	session->processing = NULL;
 }
 
-uint32_t entry_import_object(uintptr_t tee_session,
+uint32_t entry_import_object(struct pkcs11_client *client,
 			     uint32_t ptypes, TEE_Param *params)
 {
-	struct pkcs11_client *client = tee_session2client(tee_session);
         const uint32_t exp_pt = TEE_PARAM_TYPES(TEE_PARAM_TYPE_MEMREF_INOUT,
 						TEE_PARAM_TYPE_NONE,
 						TEE_PARAM_TYPE_MEMREF_OUTPUT,
@@ -306,10 +305,9 @@ static uint32_t generate_random_key_value(struct pkcs11_attrs_head **head)
 	return rv;
 }
 
-uint32_t entry_generate_secret(uintptr_t tee_session,
+uint32_t entry_generate_secret(struct pkcs11_client *client,
 			       uint32_t ptypes, TEE_Param *params)
 {
-	struct pkcs11_client *client = tee_session2client(tee_session);
         const uint32_t exp_pt = TEE_PARAM_TYPES(TEE_PARAM_TYPE_MEMREF_INOUT,
 						TEE_PARAM_TYPE_NONE,
 						TEE_PARAM_TYPE_MEMREF_OUTPUT,
@@ -486,10 +484,9 @@ bail:
 	return rv;
 }
 
-uint32_t entry_generate_key_pair(uintptr_t tee_session,
+uint32_t entry_generate_key_pair(struct pkcs11_client *client,
 				 uint32_t ptypes, TEE_Param *params)
 {
-	struct pkcs11_client *client = tee_session2client(tee_session);
         const uint32_t exp_pt = TEE_PARAM_TYPES(TEE_PARAM_TYPE_MEMREF_INOUT,
 						TEE_PARAM_TYPE_NONE,
 						TEE_PARAM_TYPE_MEMREF_OUTPUT,
@@ -662,11 +659,10 @@ bail:
  * The generic part come that all the commands uses the same
  * input/output invocation parameters format (ctrl/in/out).
  */
-uint32_t entry_processing_init(uintptr_t tee_session,
+uint32_t entry_processing_init(struct pkcs11_client *client,
 			       uint32_t ptypes, TEE_Param *params,
 			       enum processing_func function)
 {
-	struct pkcs11_client *client = tee_session2client(tee_session);
         const uint32_t exp_pt = TEE_PARAM_TYPES(TEE_PARAM_TYPE_MEMREF_INOUT,
 						TEE_PARAM_TYPE_NONE,
 						TEE_PARAM_TYPE_NONE,
@@ -766,12 +762,11 @@ bail:
  * The generic part come that all the commands uses the same
  * input/output invocation parameters format (ctrl/in/out).
  */
-uint32_t entry_processing_step(uintptr_t tee_session,
+uint32_t entry_processing_step(struct pkcs11_client *client,
 			       uint32_t ptypes, TEE_Param *params,
 			       enum processing_func function,
 			       enum processing_step step)
 {
-	struct pkcs11_client *client = tee_session2client(tee_session);
 	TEE_Param *ctrl = &params[0];
 	uint32_t rv = 0;
 	struct serialargs ctrlargs = { };
@@ -847,13 +842,12 @@ bail:
  * The generic part come that all the commands uses the same
  * input/output invocation parameters format (ctrl/in/out).
  */
-uint32_t entry_verify_oneshot(uintptr_t tee_session,
+uint32_t entry_verify_oneshot(struct pkcs11_client *client,
 			      uint32_t ptypes, TEE_Param *params,
 			      enum processing_func function,
 			      enum processing_step step)
 
 {
-	struct pkcs11_client *client = tee_session2client(tee_session);
 	TEE_Param *ctrl = &params[0];
 	uint32_t rv = 0;
 	struct serialargs ctrlargs = { };
@@ -906,10 +900,9 @@ bail:
 	return rv;
 }
 
-uint32_t entry_derive_key(uintptr_t tee_session,
+uint32_t entry_derive_key(struct pkcs11_client *client,
 			  uint32_t ptypes, TEE_Param *params)
 {
-	struct pkcs11_client *client = tee_session2client(tee_session);
         const uint32_t exp_pt = TEE_PARAM_TYPES(TEE_PARAM_TYPE_MEMREF_INOUT,
 						TEE_PARAM_TYPE_NONE,
 						TEE_PARAM_TYPE_MEMREF_OUTPUT,

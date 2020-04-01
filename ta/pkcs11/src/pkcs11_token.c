@@ -860,10 +860,9 @@ static void session_logout(struct pkcs11_session *session)
 	}
 }
 
-uint32_t entry_ck_open_session(uintptr_t tee_session,
+uint32_t entry_ck_open_session(struct pkcs11_client *client,
 			       uint32_t ptypes, TEE_Param *params)
 {
-	struct pkcs11_client *client = tee_session2client(tee_session);
 	const uint32_t exp_pt = TEE_PARAM_TYPES(TEE_PARAM_TYPE_MEMREF_INOUT,
 						TEE_PARAM_TYPE_NONE,
 						TEE_PARAM_TYPE_MEMREF_OUTPUT,
@@ -975,10 +974,9 @@ static void close_ck_session(struct pkcs11_session *session)
 	IMSG("Close PKCS11 session %"PRIu32, session->handle);
 }
 
-uint32_t entry_ck_close_session(uintptr_t tee_session,
+uint32_t entry_ck_close_session(struct pkcs11_client *client,
 				uint32_t ptypes, TEE_Param *params)
 {
-	struct pkcs11_client *client = tee_session2client(tee_session);
 	const uint32_t exp_pt = TEE_PARAM_TYPES(TEE_PARAM_TYPE_MEMREF_INOUT,
 						TEE_PARAM_TYPE_NONE,
 						TEE_PARAM_TYPE_NONE,
@@ -1010,10 +1008,9 @@ uint32_t entry_ck_close_session(uintptr_t tee_session,
 	return PKCS11_CKR_OK;
 }
 
-uint32_t entry_ck_close_all_sessions(uintptr_t tee_session,
+uint32_t entry_ck_close_all_sessions(struct pkcs11_client *client,
 				     uint32_t ptypes, TEE_Param *params)
 {
-	struct pkcs11_client *client = tee_session2client(tee_session);
 	const uint32_t exp_pt = TEE_PARAM_TYPES(TEE_PARAM_TYPE_MEMREF_INOUT,
 						TEE_PARAM_TYPE_NONE,
 						TEE_PARAM_TYPE_NONE,
@@ -1051,10 +1048,9 @@ uint32_t entry_ck_close_all_sessions(uintptr_t tee_session,
 	return PKCS11_CKR_OK;
 }
 
-uint32_t entry_ck_session_info(uintptr_t tee_session,
+uint32_t entry_ck_session_info(struct pkcs11_client *client,
 			       uint32_t ptypes, TEE_Param *params)
 {
-	struct pkcs11_client *client = tee_session2client(tee_session);
 	const uint32_t exp_pt = TEE_PARAM_TYPES(TEE_PARAM_TYPE_MEMREF_INOUT,
 						TEE_PARAM_TYPE_NONE,
 						TEE_PARAM_TYPE_MEMREF_OUTPUT,
@@ -1182,10 +1178,9 @@ out:
 }
 
 /* ctrl=[session-handle][pin-size]{pin-arrays], in=unused, out=unused */
-uint32_t entry_init_pin(uintptr_t tee_session,
+uint32_t entry_init_pin(struct pkcs11_client *client,
 			uint32_t ptypes, TEE_Param *params)
 {
-	struct pkcs11_client *client = tee_session2client(tee_session);
 	const uint32_t exp_pt = TEE_PARAM_TYPES(TEE_PARAM_TYPE_MEMREF_INOUT,
 						TEE_PARAM_TYPE_NONE,
 						TEE_PARAM_TYPE_NONE,
@@ -1404,10 +1399,9 @@ static uint32_t check_user_pin(struct pkcs11_session *session,
 }
 
 /* ctrl=[session][old-size]{old-pin][pin-size]{pin], in=unused, out=unused */
-uint32_t entry_set_pin(uintptr_t tee_session,
+uint32_t entry_set_pin(struct pkcs11_client *client,
 		       uint32_t ptypes, TEE_Param *params)
 {
-	struct pkcs11_client *client = tee_session2client(tee_session);
 	const uint32_t exp_pt = TEE_PARAM_TYPES(TEE_PARAM_TYPE_MEMREF_INOUT,
 						TEE_PARAM_TYPE_NONE,
 						TEE_PARAM_TYPE_NONE,
@@ -1483,9 +1477,9 @@ uint32_t entry_set_pin(uintptr_t tee_session,
 }
 
 /* ctrl=[session][user_type][pin-size]{pin], in=unused, out=unused */
-uint32_t entry_login(uintptr_t tee_session, uint32_t ptypes, TEE_Param *params)
+uint32_t entry_login(struct pkcs11_client *client,
+		     uint32_t ptypes, TEE_Param *params)
 {
-	struct pkcs11_client *client = tee_session2client(tee_session);
 	const uint32_t exp_pt = TEE_PARAM_TYPES(TEE_PARAM_TYPE_MEMREF_INOUT,
 						TEE_PARAM_TYPE_NONE,
 						TEE_PARAM_TYPE_NONE,
@@ -1605,9 +1599,9 @@ uint32_t entry_login(uintptr_t tee_session, uint32_t ptypes, TEE_Param *params)
 }
 
 /* ctrl=[session], in=unused, out=unused */
-uint32_t entry_logout(uintptr_t tee_session, uint32_t ptypes, TEE_Param *params)
+uint32_t entry_logout(struct pkcs11_client *client,
+		      uint32_t ptypes, TEE_Param *params)
 {
-	struct pkcs11_client *client = tee_session2client(tee_session);
 	const uint32_t exp_pt = TEE_PARAM_TYPES(TEE_PARAM_TYPE_MEMREF_INOUT,
 						TEE_PARAM_TYPE_NONE,
 						TEE_PARAM_TYPE_NONE,

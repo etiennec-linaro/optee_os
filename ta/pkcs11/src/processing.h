@@ -9,6 +9,7 @@
 #include <tee_internal_api.h>
 #include <pkcs11_attributes.h>
 
+struct pkcs11_client;
 struct pkcs11_session;
 struct pkcs11_object;
 struct active_processing;
@@ -17,31 +18,31 @@ struct active_processing;
  * Entry points from PKCS11 TA invocation commands
  */
 
-uint32_t entry_import_object(uintptr_t teesess,
+uint32_t entry_import_object(struct pkcs11_client *client,
 			     uint32_t ptypes, TEE_Param *params);
 
-uint32_t entry_generate_secret(uintptr_t teesess,
+uint32_t entry_generate_secret(struct pkcs11_client *client,
 			       uint32_t ptypes, TEE_Param *params);
 
-uint32_t entry_generate_key_pair(uintptr_t teesess,
+uint32_t entry_generate_key_pair(struct pkcs11_client *client,
 				 uint32_t ptypes, TEE_Param *params);
 
-uint32_t entry_processing_init(uintptr_t tee_session,
+uint32_t entry_processing_init(struct pkcs11_client *client,
 			       uint32_t ptypes, TEE_Param *params,
 			       enum processing_func function);
 
-uint32_t entry_processing_step(uintptr_t tee_session,
+uint32_t entry_processing_step(struct pkcs11_client *client,
 			       uint32_t ptypes, TEE_Param *params,
 			       enum processing_func function,
 			       enum processing_step step);
 
 /* verify_oneshot is specific since it get 2 input data buffers */
-uint32_t entry_verify_oneshot(uintptr_t tee_session,
+uint32_t entry_verify_oneshot(struct pkcs11_client *client,
 			      uint32_t ptypes, TEE_Param *params,
 			      enum processing_func function,
 			      enum processing_step step);
 
-uint32_t entry_derive_key(uintptr_t teesess,
+uint32_t entry_derive_key(struct pkcs11_client *client,
 			  uint32_t ptypes, TEE_Param *params);
 
 /*

@@ -179,7 +179,7 @@ TEE_Result TA_InvokeCommandEntryPoint(void *tee_session, uint32_t cmd,
 		break;
 
 	case PKCS11_CMD_OPEN_SESSION:
-		rc = entry_ck_open_session(teesess, ptypes, params);
+		rc = entry_ck_open_session(client, ptypes, params);
 		break;
 	case PKCS11_CMD_OPEN_RO_SESSION:
 		TEE_Panic(PKCS11_CMD_OPEN_RO_SESSION);
@@ -188,139 +188,139 @@ TEE_Result TA_InvokeCommandEntryPoint(void *tee_session, uint32_t cmd,
 		TEE_Panic(PKCS11_CMD_OPEN_RW_SESSION);
 		break;
 	case PKCS11_CMD_CLOSE_SESSION:
-		rc = entry_ck_close_session(teesess, ptypes, params);
+		rc = entry_ck_close_session(client, ptypes, params);
 		break;
 	case PKCS11_CMD_CLOSE_ALL_SESSIONS:
-		rc = entry_ck_close_all_sessions(teesess, ptypes, params);
+		rc = entry_ck_close_all_sessions(client, ptypes, params);
 		break;
 	case PKCS11_CMD_SESSION_INFO:
-		rc = entry_ck_session_info(teesess, ptypes, params);
+		rc = entry_ck_session_info(client, ptypes, params);
 		break;
 
 	case PKCS11_CMD_IMPORT_OBJECT:
-		rc = entry_import_object(teesess, ptypes, params);
+		rc = entry_import_object(client, ptypes, params);
 		break;
 	case PKCS11_CMD_DESTROY_OBJECT:
-		rc = entry_destroy_object(teesess, ptypes, params);
+		rc = entry_destroy_object(client, ptypes, params);
 		break;
 
 	case PKCS11_CMD_ENCRYPT_INIT:
-		rc = entry_processing_init(teesess, ptypes, params,
+		rc = entry_processing_init(client, ptypes, params,
 					   PKCS11_FUNCTION_ENCRYPT);
 		break;
 	case PKCS11_CMD_DECRYPT_INIT:
-		rc = entry_processing_init(teesess, ptypes, params,
+		rc = entry_processing_init(client, ptypes, params,
 					   PKCS11_FUNCTION_DECRYPT);
 		break;
 	case PKCS11_CMD_ENCRYPT_UPDATE:
-		rc = entry_processing_step(teesess, ptypes, params,
+		rc = entry_processing_step(client, ptypes, params,
 					   PKCS11_FUNCTION_ENCRYPT,
 					   PKCS11_FUNC_STEP_UPDATE);
 		break;
 	case PKCS11_CMD_DECRYPT_UPDATE:
-		rc = entry_processing_step(teesess, ptypes, params,
+		rc = entry_processing_step(client, ptypes, params,
 					   PKCS11_FUNCTION_DECRYPT,
 					   PKCS11_FUNC_STEP_UPDATE);
 		break;
 	case PKCS11_CMD_ENCRYPT_ONESHOT:
-		rc = entry_processing_step(teesess, ptypes, params,
+		rc = entry_processing_step(client, ptypes, params,
 					   PKCS11_FUNCTION_ENCRYPT,
 					   PKCS11_FUNC_STEP_ONESHOT);
 		break;
 	case PKCS11_CMD_DECRYPT_ONESHOT:
-		rc = entry_processing_step(teesess, ptypes, params,
+		rc = entry_processing_step(client, ptypes, params,
 					   PKCS11_FUNCTION_DECRYPT,
 					   PKCS11_FUNC_STEP_ONESHOT);
 		break;
 	case PKCS11_CMD_ENCRYPT_FINAL:
-		rc = entry_processing_step(teesess, ptypes, params,
+		rc = entry_processing_step(client, ptypes, params,
 					   PKCS11_FUNCTION_ENCRYPT,
 					   PKCS11_FUNC_STEP_FINAL);
 		break;
 	case PKCS11_CMD_DECRYPT_FINAL:
-		rc = entry_processing_step(teesess, ptypes, params,
+		rc = entry_processing_step(client, ptypes, params,
 					   PKCS11_FUNCTION_DECRYPT,
 					   PKCS11_FUNC_STEP_FINAL);
 		break;
 
 	case PKCS11_CMD_GENERATE_KEY:
-		rc = entry_generate_secret(teesess, ptypes, params);
+		rc = entry_generate_secret(client, ptypes, params);
 		break;
 
 	case PKCS11_CMD_SIGN_INIT:
-		rc = entry_processing_init(teesess, ptypes, params,
+		rc = entry_processing_init(client, ptypes, params,
 					   PKCS11_FUNCTION_SIGN);
 		break;
 	case PKCS11_CMD_VERIFY_INIT:
-		rc = entry_processing_init(teesess, ptypes, params,
+		rc = entry_processing_init(client, ptypes, params,
 					   PKCS11_FUNCTION_VERIFY);
 		break;
 	case PKCS11_CMD_SIGN_ONESHOT:
-		rc = entry_processing_step(teesess, ptypes, params,
+		rc = entry_processing_step(client, ptypes, params,
 					   PKCS11_FUNCTION_SIGN,
 					   PKCS11_FUNC_STEP_ONESHOT);
 		break;
 	case PKCS11_CMD_VERIFY_ONESHOT:
-		rc = entry_verify_oneshot(teesess, ptypes, params, // IN+IN
+		rc = entry_verify_oneshot(client, ptypes, params, // IN+IN
 					   PKCS11_FUNCTION_VERIFY,
 					   PKCS11_FUNC_STEP_ONESHOT);
 		break;
 	case PKCS11_CMD_SIGN_UPDATE:
-		rc = entry_processing_step(teesess, ptypes, params,
+		rc = entry_processing_step(client, ptypes, params,
 					   PKCS11_FUNCTION_SIGN,
 					   PKCS11_FUNC_STEP_UPDATE);
 		break;
 	case PKCS11_CMD_VERIFY_UPDATE:
-		rc = entry_processing_step(teesess, ptypes, params,
+		rc = entry_processing_step(client, ptypes, params,
 					   PKCS11_FUNCTION_VERIFY,
 					   PKCS11_FUNC_STEP_UPDATE);
 		break;
 	case PKCS11_CMD_SIGN_FINAL:
-		rc = entry_processing_step(teesess, ptypes, params,
+		rc = entry_processing_step(client, ptypes, params,
 					   PKCS11_FUNCTION_SIGN,
 					   PKCS11_FUNC_STEP_FINAL);
 		break;
 	case PKCS11_CMD_VERIFY_FINAL:
-		rc = entry_processing_step(teesess, ptypes, params,
+		rc = entry_processing_step(client, ptypes, params,
 					   PKCS11_FUNCTION_VERIFY,
 					   PKCS11_FUNC_STEP_FINAL);
 		break;
 
 	case PKCS11_CMD_FIND_OBJECTS_INIT:
-		rc = entry_find_objects_init(teesess, ptypes, params);
+		rc = entry_find_objects_init(client, ptypes, params);
 		break;
 
 	case PKCS11_CMD_FIND_OBJECTS:
-		rc = entry_find_objects(teesess, ptypes, params);
+		rc = entry_find_objects(client, ptypes, params);
 		break;
 
 	case PKCS11_CMD_FIND_OBJECTS_FINAL:
-		rc = entry_find_objects_final(teesess, ptypes, params);
+		rc = entry_find_objects_final(client, ptypes, params);
 		break;
 
 	case PKCS11_CMD_GET_ATTRIBUTE_VALUE:
-		rc = entry_get_attribute_value(teesess, ptypes, params);
+		rc = entry_get_attribute_value(client, ptypes, params);
 		break;
 
 	case PKCS11_CMD_INIT_PIN:
-		rc = entry_init_pin(teesess, ptypes, params);
+		rc = entry_init_pin(client, ptypes, params);
 		break;
 	case PKCS11_CMD_SET_PIN:
-		rc = entry_set_pin(teesess, ptypes, params);
+		rc = entry_set_pin(client, ptypes, params);
 		break;
 	case PKCS11_CMD_LOGIN:
-		rc = entry_login(teesess, ptypes, params);
+		rc = entry_login(client, ptypes, params);
 		break;
 	case PKCS11_CMD_LOGOUT:
-		rc = entry_logout(teesess, ptypes, params);
+		rc = entry_logout(client, ptypes, params);
 		break;
 
 	case PKCS11_CMD_GENERATE_KEY_PAIR:
-		rc = entry_generate_key_pair(teesess, ptypes, params);
+		rc = entry_generate_key_pair(client, ptypes, params);
 		break;
 
 	case PKCS11_CMD_DERIVE_KEY:
-		rc = entry_derive_key(teesess, ptypes, params);
+		rc = entry_derive_key(client, ptypes, params);
 		break;
 
 	default:

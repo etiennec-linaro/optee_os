@@ -13,8 +13,6 @@ struct handle_db {
 	uint32_t max_ptrs;
 };
 
-#define HANDLE_DB_INITIALIZER { NULL, 0 }
-
 /*
  * Initialize the handle database
  */
@@ -28,11 +26,8 @@ void handle_db_init(struct handle_db *db);
 void handle_db_destroy(struct handle_db *db);
 
 /*
- * Allocate a new handle and assigns the supplied pointer to it,
- * ptr must not be NULL.
- * The function returns
- * >= 0 on success and
- * -1 on failure
+ * Allocate a new handle ID and assigns the supplied pointer to it,
+ * The function returns > 0 on success and 0 on failure.
  */
 uint32_t handle_get(struct handle_db *db, void *ptr);
 

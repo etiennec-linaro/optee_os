@@ -3,8 +3,8 @@
  * Copyright (c) 2018-2020, Linaro Limited
  */
 
-#ifndef PKCS11_TA_PKCS11_HELPERS_H
-#define PKCS11_TA_PKCS11_HELPERS_H
+#ifndef PKCS11_HELPERS_H
+#define PKCS11_HELPERS_H
 
 #include <pkcs11_ta.h>
 #include <stdint.h>
@@ -85,7 +85,8 @@ TEE_Result pkcs2tee_noerr(uint32_t rv);
 TEE_Result pkcs2tee_error(uint32_t rv);
 uint32_t tee2pkcs_error(TEE_Result res);
 
-/* Id-to-string conversions when CFG_TEE_TA_LOG_LEVEL > 0 */
+#if CFG_TEE_TA_LOG_LEVEL > 0
+/* Id-to-string conversions only for trace support */
 const char *id2str_attr_value(uint32_t id, size_t size, void *value);
 const char *id2str_attr(uint32_t id);
 const char *id2str_class(uint32_t id);
@@ -106,4 +107,5 @@ static inline const char *id2str_mechanism(enum pkcs11_mechanism_id id)
 {
 	return mechanism_string_id(id);
 }
-#endif /*PKCS11_TA_PKCS11_HELPERS_H*/
+#endif /* CFG_TEE_TA_LOG_LEVEL > 0 */
+#endif /*PKCS11_HELPERS_H*/

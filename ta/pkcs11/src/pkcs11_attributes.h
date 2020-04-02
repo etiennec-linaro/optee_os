@@ -10,6 +10,8 @@
 
 #include "serializer.h"
 
+struct pkcs11_object;
+
 /*
  * PKCS#11 directives on object attributes.
  * Those with a '*' are optional, other must be defined, either by caller

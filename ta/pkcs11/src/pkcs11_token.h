@@ -6,6 +6,7 @@
 #define PKCS11_TA_PKCS11_TOKEN_H
 
 #include <sys/queue.h>
+#include <tee_api_types.h>
 #include <tee_internal_api.h>
 
 #include "handle.h"
@@ -264,17 +265,12 @@ struct ck_token *pkcs11_session2token(struct pkcs11_session *session)
 	return session->token;
 }
 
-/*
- * Entry point for the TA commands
- */
+/* Entry point for the TA commands */
 uint32_t entry_ck_slot_list(uint32_t ptypes, TEE_Param *params);
 uint32_t entry_ck_slot_info(uint32_t ptypes, TEE_Param *params);
 uint32_t entry_ck_token_info(uint32_t ptypes, TEE_Param *params);
-
 uint32_t entry_ck_token_initialize(uint32_t ptypes, TEE_Param *params);
-
 uint32_t entry_ck_token_mecha_ids(uint32_t ptypes, TEE_Param *params);
-
 uint32_t entry_ck_token_mecha_info(uint32_t ptypes, TEE_Param *params);
 uint32_t entry_ck_open_session(struct pkcs11_client *client,
 			       uint32_t ptypes, TEE_Param *params);

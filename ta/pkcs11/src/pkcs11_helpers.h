@@ -107,6 +107,8 @@ const char *id2str_rc(uint32_t id);
 const char *id2str_proc_flag(uint32_t id);
 const char *id2str_slot_flag(uint32_t id);
 const char *id2str_token_flag(uint32_t id);
+const char *id2str_session_flag(uint32_t id);
+const char *id2str_session_state(uint32_t id);
 const char *id2str_proc(uint32_t id);
 const char *id2str_function(uint32_t id);
 

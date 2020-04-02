@@ -296,6 +296,19 @@ static const struct any_id __maybe_unused string_token_flags[] = {
 	PKCS11_ID(PKCS11_CKFT_ERROR_STATE),
 };
 
+static const struct any_id __maybe_unused string_session_flags[] = {
+	PKCS11_ID(PKCS11_CKFSS_RW_SESSION),
+	PKCS11_ID(PKCS11_CKFSS_SERIAL_SESSION),
+};
+
+static const struct any_id __maybe_unused string_session_state[] = {
+	PKCS11_ID(PKCS11_CKS_RO_PUBLIC_SESSION),
+	PKCS11_ID(PKCS11_CKS_RO_USER_FUNCTIONS),
+	PKCS11_ID(PKCS11_CKS_RW_PUBLIC_SESSION),
+	PKCS11_ID(PKCS11_CKS_RW_USER_FUNCTIONS),
+	PKCS11_ID(PKCS11_CKS_RW_SO_FUNCTIONS),
+};
+
 static const struct any_id __maybe_unused string_rc[] = {
 	PKCS11_ID(PKCS11_CKR_OK),
 	PKCS11_ID(PKCS11_CKR_GENERAL_ERROR),
@@ -766,6 +779,16 @@ const char *id2str_slot_flag(uint32_t id)
 const char *id2str_token_flag(uint32_t id)
 {
 	return ID2STR(id, string_token_flags, "PKCS11_CKFT_");
+}
+
+const char *id2str_session_flag(uint32_t id)
+{
+	return ID2STR(id, string_session_flags, "PKCS11_CKFSS_");
+}
+
+const char *id2str_session_state(uint32_t id)
+{
+	return ID2STR(id, string_session_state, "PKCS11_CKS_");
 }
 
 const char *id2str_attr_value(uint32_t id, size_t size, void *value)

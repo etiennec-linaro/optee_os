@@ -7,8 +7,8 @@
 #include <pkcs11_internal_abi.h>
 #include <pkcs11_ta.h>
 #include <string.h>
-#include <util.h>
 #include <tee_internal_api.h>
+#include <util.h>
 
 #include "attributes.h"
 #include "object.h"
@@ -181,13 +181,48 @@ struct any_id {
 #endif
 };
 
+/*
+ * Macro PKCS11_ID() can be used to define cells in ID list arrays
+ * or ID/string conversion arrays.
+ */
 #if CFG_TEE_TA_LOG_LEVEL > 0
 #define PKCS11_ID(_id)		{ .id = (uint32_t)(_id), .string = #_id }
 #else
 #define PKCS11_ID(_id)		{ .id = (uint32_t)(_id) }
 #endif
 
-static const struct any_id __maybe_unused string_cmd[] = {
+#define ID2STR(id, table, prefix)	\
+	id2str(id, table, ARRAY_SIZE(table), prefix)
+
+#if CFG_TEE_TA_LOG_LEVEL > 0
+/* Convert a PKCS11 TA ID into its label string */
+static const char *id2str(uint32_t id, const struct any_id *table,
+			  size_t count, const char *prefix)
+{
+	size_t n = 0;
+	const char *str = NULL;
+
+	for (n = 0; n < count; n++) {
+		if (id != table[n].id)
+			continue;
+
+		str = table[n].string;
+
+		/* Skip prefix provided matches found */
+		if (prefix && !TEE_MemCompare(str, prefix, strlen(prefix)))
+			str += strlen(prefix);
+
+		return str;
+	}
+
+	return unknown;
+}
+#endif /* CFG_TEE_TA_LOG_LEVEL > 0 */
+
+/*
+ * TA command IDs: used only as ID/string conversion for debug trace support
+ */
+static const struct any_id __maybe_unused string_ta_cmd[] = {
 	PKCS11_ID(PKCS11_CMD_PING),
 	PKCS11_ID(PKCS11_CMD_SLOT_LIST),
 	PKCS11_ID(PKCS11_CMD_SLOT_INFO),
@@ -232,6 +267,33 @@ static const struct any_id __maybe_unused string_cmd[] = {
 	PKCS11_ID(PKCS11_CMD_VERIFY_ONESHOT),
 	PKCS11_ID(PKCS11_CMD_DERIVE_KEY),
 	PKCS11_ID(PKCS11_CMD_GENERATE_KEY_PAIR),
+};
+
+static const struct any_id __maybe_unused string_slot_flags[] = {
+	PKCS11_ID(PKCS11_CKFS_TOKEN_PRESENT),
+	PKCS11_ID(PKCS11_CKFS_REMOVABLE_DEVICE),
+	PKCS11_ID(PKCS11_CKFS_HW_SLOT),
+};
+
+static const struct any_id __maybe_unused string_token_flags[] = {
+	PKCS11_ID(PKCS11_CKFT_RNG),
+	PKCS11_ID(PKCS11_CKFT_WRITE_PROTECTED),
+	PKCS11_ID(PKCS11_CKFT_LOGIN_REQUIRED),
+	PKCS11_ID(PKCS11_CKFT_USER_PIN_INITIALIZED),
+	PKCS11_ID(PKCS11_CKFT_RESTORE_KEY_NOT_NEEDED),
+	PKCS11_ID(PKCS11_CKFT_CLOCK_ON_TOKEN),
+	PKCS11_ID(PKCS11_CKFT_PROTECTED_AUTHENTICATION_PATH),
+	PKCS11_ID(PKCS11_CKFT_DUAL_CRYPTO_OPERATIONS),
+	PKCS11_ID(PKCS11_CKFT_TOKEN_INITIALIZED),
+	PKCS11_ID(PKCS11_CKFT_USER_PIN_COUNT_LOW),
+	PKCS11_ID(PKCS11_CKFT_USER_PIN_FINAL_TRY),
+	PKCS11_ID(PKCS11_CKFT_USER_PIN_LOCKED),
+	PKCS11_ID(PKCS11_CKFT_USER_PIN_TO_BE_CHANGED),
+	PKCS11_ID(PKCS11_CKFT_SO_PIN_COUNT_LOW),
+	PKCS11_ID(PKCS11_CKFT_SO_PIN_FINAL_TRY),
+	PKCS11_ID(PKCS11_CKFT_SO_PIN_LOCKED),
+	PKCS11_ID(PKCS11_CKFT_SO_PIN_TO_BE_CHANGED),
+	PKCS11_ID(PKCS11_CKFT_ERROR_STATE),
 };
 
 static const struct any_id __maybe_unused string_rc[] = {
@@ -280,33 +342,6 @@ static const struct any_id __maybe_unused string_rc[] = {
 	PKCS11_ID(PKCS11_CKR_SESSION_READ_ONLY_EXISTS),
 	PKCS11_ID(PKCS11_RV_NOT_FOUND),
 	PKCS11_ID(PKCS11_RV_NOT_IMPLEMENTED),
-};
-
-static const struct any_id __maybe_unused string_slot_flags[] = {
-	PKCS11_ID(PKCS11_CKFS_TOKEN_PRESENT),
-	PKCS11_ID(PKCS11_CKFS_REMOVABLE_DEVICE),
-	PKCS11_ID(PKCS11_CKFS_HW_SLOT),
-};
-
-static const struct any_id __maybe_unused string_token_flags[] = {
-	PKCS11_ID(PKCS11_CKFT_RNG),
-	PKCS11_ID(PKCS11_CKFT_WRITE_PROTECTED),
-	PKCS11_ID(PKCS11_CKFT_LOGIN_REQUIRED),
-	PKCS11_ID(PKCS11_CKFT_USER_PIN_INITIALIZED),
-	PKCS11_ID(PKCS11_CKFT_RESTORE_KEY_NOT_NEEDED),
-	PKCS11_ID(PKCS11_CKFT_CLOCK_ON_TOKEN),
-	PKCS11_ID(PKCS11_CKFT_PROTECTED_AUTHENTICATION_PATH),
-	PKCS11_ID(PKCS11_CKFT_DUAL_CRYPTO_OPERATIONS),
-	PKCS11_ID(PKCS11_CKFT_TOKEN_INITIALIZED),
-	PKCS11_ID(PKCS11_CKFT_USER_PIN_COUNT_LOW),
-	PKCS11_ID(PKCS11_CKFT_USER_PIN_FINAL_TRY),
-	PKCS11_ID(PKCS11_CKFT_USER_PIN_LOCKED),
-	PKCS11_ID(PKCS11_CKFT_USER_PIN_TO_BE_CHANGED),
-	PKCS11_ID(PKCS11_CKFT_SO_PIN_COUNT_LOW),
-	PKCS11_ID(PKCS11_CKFT_SO_PIN_FINAL_TRY),
-	PKCS11_ID(PKCS11_CKFT_SO_PIN_LOCKED),
-	PKCS11_ID(PKCS11_CKFT_SO_PIN_TO_BE_CHANGED),
-	PKCS11_ID(PKCS11_CKFT_ERROR_STATE),
 };
 
 static const struct any_id __maybe_unused string_class[] = {
@@ -649,9 +684,21 @@ void pkcs2tee_mode(uint32_t *tee_id, uint32_t function)
 }
 
 #if CFG_TEE_TA_LOG_LEVEL > 0
-/*
- * Convert a PKCS11 TA ID into its label string
- */
+const char *id2str_rc(uint32_t id)
+{
+	return ID2STR(id, string_rc, "PKCS11_CKR_");
+}
+
+const char *id2str_ta_cmd(uint32_t id)
+{
+	return ID2STR(id, string_ta_cmd, NULL);
+}
+
+const char *id2str_class(uint32_t id)
+{
+	return ID2STR(id, string_class, "PKCS11_CKO_");
+}
+
 const char *id2str_attr(uint32_t id)
 {
 	size_t n = 0;
@@ -665,46 +712,6 @@ const char *id2str_attr(uint32_t id)
 	}
 
 	return unknown;
-}
-
-static const char *id2str(uint32_t id, const struct any_id *table,
-			  size_t count, const char *prefix)
-{
-	size_t n = 0;
-	const char *str = NULL;
-
-	for (n = 0; n < count; n++) {
-		if (id != table[n].id)
-			continue;
-
-		str = table[n].string;
-
-		/* Skip prefix provided matches found */
-		if (prefix && !TEE_MemCompare(str, prefix, strlen(prefix)))
-			str += strlen(prefix);
-
-		return str;
-	}
-
-	return unknown;
-}
-
-#define ID2STR(id, table, prefix)	\
-	id2str(id, table, ARRAY_SIZE(table), prefix)
-
-const char *id2str_rc(uint32_t id)
-{
-	return ID2STR(id, string_rc, "PKCS11_CKR_");
-}
-
-const char *id2str_ta_cmd(uint32_t id)
-{
-	return ID2STR(id, string_cmd, NULL);
-}
-
-const char *id2str_class(uint32_t id)
-{
-	return ID2STR(id, string_class, "PKCS11_CKO_");
 }
 
 const char *id2str_type(uint32_t id, uint32_t class)

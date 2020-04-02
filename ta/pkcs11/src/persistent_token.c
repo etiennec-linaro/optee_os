@@ -63,8 +63,9 @@ static TEE_Result get_pin_file_name(struct ck_token *token,
 		return TEE_SUCCESS;
 }
 
-TEE_Result open_pin_file(struct ck_token *token, enum pkcs11_user_type user,
-			 TEE_ObjectHandle *out_hdl)
+static TEE_Result open_pin_file(struct ck_token *token,
+				enum pkcs11_user_type user,
+				TEE_ObjectHandle *out_hdl)
 {
 	char file[PERSISTENT_OBJECT_ID_LEN] = { };
 	TEE_Result res = TEE_ERROR_GENERIC;
@@ -77,6 +78,44 @@ TEE_Result open_pin_file(struct ck_token *token, enum pkcs11_user_type user,
 					0, out_hdl);
 }
 
+TEE_Result cipher_pin(struct ck_token *token, enum pkcs11_user_type user,
+		      uint8_t *buf)
+{
+	TEE_Result res = TEE_ERROR_GENERIC;
+	TEE_ObjectHandle key_handle = TEE_HANDLE_NULL;
+	TEE_OperationHandle tee_op_handle = TEE_HANDLE_NULL;
+	uint32_t size = PKCS11_TOKEN_PIN_SIZE_MAX;
+	uint8_t iv[16] = { 0 };
+
+	res = open_pin_file(token, user, &key_handle);
+	if (res)
+		return res;
+
+	res = TEE_AllocateOperation(&tee_op_handle, TEE_ALG_AES_CBC_NOPAD,
+				    TEE_MODE_ENCRYPT, 128);
+	if (res)
+		goto out;
+
+	res = TEE_SetOperationKey(tee_op_handle, key_handle);
+	if (res)
+		goto out;
+
+	TEE_CipherInit(tee_op_handle, iv, sizeof(iv));
+
+	res = TEE_CipherDoFinal(tee_op_handle, buf, size, buf, &size);
+	if (res)
+		goto out;
+	if (size != PKCS11_TOKEN_PIN_SIZE_MAX)
+		TEE_Panic(0);
+
+out:
+	if (tee_op_handle != TEE_HANDLE_NULL)
+		TEE_FreeOperation(tee_op_handle);
+
+	TEE_CloseObject(key_handle);
+
+	return res;
+}
 
 uint32_t update_persistent_db(struct ck_token *token, size_t offset,
 			      size_t size)

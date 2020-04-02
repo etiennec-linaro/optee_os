@@ -197,8 +197,8 @@ struct ck_token *init_persistent_db(unsigned int token_id);
 uint32_t update_persistent_db(struct ck_token *token, size_t offset, size_t size);
 void close_persistent_db(struct ck_token *token);
 
-TEE_Result open_pin_file(struct ck_token *token, enum pkcs11_user_type user,
-			 TEE_ObjectHandle *out_hdl);
+TEE_Result cipher_pin(struct ck_token *token, enum pkcs11_user_type user,
+		      uint8_t *buf);
 
 /* Token persistent objects */
 uint32_t create_object_uuid(struct ck_token *token, struct pkcs11_object *obj);

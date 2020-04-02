@@ -213,36 +213,6 @@ int set_processing_state(struct pkcs11_session *session,
 	return PKCS11_OK;
 }
 
-/*
- * TODO: move to presistent token: 1 cipher_login_pin(token, uid, buf, size)
- * for the open/cipher/close atomic operation to not let PIN handle open.
- */
-static void cipher_pin(TEE_ObjectHandle key_handle, uint8_t *buf, size_t len)
-{
-	uint8_t iv[16] = { 0 };
-	uint32_t size = len;
-	TEE_OperationHandle tee_op_handle = TEE_HANDLE_NULL;
-	TEE_Result res = TEE_ERROR_GENERIC;
-
-	res = TEE_AllocateOperation(&tee_op_handle,
-				    TEE_ALG_AES_CBC_NOPAD,
-				    TEE_MODE_ENCRYPT, 128);
-	if (res)
-		TEE_Panic(0);
-
-	res = TEE_SetOperationKey(tee_op_handle, key_handle);
-	if (res)
-		TEE_Panic(0);
-
-	TEE_CipherInit(tee_op_handle, iv, sizeof(iv));
-
-	res = TEE_CipherDoFinal(tee_op_handle, buf, len, buf, &size);
-	if (res || size != PKCS11_TOKEN_PIN_SIZE_MAX)
-		TEE_Panic(0);
-
-	TEE_FreeOperation(tee_op_handle);
-}
-
 /* ctrl=[slot-id][pin-size][pin][label], in=unused, out=unused */
 uint32_t entry_ck_token_initialize(uint32_t ptypes, TEE_Param *params)
 {
@@ -261,7 +231,6 @@ uint32_t entry_ck_token_initialize(uint32_t ptypes, TEE_Param *params)
 	uint8_t *cpin = NULL;
 	int pin_rc = 0;
 	struct pkcs11_client *client = NULL;
-	TEE_ObjectHandle key_hdl = TEE_HANDLE_NULL;
 
 	if (ptypes != exp_pt)
 		return PKCS11_BAD_PARAM;
@@ -310,13 +279,10 @@ uint32_t entry_ck_token_initialize(uint32_t ptypes, TEE_Param *params)
 
 	TEE_MemMove(cpin, pin, pin_size);
 
-	// TODO: move into a single cipher_login_pin(token, user, buf, sz)
-	if (open_pin_file(token, PKCS11_CKU_SO, &key_hdl)) {
+	if (cipher_pin(token, PKCS11_CKU_SO, cpin)) {
 		rv = PKCS11_CKR_GENERAL_ERROR;
 		goto out;
 	}
-	cipher_pin(key_hdl, cpin, PKCS11_TOKEN_PIN_SIZE_MAX);
-	TEE_CloseObject(key_hdl);
 
 	if (!token->db_main->so_pin_size) {
 		TEE_MemMove(token->db_main->so_pin, cpin,
@@ -1101,11 +1067,8 @@ static uint32_t set_pin(struct pkcs11_session *session,
 	uint32_t *pin_count = NULL;
 	uint32_t *pin_size = NULL;
 	uint8_t *pin = NULL;
-	TEE_ObjectHandle pin_key_hdl = TEE_HANDLE_NULL;
 	uint32_t flags_clear = 0;
 	uint32_t flags_set = 0;
-
-	TEE_MemFill(&pin_key_hdl, 0, sizeof(pin_key_hdl));
 
 	if (session->token->db_main->flags & PKCS11_CKFT_WRITE_PROTECTED)
 		return PKCS11_CKR_TOKEN_WRITE_PROTECTED;
@@ -1148,14 +1111,10 @@ static uint32_t set_pin(struct pkcs11_session *session,
 
 	TEE_MemMove(cpin, new_pin, new_pin_size);
 
-	// TODO: move into a single cipher_login_pin(token, user, buf, sz)
-	if (open_pin_file(session->token, ck_user_type, &pin_key_hdl)) {
+	if (cipher_pin(session->token, ck_user_type, cpin)) {
 		rv = PKCS11_CKR_GENERAL_ERROR;
 		goto out;
 	}
-	assert(pin_key_hdl != TEE_HANDLE_NULL);
-	cipher_pin(pin_key_hdl, cpin, PKCS11_TOKEN_PIN_SIZE_MAX);
-	TEE_CloseObject(pin_key_hdl);
 
 	TEE_MemMove(pin, cpin, PKCS11_TOKEN_PIN_SIZE_MAX);
 	*pin_size = new_pin_size;
@@ -1228,7 +1187,6 @@ uint32_t entry_init_pin(struct pkcs11_client *client,
 static uint32_t check_so_pin(struct pkcs11_session *session,
 			     uint8_t *pin, size_t pin_size)
 {
-	TEE_ObjectHandle pin_key_hdl = TEE_HANDLE_NULL;
 	struct ck_token *token = session->token;
 	uint8_t *cpin = NULL;
 	int pin_rc = 0;
@@ -1247,10 +1205,8 @@ static uint32_t check_so_pin(struct pkcs11_session *session,
 
 	TEE_MemMove(cpin, pin, pin_size);
 
-	// TODO: move into a single cipher_login_pin(token, user, buf, sz)
-	open_pin_file(token, PKCS11_CKU_SO, &pin_key_hdl);
-	cipher_pin(pin_key_hdl, cpin, PKCS11_TOKEN_PIN_SIZE_MAX);
-	TEE_CloseObject(pin_key_hdl);
+	if (cipher_pin(token, PKCS11_CKU_SO, cpin))
+		return PKCS11_CKR_GENERAL_ERROR;
 
 	pin_rc = 0;
 
@@ -1314,7 +1270,6 @@ static uint32_t check_so_pin(struct pkcs11_session *session,
 static uint32_t check_user_pin(struct pkcs11_session *session,
 				uint8_t *pin, size_t pin_size)
 {
-	TEE_ObjectHandle pin_key_hdl = TEE_HANDLE_NULL;
 	struct ck_token *token = session->token;
 	uint8_t *cpin = NULL;
 	int pin_rc = 0;
@@ -1332,10 +1287,8 @@ static uint32_t check_user_pin(struct pkcs11_session *session,
 
 	TEE_MemMove(cpin, pin, pin_size);
 
-	// TODO: move into a single cipher_login_pin(token, user, buf, sz)
-	open_pin_file(token, PKCS11_CKU_USER, &pin_key_hdl);
-	cipher_pin(pin_key_hdl, cpin, PKCS11_TOKEN_PIN_SIZE_MAX);
-	TEE_CloseObject(pin_key_hdl);
+	if (cipher_pin(token, PKCS11_CKU_USER, cpin))
+		return PKCS11_CKR_GENERAL_ERROR;
 
 	pin_rc = 0;
 

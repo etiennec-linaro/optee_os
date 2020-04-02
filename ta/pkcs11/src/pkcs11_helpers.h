@@ -70,16 +70,6 @@ bool key_type_is_asymm_key(uint32_t key_type_id);
 /* Boolprop flag shift position if @attribute_id is boolean, else -1 */
 int pkcs11_attr2boolprop_shift(uint32_t attribute_id);
 
-/*
- * Get the list the the supported mechanism
- *
- * @array - Output buffer filled with supported mechanism IDs
- * @array_count - Number of 32bit cells in output buffer
- *
- * Return number of supported mechanism. Output buffer is filled if well sized.
- */
-size_t get_supported_mechanisms(uint32_t *array, size_t array_count);
-
 /* Convert PKCS11 TA function ID into a TEE crypto operation mode */
 void pkcs2tee_mode(uint32_t *tee_id, uint32_t function);
 

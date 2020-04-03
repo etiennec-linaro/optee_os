@@ -905,41 +905,41 @@ enum pkcs11_attr_id {
 
 /*
  * Valid values for attribute PKCS11_CKA_CLASS
- * PKCS11_CKO_<x> corresponds to cryptoki CKO_<x>.
+ * PKCS11_CKO_<x> reflects CryptoKi client API object class IDs CKO_<x>.
  */
 enum pkcs11_class_id {
-	PKCS11_CKO_SECRET_KEY				= 0x000,
-	PKCS11_CKO_PUBLIC_KEY				= 0x001,
-	PKCS11_CKO_PRIVATE_KEY				= 0x002,
-	PKCS11_CKO_OTP_KEY				= 0x003,
-	PKCS11_CKO_CERTIFICATE				= 0x004,
-	PKCS11_CKO_DATA					= 0x005,
-	PKCS11_CKO_DOMAIN_PARAMETERS			= 0x006,
-	PKCS11_CKO_HW_FEATURE				= 0x007,
-	PKCS11_CKO_MECHANISM				= 0x008,
+	PKCS11_CKO_DATA				= 0x000,
+	PKCS11_CKO_CERTIFICATE			= 0x001,
+	PKCS11_CKO_PUBLIC_KEY			= 0x002,
+	PKCS11_CKO_PRIVATE_KEY			= 0x003,
+	PKCS11_CKO_SECRET_KEY			= 0x004,
+	PKCS11_CKO_HW_FEATURE			= 0x005,
+	PKCS11_CKO_DOMAIN_PARAMETERS		= 0x006,
+	PKCS11_CKO_MECHANISM			= 0x007,
+	PKCS11_CKO_OTP_KEY			= 0x008,
 	/* Vendor extension: reserved for undefined ID (~0U) */
-	PKCS11_CKO_UNDEFINED_ID				= PKCS11_UNDEFINED_ID,
+	PKCS11_CKO_UNDEFINED_ID			= PKCS11_UNDEFINED_ID,
 };
 
 /*
  * Valid values for attribute PKCS11_CKA_KEY_TYPE
- * PKCS11_CKK_<x> corresponds to cryptoki CKK_<x> related to symmetric keys
+ * PKCS11_CKK_<x> reflects CryptoKi client API key type IDs CKK_<x>.
  */
 enum pkcs11_key_type {
-	PKCS11_CKK_AES					= 0x000,
-	PKCS11_CKK_GENERIC_SECRET			= 0x001,
-	PKCS11_CKK_MD5_HMAC				= 0x002,
-	PKCS11_CKK_SHA_1_HMAC				= 0x003,
-	PKCS11_CKK_SHA224_HMAC				= 0x004,
-	PKCS11_CKK_SHA256_HMAC				= 0x005,
-	PKCS11_CKK_SHA384_HMAC				= 0x006,
-	PKCS11_CKK_SHA512_HMAC				= 0x007,
-	PKCS11_CKK_EC					= 0x008,
-	PKCS11_CKK_RSA					= 0x009,
-	PKCS11_CKK_DSA					= 0x00a,
-	PKCS11_CKK_DH					= 0x00b,
+	PKCS11_CKK_RSA				= 0x000,
+	PKCS11_CKK_DSA				= 0x001,
+	PKCS11_CKK_DH				= 0x002,
+	PKCS11_CKK_EC				= 0x003,
+	PKCS11_CKK_GENERIC_SECRET		= 0x010,
+	PKCS11_CKK_AES				= 0x01f,
+	PKCS11_CKK_MD5_HMAC			= 0x027,
+	PKCS11_CKK_SHA_1_HMAC			= 0x028,
+	PKCS11_CKK_SHA256_HMAC			= 0x02b,
+	PKCS11_CKK_SHA384_HMAC			= 0x02c,
+	PKCS11_CKK_SHA512_HMAC			= 0x02d,
+	PKCS11_CKK_SHA224_HMAC			= 0x02e,
 	/* Vendor extension: reserved for undefined ID (~0U) */
-	PKCS11_CKK_UNDEFINED_ID				= PKCS11_UNDEFINED_ID,
+	PKCS11_CKK_UNDEFINED_ID			= PKCS11_UNDEFINED_ID,
 };
 
 /*
@@ -1048,26 +1048,25 @@ enum pkcs11_mechanism_id {
 };
 
 /*
- * Valid values key differentiation function identifiers
- * PKCS11_CKD_<x> reltaes to cryptoki CKD_<x>.
+ * PKCS11_CKD_<x> reflects CryptoKi client API key diff function IDs CKD_<x>.
  */
 enum pkcs11_keydiff_id {
-	PKCS11_CKD_NULL				= 0x0000,
-	PKCS11_CKD_SHA1_KDF			= 0x0001,
-	PKCS11_CKD_SHA1_KDF_ASN1		= 0x0002,
-	PKCS11_CKD_SHA1_KDF_CONCATENATE		= 0x0003,
-	PKCS11_CKD_SHA224_KDF			= 0x0004,
-	PKCS11_CKD_SHA256_KDF			= 0x0005,
-	PKCS11_CKD_SHA384_KDF			= 0x0006,
-	PKCS11_CKD_SHA512_KDF			= 0x0007,
-	PKCS11_CKD_CPDIVERSIFY_KDF		= 0x0008,
+	PKCS11_CKD_NULL				= 0x0001,
+	PKCS11_CKD_SHA1_KDF			= 0x0002,
+	PKCS11_CKD_SHA1_KDF_ASN1		= 0x0003,
+	PKCS11_CKD_SHA1_KDF_CONCATENATE		= 0x0004,
+	PKCS11_CKD_SHA224_KDF			= 0x0005,
+	PKCS11_CKD_SHA256_KDF			= 0x0006,
+	PKCS11_CKD_SHA384_KDF			= 0x0007,
+	PKCS11_CKD_SHA512_KDF			= 0x0008,
+	PKCS11_CKD_CPDIVERSIFY_KDF		= 0x0009,
 	/* Vendor extension: reserved for undefined ID (~0U) */
 	PKCS11_CKD_UNDEFINED_ID			= PKCS11_UNDEFINED_ID,
 };
 
 /*
  * Valid values MG function identifiers
- * PKCS11_CKG_<x> reltaes to cryptoki CKG_<x>.
+ * PKCS11_CKG_<x> reflects CryptoKi client API MG function IDs CKG_<x>.
  */
 enum pkcs11_mgf_id {
 	PKCS11_CKG_MGF1_SHA1			= 0x0001,
@@ -1081,7 +1080,7 @@ enum pkcs11_mgf_id {
 
 /*
  * Valid values for RSA PKCS/OAEP source type identifier
- * PKCS11_CKZ_<x> reltaes to cryptoki CKZ_<x>.
+ * PKCS11_CKZ_<x> reflects CryptoKi client API source type IDs CKZ_<x>.
  */
 #define PKCS11_CKZ_DATA_SPECIFIED		0x0001
 

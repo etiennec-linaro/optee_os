@@ -398,12 +398,37 @@ bool pkcs11_attr_class_is_key(uint32_t class)
 /* Returns shift position or -1 on error */
 int pkcs11_attr2boolprop_shift(uint32_t attr)
 {
-	COMPILE_TIME_ASSERT(PKCS11_BOOLPROPS_BASE == 0);
+	static const uint32_t bpa[] = {
+		[BPA_TOKEN]		= PKCS11_CKA_TOKEN,
+		[BPA_PRIVATE]		= PKCS11_CKA_PRIVATE,
+		[BPA_TRUSTED]		= PKCS11_CKA_TRUSTED,
+		[BPA_SENSITIVE]		= PKCS11_CKA_SENSITIVE,
+		[BPA_ENCRYPT]		= PKCS11_CKA_ENCRYPT,
+		[BPA_DECRYPT]		= PKCS11_CKA_DECRYPT,
+		[BPA_WRAP]		= PKCS11_CKA_WRAP,
+		[BPA_UNWRAP]		= PKCS11_CKA_UNWRAP,
+		[BPA_SIGN]		= PKCS11_CKA_SIGN,
+		[BPA_SIGN_RECOVER]	= PKCS11_CKA_SIGN_RECOVER,
+		[BPA_VERIFY]		= PKCS11_CKA_VERIFY,
+		[BPA_VERIFY_RECOVER]	= PKCS11_CKA_VERIFY_RECOVER,
+		[BPA_DERIVE]		= PKCS11_CKA_DERIVE,
+		[BPA_EXTRACTABLE]	= PKCS11_CKA_EXTRACTABLE,
+		[BPA_LOCAL]		= PKCS11_CKA_LOCAL,
+		[BPA_NEVER_EXTRACTABLE]	= PKCS11_CKA_NEVER_EXTRACTABLE,
+		[BPA_ALWAYS_SENSITIVE]	= PKCS11_CKA_ALWAYS_SENSITIVE,
+		[BPA_MODIFIABLE]	= PKCS11_CKA_MODIFIABLE,
+		[BPA_COPYABLE]		= PKCS11_CKA_COPYABLE,
+		[BPA_DESTROYABLE]	= PKCS11_CKA_DESTROYABLE,
+		[BPA_ALWAYS_AUTHENTICATE] = PKCS11_CKA_ALWAYS_AUTHENTICATE,
+		[BPA_WRAP_WITH_TRUSTED] = PKCS11_CKA_WRAP_WITH_TRUSTED,
+	};
+	size_t pos = 0;
 
-	if (attr > PKCS11_BOOLPROPS_LAST)
-		return -1;
+	for (pos = 0; pos < ARRAY_SIZE(bpa); pos++)
+		if (bpa[pos] == attr)
+			return (int)pos;
 
-	return attr;
+	return -1;
 }
 
 /*
@@ -636,14 +661,6 @@ const char *id2str_key_type(uint32_t id)
 	return ID2STR(id, string_key_type, "PKCS11_CKK_");
 }
 
-const char *id2str_boolprop(uint32_t id)
-{
-	if (id < 64)
-		return id2str_attr(id);
-
-	return unknown;
-}
-
 const char *id2str_proc(uint32_t id)
 {
 	const char *str = ID2STR(id, string_internal_processing,
@@ -688,7 +705,7 @@ const char *id2str_attr_value(uint32_t id, size_t size, void *value)
 	uint32_t type = 0;
 
 	if (pkcs11_attr2boolprop_shift(id) >= 0)
-		return !!*(uint8_t *)value ? str_true : str_false;
+		return *(uint8_t *)value ? str_true : str_false;
 
 	if (size < sizeof(uint32_t))
 		return str_unknown;

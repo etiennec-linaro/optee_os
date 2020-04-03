@@ -52,9 +52,6 @@ size_t pkcs11_attr_is_class(uint32_t attribute_id);
  */
 size_t pkcs11_attr_is_type(uint32_t attribute_id);
 
-/* Return true if the object class has boolprop attribute(s) */
-bool pkcs11_class_has_boolprop(uint32_t class);
-
 /* Return true if the object class is related to a type-on-class */
 bool pkcs11_class_has_type(uint32_t class_id);
 
@@ -92,7 +89,6 @@ const char *id2str_attr(uint32_t id);
 const char *id2str_class(uint32_t id);
 const char *id2str_type(uint32_t id, uint32_t class);
 const char *id2str_key_type(uint32_t id);
-const char *id2str_boolprop(uint32_t id);
 const char *id2str_ta_cmd(uint32_t id);
 const char *id2str_rc(uint32_t id);
 const char *id2str_proc_flag(uint32_t id);

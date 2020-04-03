@@ -193,8 +193,8 @@ static uint32_t sanitize_boolprop(struct pkcs11_attrs_head **dst,
 		uint32_t rc = 0;
 		uint8_t pkcs11_bool = !!value;
 
-		rc = add_attribute(dst, PKCS11_BOOLPROPS_BASE + shift,
-				   &pkcs11_bool, sizeof(uint8_t));
+		rc = add_attribute(dst, cli_ref->id, &pkcs11_bool,
+				   sizeof(uint8_t));
 		if (rc)
 			return rc;
 	}

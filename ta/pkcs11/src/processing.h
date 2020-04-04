@@ -144,6 +144,8 @@ uint32_t generate_ec_keys(struct pkcs11_attribute_head *proc_params,
 			  struct pkcs11_attrs_head **pub_head,
 			  struct pkcs11_attrs_head **priv_head);
 
+size_t ecdsa_get_input_max_byte_size(TEE_OperationHandle op);
+
 /*
  * RSA crypto algorithm specific functions
  */

@@ -389,6 +389,7 @@ uint32_t step_asymm_operation(struct pkcs11_session *session,
 	uint32_t data32 = 0;
 	bool output_data = false;
 	struct active_processing *proc = session->processing;
+	size_t sz = 0;
 
 	if (TEE_PARAM_TYPE_GET(ptypes, 1) == TEE_PARAM_TYPE_MEMREF_INPUT) {
 		in_buf = params[1].memref.buffer;
@@ -473,11 +474,18 @@ uint32_t step_asymm_operation(struct pkcs11_session *session,
 	/* These ECDSA need to use the computed hash as input data */
 	switch (proc->mecha_type) {
 	case PKCS11_CKM_ECDSA:
-		// TODO: check input size is enough
-		if (!in_size) {
+		sz = ecdsa_get_input_max_byte_size(proc->tee_op_handle);
+		if (!in_size || !sz) {
 			rv = PKCS11_CKR_FUNCTION_FAILED;
 			goto bail;
 		}
+		/*
+		 * Limit input size upon key size
+		 * TODO: confirm it is ok to discard some input bytes
+		 * Would expect in_size > sz should return a failure
+		 */
+		if (in_size > sz)
+			in_size = sz;
 		break;
 	case PKCS11_CKM_ECDSA_SHA1:
 		in_buf = proc->extra_ctx;

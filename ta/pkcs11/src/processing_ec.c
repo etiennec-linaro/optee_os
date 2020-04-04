@@ -1262,3 +1262,25 @@ bail:
 	return rv;
 }
 
+size_t ecdsa_get_input_max_byte_size(TEE_OperationHandle op)
+{
+	TEE_OperationInfo info = { };
+
+	TEE_GetOperationInfo(op, &info);
+
+	switch (info.algorithm) {
+	case TEE_ALG_ECDSA_P192:
+		return 24;
+	case TEE_ALG_ECDSA_P224:
+		return 28;
+	case TEE_ALG_ECDSA_P256:
+		return 32;
+	case TEE_ALG_ECDSA_P384:
+		return 48;
+	case TEE_ALG_ECDSA_P521:
+		return 66;
+	default:
+		DMSG("Unexpected ECDSA algorithm %#"PRIx32, info.algorithm);
+		return 0;
+	}
+}

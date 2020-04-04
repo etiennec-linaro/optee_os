@@ -434,51 +434,6 @@ int pkcs11_attr2boolprop_shift(uint32_t attr)
 /*
  * Conversion between PKCS11 TA and GPD TEE return codes
  */
-
-TEE_Result pkcs2tee_error(uint32_t rc)
-{
-	enum pkcs11_rc rc_id = rc;
-
-	switch (rc_id) {
-	case PKCS11_CKR_OK:
-		return TEE_SUCCESS;
-
-	case PKCS11_CKR_ARGUMENTS_BAD:
-		return TEE_ERROR_BAD_PARAMETERS;
-
-	case PKCS11_CKR_DEVICE_MEMORY:
-		return TEE_ERROR_OUT_OF_MEMORY;
-
-	case PKCS11_CKR_BUFFER_TOO_SMALL:
-		return TEE_ERROR_SHORT_BUFFER;
-
-	default:
-		return TEE_ERROR_GENERIC;
-	}
-}
-
-TEE_Result pkcs2tee_noerr(uint32_t rc)
-{
-	enum pkcs11_rc rc_id = rc;
-
-	switch (rc_id) {
-	case PKCS11_CKR_ARGUMENTS_BAD:
-		return TEE_ERROR_BAD_PARAMETERS;
-
-	case PKCS11_CKR_DEVICE_MEMORY:
-		return TEE_ERROR_OUT_OF_MEMORY;
-
-	case PKCS11_CKR_BUFFER_TOO_SMALL:
-		return TEE_ERROR_SHORT_BUFFER;
-
-	case PKCS11_CKR_GENERAL_ERROR:
-		return TEE_ERROR_GENERIC;
-
-	default:
-		return TEE_SUCCESS;
-	}
-}
-
 uint32_t tee2pkcs_error(TEE_Result res)
 {
 	switch (res) {

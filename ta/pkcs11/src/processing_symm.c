@@ -301,10 +301,10 @@ uint32_t init_symm_operation(struct pkcs11_session *session,
  * step_sym_cipher - processing symmetric (and related) cipher operation step
  *
  * @session - current session
- * @function
- * @step - step ID in the processing (oneshot, update,final)
- * @in - input data reference #1
- * @io2 - input or output data reference #2, depending on function/step.
+ * @function - processing function (encrypt, decrypt, sign, ...)
+ * @step - step ID in the processing (oneshot, update, final)
+ * @ptype - invocation parameter types
+ * @params - invocation parameter references
  */
 uint32_t step_symm_operation(struct pkcs11_session *session,
 			     enum processing_func function,

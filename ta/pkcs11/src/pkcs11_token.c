@@ -213,7 +213,6 @@ int set_processing_state(struct pkcs11_session *session,
 	return PKCS11_CKR_OK;
 }
 
-/* ctrl=[slot-id][pin-size][pin][label], in=unused, out=unused */
 uint32_t entry_ck_token_initialize(uint32_t ptypes, TEE_Param *params)
 {
         const uint32_t exp_pt = TEE_PARAM_TYPES(TEE_PARAM_TYPE_MEMREF_INOUT,
@@ -1134,7 +1133,6 @@ out:
 	return rv;
 }
 
-/* ctrl=[session-handle][pin-size]{pin-arrays], in=unused, out=unused */
 uint32_t entry_init_pin(struct pkcs11_client *client,
 			uint32_t ptypes, TEE_Param *params)
 {
@@ -1349,7 +1347,6 @@ static uint32_t check_user_pin(struct pkcs11_session *session,
 	return PKCS11_CKR_OK;
 }
 
-/* ctrl=[session][old-size]{old-pin][pin-size]{pin], in=unused, out=unused */
 uint32_t entry_set_pin(struct pkcs11_client *client,
 		       uint32_t ptypes, TEE_Param *params)
 {
@@ -1427,7 +1424,6 @@ uint32_t entry_set_pin(struct pkcs11_client *client,
 	return set_pin(session, pin, pin_size, PKCS11_CKU_USER);
 }
 
-/* ctrl=[session][user_type][pin-size]{pin], in=unused, out=unused */
 uint32_t entry_login(struct pkcs11_client *client,
 		     uint32_t ptypes, TEE_Param *params)
 {
@@ -1549,7 +1545,6 @@ uint32_t entry_login(struct pkcs11_client *client,
 	return rv;
 }
 
-/* ctrl=[session], in=unused, out=unused */
 uint32_t entry_logout(struct pkcs11_client *client,
 		      uint32_t ptypes, TEE_Param *params)
 {

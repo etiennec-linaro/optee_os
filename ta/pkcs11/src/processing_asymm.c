@@ -366,10 +366,10 @@ uint32_t init_asymm_operation(struct pkcs11_session *session,
  * step_sym_step - step (update/oneshot/final) on a symmetric crypto operation
  *
  * @session - current session
- * @function -
- * @step - step ID in the processing (oneshot, update,final)
- * @in - input data reference #1
- * @io2 - input/output data reference #2 (direction depends on function)
+ * @function - processing function (encrypt, decrypt, sign, ...)
+ * @step - step ID in the processing (oneshot, update, final)
+ * @ptype - invocation parameter types
+ * @params - invocation parameter references
  */
 uint32_t step_asymm_operation(struct pkcs11_session *session,
 			      enum processing_func function,

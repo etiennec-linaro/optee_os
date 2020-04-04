@@ -652,8 +652,8 @@ bail:
  * entry_processing_init - Generic entry for initializing a processing
  *
  * @ctrl = [session-handle]
- * @in = input data or none
- * @out = output data or none
+ * @ptype = Invocation parameter types
+ * @params = Invocation parameters reference
  * @function - encrypt, decrypt, sign, verify, digest, ...
  *
  * The generic part come that all the commands uses the same
@@ -754,8 +754,8 @@ bail:
  * entry_processing_step - Generic entry on active processing
  *
  * @ctrl = [session-handle]
- * @in = input data or none
- * @out = output data or none
+ * @ptype = Invocation parameter types
+ * @params = Invocation parameters reference
  * @function - encrypt, decrypt, sign, verify, digest, ...
  * @step - update, oneshot, final
  *
@@ -834,8 +834,8 @@ bail:
  * entry_verify_oneshot - Generic entry on active processing
  *
  * @ctrl = [session-handle]
- * @in = input data or none
- * @out = output data or none
+ * @ptype = Invocation parameter types
+ * @params = Invocation parameters reference
  * @function - encrypt, decrypt, sign, verify, digest, ...
  * @step - update, oneshot, final
  *

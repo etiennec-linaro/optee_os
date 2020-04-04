@@ -414,9 +414,6 @@ static void release_find_obj_context(struct pkcs11_session *session,
 	TEE_Free(find_ctx);
 }
 
-/*
- * Entry for command PKCS11_CMD_FIND_OBJECTS_INIT
- */
 uint32_t entry_find_objects_init(struct pkcs11_client *client,
 				 uint32_t ptypes, TEE_Param *params)
 {
@@ -598,9 +595,6 @@ bail:
 	return rv;
 }
 
-/*
- * Entry for command PKCS11_CMD_FIND_OBJECTS
- */
 uint32_t entry_find_objects(struct pkcs11_client *client,
 			    uint32_t ptypes, TEE_Param *params)
 {
@@ -682,9 +676,6 @@ void release_session_find_obj_context(struct pkcs11_session *session)
 	session->find_ctx = NULL;
 }
 
-/*
- * Entry for command PKCS11_CMD_FIND_OBJECTS_FINAL
- */
 uint32_t entry_find_objects_final(struct pkcs11_client *client,
 				  uint32_t ptypes, TEE_Param *params)
 {
@@ -722,9 +713,6 @@ uint32_t entry_find_objects_final(struct pkcs11_client *client,
 	return PKCS11_CKR_OK;
 }
 
-/*
- * Entry for command PKCS11_CMD_GET_ATTRIBUTE_VALUE
- */
 uint32_t entry_get_attribute_value(struct pkcs11_client *client,
 				   uint32_t ptypes, TEE_Param *params)
 {

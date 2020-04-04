@@ -61,7 +61,7 @@ static uint32_t sanitize_class_and_type(struct pkcs11_attrs_head **dst,
 	uint32_t class_found = 0;
 	uint32_t type_found = 0;
 	struct pkcs11_attribute_head cli_ref;
-	uint32_t rc = PKCS11_OK;
+	uint32_t rc = PKCS11_CKR_OK;
 	size_t src_size = 0;
 
 	TEE_MemMove(&head, src, sizeof(head));
@@ -127,7 +127,7 @@ static uint32_t sanitize_class_and_type(struct pkcs11_attrs_head **dst,
 	/* Sanity */
 	if (cur != end) {
 		EMSG("Unexpected alignment issue");
-		rc = PKCS11_FAILED;
+		rc = PKCS11_CKR_FUNCTION_FAILED;
 		goto bail;
 	}
 
@@ -164,10 +164,10 @@ static uint32_t sanitize_boolprop(struct pkcs11_attrs_head **dst,
 	/* Get the boolean property shift position and value */
 	shift = pkcs11_attr2boolprop_shift(cli_ref->id);
 	if (shift < 0)
-		return PKCS11_NOT_FOUND;
+		return PKCS11_RV_NOT_FOUND;
 
 	if (shift >= PKCS11_MAX_BOOLPROP_SHIFT)
-		return PKCS11_FAILED;
+		return PKCS11_CKR_FUNCTION_FAILED;
 
 	mask = 1 << (shift % 32);
 	if ((*(uint8_t *)(cur + sizeof(*cli_ref))) == PKCS11_TRUE)
@@ -201,7 +201,7 @@ static uint32_t sanitize_boolprop(struct pkcs11_attrs_head **dst,
 
 	*sanity_ptr |= mask;
 
-	return PKCS11_OK;
+	return PKCS11_CKR_OK;
 }
 
 static uint32_t sanitize_boolprops(struct pkcs11_attrs_head **dst, void *src)
@@ -227,11 +227,11 @@ static uint32_t sanitize_boolprops(struct pkcs11_attrs_head **dst, void *src)
 		len = sizeof(cli_ref) + cli_ref.size;
 
 		rc = sanitize_boolprop(dst, &cli_ref, cur, boolprops, sanity);
-		if (rc != PKCS11_OK && rc != PKCS11_NOT_FOUND)
+		if (rc != PKCS11_CKR_OK && rc != PKCS11_RV_NOT_FOUND)
 			return rc;
 	}
 
-	return PKCS11_OK;
+	return PKCS11_CKR_OK;
 }
 
 /* Counterpart of serialize_indirect_attribute() */
@@ -244,7 +244,7 @@ static uint32_t sanitize_indirect_attr(struct pkcs11_attrs_head **dst,
 	enum pkcs11_class_id class = get_class(*dst);
 
 	if (class == PKCS11_CKO_UNDEFINED_ID)
-		return PKCS11_ERROR;
+		return PKCS11_CKR_GENERAL_ERROR;
 
 	/*
 	 * Serialized attributes: current applicable only the key templates
@@ -256,7 +256,7 @@ static uint32_t sanitize_indirect_attr(struct pkcs11_attrs_head **dst,
 	case PKCS11_CKA_DERIVE_TEMPLATE:
 		break;
 	default:
-		return PKCS11_NOT_FOUND;
+		return PKCS11_RV_NOT_FOUND;
 	}
 	/* Such attributes are expected only for keys (and vendor defined) */
 	if (pkcs11_attr_class_is_key(class))
@@ -287,12 +287,12 @@ uint32_t sanitize_client_object(struct pkcs11_attrs_head **dst,
 	TEE_MemFill(&head, 0, sizeof(head));
 
 	if (size < sizeof(struct pkcs11_object_head))
-		return PKCS11_BAD_PARAM;
+		return PKCS11_CKR_ARGUMENTS_BAD;
 
 	TEE_MemMove(&head, src, sizeof(struct pkcs11_object_head));
 
 	if (size < (sizeof(struct pkcs11_object_head) + head.attrs_size))
-		return PKCS11_BAD_PARAM;
+		return PKCS11_CKR_ARGUMENTS_BAD;
 
 	init_attributes_head(dst);
 
@@ -319,9 +319,9 @@ uint32_t sanitize_client_object(struct pkcs11_attrs_head **dst,
 			continue;
 
 		rc = sanitize_indirect_attr(dst, &cli_ref, cur);
-		if (rc == PKCS11_OK)
+		if (rc == PKCS11_CKR_OK)
 			continue;
-		if (rc != PKCS11_NOT_FOUND)
+		if (rc != PKCS11_RV_NOT_FOUND)
 			goto bail;
 
 		if (!valid_pkcs11_attribute_id(cli_ref.id, cli_ref.size)) {
@@ -339,7 +339,7 @@ uint32_t sanitize_client_object(struct pkcs11_attrs_head **dst,
 	/* sanity */
 	if (cur != end) {
 		EMSG("Unexpected alignment issue");
-		rc = PKCS11_FAILED;
+		rc = PKCS11_CKR_FUNCTION_FAILED;
 		goto bail;
 	}
 
@@ -362,7 +362,7 @@ static uint32_t __trace_attributes(char *prefix, void *src, void *end)
 	/* append 4 spaces to the prefix plus terminal '\0' */
 	prefix2 = TEE_Malloc(prefix_len + 1 + 4, TEE_MALLOC_FILL_ZERO);
 	if (!prefix2)
-		return PKCS11_MEMORY;
+		return PKCS11_CKR_DEVICE_MEMORY;
 
 	TEE_MemMove(prefix2, prefix, prefix_len + 1);
 	TEE_MemFill(prefix2 + prefix_len, ' ', 4);
@@ -432,7 +432,7 @@ static uint32_t __trace_attributes(char *prefix, void *src, void *end)
 		EMSG("Warning: unexpected alignment issue");
 
 	TEE_Free(prefix2);
-	return PKCS11_OK;
+	return PKCS11_CKR_OK;
 }
 
 uint32_t trace_attributes_from_api_head(const char *prefix,
@@ -448,13 +448,13 @@ uint32_t trace_attributes_from_api_head(const char *prefix,
 	if (size > sizeof(head) + head.attrs_size) {
 		EMSG("template overflows client buffer (%u/%u)",
 		     size, sizeof(head) + head.attrs_size);
-		return PKCS11_FAILED;
+		return PKCS11_CKR_FUNCTION_FAILED;
 	}
 
 
 	pre = TEE_Malloc(prefix ? strlen(prefix) + 2 : 2, TEE_MALLOC_FILL_ZERO);
 	if (!pre)
-		return PKCS11_MEMORY;
+		return PKCS11_CKR_DEVICE_MEMORY;
 	if (prefix)
 		TEE_MemMove(pre, prefix, strlen(prefix));
 

@@ -936,7 +936,7 @@ uint32_t load_tee_ec_key_attrs(TEE_Attribute **tee_attrs, size_t *tee_count,
 {
 	TEE_Attribute *attrs = NULL;
 	size_t count = 0;
-	uint32_t rv = PKCS11_ERROR;
+	uint32_t rv = PKCS11_CKR_GENERAL_ERROR;
 
 	assert(get_type(obj->attributes) == PKCS11_CKK_EC);
 
@@ -945,7 +945,7 @@ uint32_t load_tee_ec_key_attrs(TEE_Attribute **tee_attrs, size_t *tee_count,
 		attrs = TEE_Malloc(3 * sizeof(TEE_Attribute),
 				   TEE_USER_MEM_HINT_NO_FILL_ZERO);
 		if (!attrs)
-			return PKCS11_MEMORY;
+			return PKCS11_CKR_DEVICE_MEMORY;
 
 		if (pkcs2tee_load_attr(&attrs[count], TEE_ATTR_ECC_CURVE,
 					obj, PKCS11_CKA_EC_PARAMS))
@@ -964,7 +964,7 @@ uint32_t load_tee_ec_key_attrs(TEE_Attribute **tee_attrs, size_t *tee_count,
 			count++;
 
 		if (count == 3)
-			rv = PKCS11_OK;
+			rv = PKCS11_CKR_OK;
 
 		break;
 
@@ -972,7 +972,7 @@ uint32_t load_tee_ec_key_attrs(TEE_Attribute **tee_attrs, size_t *tee_count,
 		attrs = TEE_Malloc(4 * sizeof(TEE_Attribute),
 				   TEE_USER_MEM_HINT_NO_FILL_ZERO);
 		if (!attrs)
-			return PKCS11_MEMORY;
+			return PKCS11_CKR_DEVICE_MEMORY;
 
 		if (pkcs2tee_load_attr(&attrs[count], TEE_ATTR_ECC_CURVE,
 					obj, PKCS11_CKA_EC_PARAMS))
@@ -998,7 +998,7 @@ uint32_t load_tee_ec_key_attrs(TEE_Attribute **tee_attrs, size_t *tee_count,
 			count++;
 
 		if (count == 4)
-			rv = PKCS11_OK;
+			rv = PKCS11_CKR_OK;
 
 		break;
 
@@ -1007,7 +1007,7 @@ uint32_t load_tee_ec_key_attrs(TEE_Attribute **tee_attrs, size_t *tee_count,
 		break;
 	}
 
-	if (rv == PKCS11_OK) {
+	if (rv == PKCS11_CKR_OK) {
 		*tee_attrs = attrs;
 		*tee_count = count;
 	}
@@ -1059,7 +1059,7 @@ uint32_t pkcs2tee_algo_ecdh(uint32_t *tee_id,
 		break;
 	}
 
-	return PKCS11_OK;
+	return PKCS11_CKR_OK;
 }
 
 uint32_t pkcs2tee_ecdh_param_pub(struct pkcs11_attribute_head *proc_params,
@@ -1093,7 +1093,7 @@ uint32_t pkcs2tee_ecdh_param_pub(struct pkcs11_attribute_head *proc_params,
 		return rv;
 
 	if (serialargs_remaining_bytes(&args))
-		return PKCS11_BAD_PARAM;
+		return PKCS11_CKR_ARGUMENTS_BAD;
 
 	*pub_size = temp;
 
@@ -1113,7 +1113,7 @@ uint32_t pkcs2tee_algo_ecdsa(uint32_t *tee_id,
 	case PKCS11_CKM_ECDSA_SHA512:
 		break;
 	default:
-		return PKCS11_ERROR;
+		return PKCS11_CKR_GENERAL_ERROR;
 	}
 
 	switch (get_object_key_bit_size(obj)) {
@@ -1137,7 +1137,7 @@ uint32_t pkcs2tee_algo_ecdsa(uint32_t *tee_id,
 		break;
 	}
 
-	return PKCS11_OK;
+	return PKCS11_CKR_OK;
 }
 
 static uint32_t tee2pkcs_ec_attributes(struct pkcs11_attrs_head **pub_head,

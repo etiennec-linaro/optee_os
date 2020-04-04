@@ -205,7 +205,7 @@ uint32_t create_object_uuid(struct ck_token *token __unused,
 	obj->uuid = TEE_Malloc(sizeof(TEE_UUID),
 			       TEE_USER_MEM_HINT_NO_FILL_ZERO);
 	if (!obj->uuid)
-		return PKCS11_MEMORY;
+		return PKCS11_CKR_DEVICE_MEMORY;
 
 	TEE_GenerateRandom(obj->uuid, sizeof(TEE_UUID));
 
@@ -214,7 +214,7 @@ uint32_t create_object_uuid(struct ck_token *token __unused,
 	 * database) and the pending created uuids (not already registered
 	 * if any).
 	 */
-	return PKCS11_OK;
+	return PKCS11_CKR_OK;
 }
 
 void destroy_object_uuid(struct ck_token *token __unused,
@@ -236,12 +236,12 @@ uint32_t get_persistent_objects_list(struct ck_token *token,
 	*size = token->db_objs->count * sizeof(TEE_UUID);
 
 	if (out_size < *size)
-		return PKCS11_SHORT_BUFFER;
+		return PKCS11_CKR_BUFFER_TOO_SMALL;
 
 	if (array)
 		TEE_MemMove(array, token->db_objs->uuids, *size);
 
-	return PKCS11_OK;
+	return PKCS11_CKR_OK;
 }
 
 uint32_t unregister_persistent_object(struct ck_token *token, TEE_UUID *uuid)
@@ -310,7 +310,7 @@ out:
 		tee2pkcs_error(res);
 	}
 
-	return PKCS11_OK;
+	return PKCS11_CKR_OK;
 }
 
 uint32_t register_persistent_object(struct ck_token *token, TEE_UUID *uuid)
@@ -366,7 +366,7 @@ out:
 		TEE_CloseObject(db_hdl);
 
 	if (!res)
-		return PKCS11_OK;
+		return PKCS11_CKR_OK;
 
 	return tee2pkcs_error(res);
 }

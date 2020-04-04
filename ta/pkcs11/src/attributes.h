@@ -102,7 +102,7 @@ static inline uint32_t get_u32_attribute(struct pkcs11_attrs_head *head,
 	uint32_t rv = get_attribute(head, attribute, attr, &size);
 
 	if (size != sizeof(uint32_t))
-		return PKCS11_ERROR;
+		return PKCS11_CKR_GENERAL_ERROR;
 
 	return rv;
 }

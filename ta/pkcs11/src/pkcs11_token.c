@@ -196,7 +196,7 @@ int set_processing_state(struct pkcs11_session *session,
 
 	proc = TEE_Malloc(sizeof(*proc), TEE_MALLOC_FILL_ZERO);
 	if (!proc)
-		return PKCS11_MEMORY;
+		return PKCS11_CKR_DEVICE_MEMORY;
 
 	/* Boolean are default to false and pointers to NULL */
 	proc->state = state;
@@ -210,7 +210,7 @@ int set_processing_state(struct pkcs11_session *session,
 
 	session->processing = proc;
 
-	return PKCS11_OK;
+	return PKCS11_CKR_OK;
 }
 
 /* ctrl=[slot-id][pin-size][pin][label], in=unused, out=unused */
@@ -233,7 +233,7 @@ uint32_t entry_ck_token_initialize(uint32_t ptypes, TEE_Param *params)
 	struct pkcs11_client *client = NULL;
 
 	if (ptypes != exp_pt)
-		return PKCS11_BAD_PARAM;
+		return PKCS11_CKR_ARGUMENTS_BAD;
 
 	serialargs_init(&ctrlargs, ctrl->memref.buffer, ctrl->memref.size);
 
@@ -258,7 +258,7 @@ uint32_t entry_ck_token_initialize(uint32_t ptypes, TEE_Param *params)
 		return rv;
 
 	if (serialargs_remaining_bytes(&ctrlargs))
-		return PKCS11_BAD_PARAM;
+		return PKCS11_CKR_ARGUMENTS_BAD;
 
 	token = get_token(token_id);
 	if (!token)
@@ -1082,7 +1082,7 @@ static uint32_t set_pin(struct pkcs11_session *session,
 
 	cpin = TEE_Malloc(PKCS11_TOKEN_PIN_SIZE_MAX, TEE_MALLOC_FILL_ZERO);
 	if (!cpin)
-		return PKCS11_MEMORY;
+		return PKCS11_CKR_DEVICE_MEMORY;
 
 	switch (ck_user_type) {
 	case PKCS11_CKU_SO:
@@ -1105,7 +1105,7 @@ static uint32_t set_pin(struct pkcs11_session *session,
 		flags_set = PKCS11_CKFT_USER_PIN_INITIALIZED;
 		break;
 	default:
-		rv = PKCS11_FAILED;
+		rv = PKCS11_CKR_FUNCTION_FAILED;
 		goto out;
 	}
 
@@ -1168,7 +1168,7 @@ uint32_t entry_init_pin(struct pkcs11_client *client,
 		return rv;
 
 	if (serialargs_remaining_bytes(&ctrlargs))
-		return PKCS11_BAD_PARAM;
+		return PKCS11_CKR_ARGUMENTS_BAD;
 
 	session = pkcs11_handle2session(session_handle, client);
 	if (!session)
@@ -1201,7 +1201,7 @@ static uint32_t check_so_pin(struct pkcs11_session *session,
 
 	cpin = TEE_Malloc(PKCS11_TOKEN_PIN_SIZE_MAX, TEE_MALLOC_FILL_ZERO);
 	if (!cpin)
-		return PKCS11_MEMORY;
+		return PKCS11_CKR_DEVICE_MEMORY;
 
 	TEE_MemMove(cpin, pin, pin_size);
 
@@ -1264,7 +1264,7 @@ static uint32_t check_so_pin(struct pkcs11_session *session,
 				     sizeof(token->db_main->flags));
 	}
 
-	return PKCS11_OK;
+	return PKCS11_CKR_OK;
 }
 
 static uint32_t check_user_pin(struct pkcs11_session *session,
@@ -1283,7 +1283,7 @@ static uint32_t check_user_pin(struct pkcs11_session *session,
 
 	cpin = TEE_Malloc(PKCS11_TOKEN_PIN_SIZE_MAX, TEE_MALLOC_FILL_ZERO);
 	if (!cpin)
-		return PKCS11_MEMORY;
+		return PKCS11_CKR_DEVICE_MEMORY;
 
 	TEE_MemMove(cpin, pin, pin_size);
 
@@ -1346,7 +1346,7 @@ static uint32_t check_user_pin(struct pkcs11_session *session,
 				     sizeof(token->db_main->flags));
 	}
 
-	return PKCS11_OK;
+	return PKCS11_CKR_OK;
 }
 
 /* ctrl=[session][old-size]{old-pin][pin-size]{pin], in=unused, out=unused */
@@ -1393,7 +1393,7 @@ uint32_t entry_set_pin(struct pkcs11_client *client,
 		return rv;
 
 	if (serialargs_remaining_bytes(&ctrlargs))
-		return PKCS11_BAD_PARAM;
+		return PKCS11_CKR_ARGUMENTS_BAD;
 
 	session = pkcs11_handle2session(session_handle, client);
 	if (!session)
@@ -1405,7 +1405,7 @@ uint32_t entry_set_pin(struct pkcs11_client *client,
 	if (pkcs11_session_is_so(session)) {
 		if (!(session->token->db_main->flags &
 		      PKCS11_CKFT_TOKEN_INITIALIZED))
-			return PKCS11_ERROR;
+			return PKCS11_CKR_GENERAL_ERROR;
 
 		rv = check_so_pin(session, old_pin, old_pin_size);
 		if (rv)
@@ -1416,7 +1416,7 @@ uint32_t entry_set_pin(struct pkcs11_client *client,
 
 	if (!(session->token->db_main->flags &
 	      PKCS11_CKFT_USER_PIN_INITIALIZED))
-		return PKCS11_ERROR;
+		return PKCS11_CKR_GENERAL_ERROR;
 
 	rv = check_user_pin(session, old_pin, old_pin_size);
 	if (rv)
@@ -1446,7 +1446,7 @@ uint32_t entry_login(struct pkcs11_client *client,
 	void *pin = NULL;
 
 	if (!client || ptypes != exp_pt)
-		return PKCS11_BAD_PARAM;
+		return PKCS11_CKR_ARGUMENTS_BAD;
 
 	serialargs_init(&ctrlargs, ctrl->memref.buffer, ctrl->memref.size);
 
@@ -1467,7 +1467,7 @@ uint32_t entry_login(struct pkcs11_client *client,
 		return rv;
 
 	if (serialargs_remaining_bytes(&ctrlargs))
-		return PKCS11_BAD_PARAM;
+		return PKCS11_CKR_ARGUMENTS_BAD;
 
 	session = pkcs11_handle2session(session_handle, client);
 	if (!session)
@@ -1495,7 +1495,7 @@ uint32_t entry_login(struct pkcs11_client *client,
 		}
 
 		rv = check_so_pin(session, pin, pin_size);
-		if (rv == PKCS11_OK)
+		if (rv == PKCS11_CKR_OK)
 			session_login_so(session);
 
 		break;
@@ -1511,7 +1511,7 @@ uint32_t entry_login(struct pkcs11_client *client,
 		// CKR_USER_TOO_MANY_TYPES.
 
 		rv = check_user_pin(session, pin, pin_size);
-		if (rv == PKCS11_OK)
+		if (rv == PKCS11_CKR_OK)
 			session_login_user(session);
 
 		break;
@@ -1532,7 +1532,7 @@ uint32_t entry_login(struct pkcs11_client *client,
 		else
 			rv = check_user_pin(session, pin, pin_size);
 
-		session->processing->relogged = (rv == PKCS11_OK);
+		session->processing->relogged = (rv == PKCS11_CKR_OK);
 
 		if (rv == PKCS11_CKR_PIN_LOCKED)
 			session_logout(session);
@@ -1564,7 +1564,7 @@ uint32_t entry_logout(struct pkcs11_client *client,
 	struct pkcs11_session *session = NULL;
 
 	if (!client || ptypes != exp_pt)
-		return PKCS11_BAD_PARAM;
+		return PKCS11_CKR_ARGUMENTS_BAD;
 
 	serialargs_init(&ctrlargs, ctrl->memref.buffer, ctrl->memref.size);
 
@@ -1573,7 +1573,7 @@ uint32_t entry_logout(struct pkcs11_client *client,
 		return rv;
 
 	if (serialargs_remaining_bytes(&ctrlargs))
-		return PKCS11_BAD_PARAM;
+		return PKCS11_CKR_ARGUMENTS_BAD;
 
 	session = pkcs11_handle2session(session_handle, client);
 	if (!session)
@@ -1586,5 +1586,5 @@ uint32_t entry_logout(struct pkcs11_client *client,
 
 	IMSG("PKCS11 session %"PRIu32": logout", session_handle);
 
-	return PKCS11_OK;
+	return PKCS11_CKR_OK;
 }

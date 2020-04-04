@@ -35,7 +35,7 @@ static uint32_t get_ready_session(struct pkcs11_session **sess,
 
 	*sess = session;
 
-	return PKCS11_OK;
+	return PKCS11_CKR_OK;
 }
 
 static bool func_matches_state(enum processing_func function,
@@ -84,7 +84,7 @@ static uint32_t get_active_session(struct pkcs11_session **sess,
 	if (session->processing &&
 	    func_matches_state(function, session->processing->state)) {
 		*sess = session;
-		rv = PKCS11_OK;
+		rv = PKCS11_CKR_OK;
 	}
 
 	return rv;
@@ -149,7 +149,7 @@ uint32_t entry_import_object(struct pkcs11_client *client,
 
 	if (!client || ptypes != exp_pt ||
 	    out->memref.size != sizeof(obj_handle))
-		return PKCS11_BAD_PARAM;
+		return PKCS11_CKR_ARGUMENTS_BAD;
 
 	serialargs_init(&ctrlargs, ctrl->memref.buffer, ctrl->memref.size);
 
@@ -162,7 +162,7 @@ uint32_t entry_import_object(struct pkcs11_client *client,
 		return rv;
 
 	if (serialargs_remaining_bytes(&ctrlargs)) {
-		rv = PKCS11_BAD_PARAM;
+		rv = PKCS11_CKR_ARGUMENTS_BAD;
 		goto bail;
 	}
 
@@ -294,7 +294,7 @@ static uint32_t generate_random_key_value(struct pkcs11_attrs_head **head)
 
 	value = TEE_Malloc(value_len, TEE_USER_MEM_HINT_NO_FILL_ZERO);
 	if (!value)
-		return PKCS11_MEMORY;
+		return PKCS11_CKR_DEVICE_MEMORY;
 
 	TEE_GenerateRandom(value, value_len);
 
@@ -326,7 +326,7 @@ uint32_t entry_generate_secret(struct pkcs11_client *client,
 
 	if (!client || ptypes != exp_pt ||
 	    out->memref.size != sizeof(obj_handle))
-		return PKCS11_BAD_PARAM;
+		return PKCS11_CKR_ARGUMENTS_BAD;
 
 	serialargs_init(&ctrlargs, ctrl->memref.buffer, ctrl->memref.size);
 
@@ -343,7 +343,7 @@ uint32_t entry_generate_secret(struct pkcs11_client *client,
 		goto bail;
 
 	if (serialargs_remaining_bytes(&ctrlargs)) {
-		rv = PKCS11_BAD_PARAM;
+		rv = PKCS11_CKR_ARGUMENTS_BAD;
 		goto bail;
 	}
 
@@ -444,11 +444,11 @@ uint32_t alloc_get_tee_attribute_data(TEE_ObjectHandle tee_obj,
 
 	res = TEE_GetObjectBufferAttribute(tee_obj, attribute, NULL, &sz);
 	if (res != TEE_ERROR_SHORT_BUFFER)
-		return PKCS11_FAILED;
+		return PKCS11_CKR_FUNCTION_FAILED;
 
 	ptr = TEE_Malloc(sz, TEE_USER_MEM_HINT_NO_FILL_ZERO);
 	if (!ptr)
-		return PKCS11_MEMORY;
+		return PKCS11_CKR_DEVICE_MEMORY;
 
 	res = TEE_GetObjectBufferAttribute(tee_obj, attribute, ptr, &sz);
 	if (res) {
@@ -508,7 +508,7 @@ uint32_t entry_generate_key_pair(struct pkcs11_client *client,
 	size_t out_ref_size = sizeof(pubkey_handle) + sizeof(privkey_handle);
 
 	if (!client || ptypes != exp_pt || out->memref.size != out_ref_size)
-		return PKCS11_BAD_PARAM;
+		return PKCS11_CKR_ARGUMENTS_BAD;
 
 	serialargs_init(&ctrlargs, ctrl->memref.buffer, ctrl->memref.size);
 
@@ -552,7 +552,7 @@ uint32_t entry_generate_key_pair(struct pkcs11_client *client,
 		goto bail;
 
 	if (serialargs_remaining_bytes(&ctrlargs)) {
-		rv = PKCS11_BAD_PARAM;
+		rv = PKCS11_CKR_ARGUMENTS_BAD;
 		goto bail;
 	}
 
@@ -677,7 +677,7 @@ uint32_t entry_processing_init(struct pkcs11_client *client,
 	struct pkcs11_object *obj = NULL;
 
 	if (!client || ptypes != exp_pt)
-		return PKCS11_BAD_PARAM;
+		return PKCS11_CKR_ARGUMENTS_BAD;
 
 	serialargs_init(&ctrlargs, ctrl->memref.buffer, ctrl->memref.size);
 
@@ -694,7 +694,7 @@ uint32_t entry_processing_init(struct pkcs11_client *client,
 		return rv;
 
 	if (serialargs_remaining_bytes(&ctrlargs)) {
-		rv = PKCS11_BAD_PARAM;
+		rv = PKCS11_CKR_ARGUMENTS_BAD;
 		goto bail;
 	}
 
@@ -734,7 +734,7 @@ uint32_t entry_processing_init(struct pkcs11_client *client,
 	else
 		rv = PKCS11_CKR_MECHANISM_INVALID;
 
-	if (rv == PKCS11_OK) {
+	if (rv == PKCS11_CKR_OK) {
 		session->processing->mecha_type = proc_params->id;
 		IMSG("PKCS11 session %"PRIu32": init processing %s %s",
 		     session_handle, id2str_proc(proc_params->id),
@@ -776,7 +776,7 @@ uint32_t entry_processing_step(struct pkcs11_client *client,
 
 	if (!client ||
 	    TEE_PARAM_TYPE_GET(ptypes, 0) != TEE_PARAM_TYPE_MEMREF_INOUT)
-		return PKCS11_BAD_PARAM;
+		return PKCS11_CKR_ARGUMENTS_BAD;
 
 	serialargs_init(&ctrlargs, ctrl->memref.buffer, ctrl->memref.size);
 
@@ -785,7 +785,7 @@ uint32_t entry_processing_step(struct pkcs11_client *client,
 		return rv;
 
 	if (serialargs_remaining_bytes(&ctrlargs))
-		return PKCS11_BAD_PARAM;
+		return PKCS11_CKR_ARGUMENTS_BAD;
 
 	rv = get_active_session(&session, session_handle, client, function);
 	if (rv)
@@ -807,7 +807,7 @@ uint32_t entry_processing_step(struct pkcs11_client *client,
 	else
 		rv = PKCS11_CKR_MECHANISM_INVALID;
 
-	if (rv == PKCS11_OK) {
+	if (rv == PKCS11_CKR_OK) {
 		session->processing->updated = true;
 		IMSG("PKCS11 session%"PRIu32": processing %s %s",
 		     session_handle, id2str_proc(mecha_type),
@@ -817,12 +817,12 @@ uint32_t entry_processing_step(struct pkcs11_client *client,
 bail:
 	switch (step) {
 	case PKCS11_FUNC_STEP_UPDATE:
-		if (rv != PKCS11_OK && rv != PKCS11_SHORT_BUFFER)
+		if (rv != PKCS11_CKR_OK && rv != PKCS11_CKR_BUFFER_TOO_SMALL)
 			release_active_processing(session);
 		break;
 	default:
 		/* ONESHOT and FINAL terminates processing on success */
-		if (rv != PKCS11_SHORT_BUFFER)
+		if (rv != PKCS11_CKR_BUFFER_TOO_SMALL)
 			release_active_processing(session);
 		break;
 	}
@@ -858,7 +858,7 @@ uint32_t entry_verify_oneshot(struct pkcs11_client *client,
 	assert(function == PKCS11_FUNCTION_VERIFY);
 	if (!client ||
 	    TEE_PARAM_TYPE_GET(ptypes, 0) != TEE_PARAM_TYPE_MEMREF_INOUT)
-		return PKCS11_BAD_PARAM;
+		return PKCS11_CKR_ARGUMENTS_BAD;
 
 	serialargs_init(&ctrlargs, ctrl->memref.buffer, ctrl->memref.size);
 
@@ -867,7 +867,7 @@ uint32_t entry_verify_oneshot(struct pkcs11_client *client,
 		return rv;
 
 	if (serialargs_remaining_bytes(&ctrlargs))
-		return PKCS11_BAD_PARAM;
+		return PKCS11_CKR_ARGUMENTS_BAD;
 
 	rv = get_active_session(&session, session_handle, client, function);
 	if (rv)
@@ -894,7 +894,7 @@ uint32_t entry_verify_oneshot(struct pkcs11_client *client,
 	     id2str_rc(rv));
 
 bail:
-	if (rv != PKCS11_SHORT_BUFFER)
+	if (rv != PKCS11_CKR_BUFFER_TOO_SMALL)
 		release_active_processing(session);
 
 	return rv;
@@ -924,7 +924,7 @@ uint32_t entry_derive_key(struct pkcs11_client *client,
 
 	if (!client || ptypes != exp_pt ||
 	    out->memref.size != sizeof(out_handle))
-		return PKCS11_BAD_PARAM;
+		return PKCS11_CKR_ARGUMENTS_BAD;
 
 	serialargs_init(&ctrlargs, ctrl->memref.buffer, ctrl->memref.size);
 
@@ -945,7 +945,7 @@ uint32_t entry_derive_key(struct pkcs11_client *client,
 		goto bail;
 
 	if (serialargs_remaining_bytes(&ctrlargs)) {
-		rv = PKCS11_BAD_PARAM;
+		rv = PKCS11_CKR_ARGUMENTS_BAD;
 		goto bail;
 	}
 

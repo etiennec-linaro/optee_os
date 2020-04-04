@@ -461,7 +461,6 @@ uint32_t entry_ck_token_info(uint32_t ptypes, TEE_Param *params)
 	struct pkcs11_token_info info = {
 		.manufacturer_id = PKCS11_TOKEN_MANUFACTURER,
 		.model = PKCS11_TOKEN_MODEL,
-		.serial_number = PKCS11_TOKEN_SERIAL_NUMBER,
 		.max_session_count = UINT32_MAX,
 		.max_rw_session_count = UINT32_MAX,
 		.max_pin_len = PKCS11_TOKEN_PIN_SIZE_MAX,
@@ -473,6 +472,7 @@ uint32_t entry_ck_token_info(uint32_t ptypes, TEE_Param *params)
 		.hardware_version = PKCS11_TOKEN_HW_VERSION,
 		.firmware_version = PKCS11_TOKEN_FW_VERSION,
 	};
+	char sn[sizeof(info.serial_number) + 1] = { 0 };
 
 	if (ptypes != exp_pt || out->memref.size != sizeof(info))
 		return PKCS11_CKR_ARGUMENTS_BAD;
@@ -492,6 +492,12 @@ uint32_t entry_ck_token_info(uint32_t ptypes, TEE_Param *params)
 
 	pad_str(info.manufacturer_id, sizeof(info.manufacturer_id));
 	pad_str(info.model, sizeof(info.model));
+
+	if (snprintf(sn, sizeof(sn), "%0*"PRIu32,
+		     PKCS11_TOKEN_SERIALNUM_SIZE, token_id) >= (int)sizeof(sn))
+		TEE_Panic(0);
+
+	TEE_MemMove(info.serial_number, sn, sizeof(info.serial_number));
 	pad_str(info.serial_number, sizeof(info.serial_number));
 
 	TEE_MemMove(info.label, token->db_main->label, sizeof(info.label));

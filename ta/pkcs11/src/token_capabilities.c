@@ -176,8 +176,8 @@ bool mechanism_is_valid(enum pkcs11_mechanism_id id)
 /*
  * Return true if mechanism ID is valid and flags matches PKCS#11 compliancy
  */
-bool __maybe_unused mechanism_flags_complies_pkcs11(uint32_t mechanism_type,
-						    uint32_t flags)
+bool mechanism_flags_complies_pkcs11(uint32_t mechanism_type,
+				     uint32_t flags)
 {
 	size_t n = 0;
 
@@ -186,7 +186,7 @@ bool __maybe_unused mechanism_flags_complies_pkcs11(uint32_t mechanism_type,
 	for (n = 0; n < ARRAY_SIZE(pkcs11_modes); n++) {
 		if (pkcs11_modes[n].id == mechanism_type) {
 			if (flags & ~pkcs11_modes[n].flags)
-				EMSG("%s flags: 0x%"PRIx32" vs 0x%"PRIx32,
+				DMSG("%s flags: 0x%"PRIx32" vs 0x%"PRIx32,
 				     id2str_mechanism(mechanism_type),
 				     flags, pkcs11_modes[n].flags);
 
@@ -195,6 +195,20 @@ bool __maybe_unused mechanism_flags_complies_pkcs11(uint32_t mechanism_type,
 	}
 
 	/* Mechanism ID unexpectedly not found */
+	return false;
+}
+
+bool mechanism_is_one_shot_only(uint32_t mechanism_type)
+{
+	size_t n = 0;
+
+	for (n = 0; n < ARRAY_SIZE(pkcs11_modes); n++)
+		if (pkcs11_modes[n].id == mechanism_type)
+			return pkcs11_modes[n].one_shot;
+
+	/* Mechanism ID unexpectedly not found */
+	TEE_Panic(PKCS11_RV_NOT_FOUND);
+	/* Dummy return to keep compiiler happy */
 	return false;
 }
 

@@ -155,8 +155,6 @@ uint32_t check_mechanism_against_processing(struct pkcs11_session *session,
 					    enum processing_func function,
 					    enum processing_step step);
 
-int check_pkcs11_mechanism_flags(uint32_t mechanism_type, uint32_t flags);
-
 bool object_is_private(struct pkcs11_attrs_head *head);
 
 void pkcs11_max_min_key_size(uint32_t key_type, uint32_t *max_key_size,

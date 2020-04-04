@@ -8,6 +8,8 @@
 
 bool mechanism_flags_complies_pkcs11(uint32_t mechanism_type, uint32_t flags);
 
+bool mechanism_is_one_shot_only(uint32_t mechanism_type);
+
 bool mechanism_is_valid(enum pkcs11_mechanism_id id);
 
 #if CFG_TEE_TA_LOG_LEVEL > 0

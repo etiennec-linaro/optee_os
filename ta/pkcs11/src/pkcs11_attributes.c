@@ -17,142 +17,15 @@
 #include "handle.h"
 #include "object.h"
 #include "pkcs11_attributes.h"
+#include "pkcs11_helpers.h"
 #include "pkcs11_token.h"
 #include "processing.h"
 #include "sanitize_object.h"
 #include "serializer.h"
-#include "pkcs11_helpers.h"
+#include "token_capabilities.h"
 
 /* Byte size of CKA_ID attribute when generated locally */
 #define PKCS11_CKA_DEFAULT_SIZE		16
-
-struct pkcs11_mechachism_modes {
-	uint32_t id;
-	uint32_t flags;
-	bool available;
-	bool one_shot;
-};
-
-/*
- * PKCS11_CKFM_EC_F_P
- * PKCS11_CKFM_EC_F_2M
- * PKCS11_CKFM_EC_ECPARAMETERS
- * PKCS11_CKFM_EC_NAMEDCURVE
- * PKCS11_CKFM_EC_UNCOMPRESS
- * PKCS11_CKFM_EC_COMPRESS
- */
-#define PKCS11_ECM		0
-
-/* PKCS11_CKFM_HW: need to ask core one HW support of the mechanisms */
-#define MECHA(_label, _dig, _enc, _dec, _sig, _ver,			\
-	      _sr, _vr, _der, _wra, _unw, _gen, _gpa, _1s)		\
-	{								\
-		.id = PKCS11_CKM_  ## _label,				\
-		.one_shot = _1s,					\
-		.flags = (_enc ? PKCS11_CKFM_ENCRYPT : 0) |		\
-			 (_dec ? PKCS11_CKFM_DECRYPT : 0) |		\
-			 (_dig ? PKCS11_CKFM_DIGEST : 0) |		\
-			 (_sig ? PKCS11_CKFM_SIGN : 0) |		\
-			 (_sr ? PKCS11_CKFM_SIGN_RECOVER : 0) |		\
-			 (_ver ? PKCS11_CKFM_VERIFY : 0) |		\
-			 (_vr ? PKCS11_CKFM_VERIFY_RECOVER : 0) |	\
-			 (_gen ? PKCS11_CKFM_GENERATE : 0) |		\
-			 (_gpa ? PKCS11_CKFM_GENERATE_KEY_PAIR : 0) |	\
-			 (_wra ? PKCS11_CKFM_WRAP : 0) |		\
-			 (_unw ? PKCS11_CKFM_UNWRAP : 0) |		\
-			 (_der ? PKCS11_CKFM_DERIVE : 0) |		\
-			 PKCS11_ECM,					\
-	}
-
-static const __maybe_unused struct pkcs11_mechachism_modes pkcs11_modes[] = {
-	/*
-	 * PKCS#11 directives on mechanism support for the several processing
-	 * modes.
-	 *				1: One shot processing only --------.
-	 *				Gp: Generate secret pair --------.  |
-	 *				Ge: Generate secret value ----.  |  |
-	 *				Wr|Uw: Wrap/Unwrap -------.   |  |  |
-	 *				Dr: Derive ----------.    |   |  |  |
-	 *		Sr|Vr: SignRecover/VerifyRecov --.   |    |   |  |  |
-	 *		Si|Ve: Sign/Verify --------.     |   |    |   |  |  |
-	 *		En|De: Encrypt/Decrypt     |     |   |    |   |  |  |
-	 *		Di: Digest -----.    |     |     |   |    |   |  |  |
-	 *				|   / \   / \   / \  |   / \  |  |  |
-	 * Mechanism			Di|En|De|Si|Ve|Sr|Vr|Dr|Wr|Uw|Ge|Gp|1
-	 */
-	MECHA(AES_ECB,			0, 1, 1, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0),
-	MECHA(AES_CBC,			0, 1, 1, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0),
-	MECHA(AES_CBC_PAD,		0, 1, 1, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0),
-	MECHA(AES_CTS,			0, 1, 1, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0),
-	MECHA(AES_CTR,			0, 1, 1, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0),
-	MECHA(AES_GCM,			0, 1, 1, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0),
-	MECHA(AES_CCM,			0, 1, 1, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0),
-	MECHA(AES_GMAC,			0, 0, 0, 1, 1, 0, 0, 1, 0, 0, 0, 0, 0),
-	MECHA(AES_CMAC,			0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0),
-	MECHA(AES_CMAC_GENERAL,		0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0),
-	MECHA(AES_ECB_ENCRYPT_DATA,	0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0),
-	MECHA(AES_CBC_ENCRYPT_DATA,	0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0),
-	MECHA(AES_KEY_GEN,		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0),
-	/* Mechanism			Di|En|De|Si|Ve|Sr|Vr|Dr|Wr|Uw|Ge|Gp|1 */
-	MECHA(GENERIC_SECRET_KEY_GEN,	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0),
-	MECHA(MD5_HMAC,			0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0),
-	MECHA(SHA_1_HMAC,		0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0),
-	MECHA(SHA224_HMAC,		0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0),
-	MECHA(SHA256_HMAC,		0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0),
-	MECHA(SHA384_HMAC,		0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0),
-	MECHA(SHA512_HMAC,		0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0),
-	MECHA(AES_XCBC_MAC,		0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0),
-	/* Mechanism			Di|En|De|Si|Ve|Sr|Vr|Dr|Wr|Uw|Ge|Gp|1 */
-	MECHA(EC_KEY_PAIR_GEN,		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0),
-	MECHA(ECDSA,			0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1),
-	MECHA(ECDSA_SHA1,		0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0),
-	MECHA(ECDSA_SHA224,		0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0),
-	MECHA(ECDSA_SHA256,		0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0),
-	MECHA(ECDSA_SHA384,		0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0),
-	MECHA(ECDSA_SHA512,		0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0),
-	MECHA(ECDH1_DERIVE,		0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0),
-	MECHA(ECDH1_COFACTOR_DERIVE,	0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0),
-	MECHA(ECMQV_DERIVE,		0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0),
-	MECHA(ECDH_AES_KEY_WRAP,	0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0),
-	/* Mechanism			Di|En|De|Si|Ve|Sr|Vr|Dr|Wr|Uw|Ge|Gp|1 */
-	MECHA(RSA_PKCS_KEY_PAIR_GEN,	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0),
-	MECHA(RSA_PKCS,			0, 1, 1, 1, 1, 1, 1, 0, 1, 1, 0, 0, 1),
-	MECHA(RSA_PKCS_PSS,		0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1),
-	MECHA(RSA_PKCS_OAEP,		0, 1, 1, 0, 0, 0, 0, 0, 1, 1, 0, 0, 1),
-	MECHA(RSA_9796,			0, 0, 0, 1, 1, 1, 1, 0, 1, 1, 0, 0, 1),
-	MECHA(RSA_X_509,		0, 1, 1, 1, 1, 1, 1, 0, 1, 1, 0, 0, 1),
-	MECHA(SHA1_RSA_PKCS,		0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 1, 0, 0),
-	MECHA(SHA1_RSA_PKCS_PSS,	0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0),
-	MECHA(SHA256_RSA_PKCS,		0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0),
-	MECHA(SHA384_RSA_PKCS,		0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0),
-	MECHA(SHA512_RSA_PKCS,		0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0),
-	MECHA(SHA256_RSA_PKCS_PSS,	0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0),
-	MECHA(SHA384_RSA_PKCS_PSS,	0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0),
-	MECHA(SHA512_RSA_PKCS_PSS,	0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0),
-	MECHA(SHA224_RSA_PKCS,		0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0),
-	MECHA(SHA224_RSA_PKCS_PSS,	0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0),
-	MECHA(RSA_AES_KEY_WRAP,		0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0),
-	/* Mechanism			Di|En|De|Si|Ve|Sr|Vr|Dr|Wr|Uw|Ge|Gp|1 */
-	MECHA(MD5,			1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
-	MECHA(SHA_1,			1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
-	MECHA(SHA224,			1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
-	MECHA(SHA256,			1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
-	MECHA(SHA384,			1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
-	MECHA(SHA512,			1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
-	/*
-	 * Mechanism			 Di|En|De|Si|Ve|Sr|Vr|Dr|Wr|Uw|Ge|Gp|1
-	 *                               |   \_/   \_/   \_/  |   \_/  |  |  |
-	 *		Di: Digest ------'    |     |     |   |    |   |  |  |
-	 *		En|De: Encrypt/Decrypt'     |     |   |    |   |  |  |
-	 *		Si|Ve: Sign/Verify ---------'     |   |    |   |  |  |
-	 *		Sr|Vr: SignUpdate/VerifyRecover --'   |    |   |  |  |
-	 *				Dr: Derive -----------'    |   |  |  |
-	 *				Wr|Uw: Wrap/Unwrap --------'   |  |  |
-	 *				Ge: Generate secret value -----'  |  |
-	 *				Gp: Generate secret pair ---------'  |
-	 *				1: One shot processing only ---------'
-	 */
-};
 
 static uint32_t pkcs11_func2ckfm(enum processing_func function)
 {
@@ -186,39 +59,11 @@ static uint32_t pkcs11_func2ckfm(enum processing_func function)
 	}
 }
 
-int check_pkcs11_mechanism_flags(uint32_t mechanism_type, uint32_t flags)
-{
-	uint32_t test_flags = 0;
-	size_t n = 0;
-
-	test_flags = flags & (PKCS11_CKFM_ENCRYPT | PKCS11_CKFM_DECRYPT |
-			      PKCS11_CKFM_DERIVE | PKCS11_CKFM_DIGEST |
-			      PKCS11_CKFM_SIGN | PKCS11_CKFM_SIGN_RECOVER |
-			      PKCS11_CKFM_VERIFY | PKCS11_CKFM_VERIFY_RECOVER |
-			      PKCS11_CKFM_GENERATE |
-			      PKCS11_CKFM_GENERATE_KEY_PAIR |
-			      PKCS11_CKFM_WRAP | PKCS11_CKFM_UNWRAP);
-
-	for (n = 0; n < ARRAY_SIZE(pkcs11_modes); n++) {
-		if (pkcs11_modes[n].id == mechanism_type) {
-			if (test_flags & ~pkcs11_modes[n].flags)
-				EMSG("%s flags: 0x%"PRIx32" vs 0x%"PRIx32,
-				     id2str_proc(mechanism_type),
-				     test_flags, pkcs11_modes[n].flags);
-
-			return test_flags & ~pkcs11_modes[n].flags;
-		}
-	}
-
-	return 1;
-}
-
 uint32_t check_mechanism_against_processing(struct pkcs11_session *session,
 					    uint32_t mechanism_type,
 					    enum processing_func function,
 					    enum processing_step step)
 {
-	size_t n = 0;
 	bool allowed = false;
 
 	switch (step) {
@@ -230,15 +75,10 @@ uint32_t check_mechanism_against_processing(struct pkcs11_session *session,
 		case PKCS11_FUNCTION_DESTROY:
 			return PKCS11_CKR_OK;
 		default:
-			for (n = 0; n < ARRAY_SIZE(pkcs11_modes); n++) {
-				if (pkcs11_modes[n].id == mechanism_type) {
-					allowed = pkcs11_modes[n].flags &
-						  pkcs11_func2ckfm(function);
-					break;
-				}
-			}
 			break;
 		}
+		allowed = mechanism_supported_flags(mechanism_type) &
+			  pkcs11_func2ckfm(function);
 		break;
 
 	case PKCS11_FUNC_STEP_ONESHOT:
@@ -247,16 +87,10 @@ uint32_t check_mechanism_against_processing(struct pkcs11_session *session,
 		    !session->processing->relogged)
 			return PKCS11_CKR_USER_NOT_LOGGED_IN;
 
-		if (!session->processing->updated) {
+		if (!session->processing->updated)
 			allowed = true;
-		} else {
-			for (n = 0; n < ARRAY_SIZE(pkcs11_modes); n++) {
-				if (pkcs11_modes[n].id == mechanism_type) {
-					allowed = !pkcs11_modes[n].one_shot;
-					break;
-				}
-			}
-		}
+		else
+			allowed = !mechanism_is_one_shot_only(mechanism_type);
 		break;
 
 	case PKCS11_FUNC_STEP_FINAL:

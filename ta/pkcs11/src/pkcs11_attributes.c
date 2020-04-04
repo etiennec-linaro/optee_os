@@ -509,10 +509,6 @@ static const uint32_t pkcs11_ec_private_key_optional[] = {
 static uint32_t create_pkcs11_storage_attributes(struct pkcs11_attrs_head **out,
 						 struct pkcs11_attrs_head *temp)
 {
-	uint32_t const *boolprops = &pkcs11_any_object_boolprops[0];
-	uint32_t const *optional = &pkcs11_any_object_optional[0];
-	size_t boolprops_count = ARRAY_SIZE(pkcs11_any_object_boolprops);
-	size_t optional_count = ARRAY_SIZE(pkcs11_any_object_optional);
 	enum pkcs11_class_id class = 0;
 	uint32_t rv = 0;
 
@@ -532,20 +528,18 @@ static uint32_t create_pkcs11_storage_attributes(struct pkcs11_attrs_head **out,
 	if (rv)
 		return rv;
 
-	rv = set_mandatory_boolprops(out, temp, boolprops, boolprops_count);
+	rv = set_mandatory_boolprops(out, temp, pkcs11_any_object_boolprops,
+				     ARRAY_SIZE(pkcs11_any_object_boolprops));
 	if (rv)
 		return rv;
 
-	return set_optional_attributes(out, temp, optional, optional_count);
+	return set_optional_attributes(out, temp, pkcs11_any_object_optional,
+				       ARRAY_SIZE(pkcs11_any_object_optional));
 }
 
 static uint32_t create_pkcs11_genkey_attributes(struct pkcs11_attrs_head **out,
 						struct pkcs11_attrs_head *temp)
 {
-	uint32_t const *boolprops = &pkcs11_any_key_boolprops[0];
-	uint32_t const *optional = &pkcs11_any_key_optional[0];
-	size_t boolprops_count = ARRAY_SIZE(pkcs11_any_key_boolprops);
-	size_t optional_count = ARRAY_SIZE(pkcs11_any_key_optional);
 	uint32_t type = 0;
 	uint32_t rv = 0;
 
@@ -563,21 +557,19 @@ static uint32_t create_pkcs11_genkey_attributes(struct pkcs11_attrs_head **out,
 	if (rv)
 		return rv;
 
-	rv = set_mandatory_boolprops(out, temp, boolprops, boolprops_count);
+	rv = set_mandatory_boolprops(out, temp, pkcs11_any_key_boolprops,
+				     ARRAY_SIZE(pkcs11_any_key_boolprops));
 	if (rv)
 		return rv;
 
-	return set_optional_attributes(out, temp, optional, optional_count);
+	return set_optional_attributes(out, temp, pkcs11_any_key_optional,
+				       ARRAY_SIZE(pkcs11_any_key_optional));
 }
 
 static uint32_t create_pkcs11_symm_key_attributes(
 						struct pkcs11_attrs_head **out,
 						struct pkcs11_attrs_head *temp)
 {
-	uint32_t const *boolprops = &pkcs11_symm_key_boolprops[0];
-	uint32_t const *optional = &pkcs11_symm_key_optional[0];
-	size_t boolprops_count = ARRAY_SIZE(pkcs11_symm_key_boolprops);
-	size_t optional_count = ARRAY_SIZE(pkcs11_symm_key_optional);
 	uint32_t rv = 0;
 
 	assert(get_class(temp) == PKCS11_CKO_SECRET_KEY);
@@ -605,11 +597,13 @@ static uint32_t create_pkcs11_symm_key_attributes(
 		return PKCS11_CKR_TEMPLATE_INCONSISTENT;
 	}
 
-	rv = set_mandatory_boolprops(out, temp, boolprops, boolprops_count);
+	rv = set_mandatory_boolprops(out, temp, pkcs11_symm_key_boolprops,
+				     ARRAY_SIZE(pkcs11_symm_key_boolprops));
 	if (rv)
 		return rv;
 
-	return set_optional_attributes(out, temp, optional, optional_count);
+	return set_optional_attributes(out, temp, pkcs11_symm_key_optional,
+				       ARRAY_SIZE(pkcs11_symm_key_optional));
 }
 
 static uint32_t create_pkcs11_data_attributes(struct pkcs11_attrs_head **out,
@@ -635,13 +629,11 @@ static uint32_t create_pkcs11_data_attributes(struct pkcs11_attrs_head **out,
 static uint32_t create_pkcs11_pub_key_attributes(struct pkcs11_attrs_head **out,
 						 struct pkcs11_attrs_head *temp)
 {
+	uint32_t const *mandated = NULL;
+	uint32_t const *optional = NULL;
+	size_t mandated_count = 0;
+	size_t optional_count = 0;
 	uint32_t rv = 0;
-	uint32_t const *boolprops = &pkcs11_public_key_boolprops[0];
-	uint32_t const *mandated = &pkcs11_public_key_mandated[0];
-	uint32_t const *optional = &pkcs11_public_key_optional[0];
-	size_t boolprops_count = ARRAY_SIZE(pkcs11_public_key_boolprops);
-	size_t mandated_count = ARRAY_SIZE(pkcs11_public_key_mandated);
-	size_t optional_count = ARRAY_SIZE(pkcs11_public_key_optional);
 
 	assert(get_class(temp) == PKCS11_CKO_PUBLIC_KEY);
 
@@ -651,32 +643,31 @@ static uint32_t create_pkcs11_pub_key_attributes(struct pkcs11_attrs_head **out,
 
 	assert(get_class(*out) == PKCS11_CKO_PUBLIC_KEY);
 
-	rv = set_mandatory_boolprops(out, temp, boolprops, boolprops_count);
+	rv = set_mandatory_boolprops(out, temp, pkcs11_public_key_boolprops,
+				     ARRAY_SIZE(pkcs11_public_key_boolprops));
 	if (rv)
 		return rv;
 
-	rv = set_mandatory_attributes(out, temp, mandated, mandated_count);
+	rv = set_mandatory_attributes(out, temp, pkcs11_public_key_mandated,
+				      ARRAY_SIZE(pkcs11_public_key_mandated));
 	if (rv)
 		return rv;
 
-	rv = set_optional_attributes(out, temp, optional, optional_count);
+	rv = set_optional_attributes(out, temp, pkcs11_public_key_optional,
+				     ARRAY_SIZE(pkcs11_public_key_optional));
 	if (rv)
 		return rv;
 
 	switch (get_type(*out)) {
 	case PKCS11_CKK_RSA:
-		boolprops = NULL;
-		mandated = &pkcs11_rsa_public_key_mandated[0];
-		optional = &pkcs11_rsa_public_key_optional[0];
-		boolprops_count = 0;
+		mandated = pkcs11_rsa_public_key_mandated;
+		optional = pkcs11_rsa_public_key_optional;
 		mandated_count = ARRAY_SIZE(pkcs11_rsa_public_key_mandated);
 		optional_count = ARRAY_SIZE(pkcs11_rsa_public_key_optional);
 		break;
 	case PKCS11_CKK_EC:
-		boolprops = NULL;
-		mandated = &pkcs11_ec_public_key_mandated[0];
-		optional = &pkcs11_ec_public_key_optional[0];
-		boolprops_count = 0;
+		mandated = pkcs11_ec_public_key_mandated;
+		optional = pkcs11_ec_public_key_optional;
 		mandated_count = ARRAY_SIZE(pkcs11_ec_public_key_mandated);
 		optional_count = ARRAY_SIZE(pkcs11_ec_public_key_optional);
 		break;
@@ -686,10 +677,6 @@ static uint32_t create_pkcs11_pub_key_attributes(struct pkcs11_attrs_head **out,
 
 		return PKCS11_CKR_TEMPLATE_INCONSISTENT;
 	}
-
-	rv = set_mandatory_boolprops(out, temp, boolprops, boolprops_count);
-	if (rv)
-		return rv;
 
 	rv = set_mandatory_attributes(out, temp, mandated, mandated_count);
 	if (rv)
@@ -702,12 +689,10 @@ static uint32_t create_pkcs11_priv_key_attributes(
 						struct pkcs11_attrs_head **out,
 						struct pkcs11_attrs_head *temp)
 {
-	uint32_t const *boolprops = &pkcs11_private_key_boolprops[0];
-	uint32_t const *mandated = &pkcs11_private_key_mandated[0];
-	uint32_t const *optional = &pkcs11_private_key_optional[0];
-	size_t boolprops_count = ARRAY_SIZE(pkcs11_private_key_boolprops);
-	size_t mandated_count = ARRAY_SIZE(pkcs11_private_key_mandated);
-	size_t optional_count = ARRAY_SIZE(pkcs11_private_key_optional);
+	uint32_t const *mandated = NULL;
+	uint32_t const *optional = NULL;
+	size_t mandated_count = 0;
+	size_t optional_count = 0;
 	uint32_t rv = 0;
 
 	assert(get_class(temp) == PKCS11_CKO_PRIVATE_KEY);
@@ -718,32 +703,29 @@ static uint32_t create_pkcs11_priv_key_attributes(
 
 	assert(get_class(*out) == PKCS11_CKO_PRIVATE_KEY);
 
-	rv = set_mandatory_boolprops(out, temp, boolprops, boolprops_count);
+	rv = set_mandatory_boolprops(out, temp, pkcs11_private_key_boolprops,
+				     ARRAY_SIZE(pkcs11_private_key_boolprops));
 	if (rv)
 		return rv;
 
-	rv = set_mandatory_attributes(out, temp, mandated, mandated_count);
+	rv = set_mandatory_attributes(out, temp, pkcs11_private_key_mandated,
+				      ARRAY_SIZE(pkcs11_private_key_mandated));
 	if (rv)
 		return rv;
 
-	rv = set_optional_attributes(out, temp, optional, optional_count);
+	rv = set_optional_attributes(out, temp, pkcs11_private_key_optional,
+				     ARRAY_SIZE(pkcs11_private_key_optional));
 	if (rv)
 		return rv;
 
 	switch (get_type(*out)) {
 	case PKCS11_CKK_RSA:
-		boolprops = NULL;
-		mandated = NULL;
-		optional = &pkcs11_rsa_private_key_optional[0];
-		boolprops_count = 0;
-		mandated_count = 0;
+		optional = pkcs11_rsa_private_key_optional;
 		optional_count = ARRAY_SIZE(pkcs11_rsa_private_key_optional);
 		break;
 	case PKCS11_CKK_EC:
-		boolprops = NULL;
-		mandated = &pkcs11_ec_private_key_mandated[0];
-		optional = &pkcs11_ec_private_key_optional[0];
-		boolprops_count = 0;
+		mandated = pkcs11_ec_private_key_mandated;
+		optional = pkcs11_ec_private_key_optional;
 		mandated_count = ARRAY_SIZE(pkcs11_ec_private_key_mandated);
 		optional_count = ARRAY_SIZE(pkcs11_ec_private_key_optional);
 		break;
@@ -753,10 +735,6 @@ static uint32_t create_pkcs11_priv_key_attributes(
 
 		return PKCS11_CKR_TEMPLATE_INCONSISTENT;
 	}
-
-	rv = set_mandatory_boolprops(out, temp, boolprops, boolprops_count);
-	if (rv)
-		return rv;
 
 	rv = set_mandatory_attributes(out, temp, mandated, mandated_count);
 	if (rv)

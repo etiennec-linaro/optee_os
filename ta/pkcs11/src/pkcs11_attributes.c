@@ -506,8 +506,8 @@ static const uint32_t pkcs11_ec_private_key_optional[] = {
 	PKCS11_CKA_EC_POINT_X, PKCS11_CKA_EC_POINT_Y,
 };
 
-static uint32_t create_pkcs11_storage_attributes(struct pkcs11_attrs_head **out,
-						 struct pkcs11_attrs_head *temp)
+static uint32_t create_storage_attributes(struct pkcs11_attrs_head **out,
+					  struct pkcs11_attrs_head *temp)
 {
 	enum pkcs11_class_id class = 0;
 	uint32_t rv = 0;
@@ -537,13 +537,13 @@ static uint32_t create_pkcs11_storage_attributes(struct pkcs11_attrs_head **out,
 				       ARRAY_SIZE(pkcs11_any_object_optional));
 }
 
-static uint32_t create_pkcs11_genkey_attributes(struct pkcs11_attrs_head **out,
-						struct pkcs11_attrs_head *temp)
+static uint32_t create_genkey_attributes(struct pkcs11_attrs_head **out,
+					 struct pkcs11_attrs_head *temp)
 {
 	uint32_t type = 0;
 	uint32_t rv = 0;
 
-	rv = create_pkcs11_storage_attributes(out, temp);
+	rv = create_storage_attributes(out, temp);
 	if (rv)
 		return rv;
 
@@ -566,15 +566,14 @@ static uint32_t create_pkcs11_genkey_attributes(struct pkcs11_attrs_head **out,
 				       ARRAY_SIZE(pkcs11_any_key_optional));
 }
 
-static uint32_t create_pkcs11_symm_key_attributes(
-						struct pkcs11_attrs_head **out,
-						struct pkcs11_attrs_head *temp)
+static uint32_t create_symm_key_attributes(struct pkcs11_attrs_head **out,
+					   struct pkcs11_attrs_head *temp)
 {
 	uint32_t rv = 0;
 
 	assert(get_class(temp) == PKCS11_CKO_SECRET_KEY);
 
-	rv = create_pkcs11_genkey_attributes(out, temp);
+	rv = create_genkey_attributes(out, temp);
 	if (rv)
 		return rv;
 
@@ -606,14 +605,14 @@ static uint32_t create_pkcs11_symm_key_attributes(
 				       ARRAY_SIZE(pkcs11_symm_key_optional));
 }
 
-static uint32_t create_pkcs11_data_attributes(struct pkcs11_attrs_head **out,
-					      struct pkcs11_attrs_head *temp)
+static uint32_t create_data_attributes(struct pkcs11_attrs_head **out,
+				       struct pkcs11_attrs_head *temp)
 {
 	uint32_t rv = 0;
 
 	assert(get_class(temp) == PKCS11_CKO_DATA);
 
-	rv = create_pkcs11_storage_attributes(out, temp);
+	rv = create_storage_attributes(out, temp);
 	if (rv)
 		return rv;
 
@@ -626,8 +625,8 @@ static uint32_t create_pkcs11_data_attributes(struct pkcs11_attrs_head **out,
 	return rv;
 }
 
-static uint32_t create_pkcs11_pub_key_attributes(struct pkcs11_attrs_head **out,
-						 struct pkcs11_attrs_head *temp)
+static uint32_t create_pub_key_attributes(struct pkcs11_attrs_head **out,
+					  struct pkcs11_attrs_head *temp)
 {
 	uint32_t const *mandated = NULL;
 	uint32_t const *optional = NULL;
@@ -637,7 +636,7 @@ static uint32_t create_pkcs11_pub_key_attributes(struct pkcs11_attrs_head **out,
 
 	assert(get_class(temp) == PKCS11_CKO_PUBLIC_KEY);
 
-	rv = create_pkcs11_genkey_attributes(out, temp);
+	rv = create_genkey_attributes(out, temp);
 	if (rv)
 		return rv;
 
@@ -685,9 +684,8 @@ static uint32_t create_pkcs11_pub_key_attributes(struct pkcs11_attrs_head **out,
 	return set_optional_attributes(out, temp, optional, optional_count);
 }
 
-static uint32_t create_pkcs11_priv_key_attributes(
-						struct pkcs11_attrs_head **out,
-						struct pkcs11_attrs_head *temp)
+static uint32_t create_priv_key_attributes(struct pkcs11_attrs_head **out,
+					   struct pkcs11_attrs_head *temp)
 {
 	uint32_t const *mandated = NULL;
 	uint32_t const *optional = NULL;
@@ -697,7 +695,7 @@ static uint32_t create_pkcs11_priv_key_attributes(
 
 	assert(get_class(temp) == PKCS11_CKO_PRIVATE_KEY);
 
-	rv = create_pkcs11_genkey_attributes(out, temp);
+	rv = create_genkey_attributes(out, temp);
 	if (rv)
 		return rv;
 
@@ -800,16 +798,16 @@ uint32_t create_attributes_from_template(struct pkcs11_attrs_head **out,
 
 	switch (get_class(temp)) {
 	case PKCS11_CKO_DATA:
-		rv = create_pkcs11_data_attributes(&attrs, temp);
+		rv = create_data_attributes(&attrs, temp);
 		break;
 	case PKCS11_CKO_SECRET_KEY:
-		rv = create_pkcs11_symm_key_attributes(&attrs, temp);
+		rv = create_symm_key_attributes(&attrs, temp);
 		break;
 	case PKCS11_CKO_PUBLIC_KEY:
-		rv = create_pkcs11_pub_key_attributes(&attrs, temp);
+		rv = create_pub_key_attributes(&attrs, temp);
 		break;
 	case PKCS11_CKO_PRIVATE_KEY:
-		rv = create_pkcs11_priv_key_attributes(&attrs, temp);
+		rv = create_priv_key_attributes(&attrs, temp);
 		break;
 	default:
 		DMSG("Invalid object class 0x%"PRIx32"/%s",

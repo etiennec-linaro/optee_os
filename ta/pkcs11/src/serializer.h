@@ -12,6 +12,9 @@
 #include <stdint.h>
 #include <tee_internal_api.h>
 
+struct pkcs11_client;
+struct pkcs11_session;
+
 /*
  * Util routines for serializes unformated arguments in a client memref
  */
@@ -37,6 +40,10 @@ uint32_t serialargs_alloc_and_get(struct serialargs *args,
 				  void **out, size_t size);
 
 bool serialargs_remaining_bytes(struct serialargs *args);
+
+uint32_t serialargs_get_session(struct serialargs *args,
+				struct pkcs11_client *client,
+				struct pkcs11_session **session);
 
 #define PKCS11_MAX_BOOLPROP_SHIFT	64
 #define PKCS11_MAX_BOOLPROP_ARRAY	(PKCS11_MAX_BOOLPROP_SHIFT / \

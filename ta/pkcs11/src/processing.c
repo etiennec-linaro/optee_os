@@ -20,20 +20,10 @@
 #include "processing.h"
 #include "serializer.h"
 
-static uint32_t get_ready_session(struct pkcs11_session **sess,
-				  uint32_t session_handle,
-				  struct pkcs11_client *client)
+static uint32_t get_ready_session(struct pkcs11_session *session)
 {
-	struct pkcs11_session *session = NULL;
-
-	session = pkcs11_handle2session(session_handle, client);
-	if (!session)
-		return PKCS11_CKR_SESSION_HANDLE_INVALID;
-
 	if (session_is_active(session))
 		return PKCS11_CKR_OPERATION_ACTIVE;
-
-	*sess = session;
 
 	return PKCS11_CKR_OK;
 }
@@ -69,23 +59,14 @@ static bool func_matches_state(enum processing_func function,
 	}
 }
 
-static uint32_t get_active_session(struct pkcs11_session **sess,
-				  uint32_t session_handle,
-				  struct pkcs11_client *client,
+static uint32_t get_active_session(struct pkcs11_session *session,
 				  enum processing_func function)
 {
-	struct pkcs11_session *session = NULL;
 	uint32_t rv = PKCS11_CKR_OPERATION_NOT_INITIALIZED;
 
-	session = pkcs11_handle2session(session_handle, client);
-	if (!session)
-		return PKCS11_CKR_SESSION_HANDLE_INVALID;
-
 	if (session->processing &&
-	    func_matches_state(function, session->processing->state)) {
-		*sess = session;
+	    func_matches_state(function, session->processing->state))
 		rv = PKCS11_CKR_OK;
-	}
 
 	return rv;
 }
@@ -136,7 +117,6 @@ uint32_t entry_import_object(struct pkcs11_client *client,
 	TEE_Param *out = &params[2];
 	uint32_t rv = 0;
 	struct serialargs ctrlargs = { };
-	uint32_t session_handle = 0;
 	struct pkcs11_session *session = NULL;
 	struct pkcs11_attrs_head *head = NULL;
 	struct pkcs11_object_head *template = NULL;
@@ -153,7 +133,7 @@ uint32_t entry_import_object(struct pkcs11_client *client,
 
 	serialargs_init(&ctrlargs, ctrl->memref.buffer, ctrl->memref.size);
 
-	rv = serialargs_get(&ctrlargs, &session_handle, sizeof(uint32_t));
+	rv = serialargs_get_session(&ctrlargs, client, &session);
 	if (rv)
 		return rv;
 
@@ -166,7 +146,7 @@ uint32_t entry_import_object(struct pkcs11_client *client,
 		goto bail;
 	}
 
-	rv = get_ready_session(&session, session_handle, client);
+	rv = get_ready_session(session);
 	if (rv)
 		goto bail;
 
@@ -221,7 +201,7 @@ uint32_t entry_import_object(struct pkcs11_client *client,
 	out->memref.size = sizeof(obj_handle);
 
 	DMSG("PKCS11 session %"PRIu32": import object %#"PRIx32,
-	     session_handle, obj_handle);
+	     session->handle, obj_handle);
 
 bail:
 	TEE_Free(template);
@@ -316,7 +296,6 @@ uint32_t entry_generate_secret(struct pkcs11_client *client,
 	TEE_Param *out = &params[2];
 	uint32_t rv = 0;
 	struct serialargs ctrlargs = { };
-	uint32_t session_handle = 0;
 	struct pkcs11_session *session = NULL;
 	struct pkcs11_attribute_head *proc_params = NULL;
 	struct pkcs11_attrs_head *head = NULL;
@@ -330,7 +309,7 @@ uint32_t entry_generate_secret(struct pkcs11_client *client,
 
 	serialargs_init(&ctrlargs, ctrl->memref.buffer, ctrl->memref.size);
 
-	rv = serialargs_get(&ctrlargs, &session_handle, sizeof(session_handle));
+	rv = serialargs_get_session(&ctrlargs, client, &session);
 	if (rv)
 		return rv;
 
@@ -347,7 +326,7 @@ uint32_t entry_generate_secret(struct pkcs11_client *client,
 		goto bail;
 	}
 
-	rv = get_ready_session(&session, session_handle, client);
+	rv = get_ready_session(session);
 	if (rv)
 		goto bail;
 
@@ -424,7 +403,7 @@ uint32_t entry_generate_secret(struct pkcs11_client *client,
 	out->memref.size = sizeof(obj_handle);
 
 	DMSG("PKCS11 session %"PRIu32": generate secret %#"PRIx32,
-	     session_handle, obj_handle);
+	     session->handle, obj_handle);
 
 bail:
 	TEE_Free(proc_params);
@@ -495,7 +474,6 @@ uint32_t entry_generate_key_pair(struct pkcs11_client *client,
 	TEE_Param *out = &params[2];
 	uint32_t rv = 0;
 	struct serialargs ctrlargs = { };
-	uint32_t session_handle = 0;
 	struct pkcs11_session *session = NULL;
 	struct pkcs11_attribute_head *proc_params = NULL;
 	struct pkcs11_attrs_head *pub_head = NULL;
@@ -512,7 +490,7 @@ uint32_t entry_generate_key_pair(struct pkcs11_client *client,
 
 	serialargs_init(&ctrlargs, ctrl->memref.buffer, ctrl->memref.size);
 
-	rv = serialargs_get(&ctrlargs, &session_handle, sizeof(uint32_t));
+	rv = serialargs_get_session(&ctrlargs, client, &session);
 	if (rv)
 		return rv;
 
@@ -526,7 +504,7 @@ uint32_t entry_generate_key_pair(struct pkcs11_client *client,
 	if (rv)
 		goto bail;
 
-	rv = get_ready_session(&session, session_handle, client);
+	rv = get_ready_session(session);
 	if (rv)
 		goto bail;
 
@@ -637,7 +615,7 @@ uint32_t entry_generate_key_pair(struct pkcs11_client *client,
 	TEE_MemMove(hdl_ptr + 1, &privkey_handle, sizeof(privkey_handle));
 
 	DMSG("PKCS11 session %"PRIu32": create key pair %#"PRIx32"/%#"PRIx32,
-	     session_handle, privkey_handle, pubkey_handle);
+	     session->handle, privkey_handle, pubkey_handle);
 
 bail:
 	TEE_Free(proc_params);
@@ -670,7 +648,6 @@ uint32_t entry_processing_init(struct pkcs11_client *client,
 	TEE_Param *ctrl = &params[0];
 	uint32_t rv = 0;
 	struct serialargs ctrlargs = { };
-	uint32_t session_handle = 0;
 	struct pkcs11_session *session = NULL;
 	struct pkcs11_attribute_head *proc_params = NULL;
 	uint32_t key_handle = 0;
@@ -681,7 +658,7 @@ uint32_t entry_processing_init(struct pkcs11_client *client,
 
 	serialargs_init(&ctrlargs, ctrl->memref.buffer, ctrl->memref.size);
 
-	rv = serialargs_get(&ctrlargs, &session_handle, sizeof(uint32_t));
+	rv = serialargs_get_session(&ctrlargs, client, &session);
 	if (rv)
 		return rv;
 
@@ -698,7 +675,7 @@ uint32_t entry_processing_init(struct pkcs11_client *client,
 		goto bail;
 	}
 
-	rv = get_ready_session(&session, session_handle, client);
+	rv = get_ready_session(session);
 	if (rv)
 		goto bail;
 
@@ -737,7 +714,7 @@ uint32_t entry_processing_init(struct pkcs11_client *client,
 	if (rv == PKCS11_CKR_OK) {
 		session->processing->mecha_type = proc_params->id;
 		DMSG("PKCS11 session %"PRIu32": init processing %s %s",
-		     session_handle, id2str_proc(proc_params->id),
+		     session->handle, id2str_proc(proc_params->id),
 		     id2str_function(function));
 	}
 
@@ -770,7 +747,6 @@ uint32_t entry_processing_step(struct pkcs11_client *client,
 	TEE_Param *ctrl = &params[0];
 	uint32_t rv = 0;
 	struct serialargs ctrlargs = { };
-	uint32_t session_handle = 0;
 	struct pkcs11_session *session = NULL;
 	uint32_t mecha_type = 0;
 
@@ -780,14 +756,14 @@ uint32_t entry_processing_step(struct pkcs11_client *client,
 
 	serialargs_init(&ctrlargs, ctrl->memref.buffer, ctrl->memref.size);
 
-	rv = serialargs_get(&ctrlargs, &session_handle, sizeof(uint32_t));
+	rv = serialargs_get_session(&ctrlargs, client, &session);
 	if (rv)
 		return rv;
 
 	if (serialargs_remaining_bytes(&ctrlargs))
 		return PKCS11_CKR_ARGUMENTS_BAD;
 
-	rv = get_active_session(&session, session_handle, client, function);
+	rv = get_active_session(session, function);
 	if (rv)
 		return rv;
 
@@ -810,7 +786,7 @@ uint32_t entry_processing_step(struct pkcs11_client *client,
 	if (rv == PKCS11_CKR_OK) {
 		session->processing->updated = true;
 		DMSG("PKCS11 session%"PRIu32": processing %s %s",
-		     session_handle, id2str_proc(mecha_type),
+		     session->handle, id2str_proc(mecha_type),
 		     id2str_function(function));
 	}
 
@@ -851,7 +827,6 @@ uint32_t entry_verify_oneshot(struct pkcs11_client *client,
 	TEE_Param *ctrl = &params[0];
 	uint32_t rv = 0;
 	struct serialargs ctrlargs = { };
-	uint32_t session_handle = 0;
 	struct pkcs11_session *session = NULL;
 	uint32_t mecha_type = 0;
 
@@ -862,14 +837,14 @@ uint32_t entry_verify_oneshot(struct pkcs11_client *client,
 
 	serialargs_init(&ctrlargs, ctrl->memref.buffer, ctrl->memref.size);
 
-	rv = serialargs_get(&ctrlargs, &session_handle, sizeof(uint32_t));
+	rv = serialargs_get_session(&ctrlargs, client, &session);
 	if (rv)
 		return rv;
 
 	if (serialargs_remaining_bytes(&ctrlargs))
 		return PKCS11_CKR_ARGUMENTS_BAD;
 
-	rv = get_active_session(&session, session_handle, client, function);
+	rv = get_active_session(session, function);
 	if (rv)
 		return rv;
 
@@ -889,7 +864,7 @@ uint32_t entry_verify_oneshot(struct pkcs11_client *client,
 	else
 		rv = PKCS11_CKR_MECHANISM_INVALID;
 
-	DMSG("PKCS11 session %"PRIu32": verify %s %s: %s", session_handle,
+	DMSG("PKCS11 session %"PRIu32": verify %s %s: %s", session->handle,
 	     id2str_proc(mecha_type), id2str_function(function),
 	     id2str_rc(rv));
 
@@ -911,7 +886,6 @@ uint32_t entry_derive_key(struct pkcs11_client *client,
 	TEE_Param *out = &params[2];
 	uint32_t rv = 0;
 	struct serialargs ctrlargs = { };
-	uint32_t session_handle = 0;
 	struct pkcs11_session *session = NULL;
 	struct pkcs11_attribute_head *proc_params = NULL;
 	uint32_t parent_handle = 0;
@@ -928,7 +902,7 @@ uint32_t entry_derive_key(struct pkcs11_client *client,
 
 	serialargs_init(&ctrlargs, ctrl->memref.buffer, ctrl->memref.size);
 
-	rv = serialargs_get(&ctrlargs, &session_handle, sizeof(uint32_t));
+	rv = serialargs_get_session(&ctrlargs, client, &session);
 	if (rv)
 		return rv;
 
@@ -949,7 +923,7 @@ uint32_t entry_derive_key(struct pkcs11_client *client,
 		goto bail;
 	}
 
-	rv = get_ready_session(&session, session_handle, client);
+	rv = get_ready_session(session);
 	if (rv)
 		goto bail;
 
@@ -1067,7 +1041,7 @@ uint32_t entry_derive_key(struct pkcs11_client *client,
 	out->memref.size = sizeof(out_handle);
 
 	DMSG("PKCS11 session %"PRIu32": derive key %#"PRIx32"/%s",
-	     session_handle, out_handle, id2str_proc(mecha_id));
+	     session->handle, out_handle, id2str_proc(mecha_id));
 
 bail:
 	release_active_processing(session);

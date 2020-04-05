@@ -17,6 +17,7 @@
 
 #include "serializer.h"
 #include "pkcs11_helpers.h"
+#include "pkcs11_token.h"
 
 /*
  * Util routines for serializes unformatted arguments in a client memref
@@ -171,6 +172,32 @@ uint32_t serialargs_alloc_get_attributes(struct serialargs *args,
 bool serialargs_remaining_bytes(struct serialargs *args)
 {
 	return args->next < args->start + args->size;
+}
+
+/*
+ * Specific helper has PKCS11_CKR_SESSION_HANDLE_INVALID shall take precedence
+ * other errors when a request is invoked with a bad PKCS#11 session handle
+ * as specified by the PKCS#11 specification.
+ */
+uint32_t serialargs_get_session(struct serialargs *args,
+				struct pkcs11_client *client,
+				struct pkcs11_session **session)
+{
+	uint32_t rv = PKCS11_CKR_GENERAL_ERROR;
+	uint32_t session_handle = 0;
+	struct pkcs11_session *sess = NULL;
+
+	rv = serialargs_get(args, &session_handle, sizeof(session_handle));
+	if (rv)
+		return rv;
+
+	sess = pkcs11_handle2session(session_handle, client);
+	if (!sess)
+		return PKCS11_CKR_SESSION_HANDLE_INVALID;
+
+	*session = sess;
+
+	return PKCS11_CKR_OK;
 }
 
 /*

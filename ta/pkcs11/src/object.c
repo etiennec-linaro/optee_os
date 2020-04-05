@@ -271,7 +271,6 @@ uint32_t entry_destroy_object(struct pkcs11_client *client,
 						TEE_PARAM_TYPE_NONE);
 	TEE_Param *ctrl = &params[0];
 	struct serialargs ctrlargs = { };
-	uint32_t session_handle = 0;
 	uint32_t object_handle = 0;
 	struct pkcs11_session *session = NULL;
 	struct pkcs11_object *object = NULL;
@@ -282,7 +281,7 @@ uint32_t entry_destroy_object(struct pkcs11_client *client,
 
 	serialargs_init(&ctrlargs, ctrl->memref.buffer, ctrl->memref.size);
 
-	rv = serialargs_get(&ctrlargs, &session_handle, sizeof(uint32_t));
+	rv = serialargs_get_session(&ctrlargs, client, &session);
 	if (rv)
 		return rv;
 
@@ -292,10 +291,6 @@ uint32_t entry_destroy_object(struct pkcs11_client *client,
 
 	if (serialargs_remaining_bytes(&ctrlargs))
 		return PKCS11_CKR_ARGUMENTS_BAD;
-
-	session = pkcs11_handle2session(session_handle, client);
-	if (!session)
-		return PKCS11_CKR_SESSION_HANDLE_INVALID;
 
 	if (session_is_active(session))
 		return PKCS11_CKR_OPERATION_ACTIVE;
@@ -308,7 +303,7 @@ uint32_t entry_destroy_object(struct pkcs11_client *client,
 	handle_put(&session->object_handle_db, object_handle);
 
 	DMSG("PKCS11 session %"PRIu32": destroy object %#"PRIx32,
-	     session_handle, object_handle);
+	     session->handle, object_handle);
 
 	return rv;
 }
@@ -424,7 +419,6 @@ uint32_t entry_find_objects_init(struct pkcs11_client *client,
 	TEE_Param *ctrl = &params[0];
 	uint32_t rv = 0;
 	struct serialargs ctrlargs = { };
-	uint32_t session_handle = 0;
 	struct pkcs11_session *session = NULL;
 	struct pkcs11_object_head *template = NULL;
 	struct pkcs11_attrs_head *req_attrs = NULL;
@@ -436,7 +430,7 @@ uint32_t entry_find_objects_init(struct pkcs11_client *client,
 
 	serialargs_init(&ctrlargs, ctrl->memref.buffer, ctrl->memref.size);
 
-	rv = serialargs_get(&ctrlargs, &session_handle, sizeof(uint32_t));
+	rv = serialargs_get_session(&ctrlargs, client, &session);
 	if (rv)
 		return rv;
 
@@ -446,12 +440,6 @@ uint32_t entry_find_objects_init(struct pkcs11_client *client,
 
 	if (serialargs_remaining_bytes(&ctrlargs)) {
 		rv = PKCS11_CKR_ARGUMENTS_BAD;
-		goto bail;
-	}
-
-	session = pkcs11_handle2session(session_handle, client);
-	if (!session) {
-		rv = PKCS11_CKR_SESSION_HANDLE_INVALID;
 		goto bail;
 	}
 
@@ -606,7 +594,6 @@ uint32_t entry_find_objects(struct pkcs11_client *client,
 	TEE_Param *out = &params[2];
 	uint32_t rv = 0;
 	struct serialargs ctrlargs = { };
-	uint32_t session_handle = 0;
 	struct pkcs11_session *session = NULL;
 	struct pkcs11_find_objects *ctx = NULL;
 	char *out_handles = NULL;
@@ -622,16 +609,12 @@ uint32_t entry_find_objects(struct pkcs11_client *client,
 
 	serialargs_init(&ctrlargs, ctrl->memref.buffer, ctrl->memref.size);
 
-	rv = serialargs_get(&ctrlargs, &session_handle, sizeof(uint32_t));
+	rv = serialargs_get_session(&ctrlargs, client, &session);
 	if (rv)
 		return rv;
 
 	if (serialargs_remaining_bytes(&ctrlargs))
 		return PKCS11_CKR_ARGUMENTS_BAD;
-
-	session = pkcs11_handle2session(session_handle, client);
-	if (!session)
-		return PKCS11_CKR_SESSION_HANDLE_INVALID;
 
 	ctx = session->find_ctx;
 
@@ -665,7 +648,7 @@ uint32_t entry_find_objects(struct pkcs11_client *client,
 	/* Update output buffer according the number of handles provided */
 	out->memref.size = count * sizeof(uint32_t);
 
-	DMSG("PKCS11 session %"PRIu32": finding objects", session_handle);
+	DMSG("PKCS11 session %"PRIu32": finding objects", session->handle);
 
 	return PKCS11_CKR_OK;
 }
@@ -686,7 +669,6 @@ uint32_t entry_find_objects_final(struct pkcs11_client *client,
 	TEE_Param *ctrl = &params[0];
 	uint32_t rv = 0;
 	struct serialargs ctrlargs = { };
-	uint32_t session_handle = 9;
 	struct pkcs11_session *session = NULL;
 
 	if (!client || ptypes != exp_pt)
@@ -694,16 +676,12 @@ uint32_t entry_find_objects_final(struct pkcs11_client *client,
 
 	serialargs_init(&ctrlargs, ctrl->memref.buffer, ctrl->memref.size);
 
-	rv = serialargs_get(&ctrlargs, &session_handle, sizeof(uint32_t));
+	rv = serialargs_get_session(&ctrlargs, client, &session);
 	if (rv)
 		return rv;
 
 	if (serialargs_remaining_bytes(&ctrlargs))
 		return PKCS11_CKR_ARGUMENTS_BAD;
-
-	session = pkcs11_handle2session(session_handle, client);
-	if (!session)
-		return PKCS11_CKR_SESSION_HANDLE_INVALID;
 
 	if (!session->find_ctx)
 		return PKCS11_CKR_OPERATION_NOT_INITIALIZED;
@@ -724,7 +702,6 @@ uint32_t entry_get_attribute_value(struct pkcs11_client *client,
 	TEE_Param *out = &params[2];
 	uint32_t rv = 0;
 	struct serialargs ctrlargs = { };
-	uint32_t session_handle = 0;
 	struct pkcs11_session *session = NULL;
 	struct pkcs11_object_head *template = NULL;
 	struct pkcs11_object *obj = NULL;
@@ -741,7 +718,7 @@ uint32_t entry_get_attribute_value(struct pkcs11_client *client,
 
 	serialargs_init(&ctrlargs, ctrl->memref.buffer, ctrl->memref.size);
 
-	rv = serialargs_get(&ctrlargs, &session_handle, sizeof(uint32_t));
+	rv = serialargs_get_session(&ctrlargs, client, &session);
 	if (rv)
 		return rv;
 
@@ -755,12 +732,6 @@ uint32_t entry_get_attribute_value(struct pkcs11_client *client,
 
 	if (serialargs_remaining_bytes(&ctrlargs)) {
 		rv = PKCS11_CKR_ARGUMENTS_BAD;
-		goto bail;
-	}
-
-	session = pkcs11_handle2session(session_handle, client);
-	if (!session) {
-		rv = PKCS11_CKR_SESSION_HANDLE_INVALID;
 		goto bail;
 	}
 
@@ -864,7 +835,7 @@ uint32_t entry_get_attribute_value(struct pkcs11_client *client,
 	TEE_MemMove(out->memref.buffer, template, out->memref.size);
 
 	DMSG("PKCS11 session %"PRIu32": get attributes %#"PRIx32,
-	     session_handle, object_handle);
+	     session->handle, object_handle);
 
 bail:
 	TEE_Free(template);

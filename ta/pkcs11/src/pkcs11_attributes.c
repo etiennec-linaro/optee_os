@@ -106,8 +106,8 @@ uint32_t check_mechanism_against_processing(struct pkcs11_session *session,
 	}
 
 	if (!allowed)
-		EMSG("Processing %s (%"PRIx32") not permitted (%u/%u)",
-		     id2str_proc(mechanism_type), mechanism_type,
+		EMSG("Processing %#"PRIx32"/%s not permitted (%u/%u)",
+		     mechanism_type, id2str_proc(mechanism_type),
 		     function, step);
 
 	return allowed ? PKCS11_CKR_OK : PKCS11_CKR_KEY_FUNCTION_NOT_PERMITTED;
@@ -146,7 +146,7 @@ static uint8_t *pkcs11_object_default_boolprop(uint32_t attribute)
 	case PKCS11_CKA_TRUSTED:
 		return (uint8_t *)&bool_false;
 	default:
-		DMSG("No default for boolprop attribute 0x%"PRIx32, attribute);
+		DMSG("No default for boolprop attribute %#"PRIx32, attribute);
 		TEE_Panic(0); // FIXME: errno
 	}
 
@@ -424,7 +424,7 @@ static uint32_t create_symm_key_attributes(struct pkcs11_attrs_head **out,
 	case PKCS11_CKK_SHA224_HMAC:
 		break;
 	default:
-		EMSG("Invalid key type (0x%"PRIx32", %s)",
+		EMSG("Invalid key type %#"PRIx32"/%s",
 		     get_type(*out), id2str_key_type(get_type(*out)));
 
 		return PKCS11_CKR_TEMPLATE_INCONSISTENT;
@@ -505,7 +505,7 @@ static uint32_t create_pub_key_attributes(struct pkcs11_attrs_head **out,
 		optional_count = ARRAY_SIZE(pkcs11_ec_public_key_optional);
 		break;
 	default:
-		EMSG("Invalid key type (0x%"PRIx32", %s)",
+		EMSG("Invalid key type %#"PRIx32"/%s",
 		     get_type(*out), id2str_key_type(get_type(*out)));
 
 		return PKCS11_CKR_TEMPLATE_INCONSISTENT;
@@ -562,7 +562,7 @@ static uint32_t create_priv_key_attributes(struct pkcs11_attrs_head **out,
 		optional_count = ARRAY_SIZE(pkcs11_ec_private_key_optional);
 		break;
 	default:
-		EMSG("Invalid key type (0x%"PRIx32", %s)",
+		EMSG("Invalid key type %#"PRIx32"/%s",
 		     get_type(*out), id2str_key_type(get_type(*out)));
 
 		return PKCS11_CKR_TEMPLATE_INCONSISTENT;
@@ -644,7 +644,7 @@ uint32_t create_attributes_from_template(struct pkcs11_attrs_head **out,
 		rv = create_priv_key_attributes(&attrs, temp);
 		break;
 	default:
-		DMSG("Invalid object class 0x%"PRIx32"/%s",
+		DMSG("Invalid object class %#"PRIx32"/%s",
 		     get_class(temp), id2str_class(get_class(temp)));
 
 		rv = PKCS11_CKR_TEMPLATE_INCONSISTENT;
@@ -841,12 +841,12 @@ uint32_t check_created_attrs_against_parent_key(
 #define DMSG_BAD_BBOOL(attr, proc, head)				\
 	do {								\
 		uint8_t __maybe_unused bvalue = 0;			\
+		uint32_t __maybe_unused rv = PKCS11_CKR_OK;		\
 									\
-		DMSG("%s issue for %s: %sfound, value %d",		\
-		     id2str_attr(attr),					\
-		     id2str_proc(proc),					\
-		     get_attribute(head, attr, &bvalue, NULL) ? "not " : "", \
-		     bvalue);						\
+		rv = get_attribute(head, attr, &bvalue, NULL);		\
+		DMSG("%s issue for %s: %sfound, value %"PRIu8,		\
+		     id2str_attr(attr), id2str_proc(proc),		\
+		     rv ? "not " : "", bvalue);				\
 	} while (0)
 
 /*
@@ -1309,7 +1309,7 @@ uint32_t check_parent_attrs_against_processing(uint32_t proc_id,
 		break;
 
 	default:
-		DMSG("Invalid processing 0x%"PRIx32" (%s)", proc_id,
+		DMSG("Invalid processing %#"PRIx32"/%s", proc_id,
 		     id2str_proc(proc_id));
 
 		return PKCS11_CKR_MECHANISM_INVALID;

@@ -220,7 +220,7 @@ uint32_t entry_import_object(struct pkcs11_client *client,
 	TEE_MemMove(out->memref.buffer, &obj_handle, sizeof(obj_handle));
 	out->memref.size = sizeof(obj_handle);
 
-	IMSG("PKCS11 session %"PRIu32": import object 0x%"PRIx32,
+	DMSG("PKCS11 session %"PRIu32": import object %#"PRIx32,
 	     session_handle, obj_handle);
 
 bail:
@@ -423,7 +423,7 @@ uint32_t entry_generate_secret(struct pkcs11_client *client,
 	TEE_MemMove(out->memref.buffer, &obj_handle, sizeof(obj_handle));
 	out->memref.size = sizeof(obj_handle);
 
-	IMSG("PKCS11 session %"PRIu32": generate secret 0x%"PRIx32,
+	DMSG("PKCS11 session %"PRIu32": generate secret %#"PRIx32,
 	     session_handle, obj_handle);
 
 bail:
@@ -479,8 +479,8 @@ uint32_t tee2pkcs_add_attribute(struct pkcs11_attrs_head **head,
 
 bail:
 	if (rv)
-		EMSG("Failed TEE attribute 0x%"PRIx32"for %s (0x%"PRIx32")",
-		     tee_id, id2str_attr(pkcs11_id), pkcs11_id);
+		EMSG("Failed TEE attribute %#"PRIx32" for %#"PRIx32"/%s",
+		     tee_id, pkcs11_id, id2str_attr(pkcs11_id));
 	return rv;
 }
 
@@ -636,7 +636,7 @@ uint32_t entry_generate_key_pair(struct pkcs11_client *client,
 	TEE_MemMove(hdl_ptr, &pubkey_handle, sizeof(pubkey_handle));
 	TEE_MemMove(hdl_ptr + 1, &privkey_handle, sizeof(privkey_handle));
 
-	IMSG("PKCS11 session %"PRIu32": create key pair 0x%"PRIx32"/0x%"PRIx32,
+	DMSG("PKCS11 session %"PRIu32": create key pair %#"PRIx32"/%#"PRIx32,
 	     session_handle, privkey_handle, pubkey_handle);
 
 bail:
@@ -736,7 +736,7 @@ uint32_t entry_processing_init(struct pkcs11_client *client,
 
 	if (rv == PKCS11_CKR_OK) {
 		session->processing->mecha_type = proc_params->id;
-		IMSG("PKCS11 session %"PRIu32": init processing %s %s",
+		DMSG("PKCS11 session %"PRIu32": init processing %s %s",
 		     session_handle, id2str_proc(proc_params->id),
 		     id2str_function(function));
 	}
@@ -809,7 +809,7 @@ uint32_t entry_processing_step(struct pkcs11_client *client,
 
 	if (rv == PKCS11_CKR_OK) {
 		session->processing->updated = true;
-		IMSG("PKCS11 session%"PRIu32": processing %s %s",
+		DMSG("PKCS11 session%"PRIu32": processing %s %s",
 		     session_handle, id2str_proc(mecha_type),
 		     id2str_function(function));
 	}
@@ -889,7 +889,7 @@ uint32_t entry_verify_oneshot(struct pkcs11_client *client,
 	else
 		rv = PKCS11_CKR_MECHANISM_INVALID;
 
-	IMSG("PKCS11 session %"PRIu32": verify %s %s: %s", session_handle,
+	DMSG("PKCS11 session %"PRIu32": verify %s %s: %s", session_handle,
 	     id2str_proc(mecha_type), id2str_function(function),
 	     id2str_rc(rv));
 
@@ -1066,7 +1066,7 @@ uint32_t entry_derive_key(struct pkcs11_client *client,
 	TEE_MemMove(out->memref.buffer, &out_handle, sizeof(out_handle));
 	out->memref.size = sizeof(out_handle);
 
-	IMSG("PKCS11 session %"PRIu32": derive key Ox%"PRIx32", %s",
+	DMSG("PKCS11 session %"PRIu32": derive key %#"PRIx32"/%s",
 	     session_handle, out_handle, id2str_proc(mecha_id));
 
 bail:

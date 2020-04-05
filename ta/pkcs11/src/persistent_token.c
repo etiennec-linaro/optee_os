@@ -406,7 +406,7 @@ struct ck_token *init_persistent_db(unsigned int token_id)
 		uint32_t size = 0;
 		size_t idx = 0;
 
-		IMSG("PKCS11 token %u: load db", token_id);
+		DMSG("PKCS11 token %u: load db", token_id);
 
 		size = sizeof(*db_main);
 		res = TEE_ReadObjectData(db_hdl, db_main, size, &size);
@@ -451,7 +451,7 @@ struct ck_token *init_persistent_db(unsigned int token_id)
 	} else if (res == TEE_ERROR_ITEM_NOT_FOUND) {
 		char file[32] = { };
 
-		IMSG("PKCS11 token %u: init db", token_id);
+		DMSG("PKCS11 token %u: init db", token_id);
 
 		TEE_MemFill(db_main, 0, sizeof(*db_main));
 		TEE_MemFill(db_main->label, '*', sizeof(db_main->label));
@@ -481,7 +481,7 @@ struct ck_token *init_persistent_db(unsigned int token_id)
 						 db_main, sizeof(*db_main),
 						 &db_hdl);
 		if (res) {
-			EMSG("Failed to create db: %"PRIx32, res);
+			EMSG("Failed to create db: %#"PRIx32, res);
 			goto error;
 		}
 

@@ -515,7 +515,7 @@ static void dmsg_print_supported_mechanism(unsigned int token_id __maybe_unused,
 		return;
 
 	for (n = 0; n < count; n++)
-		DMSG("PKCS11 token %"PRIu32": mechanism 0x%04"PRIx32": %s",
+		DMSG("PKCS11 token %"PRIu32": mechanism %#010"PRIx32"/%s",
 		     token_id, array[n], id2str_mechanism(array[n]));
 }
 
@@ -707,7 +707,7 @@ uint32_t entry_ck_token_mecha_info(uint32_t ptypes, TEE_Param *params)
 
 	TEE_MemMove(out->memref.buffer, &info, sizeof(info));
 
-	DMSG("PKCS11 token %"PRIu32": mechanism 0x%"PRIx32" info",
+	DMSG("PKCS11 token %"PRIu32": mechanism %#"PRIx32" info",
 	     token_id, type);
 
 	return PKCS11_CKR_OK;
@@ -1177,7 +1177,7 @@ uint32_t entry_init_pin(struct pkcs11_client *client,
 
 	assert(session->token->db_main->flags & PKCS11_CKFT_TOKEN_INITIALIZED);
 
-	IMSG("PKCS11 session %"PRIu32": init PIN", session_handle);
+	DMSG("PKCS11 session %"PRIu32": init PIN", session_handle);
 
 	return set_pin(session, pin, pin_size, PKCS11_CKU_USER);
 }
@@ -1419,7 +1419,7 @@ uint32_t entry_set_pin(struct pkcs11_client *client,
 	if (rv)
 		return rv;
 
-	IMSG("PKCS11 session %"PRIu32": set PIN", session_handle);
+	DMSG("PKCS11 session %"PRIu32": set PIN", session_handle);
 
 	return set_pin(session, pin, pin_size, PKCS11_CKU_USER);
 }
@@ -1540,7 +1540,7 @@ uint32_t entry_login(struct pkcs11_client *client,
 	}
 
 	if (!rv)
-		IMSG("PKCS11 session %"PRIu32": login", session_handle);
+		DMSG("PKCS11 session %"PRIu32": login", session_handle);
 
 	return rv;
 }
@@ -1579,7 +1579,7 @@ uint32_t entry_logout(struct pkcs11_client *client,
 
 	session_logout(session);
 
-	IMSG("PKCS11 session %"PRIu32": logout", session_handle);
+	DMSG("PKCS11 session %"PRIu32": logout", session_handle);
 
 	return PKCS11_CKR_OK;
 }

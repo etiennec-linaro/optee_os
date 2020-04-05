@@ -325,7 +325,7 @@ uint32_t sanitize_client_object(struct pkcs11_attrs_head **dst,
 			goto bail;
 
 		if (!valid_pkcs11_attribute_id(cli_ref.id, cli_ref.size)) {
-			EMSG("Invalid attribute id 0x%"PRIx32, cli_ref.id);
+			EMSG("Invalid attribute id %#"PRIx32, cli_ref.id);
 			rc = PKCS11_CKR_TEMPLATE_INCONSISTENT;
 			goto bail;
 		}
@@ -381,7 +381,7 @@ static uint32_t __trace_attributes(char *prefix, void *src, void *end)
 
 		next = sizeof(pkcs11_ref) + pkcs11_ref.size;
 
-		IMSG_RAW("%s Attr %s / %s (0x%04"PRIx32" %"PRIu32"-byte)",
+		IMSG_RAW("%s Attr %s / %s (%#04"PRIx32" %"PRIu32"-byte)",
 			 prefix, id2str_attr(pkcs11_ref.id),
 			 id2str_attr_value(pkcs11_ref.id, pkcs11_ref.size,
 					   cur + sizeof(pkcs11_ref)),
@@ -459,7 +459,7 @@ uint32_t trace_attributes_from_api_head(const char *prefix,
 		TEE_MemMove(pre, prefix, strlen(prefix));
 
 	IMSG_RAW("%s,--- (serial object) Attributes list --------", pre);
-	IMSG_RAW("%s| %"PRIx32" item(s) - %"PRIu32" bytes",
+	IMSG_RAW("%s| %"PRIu32" item(s) - %"PRIu32" bytes",
 		 pre, head.attrs_count, head.attrs_size);
 
 	offset = sizeof(head);

@@ -1237,7 +1237,7 @@ uint32_t generate_ec_keys(struct pkcs11_attribute_head *proc_params,
 	res = TEE_AllocateTransientObject(TEE_TYPE_ECDSA_KEYPAIR,
 					  521/*tee_size*/, &tee_obj);
 	if (res) {
-		EMSG("TEE service failed, %"PRIx32, res);
+		EMSG("TEE service failed with %#"PRIx32, res);
 		return tee2pkcs_error(res);
 	}
 

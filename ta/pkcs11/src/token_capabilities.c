@@ -186,7 +186,7 @@ bool mechanism_flags_complies_pkcs11(uint32_t mechanism_type,
 	for (n = 0; n < ARRAY_SIZE(pkcs11_modes); n++) {
 		if (pkcs11_modes[n].id == mechanism_type) {
 			if (flags & ~pkcs11_modes[n].flags)
-				DMSG("%s flags: 0x%"PRIx32" vs 0x%"PRIx32,
+				DMSG("%s flags: %#"PRIx32" vs %#"PRIx32,
 				     id2str_mechanism(mechanism_type),
 				     flags, pkcs11_modes[n].flags);
 

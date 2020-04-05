@@ -42,7 +42,7 @@ uint32_t tee_init_ctr_operation(struct active_processing *processing,
 		return PKCS11_CKR_ARGUMENTS_BAD;
 
 	if (incr_counter != 1) {
-		DMSG("Supports only 1 bit increment counter: %d",
+		DMSG("Supports only 1 bit increment counter: %"PRIu32,
 		     incr_counter);
 
 		return PKCS11_CKR_MECHANISM_PARAM_INVALID;
@@ -193,7 +193,7 @@ uint32_t tee_ae_decrypt_update(struct active_processing *processing,
 			if (!ct_size) {
 				TEE_Free(ct);
 				ct = NULL;
-				DMSG_RAW("\nWe expected some data!\n\n");
+				DMSG("Data expected");
 			}
 		}
 
@@ -330,7 +330,7 @@ uint32_t tee_ae_decrypt_final(struct active_processing *processing,
 		return reveale_ae_data(ctx, out, out_size);
 
 	if (ctx->pending_size != ctx->tag_byte_len) {
-		DMSG("Not enough samples: %u/%u",
+		DMSG("Not enough samples: %zu/%zu",
 		     ctx->pending_size, ctx->tag_byte_len);
 
 		return PKCS11_CKR_FUNCTION_FAILED;	// FIXME: PKCS11_CKR_ENCRYPTED_DATA_LEN_RANGE
@@ -356,7 +356,7 @@ uint32_t tee_ae_decrypt_final(struct active_processing *processing,
 		if (!data_size) {
 			TEE_Free(data_ptr);
 			data_ptr = NULL;
-			DMSG_RAW("\nIs this expected from the Core API?\n\n");
+			DMSG("Warning: is this expected?");
 		}
 	}
 
@@ -413,7 +413,7 @@ uint32_t tee_ae_encrypt_final(struct active_processing *processing,
 
 	if (tag_len != ctx->tag_byte_len ||
 	    (res != TEE_SUCCESS && res != TEE_ERROR_SHORT_BUFFER)) {
-		EMSG("Unexpected tag length %u/%zu or rc 0x%"PRIx32,
+		EMSG("Unexpected tag length %"PRIu32"/%zu or rc %#"PRIx32,
 		     tag_len, ctx->tag_byte_len, res);
 		return PKCS11_CKR_GENERAL_ERROR;
 	}

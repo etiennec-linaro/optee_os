@@ -307,7 +307,7 @@ uint32_t entry_destroy_object(struct pkcs11_client *client,
 	destroy_object(session, object, false);
 	handle_put(&session->object_handle_db, object_handle);
 
-	IMSG("PKCS11 session %"PRIu32": destroy object 0x%"PRIx32,
+	DMSG("PKCS11 session %"PRIu32": destroy object %#"PRIx32,
 	     session_handle, object_handle);
 
 	return rv;
@@ -336,14 +336,14 @@ static uint32_t token_obj_matches_ref(struct pkcs11_attrs_head *req_attrs,
 					       TEE_DATA_FLAG_ACCESS_READ,
 					       &hdl);
 		if (res) {
-			EMSG("OpenPersistent failed 0x%"PRIx32, res);
+			EMSG("OpenPersistent failed %#"PRIx32, res);
 			return tee2pkcs_error(res);
 		}
 	}
 
 	res = TEE_GetObjectInfo1(hdl, &info);
 	if (res) {
-		EMSG("GetObjectInfo failed 0x%"PRIx32, res);
+		EMSG("GetObjectInfo failed %#"PRIx32, res);
 		rv = tee2pkcs_error(res);
 		goto bail;
 	}
@@ -358,17 +358,17 @@ static uint32_t token_obj_matches_ref(struct pkcs11_attrs_head *req_attrs,
 	if (!res) {
 		res = TEE_SeekObjectData(hdl, 0, TEE_DATA_SEEK_SET);
 		if (res)
-			EMSG("Seek to 0 failed 0x%"PRIx32, res);
+			EMSG("Seek to 0 failed with %#"PRIx32, res);
 	}
 
 	if (res) {
 		rv = tee2pkcs_error(res);
-		EMSG("Read %"PRIu32" bytes, failed 0x%"PRIx32,
+		EMSG("Read %"PRIu32" bytes, failed %#"PRIx32,
 		     read_bytes, res);
 		goto bail;
 	}
 	if (read_bytes != info.dataSize) {
-		EMSG("Read %"PRIu32" bytes, expected 0x%"PRIu32,
+		EMSG("Read %"PRIu32" bytes, expected %"PRIu32,
 		     read_bytes, info.dataSize);
 		rv = PKCS11_CKR_GENERAL_ERROR;
 		goto bail;
@@ -491,7 +491,7 @@ uint32_t entry_find_objects_init(struct pkcs11_client *client,
 	case PKCS11_CKO_DATA:
 		break;
 	default:
-		EMSG("Find object of class %s (%u) is not supported",
+		EMSG("Find object of class %s (%"PRIu32") is not supported",
 		     id2str_class(get_class(req_attrs)),
 		     get_class(req_attrs));
 		rv = PKCS11_CKR_ARGUMENTS_BAD;
@@ -665,7 +665,7 @@ uint32_t entry_find_objects(struct pkcs11_client *client,
 	/* Update output buffer according the number of handles provided */
 	out->memref.size = count * sizeof(uint32_t);
 
-	IMSG("PKCS11 session %"PRIu32": finding objects", session_handle);
+	DMSG("PKCS11 session %"PRIu32": finding objects", session_handle);
 
 	return PKCS11_CKR_OK;
 }
@@ -863,7 +863,7 @@ uint32_t entry_get_attribute_value(struct pkcs11_client *client,
 	/* Move updated template to out buffer */
 	TEE_MemMove(out->memref.buffer, template, out->memref.size);
 
-	IMSG("PKCS11 session %"PRIu32": get attributes 0x%"PRIx32,
+	DMSG("PKCS11 session %"PRIu32": get attributes %#"PRIx32,
 	     session_handle, object_handle);
 
 bail:

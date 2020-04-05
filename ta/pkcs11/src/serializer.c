@@ -31,7 +31,7 @@ void serialargs_init(struct serialargs *args, void *in, size_t size)
 uint32_t serialargs_get(struct serialargs *args, void *out, size_t size)
 {
 	if (args->next + size > args->start + args->size) {
-		EMSG("arg too short: full %zd, remain %zd, expect %zd",
+		EMSG("arg too short: full %zu, remain %zu, expect %zu",
 		     args->size, args->size - (args->next - args->start), size);
 		return PKCS11_CKR_ARGUMENTS_BAD;
 	}
@@ -54,7 +54,7 @@ uint32_t serialargs_alloc_and_get(struct serialargs *args,
 	}
 
 	if (args->next + size > args->start + args->size) {
-		EMSG("arg too short: full %zd, remain %zd, expect %zd",
+		EMSG("arg too short: full %zu, remain %zu, expect %zu",
 		     args->size, args->size - (args->next - args->start), size);
 		return PKCS11_CKR_ARGUMENTS_BAD;
 	}
@@ -81,7 +81,7 @@ uint32_t serialargs_get_ptr(struct serialargs *args, void **out, size_t size)
 	}
 
 	if (args->next + size > args->start + args->size) {
-		EMSG("arg too short: full %zd, remain %zd, expect %zd",
+		EMSG("arg too short: full %zu, remain %zu, expect %zu",
 		     args->size, args->size - (args->next - args->start), size);
 		return PKCS11_CKR_ARGUMENTS_BAD;
 	}
@@ -102,7 +102,7 @@ uint32_t serialargs_alloc_get_one_attribute(struct serialargs *args,
 	TEE_MemFill(&head, 0, sizeof(head));
 
 	if (args->next + out_size > args->start + args->size) {
-		EMSG("arg too short: full %zd, remain %zd, expect at least %zd",
+		EMSG("arg too short: full %zu, remain %zu, expect at least %zu",
 		     args->size, args->size - (args->next - args->start),
 		     out_size);
 		return PKCS11_CKR_ARGUMENTS_BAD;
@@ -112,7 +112,7 @@ uint32_t serialargs_alloc_get_one_attribute(struct serialargs *args,
 
 	out_size += head.size;
 	if (args->next + out_size > args->start + args->size) {
-		EMSG("arg too short: full %zd, remain %zd, expect %zd",
+		EMSG("arg too short: full %zu, remain %zu, expect %zu",
 		     args->size, args->size - (args->next - args->start),
 		     out_size);
 		return PKCS11_CKR_ARGUMENTS_BAD;
@@ -140,7 +140,7 @@ uint32_t serialargs_alloc_get_attributes(struct serialargs *args,
 	TEE_MemFill(&attr, 0, sizeof(attr));
 
 	if (args->next + attr_size > args->start + args->size) {
-		EMSG("arg too short: full %zd, remain %zd, expect at least %zd",
+		EMSG("arg too short: full %zu, remain %zu, expect at least %zu",
 		     args->size, args->size - (args->next - args->start),
 		     attr_size);
 		return PKCS11_CKR_ARGUMENTS_BAD;
@@ -150,7 +150,7 @@ uint32_t serialargs_alloc_get_attributes(struct serialargs *args,
 
 	attr_size += attr.attrs_size;
 	if (args->next + attr_size > args->start + args->size) {
-		EMSG("arg too short: full %zd, remain %zd, expect %zd",
+		EMSG("arg too short: full %zu, remain %zu, expect %zu",
 		     args->size, args->size - (args->next - args->start),
 		     attr_size);
 		return PKCS11_CKR_ARGUMENTS_BAD;

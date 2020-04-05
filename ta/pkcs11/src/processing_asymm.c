@@ -207,7 +207,7 @@ static uint32_t allocate_tee_operation(struct pkcs11_session *session,
 	res = TEE_AllocateOperation(&session->processing->tee_op_handle,
 				    algo, mode, size);
 	if (res)
-		EMSG("TEE_AllocateOp. failed %"PRIx32" %"PRIx32" %"PRIx32,
+		EMSG("TEE_AllocateOp. failed %#"PRIx32" %#"PRIx32" %#"PRIx32,
 		     algo, mode, size);
 
 	return tee2pkcs_error(res);
@@ -288,7 +288,7 @@ static uint32_t load_tee_key(struct pkcs11_session *session,
 	res = TEE_AllocateTransientObject(obj->key_type, object_size,
 					  &obj->key_handle);
 	if (res) {
-		DMSG("TEE_AllocateTransientObject failed, 0x%"PRIx32, res);
+		DMSG("TEE_AllocateTransientObject failed, %#"PRIx32, res);
 
 		return tee2pkcs_error(res);
 	}
@@ -299,7 +299,7 @@ static uint32_t load_tee_key(struct pkcs11_session *session,
 	TEE_Free(tee_attrs);
 
 	if (res) {
-		DMSG("TEE_PopulateTransientObject failed, 0x%"PRIx32, res);
+		DMSG("TEE_PopulateTransientObject failed, %#"PRIx32, res);
 
 		goto error;
 	}
@@ -308,7 +308,7 @@ key_ready:
 	res = TEE_SetOperationKey(session->processing->tee_op_handle,
 				  obj->key_handle);
 	if (res) {
-		DMSG("TEE_SetOperationKey failed, 0x%"PRIx32, res);
+		DMSG("TEE_SetOperationKey failed, %#"PRIx32, res);
 
 		goto error;
 	}
@@ -625,7 +625,7 @@ uint32_t do_asymm_derivation(struct pkcs11_session *session,
 	res = TEE_AllocateTransientObject(TEE_TYPE_GENERIC_SECRET,
 					  key_byte_size * 8, &out_handle);
 	if (res) {
-		DMSG("TEE_AllocateTransientObject failed, 0x%"PRIx32, res);
+		DMSG("TEE_AllocateTransientObject failed, %#"PRIx32, res);
 
 		return tee2pkcs_error(res);
 	}

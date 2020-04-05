@@ -20,6 +20,9 @@ uint32_t *tee_malloc_mechanism_list(size_t *out_count);
 
 uint32_t mechanism_supported_flags(enum pkcs11_mechanism_id id);
 
+void mechanism_supported_key_sizes(uint32_t proc_id, uint32_t *min_key_size,
+				   uint32_t *max_key_size);
+
 static inline bool mechanism_is_supported(enum pkcs11_mechanism_id id)
 {
 	return mechanism_supported_flags(id) != 0;

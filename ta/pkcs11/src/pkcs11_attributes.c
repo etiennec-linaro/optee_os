@@ -930,59 +930,52 @@ uint32_t check_created_attrs_against_processing(uint32_t proc_id,
 	return PKCS11_CKR_OK;
 }
 
-void pkcs11_max_min_key_size(enum pkcs11_key_type key_type,
-			     uint32_t *max_key_size, uint32_t *min_key_size,
-			     bool bit_size_only)
+static void get_key_min_max_sizes(enum pkcs11_key_type key_type,
+				  uint32_t *min_key_size,
+				  uint32_t *max_key_size)
 {
-	uint32_t mult = bit_size_only ? 8 : 1;
+	enum pkcs11_mechanism_id mechanism = PKCS11_CKM_UNDEFINED_ID;
 
 	switch (key_type) {
 	case PKCS11_CKK_GENERIC_SECRET:
-		*min_key_size = 1;	/* in bits */
-		*max_key_size = 4096;	/* in bits */
+		mechanism = PKCS11_CKM_GENERIC_SECRET_KEY_GEN;
 		break;
 	case PKCS11_CKK_MD5_HMAC:
-		*min_key_size = 16 * mult;
-		*max_key_size = 16 * mult;
+		mechanism = PKCS11_CKM_MD5_HMAC;
 		break;
 	case PKCS11_CKK_SHA_1_HMAC:
-		*min_key_size = 20 * mult;
-		*max_key_size = 20 * mult;
+		mechanism = PKCS11_CKM_SHA_1_HMAC;
 		break;
 	case PKCS11_CKK_SHA224_HMAC:
-		*min_key_size = 28 * mult;
-		*max_key_size = 28 * mult;
+		mechanism = PKCS11_CKM_SHA224_HMAC;
 		break;
 	case PKCS11_CKK_SHA256_HMAC:
-		*min_key_size = 32 * mult;
-		*max_key_size = 32 * mult;
+		mechanism = PKCS11_CKM_SHA256_HMAC;
 		break;
 	case PKCS11_CKK_SHA384_HMAC:
-		*min_key_size = 48 * mult;
-		*max_key_size = 48 * mult;
+		mechanism = PKCS11_CKM_SHA384_HMAC;
 		break;
 	case PKCS11_CKK_SHA512_HMAC:
-		*min_key_size = 64 * mult;
-		*max_key_size = 64 * mult;
+		mechanism = PKCS11_CKM_SHA512_HMAC;
 		break;
 	case PKCS11_CKK_AES:
-		*min_key_size = 16 * mult;
-		*max_key_size = 32 * mult;
+		mechanism = PKCS11_CKM_AES_KEY_GEN;
 		break;
 	case PKCS11_CKK_EC:
-		*min_key_size = 192;	/* in bits */
-		*max_key_size = 521;	/* in bits */
+		mechanism = PKCS11_CKM_EC_KEY_PAIR_GEN;
 		break;
 	case PKCS11_CKK_RSA:
 	case PKCS11_CKK_DSA:
 	case PKCS11_CKK_DH:
-		*min_key_size = 256;	/* in bits */
-		*max_key_size = 4096;	/* in bits */
+		mechanism = PKCS11_CKM_RSA_PKCS_KEY_PAIR_GEN;
 		break;
 	default:
 		TEE_Panic(key_type);
 		break;
 	}
+
+	mechanism_supported_key_sizes(mechanism, min_key_size,
+				      max_key_size);
 }
 
 uint32_t check_created_attrs(struct pkcs11_attrs_head *key1,
@@ -1103,9 +1096,7 @@ uint32_t check_created_attrs(struct pkcs11_attrs_head *key1,
 		break;
 	}
 
-	pkcs11_max_min_key_size(get_type(key1),
-				&max_key_size, &min_key_size, false);
-
+	get_key_min_max_sizes(get_type(key1), &min_key_size, &max_key_size);
 	if (key_length < min_key_size || key_length > max_key_size) {
 		EMSG("Length %"PRIu32" vs range [%"PRIu32" %"PRIu32"]",
 		     key_length, min_key_size, max_key_size);

@@ -572,96 +572,6 @@ uint32_t entry_ck_token_mecha_ids(uint32_t ptypes, TEE_Param *params)
 	return rv;
 }
 
-static void supported_mechanism_key_size(uint32_t proc_id,
-					 uint32_t *max_key_size,
-					 uint32_t *min_key_size)
-{
-	switch (proc_id) {
-	case PKCS11_CKM_GENERIC_SECRET_KEY_GEN:
-		*min_key_size = 1;		/* in bits */
-		*max_key_size = 4096;		/* in bits */
-		break;
-	case PKCS11_CKM_MD5_HMAC:
-		*min_key_size = 16;
-		*max_key_size = 16;
-		break;
-	case PKCS11_CKM_SHA_1_HMAC:
-		*min_key_size = 20;
-		*max_key_size = 20;
-		break;
-	case PKCS11_CKM_SHA224_HMAC:
-		*min_key_size = 28;
-		*max_key_size = 28;
-		break;
-	case PKCS11_CKM_SHA256_HMAC:
-		*min_key_size = 32;
-		*max_key_size = 32;
-		break;
-	case PKCS11_CKM_SHA384_HMAC:
-		*min_key_size = 48;
-		*max_key_size = 48;
-		break;
-	case PKCS11_CKM_SHA512_HMAC:
-		*min_key_size = 64;
-		*max_key_size = 64;
-		break;
-	case PKCS11_CKM_AES_XCBC_MAC:
-		*min_key_size = 28;
-		*max_key_size = 28;
-		break;
-	case PKCS11_CKM_AES_KEY_GEN:
-	case PKCS11_CKM_AES_ECB:
-	case PKCS11_CKM_AES_CBC:
-	case PKCS11_CKM_AES_CBC_PAD:
-	case PKCS11_CKM_AES_CTR:
-	case PKCS11_CKM_AES_CTS:
-	case PKCS11_CKM_AES_GCM:
-	case PKCS11_CKM_AES_CCM:
-	case PKCS11_CKM_AES_GMAC:
-	case PKCS11_CKM_AES_CMAC:
-	case PKCS11_CKM_AES_CMAC_GENERAL:
-		*min_key_size = 16;
-		*max_key_size = 32;
-		break;
-	case PKCS11_CKM_EC_KEY_PAIR_GEN:
-	case PKCS11_CKM_ECDSA:
-	case PKCS11_CKM_ECDSA_SHA1:
-	case PKCS11_CKM_ECDSA_SHA224:
-	case PKCS11_CKM_ECDSA_SHA256:
-	case PKCS11_CKM_ECDSA_SHA384:
-	case PKCS11_CKM_ECDSA_SHA512:
-	case PKCS11_CKM_ECDH1_DERIVE:
-	case PKCS11_CKM_ECDH1_COFACTOR_DERIVE:
-	case PKCS11_CKM_ECMQV_DERIVE:
-	case PKCS11_CKM_ECDH_AES_KEY_WRAP:
-		*min_key_size = 160;	/* in bits */
-		*max_key_size = 521;	/* in bits */
-		break;
-	case PKCS11_CKM_RSA_PKCS_KEY_PAIR_GEN:
-	case PKCS11_CKM_RSA_PKCS:
-	case PKCS11_CKM_RSA_9796:
-	case PKCS11_CKM_RSA_X_509:
-	case PKCS11_CKM_SHA1_RSA_PKCS:
-	case PKCS11_CKM_RSA_PKCS_OAEP:
-	case PKCS11_CKM_SHA1_RSA_PKCS_PSS:
-	case PKCS11_CKM_SHA256_RSA_PKCS:
-	case PKCS11_CKM_SHA384_RSA_PKCS:
-	case PKCS11_CKM_SHA512_RSA_PKCS:
-	case PKCS11_CKM_SHA256_RSA_PKCS_PSS:
-	case PKCS11_CKM_SHA384_RSA_PKCS_PSS:
-	case PKCS11_CKM_SHA512_RSA_PKCS_PSS:
-	case PKCS11_CKM_SHA224_RSA_PKCS:
-	case PKCS11_CKM_SHA224_RSA_PKCS_PSS:
-		*min_key_size = 256;	/* in bits */
-		*max_key_size = 4096;	/* in bits */
-		break;
-	default:
-		*min_key_size = 0;
-		*max_key_size = 0;
-		break;
-	}
-}
-
 uint32_t entry_ck_token_mecha_info(uint32_t ptypes, TEE_Param *params)
 {
 	const uint32_t exp_pt = TEE_PARAM_TYPES(TEE_PARAM_TYPE_MEMREF_INOUT,
@@ -702,8 +612,8 @@ uint32_t entry_ck_token_mecha_info(uint32_t ptypes, TEE_Param *params)
 
 	info.flags = mechanism_supported_flags(type);
 
-	supported_mechanism_key_size(type, &info.min_key_size,
-				     &info.max_key_size);
+	mechanism_supported_key_sizes(type, &info.min_key_size,
+				      &info.max_key_size);
 
 	TEE_MemMove(out->memref.buffer, &info, sizeof(info));
 

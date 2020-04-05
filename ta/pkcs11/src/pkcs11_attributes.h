@@ -157,9 +157,6 @@ uint32_t check_mechanism_against_processing(struct pkcs11_session *session,
 
 bool object_is_private(struct pkcs11_attrs_head *head);
 
-void pkcs11_max_min_key_size(uint32_t key_type, uint32_t *max_key_size,
-			     uint32_t *min_key_size, bool bit_size_only);
-
 bool attribute_is_exportable(struct pkcs11_attribute_head *req_attr,
 			     struct pkcs11_object *obj);
 

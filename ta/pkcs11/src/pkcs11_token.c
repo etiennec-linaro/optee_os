@@ -396,6 +396,31 @@ static void pad_str(uint8_t *str, size_t size)
 	TEE_MemFill(str + n, ' ', size - n);
 }
 
+static void set_token_description(struct pkcs11_slot_info *info,
+				  unsigned int token_id)
+{
+	char desc[sizeof(info->slot_description) + 1] = { 0 };
+	TEE_UUID dev_id = { };
+	TEE_Result res = TEE_ERROR_GENERIC;
+	int n = 0;
+
+	res = TEE_GetPropertyAsUUID(TEE_PROPSET_TEE_IMPLEMENTATION,
+				    "gpd.tee.deviceID", &dev_id);
+	if (res == TEE_SUCCESS) {
+		n = snprintf(desc, sizeof(desc), PKCS11_SLOT_DESCRIPTION
+			     ". Slot %u. TEE UUID %pUl", token_id,
+			     (void *)&dev_id);
+	} else {
+		n = snprintf(desc, sizeof(desc), PKCS11_SLOT_DESCRIPTION
+			     ". Slot %u. No TEE UUID", token_id);
+	}
+	if (n < 0 || n >= (int)sizeof(info->slot_description))
+		TEE_Panic(0);
+
+	TEE_MemMove(info->slot_description, desc, n);
+	pad_str(info->slot_description, sizeof(info->slot_description));
+}
+
 uint32_t entry_ck_slot_info(uint32_t ptypes, TEE_Param *params)
 {
 	const uint32_t exp_pt = TEE_PARAM_TYPES(TEE_PARAM_TYPE_MEMREF_INOUT,
@@ -407,7 +432,6 @@ uint32_t entry_ck_slot_info(uint32_t ptypes, TEE_Param *params)
 	uint32_t rv = 0;
 	struct serialargs ctrlargs = { };
 	uint32_t token_id = 0;
-	struct ck_token *token = NULL;
 	struct pkcs11_slot_info info = {
 		.slot_description = PKCS11_SLOT_DESCRIPTION,
 		.manufacturer_id = PKCS11_SLOT_MANUFACTURER,
@@ -433,11 +457,11 @@ uint32_t entry_ck_slot_info(uint32_t ptypes, TEE_Param *params)
 	if (serialargs_remaining_bytes(&ctrlargs))
 		return PKCS11_CKR_ARGUMENTS_BAD;
 
-	token = get_token(token_id);
-	if (!token)
+	if (!get_token(token_id))
 		return PKCS11_CKR_SLOT_ID_INVALID;
 
-	pad_str(info.slot_description, sizeof(info.slot_description));
+	set_token_description(&info, token_id);
+
 	pad_str(info.manufacturer_id, sizeof(info.manufacturer_id));
 
 	out->memref.size = sizeof(info);

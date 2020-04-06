@@ -600,7 +600,7 @@ bail:
 			params[2].memref.size = out_size;
 			break;
 		default:
-			rv = PKCS11_CKR_GENERAL_ERROR;
+			rv = PKCS11_CKR_ARGUMENTS_BAD;
 			break;
 		}
 	}

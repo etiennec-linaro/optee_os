@@ -609,6 +609,7 @@ uint32_t create_attributes_from_template(struct pkcs11_attrs_head **out,
 	uint8_t never_extract = 0;
 	uint32_t class = PKCS11_UNDEFINED_ID;
 	uint32_t type = PKCS11_UNDEFINED_ID;
+	uint32_t mechanism_id = PKCS11_CKM_UNDEFINED_ID;
 
 #ifdef DEBUG	/* Sanity: check function argument */
 	trace_attributes_from_api_head("template", template, template_size);
@@ -698,6 +699,10 @@ uint32_t create_attributes_from_template(struct pkcs11_attrs_head **out,
 	assert(get_attribute(attrs, PKCS11_CKA_LOCAL, NULL, NULL) ==
 		PKCS11_RV_NOT_FOUND);
 
+	if (get_attribute(attrs, PKCS11_CKA_KEY_GEN_MECHANISM, NULL, NULL) !=
+	    PKCS11_RV_NOT_FOUND)
+		goto bail;
+
 	switch (function) {
 	case PKCS11_FUNCTION_GENERATE:
 	case PKCS11_FUNCTION_GENERATE_PAIR:
@@ -750,6 +755,25 @@ uint32_t create_attributes_from_template(struct pkcs11_attrs_head **out,
 
 		rv = add_attribute(&attrs, PKCS11_CKA_NEVER_EXTRACTABLE,
 				   &never_extract, sizeof(never_extract));
+		if (rv)
+			goto bail;
+
+		/* Keys mandate attribute PKCS11_CKA_KEY_GEN_MECHANISM */
+		if (function == PKCS11_FUNCTION_COPY) {
+			uint32_t sz = 0;
+
+			rv = get_attribute(parent, PKCS11_CKA_KEY_GEN_MECHANISM,
+					   &mechanism_id, &sz);
+			assert(sz == sizeof(mechanism_id));
+			if (rv)
+				goto bail;
+		} else if (local) {
+			mechanism_id = proc_mecha;
+		} else {
+			mechanism_id = PKCS11_CK_UNAVAILABLE_INFORMATION;
+		}
+		rv = add_attribute(&attrs, PKCS11_CKA_KEY_GEN_MECHANISM,
+				   &mechanism_id, sizeof(mechanism_id));
 		if (rv)
 			goto bail;
 

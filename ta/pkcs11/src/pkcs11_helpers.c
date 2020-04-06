@@ -381,6 +381,7 @@ size_t pkcs11_attr_is_type(uint32_t attribute_id)
 	switch (id) {
 	case PKCS11_CKA_KEY_TYPE:
 	case PKCS11_CKA_MECHANISM_TYPE:
+	case PKCS11_CKA_KEY_GEN_MECHANISM:
 		return sizeof(uint32_t);
 	default:
 		return 0;

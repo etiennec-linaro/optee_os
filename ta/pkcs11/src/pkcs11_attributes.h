@@ -121,7 +121,8 @@ struct pkcs11_session;
 uint32_t create_attributes_from_template(struct pkcs11_attrs_head **out,
 					 void *template, size_t template_size,
 					 struct pkcs11_attrs_head *parent,
-					 enum processing_func func);
+					 enum processing_func func,
+					 enum pkcs11_mechanism_id proc_mecha);
 
 /*
  * The various checks to be performed before a processing:

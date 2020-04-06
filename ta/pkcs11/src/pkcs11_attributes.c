@@ -598,7 +598,8 @@ static uint32_t create_priv_key_attributes(struct pkcs11_attrs_head **out,
 uint32_t create_attributes_from_template(struct pkcs11_attrs_head **out,
 					 void *template, size_t template_size,
 					 struct pkcs11_attrs_head *parent,
-					 enum processing_func function)
+					 enum processing_func function,
+					 enum pkcs11_mechanism_id proc_mecha)
 {
 	struct pkcs11_attrs_head *temp = NULL;
 	struct pkcs11_attrs_head *attrs = NULL;
@@ -606,6 +607,8 @@ uint32_t create_attributes_from_template(struct pkcs11_attrs_head **out,
 	uint8_t local = 0;
 	uint8_t always_sensitive = 0;
 	uint8_t never_extract = 0;
+	uint32_t class = PKCS11_UNDEFINED_ID;
+	uint32_t type = PKCS11_UNDEFINED_ID;
 
 #ifdef DEBUG	/* Sanity: check function argument */
 	trace_attributes_from_api_head("template", template, template_size);
@@ -625,6 +628,43 @@ uint32_t create_attributes_from_template(struct pkcs11_attrs_head **out,
 	rv = sanitize_client_object(&temp, template, template_size);
 	if (rv)
 		goto bail;
+
+	/* If class/type not defined, match from mechanism */
+	if (get_class(temp) == PKCS11_UNDEFINED_ID &&
+	    get_type(temp) == PKCS11_UNDEFINED_ID) {
+		switch (proc_mecha) {
+		case PKCS11_CKM_GENERIC_SECRET_KEY_GEN:
+			class = PKCS11_CKO_SECRET_KEY;
+			type = PKCS11_CKK_GENERIC_SECRET;
+			break;
+		case PKCS11_CKM_AES_KEY_GEN:
+			class = PKCS11_CKO_SECRET_KEY;
+			type = PKCS11_CKK_AES;
+			break;
+		case PKCS11_CKM_EC_KEY_PAIR_GEN:
+			type = PKCS11_CKK_DH;
+			break;
+		case PKCS11_CKM_RSA_PKCS_KEY_PAIR_GEN:
+			type = PKCS11_CKK_RSA;
+			break;
+		default:
+			EMSG("Unable to define class/type from mechanism");
+			rv = PKCS11_CKR_TEMPLATE_INCOMPLETE;
+			goto bail;
+		}
+		if (class != PKCS11_UNDEFINED_ID) {
+			rv = add_attribute(&temp, PKCS11_CKA_CLASS,
+					   &class, sizeof(uint32_t));
+			if (rv)
+				goto bail;
+		}
+		if (type != PKCS11_UNDEFINED_ID) {
+			rv = add_attribute(&temp, PKCS11_CKA_KEY_TYPE,
+					   &type, sizeof(uint32_t));
+			if (rv)
+				goto bail;
+		}
+	}
 
 	if (!sanitize_consistent_class_and_type(temp)) {
 		EMSG("inconsistent class/type");

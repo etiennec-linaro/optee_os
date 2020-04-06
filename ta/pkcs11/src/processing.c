@@ -157,7 +157,8 @@ uint32_t entry_import_object(struct pkcs11_client *client,
 	 * Free temporary template once done.
 	 */
 	rv = create_attributes_from_template(&head, template, template_size,
-					     NULL, PKCS11_FUNCTION_IMPORT);
+					     NULL, PKCS11_FUNCTION_IMPORT,
+					     PKCS11_PROCESSING_IMPORT);
 	TEE_Free(template);
 	template = NULL;
 	if (rv)
@@ -343,7 +344,8 @@ uint32_t entry_generate_secret(struct pkcs11_client *client,
 	 * Free temporary template once done.
 	 */
 	rv = create_attributes_from_template(&head, template, template_size,
-					     NULL, PKCS11_FUNCTION_GENERATE);
+					     NULL, PKCS11_FUNCTION_GENERATE,
+					     proc_params->id);
 	if (rv)
 		goto bail;
 
@@ -518,7 +520,8 @@ uint32_t entry_generate_key_pair(struct pkcs11_client *client,
 
 	rv = create_attributes_from_template(&pub_head,
 					     template, template_size, NULL,
-					     PKCS11_FUNCTION_GENERATE_PAIR);
+					     PKCS11_FUNCTION_GENERATE_PAIR,
+					     proc_params->id);
 	if (rv)
 		goto bail;
 
@@ -538,7 +541,8 @@ uint32_t entry_generate_key_pair(struct pkcs11_client *client,
 
 	rv = create_attributes_from_template(&priv_head,
 					     template, template_size, NULL,
-					     PKCS11_FUNCTION_GENERATE_PAIR);
+					     PKCS11_FUNCTION_GENERATE_PAIR,
+					     proc_params->id);
 	if (rv)
 		goto bail;
 
@@ -948,7 +952,8 @@ uint32_t entry_derive_key(struct pkcs11_client *client,
 
 	rv = create_attributes_from_template(&head, template, template_size,
 					     parent_obj->attributes,
-					     PKCS11_FUNCTION_DERIVE);
+					     PKCS11_FUNCTION_DERIVE,
+					     proc_params->id);
 	if (rv)
 		goto bail;
 

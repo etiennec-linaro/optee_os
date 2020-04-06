@@ -840,3 +840,56 @@ bail:
 
 	return rv;
 }
+
+uint32_t entry_get_object_size(struct pkcs11_client *client,
+			       uint32_t ptypes, TEE_Param *params)
+{
+        const uint32_t exp_pt = TEE_PARAM_TYPES(TEE_PARAM_TYPE_MEMREF_INOUT,
+						TEE_PARAM_TYPE_NONE,
+						TEE_PARAM_TYPE_MEMREF_OUTPUT,
+						TEE_PARAM_TYPE_NONE);
+	TEE_Param *ctrl = &params[0];
+	TEE_Param *out = &params[2];
+	uint32_t rv = 0;
+	struct serialargs ctrlargs = { };
+	struct pkcs11_session *session = NULL;
+	uint32_t object_handle = 0;
+	struct pkcs11_object *obj = NULL;
+	uint32_t obj_size = 0;
+
+	if (!client || ptypes != exp_pt)
+		return PKCS11_CKR_ARGUMENTS_BAD;
+
+	serialargs_init(&ctrlargs, ctrl->memref.buffer, ctrl->memref.size);
+
+	rv = serialargs_get_session(&ctrlargs, client, &session);
+	if (rv)
+		return rv;
+
+	rv = serialargs_get(&ctrlargs, &object_handle, sizeof(uint32_t));
+	if (rv)
+		return rv;
+
+	if (serialargs_remaining_bytes(&ctrlargs))
+		return PKCS11_CKR_ARGUMENTS_BAD;
+
+	obj = pkcs11_handle2object(object_handle, session);
+	if (!obj)
+		return PKCS11_CKR_OBJECT_HANDLE_INVALID;
+
+	rv = check_access_attrs_against_token(session, obj->attributes);
+	if (rv)
+		return PKCS11_CKR_OBJECT_HANDLE_INVALID;
+
+	if (out->memref.size != sizeof(uint32_t))
+		return PKCS11_CKR_ARGUMENTS_BAD;
+
+	assert(obj->attributes);
+
+	obj_size = ((struct pkcs11_attrs_head *)obj->attributes)->attrs_size +
+		   sizeof(struct pkcs11_attrs_head);
+	TEE_MemMove(out->memref.buffer, &obj_size, sizeof(obj_size));
+
+	return PKCS11_CKR_OK;
+}
+

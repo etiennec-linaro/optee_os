@@ -60,6 +60,9 @@ uint32_t entry_find_objects_final(struct pkcs11_client *client,
 uint32_t entry_get_attribute_value(struct pkcs11_client *client,
 				   uint32_t ptypes, TEE_Param *params);
 
+uint32_t entry_get_object_size(struct pkcs11_client *client,
+			       uint32_t ptypes, TEE_Param *params);
+
 void release_session_find_obj_context(struct pkcs11_session *session);
 
 #endif /*PKCS11_TA_OBJECT_H*/

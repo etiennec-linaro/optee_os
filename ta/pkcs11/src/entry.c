@@ -295,6 +295,9 @@ TEE_Result TA_InvokeCommandEntryPoint(void *tee_session, uint32_t cmd,
 	case PKCS11_CMD_GET_ATTRIBUTE_VALUE:
 		rc = entry_get_attribute_value(client, ptypes, params);
 		break;
+	case PKCS11_CMD_GET_OBJECT_SIZE:
+		rc = entry_get_object_size(client, ptypes, params);
+		break;
 
 	case PKCS11_CMD_INIT_PIN:
 		rc = entry_init_pin(client, ptypes, params);

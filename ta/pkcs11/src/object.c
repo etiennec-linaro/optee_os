@@ -292,9 +292,6 @@ uint32_t entry_destroy_object(struct pkcs11_client *client,
 	if (serialargs_remaining_bytes(&ctrlargs))
 		return PKCS11_CKR_ARGUMENTS_BAD;
 
-	if (session_is_active(session))
-		return PKCS11_CKR_OPERATION_ACTIVE;
-
 	object = pkcs11_handle2object(object_handle, session);
 	if (!object)
 		return PKCS11_CKR_ARGUMENTS_BAD;

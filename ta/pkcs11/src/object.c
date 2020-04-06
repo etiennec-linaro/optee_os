@@ -780,7 +780,7 @@ uint32_t entry_get_attribute_value(struct pkcs11_client *client,
 
 		/* Check 1. */
 		if (!attribute_is_exportable(cli_ref, obj)) {
-			cli_ref->size = PKCS11_UNAVAILABLE_INFORMATION;
+			cli_ref->size = PKCS11_CK_UNAVAILABLE_INFORMATION;
 			attr_sensitive = 1;
 			continue;
 		}
@@ -797,7 +797,7 @@ uint32_t entry_get_attribute_value(struct pkcs11_client *client,
 		case PKCS11_CKR_OK:
 			break;
 		case PKCS11_RV_NOT_FOUND:
-			cli_ref->size = PKCS11_UNAVAILABLE_INFORMATION;
+			cli_ref->size = PKCS11_CK_UNAVAILABLE_INFORMATION;
 			attr_type_invalid = 1;
 			break;
 		case PKCS11_CKR_BUFFER_TOO_SMALL:

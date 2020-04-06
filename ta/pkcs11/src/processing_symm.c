@@ -10,6 +10,7 @@
 #include <tee_api_defines.h>
 #include <tee_internal_api.h>
 #include <tee_internal_api_extensions.h>
+#include <utee_defines.h>
 #include <util.h>
 
 #include "attributes.h"
@@ -300,6 +301,41 @@ uint32_t init_symm_operation(struct pkcs11_session *session,
 	return init_tee_operation(session, proc_params);
 }
 
+/* Validate input buffer size as per PKCS#11 constraints */
+static uint32_t input_data_size_is_valid(struct active_processing *proc,
+					 enum processing_func function,
+					 size_t in_size)
+{
+	switch (proc->mecha_type) {
+	case PKCS11_CKM_AES_ECB:
+	case PKCS11_CKM_AES_CBC:
+		if (function == PKCS11_FUNCTION_ENCRYPT &&
+		    in_size % TEE_AES_BLOCK_SIZE)
+			return PKCS11_CKR_DATA_LEN_RANGE;
+		if (function == PKCS11_FUNCTION_DECRYPT &&
+		    in_size % TEE_AES_BLOCK_SIZE)
+			return PKCS11_CKR_ENCRYPTED_DATA_LEN_RANGE;
+		break;
+	case PKCS11_CKM_AES_CBC_PAD:
+		if (function == PKCS11_FUNCTION_DECRYPT &&
+		    in_size % TEE_AES_BLOCK_SIZE)
+			return PKCS11_CKR_ENCRYPTED_DATA_LEN_RANGE;
+		break;
+	case PKCS11_CKM_AES_CTS:
+		if (function == PKCS11_FUNCTION_ENCRYPT &&
+		    in_size < TEE_AES_BLOCK_SIZE)
+			return PKCS11_CKR_DATA_LEN_RANGE;
+		if (function == PKCS11_FUNCTION_DECRYPT &&
+		    in_size < TEE_AES_BLOCK_SIZE)
+			return PKCS11_CKR_ENCRYPTED_DATA_LEN_RANGE;
+		break;
+	default:
+		break;
+	}
+
+	return PKCS11_CKR_OK;
+}
+
 /*
  * step_sym_cipher - processing symmetric (and related) cipher operation step
  *
@@ -357,6 +393,12 @@ uint32_t step_symm_operation(struct pkcs11_session *session,
 		return PKCS11_CKR_GENERAL_ERROR;
 	}
 
+	if (step != PKCS11_FUNC_STEP_FINAL) {
+		rv = input_data_size_is_valid(proc, function, in_size);
+		if (rv)
+			return rv;
+	}
+
 	/*
 	 * Feed active operation with with data
 	 * (PKCS11_FUNC_STEP_UPDATE/_ONESHOT)
@@ -400,6 +442,11 @@ uint32_t step_symm_operation(struct pkcs11_session *session,
 		    step == PKCS11_FUNC_STEP_ONESHOT)
 			break;
 
+		if (!in_buf) {
+			EMSG("No input data");
+			return PKCS11_CKR_ARGUMENTS_BAD;
+		}
+
 		switch (function) {
 		case PKCS11_FUNCTION_ENCRYPT:
 		case PKCS11_FUNCTION_DECRYPT:
@@ -419,6 +466,11 @@ uint32_t step_symm_operation(struct pkcs11_session *session,
 	case PKCS11_CKM_AES_GCM:
 		if (step == PKCS11_FUNC_STEP_FINAL)
 			break;
+
+		if (!in_buf) {
+			EMSG("No input data");
+			return PKCS11_CKR_ARGUMENTS_BAD;
+		}
 
 		switch (function) {
 		case PKCS11_FUNCTION_ENCRYPT:
@@ -488,6 +540,11 @@ uint32_t step_symm_operation(struct pkcs11_session *session,
 	case PKCS11_CKM_AES_CBC_PAD:
 	case PKCS11_CKM_AES_CTS:
 	case PKCS11_CKM_AES_CTR:
+		if (step == PKCS11_FUNC_STEP_ONESHOT && !in_buf) {
+			EMSG("No input data");
+			return PKCS11_CKR_ARGUMENTS_BAD;
+		}
+
 		switch (function) {
 		case PKCS11_FUNCTION_ENCRYPT:
 		case PKCS11_FUNCTION_DECRYPT:

@@ -1046,7 +1046,7 @@ uint32_t check_created_attrs(struct pkcs11_attrs_head *key1,
 		rv = get_u32_attribute(secret, PKCS11_CKA_VALUE_LEN,
 				       &key_length);
 		if (rv)
-			return rv;
+			return PKCS11_CKR_TEMPLATE_INCONSISTENT;
 	}
 	if (public) {
 		switch (get_type(public)) {
@@ -1057,7 +1057,7 @@ uint32_t check_created_attrs(struct pkcs11_attrs_head *key1,
 			rv = get_u32_attribute(public, PKCS11_CKA_MODULUS_BITS,
 					       &key_length);
 			if (rv)
-				return rv;
+				return PKCS11_CKR_TEMPLATE_INCONSISTENT;
 			break;
 		case PKCS11_CKK_EC:
 			break;
@@ -1077,7 +1077,7 @@ uint32_t check_created_attrs(struct pkcs11_attrs_head *key1,
 			rv = get_u32_attribute(private, PKCS11_CKA_MODULUS_BITS,
 					       &key_length);
 			if (rv)
-				return rv;
+				return PKCS11_CKR_TEMPLATE_INCONSISTENT;
 			break;
 		case PKCS11_CKK_EC:
 			/* No need to get key size */

@@ -473,6 +473,7 @@ uint32_t tee2pkcs_error(TEE_Result res)
 		return PKCS11_CKR_BUFFER_TOO_SMALL;
 
 	case TEE_ERROR_MAC_INVALID:
+	case TEE_ERROR_SIGNATURE_INVALID:
 		return PKCS11_CKR_SIGNATURE_INVALID;
 
 	default:

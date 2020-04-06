@@ -489,6 +489,12 @@ uint32_t step_asymm_operation(struct pkcs11_session *session,
 		 */
 		if (in_size > sz)
 			in_size = sz;
+
+		if (function == PKCS11_FUNCTION_VERIFY &&
+		    in2_size != 2 * sz) {
+			rv = PKCS11_CKR_SIGNATURE_LEN_RANGE;
+			goto bail;
+		}
 		break;
 	case PKCS11_CKM_ECDSA_SHA1:
 		in_buf = proc->extra_ctx;

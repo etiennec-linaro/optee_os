@@ -294,7 +294,7 @@ uint32_t entry_destroy_object(struct pkcs11_client *client,
 
 	object = pkcs11_handle2object(object_handle, session);
 	if (!object)
-		return PKCS11_CKR_ARGUMENTS_BAD;
+		return PKCS11_CKR_OBJECT_HANDLE_INVALID;
 
 	destroy_object(session, object, false);
 	handle_put(&session->object_handle_db, object_handle);
@@ -734,7 +734,7 @@ uint32_t entry_get_attribute_value(struct pkcs11_client *client,
 
 	obj = pkcs11_handle2object(object_handle, session);
 	if (!obj) {
-		rv = PKCS11_CKR_ARGUMENTS_BAD;
+		rv = PKCS11_CKR_OBJECT_HANDLE_INVALID;
 		goto bail;
 	}
 

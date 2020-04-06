@@ -696,8 +696,9 @@ uint32_t create_attributes_from_template(struct pkcs11_attrs_head **out,
 	if (rv)
 		goto bail;
 
-	assert(get_attribute(attrs, PKCS11_CKA_LOCAL, NULL, NULL) ==
-		PKCS11_RV_NOT_FOUND);
+	if (get_attribute(attrs, PKCS11_CKA_LOCAL, NULL, NULL) !=
+	    PKCS11_RV_NOT_FOUND)
+		goto bail;
 
 	if (get_attribute(attrs, PKCS11_CKA_KEY_GEN_MECHANISM, NULL, NULL) !=
 	    PKCS11_RV_NOT_FOUND)
@@ -934,8 +935,8 @@ uint32_t check_created_attrs_against_processing(uint32_t proc_id,
 	 * this function which would panic.
 	 */
 	/*
-	 * FIXME: really need to check LOCAL here, it was safely set from
-	 * create_attributes_from_template().
+	 * FIXME: really need to check LOCAL here? it was safely set from
+	 * create_attributes_from_template(). Maybe only in debug mode?
 	 */
 	switch (proc_id) {
 	case PKCS11_PROCESSING_IMPORT:

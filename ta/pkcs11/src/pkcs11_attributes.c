@@ -257,7 +257,7 @@ static const uint32_t pkcs11_any_object_boolprops[] = {
 	PKCS11_CKA_TOKEN, PKCS11_CKA_PRIVATE,
 	PKCS11_CKA_MODIFIABLE, PKCS11_CKA_COPYABLE, PKCS11_CKA_DESTROYABLE,
 };
-static const uint32_t pkcs11_any_object_optional[] = {
+static const uint32_t pkcs11_any_object_mandated[] = {
 	PKCS11_CKA_LABEL,
 };
 /* PKCS#11 specification for raw data object (+pkcs11_any_object_xxx) */
@@ -369,8 +369,8 @@ static uint32_t create_storage_attributes(struct pkcs11_attrs_head **out,
 	if (rv)
 		return rv;
 
-	return set_optional_attributes(out, temp, pkcs11_any_object_optional,
-				       ARRAY_SIZE(pkcs11_any_object_optional));
+	return set_mandatory_attributes(out, temp, pkcs11_any_object_mandated,
+					ARRAY_SIZE(pkcs11_any_object_mandated));
 }
 
 static uint32_t create_genkey_attributes(struct pkcs11_attrs_head **out,

@@ -49,7 +49,7 @@ static struct ck_token *get_session_token(void *session)
 	return pkcs11_session2token(ck_session);
 }
 
-/* Release resources of a non persistent object */
+/* Release non-persistent resources of an object */
 static void cleanup_volatile_obj_ref(struct pkcs11_object *obj)
 {
 	if (!obj)
@@ -104,11 +104,10 @@ out:
  *
  * @session - session requesting object destruction
  * @object - reference to the PKCS11 TA object
- * @session_object_only - true is only session object shall be destroyed
+ * @session_only - true if only session object shall be destroyed
  */
-void destroy_object(struct pkcs11_session *session,
-			  struct pkcs11_object *obj,
-			  bool session_only)
+void destroy_object(struct pkcs11_session *session, struct pkcs11_object *obj,
+		    bool session_only)
 {
 #ifdef DEBUG
 	trace_attributes("[destroy]", obj->attributes);

@@ -482,17 +482,14 @@ uint32_t tee2pkcs_error(TEE_Result res)
 	}
 }
 
+/* Check attribute ID is known and size matches if fixed */
 bool valid_pkcs11_attribute_id(uint32_t id, uint32_t size)
 {
 	size_t n = 0;
 
-	for (n = 0; n < ARRAY_SIZE(attr_ids); n++) {
-		if (id != attr_ids[n].id)
-			continue;
-
-		/* Check size matches if provided */
-		return !attr_ids[n].size || size == attr_ids[n].size;
-	}
+	for (n = 0; n < ARRAY_SIZE(attr_ids); n++)
+		if (id == attr_ids[n].id)
+			return !attr_ids[n].size || size == attr_ids[n].size;
 
 	return false;
 }

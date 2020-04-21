@@ -18,9 +18,6 @@ struct active_processing;
  * Entry points from PKCS11 TA invocation commands
  */
 
-uint32_t entry_import_object(struct pkcs11_client *client,
-			     uint32_t ptypes, TEE_Param *params);
-
 uint32_t entry_generate_secret(struct pkcs11_client *client,
 			       uint32_t ptypes, TEE_Param *params);
 

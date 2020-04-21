@@ -45,6 +45,9 @@ void destroy_object(struct pkcs11_session *session,
 /*
  * Entry function called from the PKCS11 command parser
  */
+uint32_t entry_import_object(struct pkcs11_client *client,
+			     uint32_t ptypes, TEE_Param *params);
+
 uint32_t entry_destroy_object(struct pkcs11_client *client,
 			      uint32_t ptypes, TEE_Param *params);
 

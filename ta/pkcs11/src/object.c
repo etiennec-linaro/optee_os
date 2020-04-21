@@ -262,6 +262,107 @@ bail:
 	return rv;
 }
 
+uint32_t entry_import_object(struct pkcs11_client *client,
+			     uint32_t ptypes, TEE_Param *params)
+{
+        const uint32_t exp_pt = TEE_PARAM_TYPES(TEE_PARAM_TYPE_MEMREF_INOUT,
+						TEE_PARAM_TYPE_NONE,
+						TEE_PARAM_TYPE_MEMREF_OUTPUT,
+						TEE_PARAM_TYPE_NONE);
+	TEE_Param *ctrl = &params[0];
+	TEE_Param *out = &params[2];
+	uint32_t rv = 0;
+	struct serialargs ctrlargs = { };
+	struct pkcs11_session *session = NULL;
+	struct pkcs11_attrs_head *head = NULL;
+	struct pkcs11_object_head *template = NULL;
+	size_t template_size = 0;
+	uint32_t obj_handle = 0;
+
+	/*
+	 * Collect the arguments of the request
+	 */
+
+	if (!client || ptypes != exp_pt ||
+	    out->memref.size != sizeof(obj_handle))
+		return PKCS11_CKR_ARGUMENTS_BAD;
+
+	serialargs_init(&ctrlargs, ctrl->memref.buffer, ctrl->memref.size);
+
+	rv = serialargs_get_session(&ctrlargs, client, &session);
+	if (rv)
+		return rv;
+
+	rv = serialargs_alloc_get_attributes(&ctrlargs, &template);
+	if (rv)
+		return rv;
+
+	if (serialargs_remaining_bytes(&ctrlargs)) {
+		rv = PKCS11_CKR_ARGUMENTS_BAD;
+		goto bail;
+	}
+
+	template_size = sizeof(*template) + template->attrs_size;
+
+	/*
+	 * Prepare a clean initial state for the requested object attributes.
+	 * Free temporary template once done.
+	 */
+	rv = create_attributes_from_template(&head, template, template_size,
+					     NULL, PKCS11_FUNCTION_IMPORT,
+					     PKCS11_PROCESSING_IMPORT);
+	TEE_Free(template);
+	template = NULL;
+	if (rv)
+		goto bail;
+
+	/*
+	 * Check target object attributes match target processing
+	 * Check target object attributes match token state
+	 */
+	rv = check_created_attrs_against_processing(PKCS11_PROCESSING_IMPORT,
+						    head);
+	if (rv)
+		goto bail;
+
+	rv = check_created_attrs_against_token(session, head);
+	if (rv)
+		goto bail;
+
+	/*
+	 * TODO: test object (will check all expected attributes are in place
+	 */
+
+	/*
+	 * At this stage the object is almost created: all its attributes are
+	 * referenced in @head, including the key value and are assume
+	 * reliable. Now need to register it and get a handle for it.
+	 */
+	rv = create_object(session, head, &obj_handle);
+	if (rv)
+		goto bail;
+
+	/*
+	 * Now obj_handle (through the related struct pkcs11_object instance)
+	 * owns the serialised buffer that holds the object attributes.
+	 * We reset attrs->buffer to NULL as serializer object is no more
+	 * the attributes buffer owner.
+	 */
+	head = NULL;
+
+	TEE_MemMove(out->memref.buffer, &obj_handle, sizeof(obj_handle));
+	out->memref.size = sizeof(obj_handle);
+
+	DMSG("PKCS11 session %"PRIu32": import object %#"PRIx32,
+	     session->handle, obj_handle);
+
+bail:
+	TEE_Free(template);
+	TEE_Free(head);
+
+	return rv;
+}
+
 uint32_t entry_destroy_object(struct pkcs11_client *client,
 			      uint32_t ptypes, TEE_Param *params)
 {

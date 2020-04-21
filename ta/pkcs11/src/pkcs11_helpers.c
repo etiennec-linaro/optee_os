@@ -598,46 +598,6 @@ const char *id2str_ta_cmd(uint32_t id)
 	return ID2STR(id, string_ta_cmd, NULL);
 }
 
-const char *id2str_class(uint32_t id)
-{
-	return ID2STR(id, string_class, "PKCS11_CKO_");
-}
-
-const char *id2str_attr(uint32_t id)
-{
-	size_t n = 0;
-
-	for (n = 0; n < ARRAY_SIZE(attr_ids); n++) {
-		if (id != attr_ids[n].id)
-			continue;
-
-		/* Skip PKCS11_ prefix */
-		return (char *)attr_ids[n].string + strlen("PKCS11_CKA_");
-	}
-
-	return unknown;
-}
-
-const char *id2str_type(uint32_t id, uint32_t class)
-{
-	enum pkcs11_class_id class_id = class;
-	enum pkcs11_key_type key_type = id;
-
-	switch (class_id) {
-	case PKCS11_CKO_SECRET_KEY:
-	case PKCS11_CKO_PUBLIC_KEY:
-	case PKCS11_CKO_PRIVATE_KEY:
-		return id2str_key_type(key_type);
-	default:
-		return unknown;
-	}
-}
-
-const char *id2str_key_type(uint32_t id)
-{
-	return ID2STR(id, string_key_type, "PKCS11_CKK_");
-}
-
 const char *id2str_proc(uint32_t id)
 {
 	const char *str = ID2STR(id, string_internal_processing,
@@ -672,6 +632,46 @@ const char *id2str_session_flag(uint32_t id)
 const char *id2str_session_state(uint32_t id)
 {
 	return ID2STR(id, string_session_state, "PKCS11_CKS_");
+}
+
+const char *id2str_attr(uint32_t id)
+{
+	size_t n = 0;
+
+	for (n = 0; n < ARRAY_SIZE(attr_ids); n++) {
+		if (id != attr_ids[n].id)
+			continue;
+
+		/* Skip PKCS11_ prefix */
+		return (char *)attr_ids[n].string + strlen("PKCS11_CKA_");
+	}
+
+	return unknown;
+}
+
+const char *id2str_class(uint32_t id)
+{
+	return ID2STR(id, string_class, "PKCS11_CKO_");
+}
+
+const char *id2str_type(uint32_t id, uint32_t class)
+{
+	enum pkcs11_class_id class_id = class;
+	enum pkcs11_key_type key_type = id;
+
+	switch (class_id) {
+	case PKCS11_CKO_SECRET_KEY:
+	case PKCS11_CKO_PUBLIC_KEY:
+	case PKCS11_CKO_PRIVATE_KEY:
+		return id2str_key_type(key_type);
+	default:
+		return unknown;
+	}
+}
+
+const char *id2str_key_type(uint32_t id)
+{
+	return ID2STR(id, string_key_type, "PKCS11_CKK_");
 }
 
 const char *id2str_attr_value(uint32_t id, size_t size, void *value)

@@ -79,11 +79,6 @@ uint32_t tee2pkcs_error(TEE_Result res);
 
 #if CFG_TEE_TA_LOG_LEVEL > 0
 /* Id-to-string conversions only for trace support */
-const char *id2str_attr_value(uint32_t id, size_t size, void *value);
-const char *id2str_attr(uint32_t id);
-const char *id2str_class(uint32_t id);
-const char *id2str_type(uint32_t id, uint32_t class);
-const char *id2str_key_type(uint32_t id);
 const char *id2str_ta_cmd(uint32_t id);
 const char *id2str_rc(uint32_t id);
 const char *id2str_proc_flag(uint32_t id);
@@ -91,6 +86,11 @@ const char *id2str_slot_flag(uint32_t id);
 const char *id2str_token_flag(uint32_t id);
 const char *id2str_session_flag(uint32_t id);
 const char *id2str_session_state(uint32_t id);
+const char *id2str_attr(uint32_t id);
+const char *id2str_class(uint32_t id);
+const char *id2str_type(uint32_t id, uint32_t class);
+const char *id2str_key_type(uint32_t id);
+const char *id2str_attr_value(uint32_t id, size_t size, void *value);
 const char *id2str_proc(uint32_t id);
 const char *id2str_function(uint32_t id);
 

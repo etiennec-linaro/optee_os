@@ -398,7 +398,6 @@ uint32_t entry_destroy_object(struct pkcs11_client *client,
 		return PKCS11_CKR_OBJECT_HANDLE_INVALID;
 
 	destroy_object(session, object, false);
-	handle_put(&session->object_handle_db, object_handle);
 
 	DMSG("PKCS11 session %"PRIu32": destroy object %#"PRIx32,
 	     session->handle, object_handle);

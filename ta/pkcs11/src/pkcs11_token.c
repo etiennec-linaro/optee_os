@@ -747,14 +747,9 @@ static void session_logout(struct pkcs11_session *session)
 		if (sess->token != session->token)
 			continue;
 
-		LIST_FOREACH(obj, &sess->object_list, link) {
-			if (!object_is_private(obj->attributes))
-				continue;
-
-			destroy_object(sess, obj, true);
-			handle_put(&sess->object_handle_db,
-				   pkcs11_object2handle(obj, sess));
-		}
+		LIST_FOREACH(obj, &sess->object_list, link)
+			if (object_is_private(obj->attributes))
+				destroy_object(sess, obj, true);
 
 		if (pkcs11_session_is_read_write(sess))
 			sess->state = PKCS11_CKS_RW_PUBLIC_SESSION;

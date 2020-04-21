@@ -146,11 +146,6 @@ uint32_t entry_import_object(struct pkcs11_client *client,
 		goto bail;
 	}
 
-	rv = get_ready_session(session);
-	if (rv)
-		goto bail;
-
-	template_size = sizeof(*template) + template->attrs_size;
 
 	/*
 	 * Prepare a clean initial state for the requested object attributes.

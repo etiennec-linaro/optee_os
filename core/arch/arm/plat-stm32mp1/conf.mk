@@ -62,6 +62,9 @@ CFG_STM32_RNG ?= y
 CFG_STM32_RNG ?= y
 CFG_STM32_UART ?= y
 
+# Disable core ASLR
+CFG_CORE_ASLR ?= n
+
 # Default enable some test facitilites
 CFG_TEE_CORE_EMBED_INTERNAL_TESTS ?= y
 CFG_WITH_STATS ?= y

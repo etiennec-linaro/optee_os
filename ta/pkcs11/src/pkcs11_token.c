@@ -213,149 +213,6 @@ int set_processing_state(struct pkcs11_session *session,
 	return PKCS11_CKR_OK;
 }
 
-uint32_t entry_ck_token_initialize(uint32_t ptypes, TEE_Param *params)
-{
-        const uint32_t exp_pt = TEE_PARAM_TYPES(TEE_PARAM_TYPE_MEMREF_INOUT,
-						TEE_PARAM_TYPE_NONE,
-						TEE_PARAM_TYPE_NONE,
-						TEE_PARAM_TYPE_NONE);
-	TEE_Param *ctrl = &params[0];
-	uint32_t rv = 0;
-	struct serialargs ctrlargs = { };
-	uint32_t token_id = 0;
-	uint32_t pin_size = 0;
-	void *pin = NULL;
-	char label[PKCS11_TOKEN_LABEL_SIZE + 1] = { 0 };
-	struct ck_token *token = NULL;
-	uint8_t *cpin = NULL;
-	int pin_rc = 0;
-	struct pkcs11_client *client = NULL;
-
-	if (ptypes != exp_pt)
-		return PKCS11_CKR_ARGUMENTS_BAD;
-
-	serialargs_init(&ctrlargs, ctrl->memref.buffer, ctrl->memref.size);
-
-	rv = serialargs_get(&ctrlargs, &token_id, sizeof(uint32_t));
-	if (rv)
-		return rv;
-
-	rv = serialargs_get(&ctrlargs, &pin_size, sizeof(uint32_t));
-	if (rv)
-		return rv;
-
-	if (pin_size < PKCS11_TOKEN_PIN_SIZE_MIN ||
-	    pin_size > PKCS11_TOKEN_PIN_SIZE_MAX)
-		return PKCS11_CKR_PIN_LEN_RANGE;
-
-	rv = serialargs_get(&ctrlargs, &label, PKCS11_TOKEN_LABEL_SIZE);
-	if (rv)
-		return rv;
-
-	rv = serialargs_get_ptr(&ctrlargs, &pin, pin_size);
-	if (rv)
-		return rv;
-
-	if (serialargs_remaining_bytes(&ctrlargs))
-		return PKCS11_CKR_ARGUMENTS_BAD;
-
-	token = get_token(token_id);
-	if (!token)
-		return PKCS11_CKR_SLOT_ID_INVALID;
-
-	if (token->db_main->flags & PKCS11_CKFT_SO_PIN_LOCKED) {
-		IMSG("Token %"PRIu32": SO PIN locked", token_id);
-		return PKCS11_CKR_PIN_LOCKED;
-	}
-
-	TAILQ_FOREACH(client, &pkcs11_client_list, link)
-		if (!TAILQ_EMPTY(&client->session_list))
-			return PKCS11_CKR_SESSION_EXISTS;
-
-	cpin = TEE_Malloc(PKCS11_TOKEN_PIN_SIZE_MAX, TEE_MALLOC_FILL_ZERO);
-	if (!cpin)
-		return PKCS11_CKR_DEVICE_MEMORY;
-
-	TEE_MemMove(cpin, pin, pin_size);
-
-	if (cipher_pin(token, PKCS11_CKU_SO, cpin)) {
-		rv = PKCS11_CKR_GENERAL_ERROR;
-		goto out;
-	}
-
-	if (!token->db_main->so_pin_size) {
-		TEE_MemMove(token->db_main->so_pin, cpin,
-			    PKCS11_TOKEN_PIN_SIZE_MAX);
-		token->db_main->so_pin_size = pin_size;
-
-		update_persistent_db(token,
-				     offsetof(struct token_persistent_main,
-					      so_pin),
-				     sizeof(token->db_main->so_pin));
-		update_persistent_db(token,
-				     offsetof(struct token_persistent_main,
-					      so_pin_size),
-				     sizeof(token->db_main->so_pin_size));
-
-		goto inited;
-	}
-
-	pin_rc = 0;
-	if (token->db_main->so_pin_size != pin_size)
-		pin_rc = 1;
-	if (buf_compare_ct(token->db_main->so_pin, cpin,
-			   PKCS11_TOKEN_PIN_SIZE_MAX))
-		pin_rc = 1;
-
-	if (pin_rc) {
-		token->db_main->flags |= PKCS11_CKFT_SO_PIN_COUNT_LOW;
-		token->db_main->so_pin_count++;
-
-		if (token->db_main->so_pin_count == 6)
-			token->db_main->flags |= PKCS11_CKFT_SO_PIN_FINAL_TRY;
-		if (token->db_main->so_pin_count == 7)
-			token->db_main->flags |= PKCS11_CKFT_SO_PIN_LOCKED;
-
-		update_persistent_db(token,
-				     offsetof(struct token_persistent_main,
-					      flags),
-				     sizeof(token->db_main->flags));
-
-		update_persistent_db(token,
-				     offsetof(struct token_persistent_main,
-					      so_pin_count),
-				     sizeof(token->db_main->so_pin_count));
-
-		rv = PKCS11_CKR_PIN_INCORRECT;
-		goto out;
-	}
-
-	token->db_main->flags &= ~(PKCS11_CKFT_SO_PIN_COUNT_LOW |
-				   PKCS11_CKFT_SO_PIN_FINAL_TRY);
-	token->db_main->so_pin_count = 0;
-
-inited:
-	TEE_MemMove(token->db_main->label, label, PKCS11_TOKEN_LABEL_SIZE);
-	token->db_main->flags |= PKCS11_CKFT_TOKEN_INITIALIZED;
-	/* Reset user PIN */
-	token->db_main->user_pin_size = 0;
-	token->db_main->flags &= ~(PKCS11_CKFT_USER_PIN_INITIALIZED |
-				   PKCS11_CKFT_USER_PIN_COUNT_LOW |
-				   PKCS11_CKFT_USER_PIN_FINAL_TRY |
-				   PKCS11_CKFT_USER_PIN_LOCKED |
-				   PKCS11_CKFT_USER_PIN_TO_BE_CHANGED);
-
-	update_persistent_db(token, 0, sizeof(*token->db_main));
-
-	label[PKCS11_TOKEN_LABEL_SIZE] = '\0';
-	IMSG("PKCS11 token %"PRIu32": initialized \"%s\"", token_id, label);
-
-out:
-	TEE_Free(cpin);
-
-	return rv;
-}
-
 uint32_t entry_ck_slot_list(uint32_t ptypes, TEE_Param *params)
 {
 	const uint32_t exp_pt = TEE_PARAM_TYPES(TEE_PARAM_TYPE_MEMREF_INOUT,
@@ -979,6 +836,149 @@ uint32_t entry_ck_session_info(struct pkcs11_client *client,
 	DMSG("Get find on PKCS11 session %"PRIu32, session->handle);
 
 	return PKCS11_CKR_OK;
+}
+
+uint32_t entry_ck_token_initialize(uint32_t ptypes, TEE_Param *params)
+{
+        const uint32_t exp_pt = TEE_PARAM_TYPES(TEE_PARAM_TYPE_MEMREF_INOUT,
+						TEE_PARAM_TYPE_NONE,
+						TEE_PARAM_TYPE_NONE,
+						TEE_PARAM_TYPE_NONE);
+	TEE_Param *ctrl = &params[0];
+	uint32_t rv = 0;
+	struct serialargs ctrlargs = { };
+	uint32_t token_id = 0;
+	uint32_t pin_size = 0;
+	void *pin = NULL;
+	char label[PKCS11_TOKEN_LABEL_SIZE + 1] = { 0 };
+	struct ck_token *token = NULL;
+	uint8_t *cpin = NULL;
+	int pin_rc = 0;
+	struct pkcs11_client *client = NULL;
+
+	if (ptypes != exp_pt)
+		return PKCS11_CKR_ARGUMENTS_BAD;
+
+	serialargs_init(&ctrlargs, ctrl->memref.buffer, ctrl->memref.size);
+
+	rv = serialargs_get(&ctrlargs, &token_id, sizeof(uint32_t));
+	if (rv)
+		return rv;
+
+	rv = serialargs_get(&ctrlargs, &pin_size, sizeof(uint32_t));
+	if (rv)
+		return rv;
+
+	if (pin_size < PKCS11_TOKEN_PIN_SIZE_MIN ||
+	    pin_size > PKCS11_TOKEN_PIN_SIZE_MAX)
+		return PKCS11_CKR_PIN_LEN_RANGE;
+
+	rv = serialargs_get(&ctrlargs, &label, PKCS11_TOKEN_LABEL_SIZE);
+	if (rv)
+		return rv;
+
+	rv = serialargs_get_ptr(&ctrlargs, &pin, pin_size);
+	if (rv)
+		return rv;
+
+	if (serialargs_remaining_bytes(&ctrlargs))
+		return PKCS11_CKR_ARGUMENTS_BAD;
+
+	token = get_token(token_id);
+	if (!token)
+		return PKCS11_CKR_SLOT_ID_INVALID;
+
+	if (token->db_main->flags & PKCS11_CKFT_SO_PIN_LOCKED) {
+		IMSG("Token %"PRIu32": SO PIN locked", token_id);
+		return PKCS11_CKR_PIN_LOCKED;
+	}
+
+	TAILQ_FOREACH(client, &pkcs11_client_list, link)
+		if (!TAILQ_EMPTY(&client->session_list))
+			return PKCS11_CKR_SESSION_EXISTS;
+
+	cpin = TEE_Malloc(PKCS11_TOKEN_PIN_SIZE_MAX, TEE_MALLOC_FILL_ZERO);
+	if (!cpin)
+		return PKCS11_CKR_DEVICE_MEMORY;
+
+	TEE_MemMove(cpin, pin, pin_size);
+
+	if (cipher_pin(token, PKCS11_CKU_SO, cpin)) {
+		rv = PKCS11_CKR_GENERAL_ERROR;
+		goto out;
+	}
+
+	if (!token->db_main->so_pin_size) {
+		TEE_MemMove(token->db_main->so_pin, cpin,
+			    PKCS11_TOKEN_PIN_SIZE_MAX);
+		token->db_main->so_pin_size = pin_size;
+
+		update_persistent_db(token,
+				     offsetof(struct token_persistent_main,
+					      so_pin),
+				     sizeof(token->db_main->so_pin));
+		update_persistent_db(token,
+				     offsetof(struct token_persistent_main,
+					      so_pin_size),
+				     sizeof(token->db_main->so_pin_size));
+
+		goto inited;
+	}
+
+	pin_rc = 0;
+	if (token->db_main->so_pin_size != pin_size)
+		pin_rc = 1;
+	if (buf_compare_ct(token->db_main->so_pin, cpin,
+			   PKCS11_TOKEN_PIN_SIZE_MAX))
+		pin_rc = 1;
+
+	if (pin_rc) {
+		token->db_main->flags |= PKCS11_CKFT_SO_PIN_COUNT_LOW;
+		token->db_main->so_pin_count++;
+
+		if (token->db_main->so_pin_count == 6)
+			token->db_main->flags |= PKCS11_CKFT_SO_PIN_FINAL_TRY;
+		if (token->db_main->so_pin_count == 7)
+			token->db_main->flags |= PKCS11_CKFT_SO_PIN_LOCKED;
+
+		update_persistent_db(token,
+				     offsetof(struct token_persistent_main,
+					      flags),
+				     sizeof(token->db_main->flags));
+
+		update_persistent_db(token,
+				     offsetof(struct token_persistent_main,
+					      so_pin_count),
+				     sizeof(token->db_main->so_pin_count));
+
+		rv = PKCS11_CKR_PIN_INCORRECT;
+		goto out;
+	}
+
+	token->db_main->flags &= ~(PKCS11_CKFT_SO_PIN_COUNT_LOW |
+				   PKCS11_CKFT_SO_PIN_FINAL_TRY);
+	token->db_main->so_pin_count = 0;
+
+inited:
+	TEE_MemMove(token->db_main->label, label, PKCS11_TOKEN_LABEL_SIZE);
+	token->db_main->flags |= PKCS11_CKFT_TOKEN_INITIALIZED;
+	/* Reset user PIN */
+	token->db_main->user_pin_size = 0;
+	token->db_main->flags &= ~(PKCS11_CKFT_USER_PIN_INITIALIZED |
+				   PKCS11_CKFT_USER_PIN_COUNT_LOW |
+				   PKCS11_CKFT_USER_PIN_FINAL_TRY |
+				   PKCS11_CKFT_USER_PIN_LOCKED |
+				   PKCS11_CKFT_USER_PIN_TO_BE_CHANGED);
+
+	update_persistent_db(token, 0, sizeof(*token->db_main));
+
+	label[PKCS11_TOKEN_LABEL_SIZE] = '\0';
+	IMSG("PKCS11 token %"PRIu32": initialized \"%s\"", token_id, label);
+
+out:
+	TEE_Free(cpin);
+
+	return rv;
 }
 
 static uint32_t set_pin(struct pkcs11_session *session,

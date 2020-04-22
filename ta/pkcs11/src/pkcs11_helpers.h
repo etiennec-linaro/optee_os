@@ -74,8 +74,8 @@ void pkcs2tee_mode(uint32_t *tee_id, uint32_t function);
 bool pkcs2tee_load_attr(TEE_Attribute *tee_ref, uint32_t tee_id,
 			struct pkcs11_object *obj, uint32_t pkcs11_id);
 
-/* Convert TEE_Result into enum pkcs11_rv */
-uint32_t tee2pkcs_error(TEE_Result res);
+/* GPD TEE to PKCS11 status conversion */
+enum pkcs11_rc tee2pkcs_error(TEE_Result res);
 
 #if CFG_TEE_TA_LOG_LEVEL > 0
 /* Id-to-string conversions only for trace support */

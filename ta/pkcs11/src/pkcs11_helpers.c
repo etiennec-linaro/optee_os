@@ -104,9 +104,9 @@ struct any_id {
  * or ID/string conversion arrays.
  */
 #if CFG_TEE_TA_LOG_LEVEL > 0
-#define PKCS11_ID(_id)		{ .id = (uint32_t)(_id), .string = #_id }
+#define PKCS11_ID(_id)		{ .id = _id, .string = #_id }
 #else
-#define PKCS11_ID(_id)		{ .id = (uint32_t)(_id) }
+#define PKCS11_ID(_id)		{ .id = _id }
 #endif
 
 #define ID2STR(id, table, prefix)	\
@@ -458,7 +458,7 @@ int pkcs11_attr2boolprop_shift(uint32_t attr)
 /*
  * Conversion between PKCS11 TA and GPD TEE return codes
  */
-uint32_t tee2pkcs_error(TEE_Result res)
+enum pkcs11_rc tee2pkcs_error(TEE_Result res)
 {
 	switch (res) {
 	case TEE_SUCCESS:

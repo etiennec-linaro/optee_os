@@ -167,10 +167,6 @@ TEE_Result TA_InvokeCommandEntryPoint(void *tee_session, uint32_t cmd,
 	case PKCS11_CMD_TOKEN_INFO:
 		rc = entry_ck_token_info(ptypes, params);
 		break;
-	case PKCS11_CMD_INIT_TOKEN:
-		rc = entry_ck_token_initialize(ptypes, params);
-		break;
-
 	case PKCS11_CMD_MECHANISM_IDS:
 		rc = entry_ck_token_mecha_ids(ptypes, params);
 		break;
@@ -189,6 +185,22 @@ TEE_Result TA_InvokeCommandEntryPoint(void *tee_session, uint32_t cmd,
 		break;
 	case PKCS11_CMD_SESSION_INFO:
 		rc = entry_ck_session_info(client, ptypes, params);
+		break;
+
+	case PKCS11_CMD_INIT_TOKEN:
+		rc = entry_ck_token_initialize(ptypes, params);
+		break;
+	case PKCS11_CMD_INIT_PIN:
+		rc = entry_ck_init_pin(client, ptypes, params);
+		break;
+	case PKCS11_CMD_SET_PIN:
+		rc = entry_ck_set_pin(client, ptypes, params);
+		break;
+	case PKCS11_CMD_LOGIN:
+		rc = entry_ck_login(client, ptypes, params);
+		break;
+	case PKCS11_CMD_LOGOUT:
+		rc = entry_ck_logout(client, ptypes, params);
 		break;
 
 	case PKCS11_CMD_IMPORT_OBJECT:
@@ -297,19 +309,6 @@ TEE_Result TA_InvokeCommandEntryPoint(void *tee_session, uint32_t cmd,
 		break;
 	case PKCS11_CMD_GET_OBJECT_SIZE:
 		rc = entry_get_object_size(client, ptypes, params);
-		break;
-
-	case PKCS11_CMD_INIT_PIN:
-		rc = entry_init_pin(client, ptypes, params);
-		break;
-	case PKCS11_CMD_SET_PIN:
-		rc = entry_set_pin(client, ptypes, params);
-		break;
-	case PKCS11_CMD_LOGIN:
-		rc = entry_login(client, ptypes, params);
-		break;
-	case PKCS11_CMD_LOGOUT:
-		rc = entry_logout(client, ptypes, params);
 		break;
 
 	case PKCS11_CMD_GENERATE_KEY_PAIR:

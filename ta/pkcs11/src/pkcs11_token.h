@@ -8,6 +8,7 @@
 #include <sys/queue.h>
 #include <tee_api_types.h>
 #include <tee_internal_api.h>
+#include <utee_defines.h>
 
 #include "handle.h"
 #include "object.h"
@@ -40,6 +41,8 @@ struct pkcs11_client;
 #define PKCS11_MAX_USERS		2
 #define PKCS11_TOKEN_PIN_SIZE_MAX	128
 #define PKCS11_TOKEN_PIN_SIZE_MIN	10
+#define PKCS11_TOKEN_SO_PIN_COUNT_MAX	7
+#define PKCS11_TOKEN_USER_PIN_COUNT_MAX	7
 
 /*
  * Persistent state of the token
@@ -48,22 +51,22 @@ struct pkcs11_client;
  * @label - pkcs11 formatted token label, set by client
  * @flags - pkcs11 token flags
  * @so_pin_count - counter on security officer login failure
- * @so_pin_size - byte size of the provisioned SO PIN
- * @so_pin - stores the SO PIN
+ * @so_pin_salt - stores salt in hash of SO PIN, 0 if not set
+ * @so_pin_hash - stores hash of SO PIN
  * @user_pin_count - counter on user login failure
- * @user_pin_size - byte size of the provisioned user PIN
- * @user_pin - stores the user PIN
+ * @user_pin_salt - stores salt in hash of user PIN, 0 if not set
+ * @user_pin_hash - stores hash of user PIN
  */
 struct token_persistent_main {
 	uint32_t version;
 	uint8_t label[PKCS11_TOKEN_LABEL_SIZE];
 	uint32_t flags;
 	uint32_t so_pin_count;
-	uint32_t so_pin_size;
-	uint8_t so_pin[PKCS11_TOKEN_PIN_SIZE_MAX];
+	uint32_t so_pin_salt;
+	uint8_t so_pin_hash[TEE_MAX_HASH_SIZE];
 	uint32_t user_pin_count;
-	uint32_t user_pin_size;
-	uint8_t user_pin[PKCS11_TOKEN_PIN_SIZE_MAX];
+	uint32_t user_pin_salt;
+	uint8_t user_pin_hash[TEE_MAX_HASH_SIZE];
 };
 
 /*
@@ -194,11 +197,15 @@ unsigned int get_token_id(struct ck_token *token);
 
 /* Access to persistent database */
 struct ck_token *init_persistent_db(unsigned int token_id);
-uint32_t update_persistent_db(struct ck_token *token, size_t offset, size_t size);
+void update_persistent_db(struct ck_token *token);
 void close_persistent_db(struct ck_token *token);
 
-TEE_Result cipher_pin(struct ck_token *token, enum pkcs11_user_type user,
-		      uint8_t *buf);
+enum pkcs11_rc hash_pin(enum pkcs11_user_type user, const uint8_t *pin,
+			size_t pin_size, uint32_t *salt,
+			uint8_t hash[TEE_MAX_HASH_SIZE]);
+enum pkcs11_rc verify_pin(enum pkcs11_user_type user, const uint8_t *pin,
+			  size_t pin_size, uint32_t salt,
+			  const uint8_t hash[TEE_MAX_HASH_SIZE]);
 
 /* Token persistent objects */
 uint32_t create_object_uuid(struct ck_token *token, struct pkcs11_object *obj);
@@ -268,7 +275,6 @@ struct ck_token *pkcs11_session2token(struct pkcs11_session *session)
 uint32_t entry_ck_slot_list(uint32_t ptypes, TEE_Param *params);
 uint32_t entry_ck_slot_info(uint32_t ptypes, TEE_Param *params);
 uint32_t entry_ck_token_info(uint32_t ptypes, TEE_Param *params);
-uint32_t entry_ck_token_initialize(uint32_t ptypes, TEE_Param *params);
 uint32_t entry_ck_token_mecha_ids(uint32_t ptypes, TEE_Param *params);
 uint32_t entry_ck_token_mecha_info(uint32_t ptypes, TEE_Param *params);
 uint32_t entry_ck_open_session(struct pkcs11_client *client,
@@ -279,13 +285,14 @@ uint32_t entry_ck_close_all_sessions(struct pkcs11_client *client,
 				     uint32_t ptypes, TEE_Param *params);
 uint32_t entry_ck_session_info(struct pkcs11_client *client,
 			       uint32_t ptypes, TEE_Param *params);
-uint32_t entry_init_pin(struct pkcs11_client *client,
+uint32_t entry_ck_token_initialize(uint32_t ptypes, TEE_Param *params);
+uint32_t entry_ck_init_pin(struct pkcs11_client *client,
+			   uint32_t ptypes, TEE_Param *params);
+uint32_t entry_ck_set_pin(struct pkcs11_client *client,
+			  uint32_t ptypes, TEE_Param *params);
+uint32_t entry_ck_login(struct pkcs11_client *client,
 			uint32_t ptypes, TEE_Param *params);
-uint32_t entry_set_pin(struct pkcs11_client *client,
-		       uint32_t ptypes, TEE_Param *params);
-uint32_t entry_login(struct pkcs11_client *client,
-		     uint32_t ptypes, TEE_Param *params);
-uint32_t entry_logout(struct pkcs11_client *client,
-		      uint32_t ptypes, TEE_Param *params);
+uint32_t entry_ck_logout(struct pkcs11_client *client,
+			 uint32_t ptypes, TEE_Param *params);
 
 #endif /*PKCS11_TA_PKCS11_TOKEN_H*/

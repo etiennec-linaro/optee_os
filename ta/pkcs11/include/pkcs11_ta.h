@@ -192,7 +192,7 @@ enum pkcs11_ta_cmd {
 	 *
 	 * This command relates to the PKCS#11 API function C_InitToken().
 	 */
-	PKCS11_CMD_INIT_TOKEN = 106,
+	PKCS11_CMD_INIT_TOKEN = 10,
 
 	/*
 	 * PKCS11_CMD_INIT_PIN - Initialize user PIN
@@ -206,7 +206,7 @@ enum pkcs11_ta_cmd {
 	 *
 	 * This command relates to the PKCS#11 API function C_InitPIN().
 	 */
-	PKCS11_CMD_INIT_PIN = 107,
+	PKCS11_CMD_INIT_PIN = 11,
 
 	/*
 	 * PKCS11_CMD_SET_PIN - Change user PIN
@@ -220,10 +220,9 @@ enum pkcs11_ta_cmd {
 	 *       ]
 	 * [out] memref[0] = 32bit return code, enum pkcs11_rc
 	 *
-	 * This command relates to the PKCS#11 API function
-	 * C_CloseAllSessions().
+	 * This command relates to the PKCS#11 API function C_SetPIN().
 	 */
-	PKCS11_CMD_SET_PIN = 108,
+	PKCS11_CMD_SET_PIN = 12,
 
 	/*
 	 * PKCS11_CMD_LOGIN - Initialize user PIN
@@ -238,7 +237,7 @@ enum pkcs11_ta_cmd {
 	 *
 	 * This command relates to the PKCS#11 API function C_Login().
 	 */
-	PKCS11_CMD_LOGIN = 109,
+	PKCS11_CMD_LOGIN = 13,
 
 	/*
 	 * PKCS11_CMD_LOGOUT - Log out from token
@@ -250,7 +249,7 @@ enum pkcs11_ta_cmd {
 	 *
 	 * This command relates to the PKCS#11 API function C_Logout().
 	 */
-	PKCS11_CMD_LOGOUT = 110,
+	PKCS11_CMD_LOGOUT = 14,
 
 	/*
 	 * PKCS11_CMD_GET_SESSION_STATE - Retrieve the session state for later restore

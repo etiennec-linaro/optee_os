@@ -50,143 +50,82 @@ static TEE_Result open_db_file(struct ck_token *token,
 					out_hdl);
 }
 
-static TEE_Result get_pin_file_name(struct ck_token *token,
-				    enum pkcs11_user_type user,
-				    char *name, size_t size)
-{
-	int n = snprintf(name, size,
-			 "token.db.%u-pin%d", get_token_id(token), user);
-
-	if (n < 0 || (size_t)n >= size)
-		return TEE_ERROR_SECURITY;
-	else
-		return TEE_SUCCESS;
-}
-
-static TEE_Result open_pin_file(struct ck_token *token,
-				enum pkcs11_user_type user,
-				TEE_ObjectHandle *out_hdl)
-{
-	char file[PERSISTENT_OBJECT_ID_LEN] = { };
-	TEE_Result res = TEE_ERROR_GENERIC;
-
-	res = get_pin_file_name(token, user, file, sizeof(file));
-	if (res)
-		return res;
-
-	return TEE_OpenPersistentObject(TEE_STORAGE_PRIVATE, file, sizeof(file),
-					0, out_hdl);
-}
-
-TEE_Result cipher_pin(struct ck_token *token, enum pkcs11_user_type user,
-		      uint8_t *buf)
-{
-	TEE_Result res = TEE_ERROR_GENERIC;
-	TEE_ObjectHandle key_handle = TEE_HANDLE_NULL;
-	TEE_OperationHandle tee_op_handle = TEE_HANDLE_NULL;
-	uint32_t size = PKCS11_TOKEN_PIN_SIZE_MAX;
-	uint8_t iv[16] = { 0 };
-
-	res = open_pin_file(token, user, &key_handle);
-	if (res)
-		return res;
-
-	res = TEE_AllocateOperation(&tee_op_handle, TEE_ALG_AES_CBC_NOPAD,
-				    TEE_MODE_ENCRYPT, 128);
-	if (res)
-		goto out;
-
-	res = TEE_SetOperationKey(tee_op_handle, key_handle);
-	if (res)
-		goto out;
-
-	TEE_CipherInit(tee_op_handle, iv, sizeof(iv));
-
-	res = TEE_CipherDoFinal(tee_op_handle, buf, size, buf, &size);
-	if (res)
-		goto out;
-	if (size != PKCS11_TOKEN_PIN_SIZE_MAX)
-		TEE_Panic(0);
-
-out:
-	if (tee_op_handle != TEE_HANDLE_NULL)
-		TEE_FreeOperation(tee_op_handle);
-
-	TEE_CloseObject(key_handle);
-
-	return res;
-}
-
-uint32_t update_persistent_db(struct ck_token *token, size_t offset,
-			      size_t size)
+void update_persistent_db(struct ck_token *token)
 {
 	TEE_Result res = TEE_ERROR_GENERIC;
 	TEE_ObjectHandle db_hdl = TEE_HANDLE_NULL;
-	uint8_t *field = (uint8_t *)token->db_main + offset;
 
 	res = open_db_file(token, &db_hdl);
-	if (!res)
-		res = TEE_SeekObjectData(db_hdl, offset, TEE_DATA_SEEK_SET);
-	if (!res)
-		res = TEE_WriteObjectData(db_hdl, field, size);
-
-	TEE_CloseObject(db_hdl);
-
-	if (!res)
-		return PKCS11_CKR_OK;
-
-	return tee2pkcs_error(res);
-
-}
-
-static void init_pin_keys(struct ck_token *token, enum pkcs11_user_type user)
-{
-	TEE_Result res = TEE_ERROR_GENERIC;
-	TEE_ObjectHandle key_hdl = TEE_HANDLE_NULL;
-
-	res = open_pin_file(token, user, &key_hdl);
-
-	if (res == TEE_SUCCESS)
-		DMSG("PIN key found");
-
-	if (res == TEE_ERROR_ITEM_NOT_FOUND) {
-		TEE_Attribute attr = { };
-		TEE_ObjectHandle hdl = TEE_HANDLE_NULL;
-		uint8_t pin_key[16] = { };
-		char file[PERSISTENT_OBJECT_ID_LEN] = { };
-
-		TEE_MemFill(&attr, 0, sizeof(attr));
-
-		TEE_GenerateRandom(pin_key, sizeof(pin_key));
-		TEE_InitRefAttribute(&attr, TEE_ATTR_SECRET_VALUE,
-				     pin_key, sizeof(pin_key));
-
-		res = TEE_AllocateTransientObject(TEE_TYPE_AES, 128, &hdl);
-		if (res)
-			TEE_Panic(0);
-
-		res = TEE_PopulateTransientObject(hdl, &attr, 1);
-		if (res)
-			TEE_Panic(0);
-
-		res = get_pin_file_name(token, user, file, sizeof(file));
-		if (res)
-			TEE_Panic(0);
-
-		res = TEE_CreatePersistentObject(TEE_STORAGE_PRIVATE,
-						 file, sizeof(file), 0, hdl,
-						 pin_key, sizeof(pin_key),
-						 &key_hdl);
-		TEE_CloseObject(hdl);
-
-		if (res == TEE_SUCCESS)
-			DMSG("Token %u: PIN key created", get_token_id(token));
+	if (res) {
+		EMSG("Failed to open token persistent db: %#"PRIx32, res);
+		TEE_Panic(0);
+	}
+	res = TEE_WriteObjectData(db_hdl, token->db_main,
+				  sizeof(*token->db_main));
+	if (res) {
+		EMSG("Failed to write to token persistent db: %#"PRIx32, res);
+		TEE_Panic(0);
 	}
 
-	if (res)
-		TEE_Panic(res);
+	TEE_CloseObject(db_hdl);
+}
 
-	TEE_CloseObject(key_hdl);
+static enum pkcs11_rc do_hash(uint32_t user, const uint8_t *pin,
+			      size_t pin_size, uint32_t salt,
+			      uint8_t hash[TEE_MAX_HASH_SIZE])
+{
+	TEE_Result res = TEE_SUCCESS;
+	TEE_OperationHandle oh = TEE_HANDLE_NULL;
+	uint32_t sz = TEE_MAX_HASH_SIZE;
+
+	res = TEE_AllocateOperation(&oh, TEE_ALG_SHA256, TEE_MODE_DIGEST, 0);
+	if (res)
+		return tee2pkcs_error(res);
+
+	TEE_DigestUpdate(oh, &user, sizeof(user));
+	TEE_DigestUpdate(oh, &salt, sizeof(salt));
+	res = TEE_DigestDoFinal(oh, pin, pin_size, hash, &sz);
+	TEE_FreeOperation(oh);
+
+	if (res)
+		return PKCS11_CKR_GENERAL_ERROR;
+
+	memset(hash + sz, 0, TEE_MAX_HASH_SIZE - sz);
+	return PKCS11_CKR_OK;
+}
+
+enum pkcs11_rc hash_pin(enum pkcs11_user_type user, const uint8_t *pin,
+			size_t pin_size, uint32_t *salt,
+			uint8_t hash[TEE_MAX_HASH_SIZE])
+{
+	enum pkcs11_rc rc = PKCS11_CKR_OK;
+	uint32_t s = 0;
+
+	TEE_GenerateRandom(&s, sizeof(s));
+	if (!s)
+		s++;
+
+	rc = do_hash(user, pin, pin_size, s, hash);
+	if (!rc)
+		*salt = s;
+	return rc;
+}
+
+enum pkcs11_rc verify_pin(enum pkcs11_user_type user, const uint8_t *pin,
+			  size_t pin_size, uint32_t salt,
+			  const uint8_t hash[TEE_MAX_HASH_SIZE])
+{
+	uint8_t tmp_hash[TEE_MAX_HASH_SIZE] = { 0 };
+	enum pkcs11_rc rc = PKCS11_CKR_OK;
+
+	rc = do_hash(user, pin, pin_size, salt, tmp_hash);
+	if (rc)
+		return rc;
+
+	if (buf_compare_ct(tmp_hash, hash, TEE_MAX_HASH_SIZE))
+		rc = PKCS11_CKR_PIN_INCORRECT;
+
+	return rc;
 }
 
 /*
@@ -387,11 +326,6 @@ struct ck_token *init_persistent_db(unsigned int token_id)
 
 	if (!token)
 		return NULL;
-
-	init_pin_keys(token, PKCS11_CKU_SO);
-	init_pin_keys(token, PKCS11_CKU_USER);
-	COMPILE_TIME_ASSERT(PKCS11_CKU_SO == 0 && PKCS11_CKU_USER == 1 &&
-			    PKCS11_MAX_USERS >= 2);
 
 	LIST_INIT(&token->object_list);
 

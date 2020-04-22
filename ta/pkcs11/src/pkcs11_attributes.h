@@ -10,7 +10,9 @@
 
 #include "serializer.h"
 
+struct pkcs11_attrs_head;
 struct pkcs11_object;
+struct pkcs11_session;
 
 /*
  * PKCS#11 directives on object attributes.
@@ -113,9 +115,6 @@ enum processing_step {
 	PKCS11_FUNC_STEP_UPDATE,
 	PKCS11_FUNC_STEP_FINAL,
 };
-
-struct pkcs11_attrs_head;
-struct pkcs11_session;
 
 /* Create an attribute list for a new object (TODO: add parent attribs) */
 uint32_t create_attributes_from_template(struct pkcs11_attrs_head **out,

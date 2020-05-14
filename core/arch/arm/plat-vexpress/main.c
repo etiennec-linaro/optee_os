@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BSD-2-Clause
 /*
- * Copyright (c) 2016, Linaro Limited
+ * Copyright (c) 2016-2020, Linaro Limited
  * Copyright (c) 2014, STMicroelectronics International N.V.
  */
 
@@ -21,6 +21,7 @@
 #include <mm/core_mmu.h>
 #include <platform_config.h>
 #include <sm/psci.h>
+#include <sm/std_smc.h>
 #include <stdint.h>
 #include <string.h>
 #include <tee/entry_fast.h>
@@ -198,6 +199,24 @@ static void release_secondary_early_hpen(size_t pos)
 	mailbox->hpen[pos] = 1;
 	dsb_ishst();
 	sev();
+}
+
+int psci_features(uint32_t psci_fid)
+{
+	switch (psci_fid) {
+	case ARM_SMCCC_VERSION:
+	case PSCI_PSCI_FEATURES:
+	case PSCI_VERSION:
+	case PSCI_CPU_ON:
+		return PSCI_RET_SUCCESS;
+	default:
+		return PSCI_RET_NOT_SUPPORTED;
+	}
+}
+
+uint32_t psci_version(void)
+{
+	return PSCI_VERSION_1_0;
 }
 
 int psci_cpu_on(uint32_t core_id, uint32_t entry, uint32_t context_id)

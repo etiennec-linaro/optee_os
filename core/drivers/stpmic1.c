@@ -580,7 +580,7 @@ static const struct regul_struct *get_regulator_data(const char *name)
 	panic(name);
 }
 
-static uint8_t voltage_to_index(const char *name, uint16_t millivolts)
+static size_t voltage_to_index(const char *name, uint16_t millivolts)
 {
 	const struct regul_struct *regul = get_regulator_data(name);
 	unsigned int i = 0;
@@ -590,8 +590,7 @@ static uint8_t voltage_to_index(const char *name, uint16_t millivolts)
 		if (regul->voltage_table[i] == millivolts)
 			return i;
 
-	/* Voltage not found */
-	panic(name);
+	return VOLTAGE_INDEX_INVALID;
 }
 
 int stpmic1_powerctrl_on(void)
@@ -648,9 +647,12 @@ static uint8_t find_plat_mask(const char *name)
 
 int stpmic1_regulator_voltage_set(const char *name, uint16_t millivolts)
 {
-	uint8_t voltage_index = voltage_to_index(name, millivolts);
+	size_t voltage_index = voltage_to_index(name, millivolts);
 	const struct regul_struct *regul = get_regulator_data(name);
 	uint8_t mask = 0;
+
+	if (voltage_index == VOLTAGE_INDEX_INVALID)
+		return -1;
 
 	mask = find_plat_mask(name);
 	if (!mask)
@@ -697,9 +699,12 @@ int stpmic1_bo_enable_unpg(struct stpmic1_bo_cfg *cfg)
 int stpmic1_bo_voltage_cfg(const char *name, uint16_t min_millivolt,
 			   struct stpmic1_bo_cfg *cfg)
 {
-	uint8_t min_index = voltage_to_index(name, min_millivolt);
+	size_t min_index = voltage_to_index(name, min_millivolt);
 	const struct regul_struct *regul = get_regulator_data(name);
 	uint8_t mask = 0;
+
+	if (min_index == VOLTAGE_INDEX_INVALID)
+		panic();
 
 	mask = find_plat_mask(name);
 	if (!mask)
@@ -885,9 +890,11 @@ int stpmic1_lp_mode_unpg(struct stpmic1_lp_cfg *cfg, unsigned int mode)
 
 int stpmic1_lp_set_voltage(const char *name, uint16_t millivolts)
 {
-	uint8_t voltage_index = voltage_to_index(name, millivolts);
+	size_t voltage_index = voltage_to_index(name, millivolts);
 	const struct regul_struct *regul = get_regulator_data(name);
 	uint8_t mask = 0;
+
+	assert(voltage_index != VOLTAGE_INDEX_INVALID);
 
 	mask = find_plat_mask(name);
 	if (!mask)
@@ -902,14 +909,16 @@ int stpmic1_lp_voltage_cfg(const char *name, uint16_t millivolts,
 			   struct stpmic1_lp_cfg *cfg)
 
 {
-	uint8_t voltage_index = voltage_to_index(name, millivolts);
+	size_t voltage_index = voltage_to_index(name, millivolts);
 	uint8_t mask = 0;
 
 	mask = find_plat_mask(name);
 	if (!mask)
 		return 1;
 
-	assert(cfg->lp_reg == get_regulator_data(name)->low_power_reg);
+	if (voltage_index == VOLTAGE_INDEX_INVALID)
+		panic();
+
 	cfg->value = voltage_index << 2;
 	cfg->mask = mask;
 

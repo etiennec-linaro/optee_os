@@ -576,8 +576,8 @@ static const struct regul_struct *get_regulator_data(const char *name)
 		if (strcmp(name, regulators_table[i].dt_node_name) == 0)
 			return &regulators_table[i];
 
-	/* Regulator not found */
-	panic(name);
+	DMSG("Regulator %s not found", name);
+	return NULL;
 }
 
 static size_t voltage_to_index(const char *name, uint16_t millivolts)

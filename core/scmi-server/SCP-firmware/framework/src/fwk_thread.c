@@ -9,18 +9,22 @@
  */
 
 #include <internal/fwk_module.h>
-#include <internal/fwk_notification.h>
 #include <internal/fwk_single_thread.h>
 #include <internal/fwk_thread.h>
 #include <internal/fwk_thread_delayed_resp.h>
 
 #include <fwk_assert.h>
-#include <fwk_element.h>
-#include <fwk_host.h>
+#include <fwk_event.h>
 #include <fwk_id.h>
 #include <fwk_interrupt.h>
+#include <fwk_list.h>
+#include <fwk_log.h>
 #include <fwk_mm.h>
+#include <fwk_module.h>
+#include <fwk_noreturn.h>
+#include <fwk_slist.h>
 #include <fwk_status.h>
+#include <fwk_thread.h>
 
 #include <stdbool.h>
 #include <string.h>
@@ -28,16 +32,14 @@
 
 static struct __fwk_thread_ctx global_ctx;
 
-#if defined(BUILD_HOST) || defined(BUILD_OPTEE)
 #if defined(BUILD_OPTEE)
 #include <compiler.h>
 #else
 #define __maybe_unused
 #endif /* BUILD_OPTEE */
 
-static const char __maybe_unused err_msg_line[] = "[THR] Error %d in %s @%d\n";
-static const char __maybe_unused err_msg_func[] = "[THR] Error %d in %s\n";
-#endif
+static const char __maybe_unused err_msg_line[] = "[FWK] Error %d in %s @%d";
+static const char __maybe_unused err_msg_func[] = "[FWK] Error %d in %s";
 
 static struct __fwk_thread_ctx *thread_ctx[CFG_NUM_THREADS];
 
@@ -103,7 +105,7 @@ static struct fwk_event *duplicate_event(struct fwk_event *event)
     fwk_interrupt_global_enable();
 
     if (allocated_event == NULL) {
-        FWK_HOST_PRINT(err_msg_func, FWK_E_NOMEM, __func__);
+        FWK_LOG_CRIT(err_msg_func, FWK_E_NOMEM, __func__);
         fwk_assert(false);
     }
 
@@ -119,17 +121,16 @@ static int put_event(struct __fwk_thread_ctx *ctx,
     struct fwk_event *allocated_event;
     unsigned int interrupt;
 
-    FWK_HOST_PRINT("[THR] Put event %08x src %08x dst %08x\n",
-                   event->id.value,
-                   event->source_id.value,
-                   event->target_id.value);
+    FWK_LOG_INFO("[THR] Put event %08x src %08x dst %08x\n",
+		 event->id.value, event->source_id.value,
+		 event->target_id.value);
 
     if (event->is_delayed_response) {
 #ifdef BUILD_HAS_NOTIFICATION
         allocated_event = __fwk_thread_search_delayed_response(
             event->source_id, event->cookie);
         if (allocated_event == NULL) {
-            FWK_HOST_PRINT(err_msg_func, FWK_E_NOMEM, __func__);
+            FWK_LOG_CRIT(err_msg_func, FWK_E_NOMEM, __func__);
             return FWK_E_PARAM;
         }
 
@@ -172,13 +173,13 @@ static void process_next_event(struct __fwk_thread_ctx *ctx)
     ctx->current_event = event = FWK_LIST_GET(
         fwk_list_pop_head(&ctx->event_queue), struct fwk_event, slist_node);
 
-    FWK_HOST_PRINT("[THR] Get next event %08x src %08x dst %08x\n",
-                   event->id.value,
-                   event->source_id.value,
-                   event->target_id.value);
+    FWK_LOG_TRACE(
+        "[FWK] Get event (%s: %s -> %s)\n",
+        FWK_ID_STR(event->id),
+        FWK_ID_STR(event->source_id),
+        FWK_ID_STR(event->target_id));
 
     module = __fwk_module_get_ctx(event->target_id)->desc;
-
     process_event = event->is_notification ? module->process_notification :
                     module->process_event;
 
@@ -190,7 +191,7 @@ static void process_next_event(struct __fwk_thread_ctx *ctx)
 
         status = process_event(event, &async_response_event);
         if (status != FWK_SUCCESS)
-            FWK_HOST_PRINT(err_msg_line, status, __func__, __LINE__);
+            FWK_LOG_CRIT(err_msg_line, status, __func__, __LINE__);
 
         async_response_event.is_response = true;
         async_response_event.response_requested = false;
@@ -206,13 +207,13 @@ static void process_next_event(struct __fwk_thread_ctx *ctx)
                     &allocated_event->slist_node);
             }
 #else
-            FWK_HOST_PRINT(err_msg_line, status, __func__, __LINE__);
+            FWK_LOG_CRIT(err_msg_line, status, __func__, __LINE__);
 #endif
         }
     } else {
         status = process_event(event, &async_response_event);
         if (status != FWK_SUCCESS)
-            FWK_HOST_PRINT(err_msg_line, status, __func__, __LINE__);
+            FWK_LOG_CRIT(err_msg_line, status, __func__, __LINE__);
     }
 
     ctx->current_event = NULL;
@@ -233,10 +234,11 @@ static void process_isr(struct __fwk_thread_ctx *ctx)
                              struct fwk_event, slist_node);
     fwk_interrupt_global_enable();
 
-    FWK_HOST_PRINT("[THR] Get ISR event (%s,%s,%s)\n",
-                   FWK_ID_STR(isr_event->source_id),
-                   FWK_ID_STR(isr_event->target_id),
-                   FWK_ID_STR(isr_event->id));
+    FWK_LOG_TRACE(
+        "[FWK] Get ISR event (%s: %s -> %s)\n",
+        FWK_ID_STR(isr_event->id),
+        FWK_ID_STR(isr_event->source_id),
+        FWK_ID_STR(isr_event->target_id));
 
     fwk_list_push_tail(&ctx->event_queue, &isr_event->slist_node);
 }
@@ -279,8 +281,11 @@ noreturn void __fwk_thread_run(void)
         while (!fwk_list_is_empty(&ctx->event_queue))
             process_next_event(ctx);
 
-        while (fwk_list_is_empty(&ctx->isr_event_queue))
+        while (fwk_list_is_empty(&ctx->isr_event_queue)) {
+            fwk_log_unbuffer();
+
             continue;
+        }
 
         process_isr(ctx);
     }
@@ -296,8 +301,10 @@ void __fwk_run_event(void)
         while (!fwk_list_is_empty(&ctx->event_queue))
             process_next_event(ctx);
 
-        if (fwk_list_is_empty(&ctx->isr_event_queue))
+        if (fwk_list_is_empty(&ctx->isr_event_queue)) {
+            fwk_log_unbuffer();
             return;
+	}
 
         process_isr(ctx);
     }
@@ -378,6 +385,6 @@ int fwk_thread_put_event(struct fwk_event *event)
     return put_event(ctx, event);
 
 error:
-    FWK_HOST_PRINT(err_msg_func, status, __func__);
+    FWK_LOG_CRIT(err_msg_func, status, __func__);
     return status;
 }

@@ -7,15 +7,19 @@
 
 #include <internal/fwk_module.h>
 
-#include <fwk_element.h>
-#include <fwk_host.h>
+#include <fwk_event.h>
+#include <fwk_id.h>
 #include <fwk_interrupt.h>
+#include <fwk_list.h>
+#include <fwk_log.h>
+#include <fwk_module.h>
+#include <fwk_status.h>
 
+#include <stdbool.h>
+#include <stddef.h>
 #include <stdint.h>
 
-#ifdef BUILD_HOST
-static const char err_msg_func[] = "[THR] Error %d in %s\n";
-#endif
+static const char err_msg_func[] = "[FWK] Error %d in %s";
 
 /*
  * Static functions
@@ -94,7 +98,7 @@ int fwk_thread_get_delayed_response(
     return FWK_SUCCESS;
 
 error:
-    FWK_HOST_PRINT(err_msg_func, status, __func__);
+    FWK_LOG_CRIT(err_msg_func, status, __func__);
     return status;
 }
 
@@ -118,7 +122,7 @@ int fwk_thread_is_delayed_response_list_empty(
     return FWK_SUCCESS;
 
 error:
-    FWK_HOST_PRINT(err_msg_func, status, __func__);
+    FWK_LOG_CRIT(err_msg_func, status, __func__);
     return status;
 }
 
@@ -146,6 +150,6 @@ int fwk_thread_get_first_delayed_response(
     return FWK_SUCCESS;
 
 error:
-    FWK_HOST_PRINT(err_msg_func, status, __func__);
+    FWK_LOG_CRIT(err_msg_func, status, __func__);
     return status;
 }

@@ -8,13 +8,16 @@
 #ifndef FWK_INTERNAL_MULTI_THREAD_H
 #define FWK_INTERNAL_MULTI_THREAD_H
 
-#include <stdbool.h>
+#include <cmsis_os2.h>
+
+#include <internal/fwk_thread.h>
+
 #include <fwk_event.h>
 #include <fwk_id.h>
 #include <fwk_list.h>
 #include <fwk_multi_thread.h>
-#include <internal/fwk_thread.h>
-#include <cmsis_os2.h>
+
+#include <stdbool.h>
 
 /*
  * Module/element thread context.
@@ -111,6 +114,8 @@ struct __fwk_multi_thread_ctx {
      * ready to execute as soon as the CPU becomes available for them.
      */
     struct fwk_slist thread_ready_queue;
+
+    osThreadId_t log_thread_id;
 };
 
 /*

@@ -11,8 +11,14 @@
 #ifndef INTERNAL_SCMI_PERF_H
 #define INTERNAL_SCMI_PERF_H
 
+#include <stdint.h>
+
 #define SCMI_PROTOCOL_ID_PERF      UINT32_C(0x13)
+#ifdef BUILD_HAS_FAST_CHANNELS
+#define SCMI_PROTOCOL_VERSION_PERF UINT32_C(0x20000)
+#else
 #define SCMI_PROTOCOL_VERSION_PERF UINT32_C(0x10000)
+#endif
 
 #define SCMI_PERF_SUPPORTS_STATS_SHARED_MEM_REGION  0
 #define SCMI_PERF_STATS_SHARED_MEM_REGION_ADDR_LOW  0
@@ -31,7 +37,13 @@ enum scmi_perf_command_id {
     SCMI_PERF_LEVEL_SET         = 0x007,
     SCMI_PERF_LEVEL_GET         = 0x008,
     SCMI_PERF_NOTIFY_LIMITS     = 0x009,
-    SCMI_PERF_NOTIFY_LEVEL      = 0x00A
+    SCMI_PERF_NOTIFY_LEVEL      = 0x00A,
+    SCMI_PERF_DESCRIBE_FAST_CHANNEL = 0x00B,
+};
+
+enum scmi_perf_notification_id {
+    SCMI_PERF_LIMITS_CHANGED = 0x000,
+    SCMI_PERF_LEVEL_CHANGED = 0x001,
 };
 
 /*
@@ -70,18 +82,29 @@ struct __attribute((packed)) scmi_perf_protocol_attributes_p2a {
 #define SCMI_PERF_DOMAIN_ATTRIBUTES_CAN_SET_LEVEL_POS  30
 #define SCMI_PERF_DOMAIN_ATTRIBUTES_LIMITS_NOTIFY_POS  29
 #define SCMI_PERF_DOMAIN_ATTRIBUTES_LEVEL_NOTIFY_POS   28
+#define SCMI_PERF_DOMAIN_ATTRIBUTES_FAST_CHANNEL_POS   27
 
 #define SCMI_PERF_DOMAIN_ATTRIBUTES_CAN_SET_LIMITS_MASK \
     (UINT32_C(0x1) << SCMI_PERF_DOMAIN_ATTRIBUTES_CAN_SET_LIMITS_POS)
 #define SCMI_PERF_DOMAIN_ATTRIBUTES_CAN_SET_LEVEL_MASK \
     (UINT32_C(0x1) << SCMI_PERF_DOMAIN_ATTRIBUTES_CAN_SET_LEVEL_POS)
+
 #define SCMI_PERF_DOMAIN_ATTRIBUTES_LIMITS_NOTIFY_MASK \
     (UINT32_C(0x1) << SCMI_PERF_DOMAIN_ATTRIBUTES_LIMITS_NOTIFY_POS)
 #define SCMI_PERF_DOMAIN_ATTRIBUTES_LEVEL_NOTIFY_MASK \
     (UINT32_C(0x1) << SCMI_PERF_DOMAIN_ATTRIBUTES_LEVEL_NOTIFY_POS)
 
+#define SCMI_PERF_FC_MIN_RATE_LIMIT     4000
+
+#define SCMI_PERF_DOMAIN_ATTRIBUTES_FAST_CHANNEL_MASK \
+    (UINT32_C(0x1) << SCMI_PERF_DOMAIN_ATTRIBUTES_FAST_CHANNEL_POS)
+
+#define SCMI_PERF_DOMAIN_ATTRIBUTES_FAST_CHANNEL_MASK \
+    (UINT32_C(0x1) << SCMI_PERF_DOMAIN_ATTRIBUTES_FAST_CHANNEL_POS)
+
 #define SCMI_PERF_DOMAIN_ATTRIBUTES(LEVEL_NOTIFY, LIMITS_NOTIFY, \
-                                    CAN_SET_LEVEL, CAN_SET_LIMITS) \
+                                    CAN_SET_LEVEL, CAN_SET_LIMITS, \
+                                    FAST_CHANNEL) \
     ( \
         (((LEVEL_NOTIFY) << \
             SCMI_PERF_DOMAIN_ATTRIBUTES_LEVEL_NOTIFY_POS) & \
@@ -94,7 +117,10 @@ struct __attribute((packed)) scmi_perf_protocol_attributes_p2a {
             SCMI_PERF_DOMAIN_ATTRIBUTES_CAN_SET_LEVEL_MASK) | \
         (((CAN_SET_LIMITS) << \
             SCMI_PERF_DOMAIN_ATTRIBUTES_CAN_SET_LIMITS_POS) & \
-            SCMI_PERF_DOMAIN_ATTRIBUTES_CAN_SET_LIMITS_MASK) \
+            SCMI_PERF_DOMAIN_ATTRIBUTES_CAN_SET_LIMITS_MASK) | \
+        (((FAST_CHANNEL) << \
+            SCMI_PERF_DOMAIN_ATTRIBUTES_FAST_CHANNEL_POS) & \
+            SCMI_PERF_DOMAIN_ATTRIBUTES_FAST_CHANNEL_MASK) \
     )
 
 struct __attribute((packed)) scmi_perf_domain_attributes_a2p {
@@ -241,6 +267,49 @@ struct __attribute((packed)) scmi_perf_notify_level_a2p {
 
 struct __attribute((packed)) scmi_perf_notify_level_p2a {
     int32_t status;
+};
+
+/*
+ * PERFORMANCE_LEVEL_CHANGED
+ */
+struct __attribute((packed)) scmi_perf_level_changed {
+    uint32_t agent_id;
+    uint32_t domain_id;
+    uint32_t performance_level;
+};
+
+/*
+ * PERFORMANCE_LIMITS_CHANGED
+ */
+struct __attribute((packed)) scmi_perf_limits_changed {
+    uint32_t agent_id;
+    uint32_t domain_id;
+    uint32_t range_min;
+    uint32_t range_max;
+};
+
+/*
+ * PERFORMANCE_DESCRIBE_FASTCHANNEL
+ */
+
+struct __attribute((packed)) scmi_perf_describe_fc_a2p {
+    uint32_t domain_id;
+    uint32_t message_id;
+};
+
+struct __attribute((packed)) scmi_perf_describe_fc_p2a {
+    int32_t status;
+    uint32_t attributes;
+    uint32_t rate_limit;
+    uint32_t chan_addr_low;
+    uint32_t chan_addr_high;
+    uint32_t chan_size;
+    uint32_t doorbell_addr_low;
+    uint32_t doorbell_addr_high;
+    uint32_t doorbell_set_mask_low;
+    uint32_t doorbell_set_mask_high;
+    uint32_t doorbell_preserve_mask_low;
+    uint32_t doorbell_preserve_mask_high;
 };
 
 #endif /* INTERNAL_SCMI_PERF_H */

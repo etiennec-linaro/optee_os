@@ -11,10 +11,14 @@
 #ifndef MOD_SCMI_H
 #define MOD_SCMI_H
 
+#include <internal/scmi.h>
+
+#include <fwk_id.h>
+#include <fwk_module_idx.h>
+
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-#include <internal/scmi.h>
 
 /*!
  * \addtogroup GroupModules Modules
@@ -238,12 +242,47 @@ struct mod_scmi_to_transport_api {
      * errors.
      */
     int (*respond)(fwk_id_t channel_id, const void *payload, size_t size);
+
+    /*!
+     * \brief Send a message on a channel.
+     *
+     * \param channel_id Channel identifier.
+     * \param message_header Message ID.
+     * \param payload Payload data to write.
+     * \param size Size of the payload source.
+     *
+     * \retval FWK_SUCCESS The operation succeeded.
+     * \retval FWK_E_PARAM The channel_id parameter is invalid.
+     * \retval FWK_E_PARAM The size parameter is less than the size of one
+     * payload entry.
+     * \return One of the standard error codes for implementation-defined
+     * errors.
+     */
+    int (*transmit)(fwk_id_t channel_id, uint32_t message_header,
+        const void *payload, size_t size);
 };
 
 /*!
  * \brief Transport entity API to SCMI module API.
  */
 struct mod_scmi_from_transport_api {
+    /*!
+     * \brief Signal to a SCMI service that a incoming message for it has
+     * incorrect length and payload size and so the incoming message has been
+     * dropped.
+     *
+     * \note Subscribed SCMI service should call the respond API to free the
+     *       channel.
+     *
+     * \param service_id service identifier.
+     *
+     * \retval FWK_SUCCESS The operation succeeded.
+     * \retval FWK_E_PARAM The service_id parameter is invalid.
+     * \return One of the standard error codes for implementation-defined
+     * errors.
+     */
+    int (*signal_error)(fwk_id_t service_id);
+
     /*!
      * \brief Signal to a service that a message is incoming.
      *
@@ -312,6 +351,16 @@ struct mod_scmi_to_protocol_api {
  * \brief SCMI protocol module to SCMI module API.
  */
 struct mod_scmi_from_protocol_api {
+    /*!
+     * \brief Get the number of active agents.
+     *
+     * \param[out] agent_count Number of active agents.
+     *
+     * \retval FWK_SUCCESS The agent count was returned.
+     * \retval FWK_E_PARAM The parameter `agent_count` is equal to `NULL`.
+     */
+     int (*get_agent_count)(int *agent_count);
+
     /*!
      * \brief Get the identifier of the agent associated with a service
      *
@@ -386,6 +435,19 @@ struct mod_scmi_from_protocol_api {
      * \param size Size of the payload.
      */
     void (*respond)(fwk_id_t service_id, const void *payload, size_t size);
+
+    /*!
+     * \brief Send a notification to the agent on behalf on an SCMI service.
+     *
+     * \param service_id Service identifier.
+     * \param protocol_id Protocol identifier.
+     * \param message_id Message identifier.
+     * \param payload Payload data to write, or NULL if a payload has already
+     *         been written.
+     * \param size Size of the payload in bytes.
+     */
+    void (*notify)(fwk_id_t service_id, int protocol_id, int message_id,
+        const void *payload, size_t size);
 };
 
 

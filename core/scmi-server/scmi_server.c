@@ -8,7 +8,6 @@
  * modules into OP-TEE core.
  */
 #include <config.h>
-#include <fwk_host.h>
 #include <fwk_macros.h>
 #include <fwk_mm.h>
 #include <fwk_arch.h>

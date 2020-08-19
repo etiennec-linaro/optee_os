@@ -11,10 +11,11 @@
 #ifndef FWK_LIST_H
 #define FWK_LIST_H
 
-#include <stddef.h>
-#include <stdint.h>
 #include <fwk_dlist.h>
 #include <fwk_slist.h>
+
+#include <stddef.h>
+#include <stdint.h>
 
 /*!
  * \addtogroup GroupLibFramework Framework
@@ -200,6 +201,22 @@
         struct fwk_slist * : __fwk_slist_contains, \
         struct fwk_dlist * : __fwk_slist_contains \
     )((const struct fwk_slist *)list, (const struct fwk_slist_node *)node)
+
+/*!
+ * \brief Iterate over all nodes in a list.
+ *
+ * \param list Pointer to the list. Must not be \c NULL.
+ * \param node Pointer to the node. Must not be \c NULL.
+ * \param type Type of the container structure that contains fwk_slist node.
+ * \param member The name of the node element in the struct.
+ * \param elem Pointer to the struct object to use inside the loop
+ */
+#define FWK_LIST_FOR_EACH(list, node, type, member, elem) \
+    for (node = fwk_list_head(list), \
+        elem = FWK_LIST_GET(node, type, member); \
+        node != NULL; \
+        node = fwk_list_next(list, node), \
+        elem = FWK_LIST_GET(node, type, member))
 
 /*!
  * @}

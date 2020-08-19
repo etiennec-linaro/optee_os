@@ -12,8 +12,10 @@ BS_LIB_SOURCES += fwk_assert.c
 BS_LIB_SOURCES += fwk_dlist.c
 BS_LIB_SOURCES += fwk_id.c
 BS_LIB_SOURCES += fwk_interrupt.c
+BS_LIB_SOURCES += fwk_log.c
 BS_LIB_SOURCES += fwk_mm.c
 BS_LIB_SOURCES += fwk_module.c
+BS_LIB_SOURCES += fwk_ring.c
 BS_LIB_SOURCES += fwk_slist.c
 BS_LIB_SOURCES += fwk_thread_delayed_resp.c
 ifeq ($(BUILD_HAS_MULTITHREADING),yes)

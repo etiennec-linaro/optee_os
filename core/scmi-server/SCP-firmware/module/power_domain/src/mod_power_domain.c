@@ -8,13 +8,12 @@
  *     Power domain management support.
  */
 
-#include <stdbool.h>
-#include <stdint.h>
-#include <stdio.h>
-#include <string.h>
+#include <mod_power_domain.h>
+
 #include <fwk_assert.h>
-#include <fwk_element.h>
+#include <fwk_event.h>
 #include <fwk_id.h>
+#include <fwk_log.h>
 #include <fwk_macros.h>
 #include <fwk_mm.h>
 #include <fwk_module.h>
@@ -27,8 +26,11 @@
 #include <fwk_notification.h>
 #include <fwk_status.h>
 #include <fwk_thread.h>
-#include <mod_log.h>
-#include <mod_power_domain.h>
+
+#include <inttypes.h>
+#include <stdbool.h>
+#include <stdint.h>
+#include <stdio.h>
 
 /*
  * Module and power domain contexts
@@ -187,9 +189,6 @@ struct mod_pd_ctx {
     /* Number of power domains */
     unsigned int pd_count;
 
-    /* Log module API */
-    const struct mod_log_api *log_api;
-
     /* Context of the system power domain */
     struct pd_ctx *system_pd_ctx;
 
@@ -287,7 +286,7 @@ static const unsigned int mod_pd_cs_level_state_shift[MOD_PD_LEVEL_COUNT] = {
  * Internal variables
  */
 static struct mod_pd_ctx mod_pd_ctx;
-static const char driver_error_msg[] = "[PD] Driver error %s (%d) in %s @%d\n";
+static const char driver_error_msg[] = "[PD] Driver error %s (%d) in %s @%d";
 
 static const char * const default_state_name_table[] = {
     "OFF", "ON", "SLEEP", "3", "4", "5", "6", "7",
@@ -486,9 +485,10 @@ static bool is_valid_composite_state(struct pd_ctx *target_pd,
     return true;
 
 error:
-    mod_pd_ctx.log_api->log(MOD_LOG_GROUP_ERROR,
-        "[PD] Invalid composite state for %s: 0x%08x\n",
-        fwk_module_get_name(target_pd->id), composite_state);
+    FWK_LOG_ERR(
+        "[PD] Invalid composite state for %s: 0x%" PRIX32,
+        fwk_module_get_name(target_pd->id),
+        composite_state);
     return false;
 }
 
@@ -699,20 +699,29 @@ static int initiate_power_state_transition(struct pd_ctx *pd)
 
     if ((pd->driver_api->deny != NULL) &&
         pd->driver_api->deny(pd->driver_id, state)) {
-        mod_pd_ctx.log_api->log(MOD_LOG_GROUP_WARNING,
-            "[PD] Transition of %s to state <%s>,\n",
-            fwk_module_get_name(pd->id), get_state_name(pd, state));
-        mod_pd_ctx.log_api->log(MOD_LOG_GROUP_WARNING,
-            "\tdenied by driver.\n");
+        FWK_LOG_WARN(
+            "[PD] Transition of %s to state <%s> denied by driver",
+            fwk_module_get_name(pd->id),
+            get_state_name(pd, state));
         return FWK_E_DEVICE;
     }
 
     status = pd->driver_api->set_state(pd->driver_id, state);
 
-    mod_pd_ctx.log_api->log(MOD_LOG_GROUP_DEBUG,
-        "[PD] %s: %s->%s, %s (%d)\n", fwk_module_get_name(pd->id),
-        get_state_name(pd, pd->state_requested_to_driver),
-        get_state_name(pd, state), fwk_status_str(status), status);
+    if (status == FWK_SUCCESS) {
+        FWK_LOG_TRACE(
+            "[PD] Transition of %s from <%s> to <%s> succeeded",
+            fwk_module_get_name(pd->id),
+            get_state_name(pd, pd->state_requested_to_driver),
+            get_state_name(pd, state));
+    } else {
+        FWK_LOG_ERR(
+            "[PD] Transition of %s from <%s> to <%s> failed: %s",
+            fwk_module_get_name(pd->id),
+            get_state_name(pd, pd->state_requested_to_driver),
+            get_state_name(pd, state),
+            fwk_status_str(status));
+    }
 
     pd->state_requested_to_driver = state;
 
@@ -900,9 +909,7 @@ static void process_set_state_request(
         pd_in_charge_of_response->response.pending = true;
         pd_in_charge_of_response->response.cookie = resp_event->cookie;
 #else
-        mod_pd_ctx.log_api->log(MOD_LOG_GROUP_ERROR,
-				"Notification not supported (in %s @%d)",
-				__func__, __LINE__);
+        FWK_LOG_ERR("[PD] Notification not supported");
 #endif
     } else {
         resp_params->status = status;
@@ -1227,8 +1234,7 @@ void perform_shutdown(
         pd_id = FWK_ID_ELEMENT(FWK_MODULE_IDX_POWER_DOMAIN, pd_idx);
         api = pd->driver_api;
 
-        mod_pd_ctx.log_api->log(MOD_LOG_GROUP_DEBUG,
-            "[PD] Shutting down %s\n", fwk_module_get_name(pd_id));
+        FWK_LOG_INFO("[PD] Shutting down %s", fwk_module_get_name(pd_id));
 
         if (api->shutdown != NULL) {
             status = pd->driver_api->shutdown(pd->driver_id, system_shutdown);
@@ -1248,12 +1254,13 @@ void perform_shutdown(
         }
 
         if (status != FWK_SUCCESS)
-            mod_pd_ctx.log_api->log(MOD_LOG_GROUP_ERROR,
-                "[PD] Shutdown of %s returned %s (%d)\n",
-                fwk_module_get_name(pd_id), fwk_status_str(status), status);
+            FWK_LOG_ERR(
+                "[PD] Shutdown of %s returned %s (%d)",
+                fwk_module_get_name(pd_id),
+                fwk_status_str(status),
+                status);
         else
-            mod_pd_ctx.log_api->log(MOD_LOG_GROUP_DEBUG,
-                "[PD] %s shutdown\n", fwk_module_get_name(pd_id));
+            FWK_LOG_INFO("[PD] %s shutdown", fwk_module_get_name(pd_id));
 
         pd->requested_state =
             pd->state_requested_to_driver =
@@ -1846,10 +1853,8 @@ static int pd_bind(fwk_id_t id, unsigned int round)
     if (round != 0)
         return FWK_SUCCESS;
 
-    if (fwk_id_is_type(id, FWK_ID_TYPE_MODULE)) {
-        return fwk_module_bind(FWK_ID_MODULE(FWK_MODULE_IDX_LOG),
-            FWK_ID_API(FWK_MODULE_IDX_LOG, 0), &mod_pd_ctx.log_api);
-    }
+    if (fwk_id_is_type(id, FWK_ID_TYPE_MODULE))
+        return FWK_SUCCESS;
 
     pd = &mod_pd_ctx.pd_ctx_table[fwk_id_get_element_idx(id)];
     config = pd->config;
@@ -1901,8 +1906,12 @@ static int pd_start(fwk_id_t id)
         /* Get the current power state of the power domain from its driver. */
         status = pd->driver_api->get_state(pd->driver_id, &state);
         if (status != FWK_SUCCESS) {
-            mod_pd_ctx.log_api->log(MOD_LOG_GROUP_ERROR, driver_error_msg,
-                fwk_status_str(status), status, __func__, __LINE__);
+            FWK_LOG_ERR(
+                driver_error_msg,
+                fwk_status_str(status),
+                status,
+                __func__,
+                __LINE__);
         } else {
             pd->requested_state = pd->state_requested_to_driver = state;
 

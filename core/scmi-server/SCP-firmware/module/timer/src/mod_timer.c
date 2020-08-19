@@ -8,23 +8,23 @@
  *    Implementation of Timer module
  */
 
-#include <stdbool.h>
-#include <stdint.h>
-#include <string.h>
+#include <mod_timer.h>
+
 #include <fwk_assert.h>
-#include <fwk_element.h>
-#include <fwk_event.h>
+#include <fwk_dlist.h>
 #include <fwk_id.h>
 #include <fwk_interrupt.h>
 #include <fwk_list.h>
+#include <fwk_log.h>
 #include <fwk_macros.h>
 #include <fwk_mm.h>
 #include <fwk_module.h>
-#include <fwk_status.h>
-#include <fwk_thread.h>
-#include <mod_log.h>
-#include <mod_timer.h>
 #include <fwk_module_idx.h>
+#include <fwk_status.h>
+
+#include <stdbool.h>
+#include <stdint.h>
+#include <string.h>
 
 /* Timer device context (element) */
 struct dev_ctx {
@@ -64,9 +64,6 @@ struct alarm_ctx {
 
 /* Table of timer device context structures */
 static struct dev_ctx *ctx_table;
-
-/* Log API */
-static const struct mod_log_api *log_api;
 
 /*
  * Forward declarations
@@ -512,10 +509,11 @@ static void timer_isr(uintptr_t ctx_ptr)
         if (status == FWK_SUCCESS) {
             alarm->timestamp += timestamp;
             _insert_alarm_ctx_into_active_queue(ctx, alarm);
-        } else
-            log_api->log(MOD_LOG_GROUP_ERROR,
-                         "[Timer] Error: Periodic alarm could not be added "
-                         "back into queue.\n");
+        } else {
+            FWK_LOG_ERR(
+                "[Timer] Error: Periodic alarm could not be added "
+                "back into queue.");
+        }
     }
 
     _configure_timer_with_next_alarm(ctx);
@@ -561,12 +559,8 @@ static int timer_bind(fwk_id_t id, unsigned int round)
     if (round > 0)
         return FWK_SUCCESS;
 
-    /* Bind to log module */
-    if (fwk_module_is_valid_module_id(id)) {
-        return fwk_module_bind(fwk_module_id_log,
-                               FWK_ID_API(FWK_MODULE_IDX_LOG, 0),
-                               &log_api);
-    }
+    if (fwk_id_is_type(id, FWK_ID_TYPE_MODULE))
+        return FWK_SUCCESS;
 
     ctx = ctx_table + fwk_id_get_element_idx(id);
     ctx->driver_dev_id = ctx->config->id;

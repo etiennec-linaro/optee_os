@@ -11,7 +11,6 @@
 #include <fwk_mm.h>
 #include <fwk_module.h>
 #include <fwk_module_idx.h>
-#include <mod_log.h>
 #include <mod_reset_domain.h>
 
 /*
@@ -30,7 +29,6 @@ struct rd_mod_ctx {
     const struct mod_reset_domain_config *config;
     struct rd_dev_ctx *dev_ctx_table;
     unsigned int dev_count;
-    const struct mod_log_api *log_api;
 };
 
 /*
@@ -113,9 +111,7 @@ static int rd_bind(fwk_id_t id, unsigned int round)
     }
 
     if (fwk_id_is_type(id, FWK_ID_TYPE_MODULE)) {
-        return fwk_module_bind(FWK_ID_MODULE(FWK_MODULE_IDX_LOG),
-                               FWK_ID_API(FWK_MODULE_IDX_LOG, 0),
-                               &module_ctx.log_api);
+        return FWK_SUCCESS;
     }
 
     if (!fwk_id_is_type(id, FWK_ID_TYPE_ELEMENT)) {

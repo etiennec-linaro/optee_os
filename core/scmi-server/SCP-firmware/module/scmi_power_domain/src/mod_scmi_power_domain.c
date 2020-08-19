@@ -8,26 +8,31 @@
  *     SCMI power domain management protocol support.
  */
 
-#include <string.h>
+#include <internal/scmi.h>
+#include <internal/scmi_power_domain.h>
+
+#include <mod_power_domain.h>
+#include <mod_scmi.h>
+#include <mod_scmi_power_domain.h>
+
+#ifdef BUILD_HAS_MOD_DEBUG
+#    include <mod_debug.h>
+#endif
+
 #include <fwk_assert.h>
 #include <fwk_element.h>
 #include <fwk_id.h>
+#include <fwk_log.h>
 #include <fwk_macros.h>
 #include <fwk_mm.h>
 #include <fwk_module.h>
 #include <fwk_module_idx.h>
 #include <fwk_status.h>
-#include <internal/scmi.h>
-#include <internal/scmi_power_domain.h>
-#include <config_power_domain.h>
-#if BUILD_HAS_MOD_DEBUG
-#include <mod_debug.h>
 #include <fwk_thread.h>
-#endif
-#include <mod_log.h>
-#include <mod_power_domain.h>
-#include <mod_scmi.h>
-#include <mod_scmi_power_domain.h>
+
+#include <stdbool.h>
+#include <stdint.h>
+#include <string.h>
 
 struct scmi_pd_operations {
     /*
@@ -40,9 +45,6 @@ struct scmi_pd_operations {
 struct scmi_pd_ctx {
     /* Number of power domains */
     unsigned int domain_count;
-
-    /* Log module API */
-    const struct mod_log_api *log_api;
 
     /* SCMI module API */
     const struct mod_scmi_from_protocol_api *scmi_api;
@@ -375,9 +377,10 @@ static int scmi_power_scp_set_core_state(fwk_id_t pd_id,
     status = scmi_pd_ctx.pd_api->set_composite_state_async(pd_id, false,
                                                            composite_state);
     if (status != FWK_SUCCESS) {
-        scmi_pd_ctx.log_api->log(MOD_LOG_GROUP_ERROR,
-            "[SCMI:power] Failed to send core set request (error %s (%d))\n",
-            fwk_status_str(status), status);
+        FWK_LOG_ERR(
+            "[SCMI:power] Failed to send core set request (error %s (%d))",
+            fwk_status_str(status),
+            status);
     }
 
     return status;
@@ -726,11 +729,6 @@ static int scmi_pd_bind(fwk_id_t id, unsigned int round)
 
     if (round == 1)
         return FWK_SUCCESS;
-
-    status = fwk_module_bind(FWK_ID_MODULE(FWK_MODULE_IDX_LOG),
-        FWK_ID_API(FWK_MODULE_IDX_LOG, 0), &scmi_pd_ctx.log_api);
-    if (status != FWK_SUCCESS)
-        return status;
 
     status = fwk_module_bind(FWK_ID_MODULE(FWK_MODULE_IDX_SCMI),
         FWK_ID_API(FWK_MODULE_IDX_SCMI, MOD_SCMI_API_IDX_PROTOCOL),

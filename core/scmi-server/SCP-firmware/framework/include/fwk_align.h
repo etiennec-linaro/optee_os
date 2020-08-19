@@ -1,6 +1,6 @@
 /*
  * Arm SCP/MCP Software
- * Copyright (c) 2018-2019, Arm Limited and Contributors. All rights reserved.
+ * Copyright (c) 2018-2020, Arm Limited and Contributors. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  *
@@ -19,7 +19,7 @@
 #   define __alignas_is_defined 1
 #   define __alignof_is_defined 1
 #else
-#   include <stdalign.h>
+#    include <stdalign.h>
 #endif
 
 #ifdef BUILD_OPTEE

@@ -8,15 +8,15 @@
 #ifndef CLOCK_H
 #define CLOCK_H
 
-#include <fwk_id.h>
 #include <mod_clock.h>
+
+#include <fwk_id.h>
 
 /*
  * Clock event indexes.
  */
 enum clock_event_idx {
-    CLOCK_EVENT_IDX_REQUEST = MOD_CLOCK_EVENT_IDX_REQUEST,
-    CLOCK_EVENT_IDX_RESPONSE,
+    CLOCK_EVENT_IDX_RESPONSE = MOD_CLOCK_EVENT_IDX_COUNT,
     CLOCK_EVENT_IDX_COUNT
 };
 

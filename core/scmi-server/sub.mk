@@ -14,7 +14,7 @@ SCMI_VERSION_PATCH = 0
 
 scmi-server-scp-path = SCP-firmware
 
-scmi-server-generic-modules-y += log scmi optee_smt optee_mhu
+scmi-server-generic-modules-y += scmi optee_smt optee_mhu
 scmi-server-generic-modules-$(CFG_SCMI_SERVER_CLOCK) += clock scmi_clock
 scmi-server-generic-modules-$(CFG_SCMI_SERVER_DVFS) += dvfs
 scmi-server-generic-modules-$(CFG_SCMI_SERVER_MOCK_PSU) += psu mock_psu
@@ -25,6 +25,7 @@ scmi-server-generic-modules-$(CFG_SCMI_SERVER_TIMER) += timer
 
 # Some modules header files must be visible
 # (Alternate: use incdirs-lib$(libname)-$(sm) to list libs headers pathes)
+global-incdirs-y += $(scmi-server-scp-path)/module/log/include
 global-incdirs-y += $(scmi-server-scp-path)/module/clock/include
 global-incdirs-y += $(scmi-server-scp-path)/module/dvfs/include
 global-incdirs-y += $(scmi-server-scp-path)/module/mock_psu/include
@@ -79,6 +80,8 @@ $(eval $(call define-as-binary,BUILD_HAS_MOD_SYSTEM_POWER,CFG_SCMI_SERVER_SYSTEM
 $(eval $(call define-as-binary,BUILD_HAS_MOD_TIMER,CFG_SCMI_SERVER_TIMER))
 
 srcs-y += scmi_server.c
+cflags-scmi_server.c-y = -Wno-aggregate-return
+
 subdirs-y += $(scmi-server-scp-path)/framework/src
 subdirs-y += $(scmi-server-product-path)
 

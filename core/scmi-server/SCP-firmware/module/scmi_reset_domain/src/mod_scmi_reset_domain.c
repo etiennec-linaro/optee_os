@@ -18,7 +18,6 @@
 #include <fwk_status.h>
 #include <internal/scmi.h>
 #include <internal/scmi_reset_domain.h>
-#include <mod_log.h>
 #include <mod_reset_domain.h>
 #include <mod_scmi.h>
 #include <mod_scmi_reset_domain.h>
@@ -29,7 +28,6 @@ struct scmi_rd_ctx {
     /* Table of agent descriptors,for per-agent views of reset domains */
     const struct mod_scmi_reset_domain_agent *agent_table;
     /* Binded module APIs */
-    const struct mod_log_api *log_api;
     const struct mod_scmi_from_protocol_api *scmi_api;
     const struct mod_reset_domain_drv_api *reset_api;
 };
@@ -215,7 +213,7 @@ static int reset_attributes_handler(fwk_id_t service_id,
     outmsg.latency = SCMI_RESET_DOMAIN_ATTR_UNK_LAT;
 
     strncpy((char *)outmsg.name, fwk_module_get_name(reset_device->element_id),
-            sizeof(outmsg.name));
+            sizeof(outmsg.name) - 1);
 
     outmsg.status = SCMI_SUCCESS;
     outmsg_size = sizeof(outmsg);
@@ -236,8 +234,6 @@ static int reset_request_handler(fwk_id_t service_id,
     };
     size_t outmsg_size = sizeof(outmsg.status);
     bool async_reset = false;
-    bool assert_reset = false;
-    bool deassert_reset = false;
     const struct mod_reset_domain_drv_api *reset_api = scmi_rd_ctx.reset_api;
     const struct mod_scmi_reset_domain_device *reset_device = NULL;
 
@@ -365,12 +361,6 @@ static int scmi_reset_bind(fwk_id_t id, unsigned int round)
 
     if (round == 1)
         return FWK_SUCCESS;
-
-    status = fwk_module_bind(FWK_ID_MODULE(FWK_MODULE_IDX_LOG),
-                             FWK_ID_API(FWK_MODULE_IDX_LOG, 0),
-                             &scmi_rd_ctx.log_api);
-    if (status != FWK_SUCCESS)
-        return status;
 
     status = fwk_module_bind(FWK_ID_MODULE(FWK_MODULE_IDX_SCMI),
                              FWK_ID_API(FWK_MODULE_IDX_SCMI,

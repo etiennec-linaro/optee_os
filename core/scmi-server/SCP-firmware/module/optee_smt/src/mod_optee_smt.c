@@ -9,13 +9,13 @@
 #include <string.h>
 #include <fwk_assert.h>
 #include <fwk_interrupt.h>
+#include <fwk_log.h>
 #include <fwk_mm.h>
 #include <fwk_macros.h>
 #include <fwk_module.h>
 #include <fwk_module_idx.h>
 #include <fwk_notification.h>
 #include <fwk_status.h>
-#include <mod_log.h>
 #include <mod_power_domain.h>
 #include <mod_scmi.h>
 #include <mod_optee_smt.h>
@@ -54,9 +54,6 @@ struct smt_channel_ctx {
 };
 
 struct smt_ctx {
-    /* Log module API */
-    struct mod_log_api *log_api;
-
     /* Table of channel contexts */
     struct smt_channel_ctx *channel_ctx_table;
 
@@ -254,9 +251,8 @@ static int smt_slave_handler(struct smt_channel_ctx *channel_ctx,
 
     /* Check we have ownership of the mailbox */
     if (memory->status & MOD_OPTEE_SMT_MAILBOX_STATUS_FREE_MASK) {
-        smt_ctx.log_api->log(
-            MOD_LOG_GROUP_ERROR,
-            "[SMT] Mailbox ownership error on channel %u\n",
+        FWK_LOG_ERR(
+	    "[SMT] Mailbox ownership error on channel %u\n",
             fwk_id_get_element_idx(channel_ctx->id));
 
         return FWK_E_STATE;
@@ -312,7 +308,7 @@ static int smt_signal_message(fwk_id_t channel_id, void *memory)
 
     if (!channel_ctx->optee_smt_mailbox_ready) {
         /* Discard any message in the mailbox when not ready */
-        smt_ctx.log_api->log(MOD_LOG_GROUP_ERROR, "[OPTEE_SMT] Message not valid\n");
+        FWK_LOG_ERR("[OPTEE_SMT] Message not valid\n");
 
         return FWK_SUCCESS;
     }
@@ -414,9 +410,7 @@ static int optee_smt_bind(fwk_id_t id, unsigned int round)
 
     if (round == 0) {
         if (fwk_id_is_type(id, FWK_ID_TYPE_MODULE)) {
-            return fwk_module_bind(fwk_module_id_log,
-                                   FWK_ID_API(FWK_MODULE_IDX_LOG, 0),
-                                   &smt_ctx.log_api);
+            return FWK_SUCCESS;
         }
 
         channel_ctx = &smt_ctx.channel_ctx_table[fwk_id_get_element_idx(id)];

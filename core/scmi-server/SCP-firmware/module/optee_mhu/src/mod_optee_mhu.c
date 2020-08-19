@@ -12,12 +12,12 @@
 #include <stdint.h>
 #include <fwk_id.h>
 #include <fwk_interrupt.h>
+#include <fwk_log.h>
 #include <fwk_mm.h>
 #include <fwk_macros.h>
 #include <fwk_module.h>
 #include <fwk_module_idx.h>
 #include <fwk_thread.h>
-#include <fwk_host.h>
 #include <fwk_status.h>
 #include <mod_optee_mhu.h>
 #include <mod_optee_smt.h>
@@ -94,8 +94,8 @@ fwk_id_t optee_mhu_get_device(unsigned int id, void* mem, unsigned int size)
     const fwk_id_t device_id_none = FWK_ID_NONE_INIT;
     fwk_id_t device_id = FWK_ID_NONE_INIT;
 
-    FWK_HOST_PRINT("[MHU] optee_mhu_get_device id %x mbx %p size %u\n",
-                   id, mem, size);
+    FWK_LOG_INFO("[MHU] optee_mhu_get_device id %x mbx %p size %u\n",
+                 id, mem, size);
 
     for(device_index = 0; device_index < mhu_ctx.device_count; device_index++) {
         device_ctx = &mhu_ctx.device_ctx_table[device_index];
@@ -122,14 +122,14 @@ fwk_id_t optee_mhu_get_device(unsigned int id, void* mem, unsigned int size)
             smt_channel = &device_ctx->smt_channel_table[slot];
             mailbox = smt_channel->api->get_memory(smt_channel->id);
 
-            FWK_HOST_PRINT("[MHU] device 0x%x channel %u mbx %p\n",
-                           device_index, slot, mailbox);
+            FWK_LOG_INFO("[MHU] device 0x%x channel %u mbx %p\n",
+                         device_index, slot, mailbox);
 
             if (mailbox == mem) {
                 device_id = (fwk_id_t)FWK_ID_SUB_ELEMENT_INIT(FWK_MODULE_IDX_OPTEE_MHU,
                                                               device_index, slot);
 
-                FWK_HOST_PRINT("[MHU] found device %08x\n", device_id.value);
+                FWK_LOG_INFO("[MHU] found device %08x\n", device_id.value);
 
                 return device_id;
             }

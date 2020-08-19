@@ -5,17 +5,23 @@
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
-#include <stdint.h>
+#include <clock.h>
+
+#include <mod_clock.h>
+#include <mod_power_domain.h>
+
 #include <fwk_assert.h>
-#include <fwk_element.h>
+#include <fwk_event.h>
 #include <fwk_id.h>
 #include <fwk_mm.h>
 #include <fwk_module.h>
 #include <fwk_notification.h>
 #include <fwk_status.h>
 #include <fwk_thread.h>
-#include <mod_power_domain.h>
-#include <clock.h>
+
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
 
 /* Device context */
 struct clock_dev_ctx {
@@ -95,14 +101,17 @@ static int process_request_event(const struct fwk_event *event,
     return FWK_SUCCESS;
 }
 
-static int create_async_request(struct clock_dev_ctx *ctx, fwk_id_t clock_id)
+static int create_async_request(
+    struct clock_dev_ctx *ctx,
+    fwk_id_t clock_id,
+    fwk_id_t event_id)
 {
     int status;
     struct fwk_event request_event;
 
     request_event = (struct fwk_event) {
         .target_id = clock_id,
-        .id = mod_clock_event_id_request,
+        .id = event_id,
         .response_requested = true,
     };
 
@@ -119,21 +128,19 @@ static int create_async_request(struct clock_dev_ctx *ctx, fwk_id_t clock_id)
     return FWK_PENDING;
 }
 
-static int get_ctx(fwk_id_t clock_id, struct clock_dev_ctx **ctx)
+static void get_ctx(fwk_id_t clock_id, struct clock_dev_ctx **ctx)
 {
     fwk_assert(fwk_module_is_valid_element_id(clock_id));
 
     *ctx = &module_ctx.dev_ctx_table[fwk_id_get_element_idx(clock_id)];
-
-    return FWK_SUCCESS;
 }
 
 /*
  * Driver response API.
  */
 
-static void request_complete(fwk_id_t dev_id,
-			     struct mod_clock_driver_resp_params *response)
+void request_complete(fwk_id_t dev_id,
+                      struct mod_clock_driver_resp_params *response)
 {
     int status;
     struct fwk_event event;
@@ -174,9 +181,7 @@ static int clock_set_rate(fwk_id_t clock_id, uint64_t rate,
     int status;
     struct clock_dev_ctx *ctx;
 
-    status = get_ctx(clock_id, &ctx);
-    if (status != FWK_SUCCESS)
-        return status;
+    get_ctx(clock_id, &ctx);
 
     /* Concurrency is not supported */
     if (ctx->is_request_ongoing)
@@ -184,7 +189,10 @@ static int clock_set_rate(fwk_id_t clock_id, uint64_t rate,
 
     status = ctx->api->set_rate(ctx->config->driver_id, rate, round_mode);
     if (status == FWK_PENDING)
-        return create_async_request(ctx, clock_id);
+        return create_async_request(
+            ctx,
+            clock_id,
+            mod_clock_event_id_set_rate_request);
     else
         return status;
 }
@@ -194,9 +202,7 @@ static int clock_get_rate(fwk_id_t clock_id, uint64_t *rate)
     int status;
     struct clock_dev_ctx *ctx;
 
-    status = get_ctx(clock_id, &ctx);
-    if (status != FWK_SUCCESS)
-        return status;
+    get_ctx(clock_id, &ctx);
 
     if (rate == NULL)
         return FWK_E_PARAM;
@@ -207,7 +213,10 @@ static int clock_get_rate(fwk_id_t clock_id, uint64_t *rate)
 
     status = ctx->api->get_rate(ctx->config->driver_id, rate);
     if (status == FWK_PENDING)
-        return create_async_request(ctx, clock_id);
+        return create_async_request(
+            ctx,
+            clock_id,
+            mod_clock_event_id_get_rate_request);
     else
         return status;
 }
@@ -215,12 +224,9 @@ static int clock_get_rate(fwk_id_t clock_id, uint64_t *rate)
 static int clock_get_rate_from_index(fwk_id_t clock_id, unsigned int rate_index,
                                      uint64_t *rate)
 {
-    int status;
     struct clock_dev_ctx *ctx;
 
-    status = get_ctx(clock_id, &ctx);
-    if (status != FWK_SUCCESS)
-        return status;
+    get_ctx(clock_id, &ctx);
 
     if (rate == NULL)
         return FWK_E_PARAM;
@@ -234,9 +240,7 @@ static int clock_set_state(fwk_id_t clock_id, enum mod_clock_state state)
     int status;
     struct clock_dev_ctx *ctx;
 
-    status = get_ctx(clock_id, &ctx);
-    if (status != FWK_SUCCESS)
-        return status;
+    get_ctx(clock_id, &ctx);
 
     /* Concurrency is not supported */
     if (ctx->is_request_ongoing)
@@ -244,7 +248,10 @@ static int clock_set_state(fwk_id_t clock_id, enum mod_clock_state state)
 
     status = ctx->api->set_state(ctx->config->driver_id, state);
     if (status == FWK_PENDING)
-        return create_async_request(ctx, clock_id);
+        return create_async_request(
+            ctx,
+            clock_id,
+            mod_clock_event_id_set_state_request);
     else
         return status;
 }
@@ -254,9 +261,7 @@ static int clock_get_state(fwk_id_t clock_id, enum mod_clock_state *state)
     int status;
     struct clock_dev_ctx *ctx;
 
-    status = get_ctx(clock_id, &ctx);
-    if (status != FWK_SUCCESS)
-        return status;
+    get_ctx(clock_id, &ctx);
 
     if (state == NULL)
         return FWK_E_PARAM;
@@ -267,7 +272,10 @@ static int clock_get_state(fwk_id_t clock_id, enum mod_clock_state *state)
 
     status = ctx->api->get_state(ctx->config->driver_id, state);
     if (status == FWK_PENDING)
-        return create_async_request(ctx, clock_id);
+        return create_async_request(
+            ctx,
+            clock_id,
+            mod_clock_event_id_get_state_request);
     else
         return status;
 }
@@ -277,9 +285,7 @@ static int clock_get_info(fwk_id_t clock_id, struct mod_clock_info *info)
     int status;
     struct clock_dev_ctx *ctx;
 
-    status = get_ctx(clock_id, &ctx);
-    if (status != FWK_SUCCESS)
-        return status;
+    get_ctx(clock_id, &ctx);
 
     if (info == NULL)
         return FWK_E_PARAM;
@@ -635,8 +641,11 @@ static int clock_process_event(const struct fwk_event *event,
 
     event_idx = fwk_id_get_event_idx(event->id);
 
-    switch (event_idx) {
-    case CLOCK_EVENT_IDX_REQUEST:
+    switch (fwk_id_get_event_idx(event->id)) {
+    case MOD_CLOCK_EVENT_IDX_SET_RATE_REQUEST:
+    case MOD_CLOCK_EVENT_IDX_GET_RATE_REQUEST:
+    case MOD_CLOCK_EVENT_IDX_SET_STATE_REQUEST:
+    case MOD_CLOCK_EVENT_IDX_GET_STATE_REQUEST:
         return process_request_event(event, resp_event);
 #ifdef BUILD_HAS_NOTIFICATION
     case CLOCK_EVENT_IDX_RESPONSE:

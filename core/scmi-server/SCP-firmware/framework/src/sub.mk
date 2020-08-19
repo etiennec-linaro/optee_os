@@ -10,6 +10,7 @@ srcs-y += fwk_assert.c
 srcs-y += fwk_dlist.c
 srcs-y += fwk_id.c
 srcs-y += fwk_interrupt.c
+srcs-no += fwk_log.c
 srcs-no += fwk_mm.c
 srcs-y += fwk_module.c
 srcs-y += fwk_slist.c

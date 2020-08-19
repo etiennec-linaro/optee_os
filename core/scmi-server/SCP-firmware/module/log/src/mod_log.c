@@ -5,17 +5,21 @@
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
-#include <stdarg.h>
-#include <stdbool.h>
-#include <stdint.h>
+#include <mod_log.h>
+
 #include <fwk_assert.h>
 #include <fwk_element.h>
+#include <fwk_log.h>
 #include <fwk_macros.h>
 #include <fwk_mm.h>
 #include <fwk_module.h>
 #include <fwk_module_idx.h>
 #include <fwk_status.h>
-#include <mod_log.h>
+
+#include <stdarg.h>
+#include <stdbool.h>
+#include <stdint.h>
+#include <string.h>
 
 #ifdef BUILD_OPTEE
 #include <console.h>

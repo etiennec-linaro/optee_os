@@ -896,8 +896,11 @@ static int mod_dvfs_process_event(const struct fwk_event *event,
         /*
          * Handle get_voltage() synchronously
          */
-        return dvfs_handle_psu_get_voltage_resp(ctx,
+        status = dvfs_handle_psu_get_voltage_resp(ctx,
             resp_event, status, ctx->request.new_opp.voltage);
+        if (status == FWK_PENDING)
+            return FWK_SUCCESS;
+        return status;
     }
 
     /*
@@ -917,8 +920,11 @@ static int mod_dvfs_process_event(const struct fwk_event *event,
         /*
          * Handle get_voltage() synchronously
          */
-        return dvfs_handle_psu_get_voltage_resp(ctx, NULL,
+        status = dvfs_handle_psu_get_voltage_resp(ctx, NULL,
             status, voltage);
+        if (status == FWK_PENDING)
+            return FWK_SUCCESS;
+        return status;
     }
 
     /*
@@ -944,8 +950,11 @@ static int mod_dvfs_process_event(const struct fwk_event *event,
          * above so we can safely discard the resp_event.
          */
         psu_response = (void *)event->params;
-        return dvfs_handle_psu_get_voltage_resp(ctx, NULL,
+        status = dvfs_handle_psu_get_voltage_resp(ctx, NULL,
             psu_response->status, psu_response->voltage);
+        if (status == FWK_PENDING)
+            return FWK_SUCCESS;
+        return status;
     }
 
     /*
@@ -956,7 +965,10 @@ static int mod_dvfs_process_event(const struct fwk_event *event,
          * Handle set_voltage() asynchronously, no response required for
          * a SET_OPP() request so resp_event discarded.
          */
-        return dvfs_handle_psu_set_voltage_resp(ctx, event);
+        status = dvfs_handle_psu_set_voltage_resp(ctx, event);
+        if (status == FWK_PENDING)
+            return FWK_SUCCESS;
+        return status;
     }
 
     /*
@@ -967,7 +979,10 @@ static int mod_dvfs_process_event(const struct fwk_event *event,
          * Handle set_frequency() asynchronously, no response required for
          * a SET_OPP() request so resp_event discarded.
          */
-        return dvfs_handle_clk_set_freq_resp(ctx, event);
+        status = dvfs_handle_clk_set_freq_resp(ctx, event);
+        if (status == FWK_PENDING)
+            return FWK_SUCCESS;
+        return status;
     }
 
     return FWK_E_PARAM;
@@ -1005,8 +1020,6 @@ static int dvfs_init(fwk_id_t module_id, unsigned int element_count,
 {
     dvfs_ctx.domain_ctx = fwk_mm_calloc(element_count,
         sizeof((*dvfs_ctx.domain_ctx)[0]));
-    if (dvfs_ctx.domain_ctx == NULL)
-        return FWK_E_NOMEM;
 
     dvfs_ctx.dvfs_domain_element_count = element_count;
 

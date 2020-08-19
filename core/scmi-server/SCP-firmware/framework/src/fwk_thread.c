@@ -247,17 +247,12 @@ static void process_isr(struct __fwk_thread_ctx *ctx)
 
 int __fwk_thread_init(size_t event_count, fwk_id_t id)
 {
-    int status;
     struct fwk_event *event_table, *event;
     struct __fwk_thread_ctx *ctx;
 
     ctx = fwk_get_thread_ctx();
 
     event_table = fwk_mm_calloc(event_count, sizeof(struct fwk_event));
-    if (event_table == NULL) {
-        status = FWK_E_NOMEM;
-        goto error;
-    }
 
     /* All the event structures are free to be used. */
     fwk_list_init(&ctx->free_event_queue);
@@ -272,10 +267,6 @@ int __fwk_thread_init(size_t event_count, fwk_id_t id)
     ctx->initialized = true;
 
     return FWK_SUCCESS;
-
-error:
-    FWK_HOST_PRINT(err_msg_func, status, __func__);
-    return status;
 }
 
 noreturn void __fwk_thread_run(void)

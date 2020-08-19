@@ -322,9 +322,6 @@ static int clock_init(fwk_id_t module_id, unsigned int element_count,
     module_ctx.config = config;
     module_ctx.dev_ctx_table = fwk_mm_calloc(element_count,
                                              sizeof(struct clock_dev_ctx));
-    if (module_ctx.dev_ctx_table == NULL)
-        return FWK_E_NOMEM;
-
     return FWK_SUCCESS;
 }
 
@@ -498,6 +495,10 @@ static int clock_process_pd_pre_transition_notification(
     status = fwk_notification_notify(
         &outbound_event,
         &(ctx->transition_pending_notifications_sent));
+    if (status != FWK_SUCCESS) {
+        pd_resp_params->status = status;
+        return status;
+    }
 
     if (ctx->transition_pending_notifications_sent > 0) {
         /* There are one or more subscribers that must respond */

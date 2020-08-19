@@ -13,14 +13,29 @@
 #include <fwk_element.h>
 #include <fwk_id.h>
 #include <fwk_macros.h>
+#include <fwk_mm.h>
 #include <fwk_module.h>
 #include <fwk_module_idx.h>
 #include <fwk_status.h>
 #include <internal/scmi.h>
 #include <internal/scmi_power_domain.h>
+#include <config_power_domain.h>
+#if BUILD_HAS_MOD_DEBUG
+#include <mod_debug.h>
+#include <fwk_thread.h>
+#endif
 #include <mod_log.h>
 #include <mod_power_domain.h>
 #include <mod_scmi.h>
+#include <mod_scmi_power_domain.h>
+
+struct scmi_pd_operations {
+    /*
+     * Service identifier currently requesting operation.
+     * A 'none' value means that there is no pending request.
+     */
+    fwk_id_t service_id;
+};
 
 struct scmi_pd_ctx {
     /* Number of power domains */
@@ -34,6 +49,20 @@ struct scmi_pd_ctx {
 
     /* Power domain module API */
     const struct mod_pd_restricted_api *pd_api;
+    #if BUILD_HAS_MOD_DEBUG
+    /* Debug module API */
+    const struct mod_debug_api *debug_api;
+
+    /* Debug device identifier */
+    fwk_id_t debug_id;
+
+    /* Debug Power Domain element identifier */
+    fwk_id_t debug_pd_id;
+
+    #endif
+
+    /* Pointer to a table of scmi_pd operations */
+    struct scmi_pd_operations *ops;
 };
 
 static int scmi_pd_protocol_version_handler(fwk_id_t service_id,
@@ -49,6 +78,29 @@ static int scmi_pd_power_state_set_handler(fwk_id_t service_id,
 static int scmi_pd_power_state_get_handler(fwk_id_t service_id,
     const uint32_t *payload);
 
+#if BUILD_HAS_MOD_DEBUG
+enum scmi_clock_event_idx {
+    /* Event used prior to send a set_enabled request to debug HAL. */
+    SCMI_PD_EVENT_IDX_DEBUG_SET,
+
+    /* Event used prior to send a get_enabled request to debug HAL. */
+    SCMI_PD_EVENT_IDX_DEBUG_GET,
+    SCMI_PD_EVENT_IDX_COUNT,
+};
+
+struct event_request_params {
+    unsigned int pd_power_state;
+    fwk_id_t pd_id;
+};
+
+static const fwk_id_t mod_scmi_pd_event_id_dbg_enable_set =
+    FWK_ID_EVENT_INIT(FWK_MODULE_IDX_SCMI_POWER_DOMAIN,
+                      SCMI_PD_EVENT_IDX_DEBUG_SET);
+
+static const fwk_id_t mod_scmi_pd_event_id_dbg_enable_get =
+    FWK_ID_EVENT_INIT(FWK_MODULE_IDX_SCMI_POWER_DOMAIN,
+                      SCMI_PD_EVENT_IDX_DEBUG_GET);
+#endif
 /*
  * Internal variables
  */
@@ -97,6 +149,40 @@ static uint32_t pd_state_to_scmi_dev_state[] = {
     [MOD_PD_STATE_ON] = SCMI_PD_DEVICE_STATE_ID_ON,
     /* In case of more supported device states review the map functions */
 };
+
+/*
+ * Helpers
+ */
+
+#if BUILD_HAS_MOD_DEBUG
+static bool ops_is_busy(fwk_id_t pd_id)
+{
+    unsigned int pd_idx = fwk_id_get_element_idx(pd_id);
+
+    return !fwk_id_is_equal(scmi_pd_ctx.ops[pd_idx].service_id, FWK_ID_NONE);
+}
+
+static void ops_set_busy(fwk_id_t pd_id, fwk_id_t service_id)
+{
+    unsigned int pd_idx = fwk_id_get_element_idx(pd_id);
+
+    scmi_pd_ctx.ops[pd_idx].service_id = service_id;
+}
+
+static fwk_id_t ops_get_service(fwk_id_t pd_id)
+{
+    unsigned int pd_idx = fwk_id_get_element_idx(pd_id);
+
+    return scmi_pd_ctx.ops[pd_idx].service_id;
+}
+
+static void ops_set_idle(fwk_id_t pd_id)
+{
+    unsigned int pd_idx = fwk_id_get_element_idx(pd_id);
+
+    scmi_pd_ctx.ops[pd_idx].service_id = FWK_ID_NONE;
+}
+#endif
 
 /*
  * Power domain management protocol implementation
@@ -230,8 +316,8 @@ static int scmi_pd_power_domain_attributes_handler(fwk_id_t service_id,
             return_values.attributes = SCMI_PD_POWER_STATE_SET_SYNC;
         break;
 
-    case MOD_PD_TYPE_DEVICE:
     case MOD_PD_TYPE_DEVICE_DEBUG:
+    case MOD_PD_TYPE_DEVICE:
         /*
          * Support only synchronous POWER_STATE_SET for devices for any agent.
          */
@@ -369,8 +455,47 @@ static int scmi_pd_power_state_set_handler(fwk_id_t service_id,
         status = scmi_pd_ctx.pd_api->set_state(pd_id, parameters->power_state);
         break;
 
-    case MOD_PD_TYPE_DEVICE:
     case MOD_PD_TYPE_DEVICE_DEBUG:
+    #if BUILD_HAS_MOD_DEBUG
+        if (!is_sync) {
+            return_values.status = SCMI_NOT_SUPPORTED;
+            goto exit;
+        }
+
+        status = scmi_device_state_to_pd_state(parameters->power_state,
+                                               &pd_power_state);
+        if (status != FWK_SUCCESS) {
+            status = FWK_SUCCESS;
+            return_values.status = SCMI_INVALID_PARAMETERS;
+            goto exit;
+        }
+
+        if (ops_is_busy(pd_id)) {
+            status = FWK_E_BUSY;
+
+            break;
+        }
+
+        struct fwk_event event = {
+            .target_id = fwk_module_id_scmi_power_domain,
+            .id = mod_scmi_pd_event_id_dbg_enable_set,
+        };
+
+        struct event_request_params *event_params =
+            (struct event_request_params *)event.params;
+        event_params->pd_power_state = pd_power_state;
+        event_params->pd_id = pd_id;
+
+        status = fwk_thread_put_event(&event);
+        if (status != FWK_SUCCESS)
+            break;
+
+        ops_set_busy(pd_id, service_id);
+
+        return FWK_SUCCESS;
+    #endif /* BUILD_HAS_MOD_DEBUG */
+        /* FALLTHROUGH */
+    case MOD_PD_TYPE_DEVICE:
         if (!is_sync) {
             return_values.status = SCMI_NOT_SUPPORTED;
             goto exit;
@@ -419,6 +544,10 @@ static int scmi_pd_power_state_get_handler(fwk_id_t service_id,
     enum mod_pd_type pd_type;
     unsigned int pd_power_state;
     unsigned int power_state;
+    #if BUILD_HAS_MOD_DEBUG
+    struct fwk_event event;
+    struct event_request_params *event_params;
+    #endif
 
     parameters = (const struct scmi_pd_power_state_get_a2p *)payload;
 
@@ -447,8 +576,27 @@ static int scmi_pd_power_state_get_handler(fwk_id_t service_id,
         status = scmi_pd_ctx.pd_api->get_state(pd_id, &power_state);
         break;
 
-    case MOD_PD_TYPE_DEVICE:
     case MOD_PD_TYPE_DEVICE_DEBUG:
+    #if BUILD_HAS_MOD_DEBUG
+        event = (struct fwk_event){
+            .target_id = fwk_module_id_scmi_power_domain,
+            .id = mod_scmi_pd_event_id_dbg_enable_get,
+        };
+
+        event_params = (struct event_request_params *)event.params;
+
+        event_params->pd_id = pd_id;
+
+        status = fwk_thread_put_event(&event);
+        if (status != FWK_SUCCESS)
+            break;
+
+        ops_set_busy(pd_id, service_id);
+
+        return FWK_SUCCESS;
+    #endif
+        /* FALLTHROUGH */
+    case MOD_PD_TYPE_DEVICE:
 
         status = scmi_pd_ctx.pd_api->get_state(pd_id, &pd_power_state);
         if (status != FWK_SUCCESS)
@@ -528,8 +676,12 @@ static struct mod_scmi_to_protocol_api scmi_pd_mod_scmi_to_protocol_api = {
  */
 
 static int scmi_pd_init(fwk_id_t module_id, unsigned int element_count,
-                        const void *unused)
+                        const void *data)
 {
+    #if BUILD_HAS_MOD_DEBUG
+    struct mod_scmi_pd_config *config = (struct mod_scmi_pd_config *)data;
+    #endif
+
     if (element_count != 0)
         return FWK_E_SUPPORT;
 
@@ -543,6 +695,27 @@ static int scmi_pd_init(fwk_id_t module_id, unsigned int element_count,
     /* ... and expose no more than 0xFFFF number of domains. */
     if (scmi_pd_ctx.domain_count > UINT16_MAX)
         scmi_pd_ctx.domain_count = UINT16_MAX;
+
+    #if BUILD_HAS_MOD_DEBUG
+    if (config == NULL)
+        return FWK_E_PARAM;
+
+    if (fwk_module_is_valid_element_id(config->debug_id) ||
+        fwk_module_is_valid_element_id(config->debug_pd_id)) {
+        scmi_pd_ctx.debug_pd_id = config->debug_pd_id;
+        scmi_pd_ctx.debug_id = config->debug_id;
+    } else
+        return FWK_E_DATA;
+    #endif
+
+    /* Allocate a table of scmi_pd operations */
+    scmi_pd_ctx.ops =
+        fwk_mm_calloc(scmi_pd_ctx.domain_count,
+        sizeof(struct scmi_pd_operations));
+
+    /* Initialize table */
+    for (unsigned int i = 0; i < scmi_pd_ctx.domain_count; i++)
+        scmi_pd_ctx.ops[i].service_id = FWK_ID_NONE;
 
     return FWK_SUCCESS;
 }
@@ -565,6 +738,14 @@ static int scmi_pd_bind(fwk_id_t id, unsigned int round)
     if (status != FWK_SUCCESS)
         return status;
 
+    #if BUILD_HAS_MOD_DEBUG
+    status = fwk_module_bind(scmi_pd_ctx.debug_id,
+        FWK_ID_API(FWK_MODULE_IDX_DEBUG, MOD_DEBUG_API_IDX_HAL),
+        &scmi_pd_ctx.debug_api);
+    if (status != FWK_SUCCESS)
+        return status;
+    #endif
+
     return fwk_module_bind(fwk_module_id_power_domain, mod_pd_api_id_restricted,
         &scmi_pd_ctx.pd_api);
 }
@@ -580,6 +761,151 @@ static int scmi_pd_process_bind_request(fwk_id_t source_id, fwk_id_t target_id,
     return FWK_SUCCESS;
 }
 
+#if BUILD_HAS_MOD_DEBUG
+static int process_request_event(const struct fwk_event *event)
+{
+    struct event_request_params *params;
+    int status;
+    fwk_id_t service_id;
+    bool state_get;
+    bool dbg_enabled;
+
+    struct scmi_pd_power_state_get_p2a retval_get = {
+        .status = SCMI_GENERIC_ERROR
+    };
+
+    struct scmi_pd_power_state_set_p2a retval_set = {
+        .status = SCMI_GENERIC_ERROR
+    };
+
+    params = (struct event_request_params *)event->params;
+
+    /*
+     * Internal events:
+     * Only events for handling the debug are allowed for now.
+     */
+    switch (fwk_id_get_event_idx(event->id)) {
+    case SCMI_PD_EVENT_IDX_DEBUG_GET:
+        state_get = true;
+
+        status = scmi_pd_ctx.debug_api->get_enabled(scmi_pd_ctx.debug_id,
+                                                    &dbg_enabled,
+                                                    SCP_DEBUG_USER_AP);
+        if (status != FWK_SUCCESS)
+            break;
+
+        retval_get.status = SCMI_SUCCESS;
+        retval_get.power_state =
+            dbg_enabled ? pd_state_to_scmi_dev_state[MOD_PD_STATE_ON]
+                        : pd_state_to_scmi_dev_state[MOD_PD_STATE_OFF];
+
+        break;
+
+    case SCMI_PD_EVENT_IDX_DEBUG_SET:
+        state_get = false;
+
+        status = scmi_pd_ctx.debug_api->set_enabled(
+                scmi_pd_ctx.debug_id,
+                params->pd_power_state == MOD_PD_STATE_ON,
+                SCP_DEBUG_USER_AP);
+
+        if (status == FWK_SUCCESS)
+            retval_set.status = SCMI_SUCCESS;
+
+        break;
+
+    default:
+        return FWK_E_PARAM;
+    }
+
+    if (status != FWK_PENDING) {
+        service_id = ops_get_service(params->pd_id);
+
+        scmi_pd_ctx.scmi_api->respond(
+            service_id,
+            state_get ? (void *)&retval_get : (void *)&retval_set,
+            state_get ? sizeof(retval_get) : sizeof(retval_set));
+
+        ops_set_idle(params->pd_id);
+    }
+
+    return status;
+}
+
+static int process_response_event(const struct fwk_event *event, bool get)
+{
+    fwk_id_t service_id;
+
+    struct scmi_pd_power_state_get_p2a retval_get = {
+        .status = SCMI_GENERIC_ERROR
+    };
+
+    struct scmi_pd_power_state_set_p2a retval_set = {
+        .status = SCMI_GENERIC_ERROR
+    };
+
+    struct mod_debug_response_params *params =
+        (struct mod_debug_response_params *)event->params;
+
+    /*
+     * We know this event comes from the DEBUG HAL for now so we use the
+     * corresponding pd_id.
+     */
+    service_id = ops_get_service(scmi_pd_ctx.debug_pd_id);
+
+    if (params->status == FWK_SUCCESS) {
+        retval_set.status = SCMI_SUCCESS;
+
+        if (get) {
+            retval_get.power_state =
+                params->enabled ? pd_state_to_scmi_dev_state[MOD_PD_STATE_ON]
+                                : pd_state_to_scmi_dev_state[MOD_PD_STATE_OFF];
+        }
+    }
+
+    scmi_pd_ctx.scmi_api->respond(
+        service_id,
+        get ? (void *)&retval_get : (void *)&retval_set,
+        get ? sizeof(retval_get) : sizeof(retval_set));
+
+    ops_set_idle(service_id);
+
+    return FWK_SUCCESS;
+}
+
+static int scmi_pd_process_event(const struct fwk_event *event,
+                                 struct fwk_event *resp_event)
+{
+    unsigned int module_idx;
+    int status;
+
+    module_idx = fwk_id_get_module_idx(event->source_id);
+
+    if (module_idx == fwk_id_get_module_idx(fwk_module_id_scmi))
+        return process_request_event(event);
+
+    if (module_idx == fwk_id_get_module_idx(fwk_module_id_debug)) {
+        /* Responses from Debug module */
+        switch (fwk_id_get_event_idx(event->id)) {
+        case MOD_DEBUG_PUBLIC_EVENT_IDX_REQ_ENABLE_SET:
+            status = process_response_event(event, false);
+            break;
+
+        case MOD_DEBUG_PUBLIC_EVENT_IDX_REQ_ENABLE_GET:
+            status = process_response_event(event, true);
+            break;
+
+        default:
+            status = FWK_E_PARAM;
+            break;
+        }
+
+        return status;
+    }
+    return FWK_E_PARAM;
+}
+#endif /* BUILD_HAS_MOD_DEBUG */
+
 /* SCMI Power Domain Management Protocol Definition */
 const struct fwk_module module_scmi_power_domain = {
     .name = "SCMI Power Domain Management Protocol",
@@ -588,7 +914,8 @@ const struct fwk_module module_scmi_power_domain = {
     .init = scmi_pd_init,
     .bind = scmi_pd_bind,
     .process_bind_request = scmi_pd_process_bind_request,
+#if BUILD_HAS_MOD_DEBUG
+    .event_count = SCMI_PD_EVENT_IDX_COUNT,
+    .process_event = scmi_pd_process_event,
+#endif
 };
-
-/* No elements, no module configuration data */
-struct fwk_module_config config_scmi_power_domain = { 0 };

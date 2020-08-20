@@ -20,11 +20,11 @@
 #include <internal/fwk_notification.h>
 #endif
 
-#define EVENT_COUNT 64
+#define EVENT_COUNT 16
 #define BIND_ROUND_MAX 1
 
 #ifndef NOTIFICATION_COUNT
-#define NOTIFICATION_COUNT 64
+#define NOTIFICATION_COUNT 16
 #endif
 
 /* Pre-runtime phase stages */

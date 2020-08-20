@@ -596,7 +596,7 @@ static void common_thread_function(void *arg)
  * Private interface functions
  */
 
-int __fwk_thread_init(size_t event_count)
+int __fwk_thread_init(size_t event_count, fwk_id id)
 {
     int status;
     struct fwk_event *event_table, *event_table_end, *event;

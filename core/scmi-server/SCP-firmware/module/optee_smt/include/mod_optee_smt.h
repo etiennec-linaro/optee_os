@@ -108,7 +108,7 @@ struct mod_optee_smt_driver_input_api {
      * \return One of the standard error codes for implementation-defined
      * errors.
      */
-    int (*signal_message)(fwk_id_t channel_id);
+    int (*signal_message)(fwk_id_t channel_id, void *memory);
 
 
     /*!

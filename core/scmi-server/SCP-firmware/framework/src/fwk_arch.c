@@ -66,6 +66,7 @@ int fwk_arch_init(const struct fwk_arch_init_driver *driver)
 
     FWK_HOST_PRINT("[Framework] Initializing\n");
 
+#ifndef BUILD_OPTEE
     if (driver == NULL)
         return FWK_E_PARAM;
 
@@ -81,6 +82,7 @@ int fwk_arch_init(const struct fwk_arch_init_driver *driver)
     status = interrupt_init(driver->interrupt);
     if (status != FWK_SUCCESS)
         return FWK_E_PANIC;
+#endif
 
     /* Initialize modules */
     status = __fwk_module_init();

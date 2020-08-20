@@ -143,5 +143,6 @@ int fwk_thread_get_first_delayed_response(fwk_id_t id, struct fwk_event *event);
 /*!
  * @}
  */
+void fwk_set_thread_ctx(fwk_id_t id);
 
 #endif /* FWK_THREAD_H */

@@ -41,11 +41,6 @@ register_ddr(DRAM0_BASE, DRAM0_SIZE);
 register_ddr(DRAM1_BASE, DRAM1_SIZE);
 #endif
 
-#ifdef CFG_FVP_SCMI_SHM_BASE
-register_phys_mem(MEM_AREA_IO_NSEC, CFG_FVP_SCMI_SHM_BASE,
-		  CFG_FVP_SCMI_SHM_SIZE);
-#endif
-
 #ifdef GIC_BASE
 
 register_phys_mem_pgdir(MEM_AREA_IO_SEC, GICD_BASE, GIC_DIST_REG_SIZE);

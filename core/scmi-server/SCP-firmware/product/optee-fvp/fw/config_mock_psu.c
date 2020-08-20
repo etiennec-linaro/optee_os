@@ -17,6 +17,7 @@ static const struct fwk_element element_table[] = {
         .data = &(const struct mod_mock_psu_element_cfg) {
             .default_enabled = true,
             .default_voltage = 100,
+            .async_alarm_id =  FWK_ID_NONE_INIT,
         },
     },
     [CONFIG_MOCK_PSU_ELEMENT_IDX_CPU_GROUP_BIG] = {
@@ -24,6 +25,7 @@ static const struct fwk_element element_table[] = {
         .data = &(const struct mod_mock_psu_element_cfg) {
             .default_enabled = true,
             .default_voltage = 100,
+            .async_alarm_id = FWK_ID_NONE_INIT,
         },
     },
     [CONFIG_MOCK_PSU_ELEMENT_IDX_GPU] = {
@@ -31,6 +33,7 @@ static const struct fwk_element element_table[] = {
         .data = &(const struct mod_mock_psu_element_cfg) {
             .default_enabled = true,
             .default_voltage = 100,
+            .async_alarm_id = FWK_ID_NONE_INIT,
         },
     },
     [CONFIG_MOCK_PSU_ELEMENT_IDX_VPU] = {
@@ -38,6 +41,7 @@ static const struct fwk_element element_table[] = {
         .data = &(const struct mod_mock_psu_element_cfg) {
             .default_enabled = true,
             .default_voltage = 100,
+            .async_alarm_id = FWK_ID_NONE_INIT,
         },
     },
     { 0 }

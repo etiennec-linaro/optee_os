@@ -344,6 +344,7 @@ static int create_event_request(fwk_id_t clock_id,
     union event_request_data request_data;
     unsigned int clock_dev_idx = fwk_id_get_element_idx(clock_id);
     struct fwk_event event = {
+        .source_id = service_id,
         .target_id = fwk_module_id_scmi_clock,
     };
     struct event_request_params *params = (void *)event.params;

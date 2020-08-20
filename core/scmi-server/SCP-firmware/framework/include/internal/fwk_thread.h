@@ -21,7 +21,7 @@
  * \retval FWK_SUCCESS The thread framework component was initialized.
  * \retval FWK_E_NOMEM Insufficient memory available for event queues.
  */
-int __fwk_thread_init(size_t event_count);
+int __fwk_thread_init(size_t event_count, fwk_id_t id);
 
 /*
  * \brief Begin waiting for and processing events raised by modules and

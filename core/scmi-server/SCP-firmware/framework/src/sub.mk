@@ -5,7 +5,7 @@ cflags-fwk_id.c-y = -Wno-aggregate-return
 cflags-fwk_module.c-y = -Wno-aggregate-return
 cflags-fwk_thread.c-y = -Wno-aggregate-return
 
-srcs-no += fwk_arch.c
+srcs-y += fwk_arch.c
 srcs-y += fwk_assert.c
 srcs-y += fwk_dlist.c
 srcs-y += fwk_id.c

@@ -15,6 +15,7 @@
 #include <fwk_status.h>
 #include <internal/fwk_module.h>
 #include <internal/fwk_thread.h>
+#include <internal/fwk_single_thread.h>
 #ifdef BUILD_HAS_NOTIFICATION
 #include <internal/fwk_notification.h>
 #endif
@@ -97,6 +98,7 @@ static int init_elements(struct fwk_module_ctx *module_ctx,
     fwk_id_t element_id;
     struct fwk_element_ctx *element_ctx;
     const struct fwk_element *element;
+    fwk_id_t none_id = FWK_ID_NONE_INIT;
 
     module = module_ctx->desc;
     if (!fwk_expect(module->element_init != NULL))
@@ -138,6 +140,14 @@ static int init_elements(struct fwk_module_ctx *module_ctx,
 
         status = module->element_init(
             element_id, element->sub_element_count, element->data);
+
+        if (fwk_expect(status == FWK_PENDING)) {
+            element_ctx->thread_ctx = fwk_mm_calloc(1, sizeof(struct __fwk_thread_ctx));
+            fwk_set_thread_ctx(element_id);
+            status = __fwk_thread_init(EVENT_COUNT, element_id);
+            fwk_set_thread_ctx(none_id);
+        }
+
         if (!fwk_expect(status == FWK_SUCCESS)) {
             FWK_HOST_PRINT(err_msg_func, status, __func__);
             return status;
@@ -390,13 +400,15 @@ int __fwk_module_init(void)
 {
     int status;
     unsigned int bind_round;
+    fwk_id_t none_id = FWK_ID_NONE_INIT;
 
     if (ctx.initialized) {
         FWK_HOST_PRINT(err_msg_func, FWK_E_STATE, __func__);
         return FWK_E_STATE;
     }
 
-    status = __fwk_thread_init(EVENT_COUNT);
+    fwk_set_thread_ctx(none_id);
+    status = __fwk_thread_init(EVENT_COUNT, none_id);
     if (status != FWK_SUCCESS)
         return status;
 
@@ -427,6 +439,8 @@ int __fwk_module_init(void)
 
     #ifndef BUILD_OPTEE
     __fwk_thread_run();
+    #else
+    __fwk_run_event();
     #endif
 
     return FWK_SUCCESS;

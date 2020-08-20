@@ -12,6 +12,7 @@ enum scmi_agent_id {
     /* 0 is reserved for the platform */
     SCMI_AGENT_ID_OSPM = 1,
     SCMI_AGENT_ID_PSCI,
+    SCMI_AGENT_ID_PERF,
     SCMI_AGENT_ID_COUNT,
 };
 

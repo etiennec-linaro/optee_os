@@ -14,6 +14,8 @@
 /*!
  * \brief Signal a SMT message
  */
-void optee_mhu_signal_smt_message(unsigned int device_index, unsigned int slot_index);
+void optee_mhu_signal_smt_message(fwk_id_t device_id, void *memory);
+int optee_mhu_get_devices_count(void);
+fwk_id_t optee_mhu_get_device(unsigned int id, void* mem, unsigned int size);
 
 #endif /* MOD_OPTEE_MHU_H */

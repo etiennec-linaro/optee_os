@@ -43,7 +43,7 @@ static const struct fwk_element service_table[] = {
                                                 SCMI_SERVICE_IDX_OSPM_1),
             .transport_api_id = FWK_ID_API_INIT(FWK_MODULE_IDX_OPTEE_SMT,
                                                 MOD_OPTEE_SMT_API_IDX_SCMI_TRANSPORT),
-            .scmi_agent_id = SCMI_AGENT_ID_OSPM,
+            .scmi_agent_id = SCMI_AGENT_ID_PERF,
         }),
     },
     [SCMI_SERVICE_IDX_COUNT] = { 0 }
@@ -62,6 +62,10 @@ static const struct mod_scmi_agent agent_table[] = {
     [SCMI_AGENT_ID_PSCI] = {
         .type = SCMI_AGENT_TYPE_PSCI,
         .name = "PSCI",
+    },
+   [SCMI_AGENT_ID_PERF] = {
+        .type = SCMI_AGENT_TYPE_OSPM,
+        .name = "PERF",
     },
 };
 

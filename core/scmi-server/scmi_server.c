@@ -11,6 +11,7 @@
 #include <fwk_macros.h>
 #include <fwk_mm.h>
 #include <fwk_arch.h>
+#include <fwk_thread.h>
 #include <initcall.h>
 #include <internal/fwk_module.h>
 #include <internal/fwk_thread.h>

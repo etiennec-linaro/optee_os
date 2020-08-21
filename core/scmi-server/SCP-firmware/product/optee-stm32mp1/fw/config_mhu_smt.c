@@ -1,5 +1,5 @@
 /*
- * Arm SCP/MCP Software
+ * Copyright (c) 2020, Linaro Limited
  * Copyright (c) 2019, Arm Limited and Contributors. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
@@ -37,7 +37,7 @@ static const struct fwk_element *mhu_get_element_table(fwk_id_t module_id)
 }
 
 struct fwk_module_config config_optee_mhu = {
-    .get_element_table = mhu_get_element_table,
+    .elements = FWK_MODULE_DYNAMIC_ELEMENTS(mhu_get_element_table),
 };
 
 
@@ -79,6 +79,6 @@ static const struct fwk_element *smt_get_element_table(fwk_id_t module_id)
 }
 
 struct fwk_module_config config_optee_smt = {
-    .get_element_table = smt_get_element_table,
+    .elements = FWK_MODULE_DYNAMIC_ELEMENTS(smt_get_element_table),
 };
 

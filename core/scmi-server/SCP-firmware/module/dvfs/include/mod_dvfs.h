@@ -27,20 +27,21 @@
  */
 
 /*!
- * \brief Frequency limits.
+ * \brief Level limits.
  */
-struct mod_dvfs_frequency_limits {
-    uint64_t minimum; /*!< Minimum permitted rate */
-    uint64_t maximum; /*!< Maximum permitted rate */
+struct mod_dvfs_level_limits {
+    uint32_t minimum; /*!< Minimum permitted level */
+    uint32_t maximum; /*!< Maximum permitted level */
 };
 
 /*!
  * \brief Operating Performance Point (OPP).
  */
 struct mod_dvfs_opp {
-    uint64_t voltage; /*!< Power supply voltage in millivolts (mV) */
-    uint64_t frequency; /*!< Clock rate in Hertz (Hz) */
-    uint64_t power; /*!< Power draw in milliwatts (mW) */
+    uint32_t level; /*!< Level value of the OPP */
+    uint32_t voltage; /*!< Power supply voltage in millivolts (mV) */
+    uint32_t frequency; /*!< Clock rate in Hertz (Hz) */
+    uint32_t power; /*!< Power draw in milliwatts (mW) */
 };
 
 /*!
@@ -83,9 +84,9 @@ struct mod_dvfs_domain_config {
     fwk_id_t notification_id;
 
     /*!
-     * \brief Notifications API identifier.
+     * \brief Updates API identifier.
      */
-    fwk_id_t notification_api_id;
+    fwk_id_t updates_api_id;
 
     /*! Delay in milliseconds before retrying a request */
     uint16_t retry_ms;
@@ -99,10 +100,17 @@ struct mod_dvfs_domain_config {
     /*!
      * \brief Operating points.
      *
-     * \note The frequencies of these operating points must be in ascending
-     *      order.
+     * \note The frequencies and levels of these operating points must be in
+     *      ascending order.
      */
     struct mod_dvfs_opp *opps;
+
+    /*! \brief Allow inexact performance levels.
+     *
+     * \note It will set any immediately higher than the requested value if it
+     * is possible, otherwise it will set the highest possible.
+     */
+    bool approximate_level;
 };
 
 /*!
@@ -157,6 +165,15 @@ struct mod_dvfs_domain_api {
     int (*get_opp_count)(fwk_id_t domain_id, size_t *opp_count);
 
     /*!
+     * \brief Get the level id for the given level.
+     *
+     * \param domain_id Element identifier of the domain.
+     * \param level Requested level.
+     * \param [out] level id inside the OPP table.
+     */
+    int (*get_level_id)(fwk_id_t domain_id, uint32_t level, size_t *level_id);
+
+    /*!
      * \brief Get the worst-case transition latency of a domain.
      *
      * \param domain_id Element identifier of the domain.
@@ -165,62 +182,68 @@ struct mod_dvfs_domain_api {
     int (*get_latency)(fwk_id_t domain_id, uint16_t *latency);
 
     /*!
-     * \brief Set the frequency of a domain.
+     * \brief Set the level of a domain.
      *
      * \param domain_id Element identifier of the domain.
      * \param cookie Context-specific value.
-     * \param frequency Requested frequency.
+     * \param level Requested level.
      */
-    int (*set_frequency)(fwk_id_t domain_id, uintptr_t cookie,
-        uint64_t frequency);
+    int (*set_level)(fwk_id_t domain_id, uintptr_t cookie, uint32_t level);
 
     /*!
-     * \brief Get the frequency of a domain.
+     * \brief Get the level of a domain.
      *
      * \param domain_id Element identifier of the domain.
-     * \param [out] limits Current frequency limits.
+     * \param [out] limits Current level limits.
      */
-    int (*get_frequency_limits)(
+    int (*get_level_limits)(
         fwk_id_t domain_id,
-        struct mod_dvfs_frequency_limits *limits);
+        struct mod_dvfs_level_limits *limits);
 
     /*!
-     * \brief Set the frequency of a domain.
+     * \brief Set the level of a domain.
      *
      * \param domain_id Element identifier of the domain.
      * \param cookie Context-specific value.
      * \param limits Pointer to the new limits.
      */
-    int (*set_frequency_limits)(
-        fwk_id_t domain_id, uintptr_t cookie,
-        const struct mod_dvfs_frequency_limits *limits);
+    int (*set_level_limits)(
+        fwk_id_t domain_id,
+        uintptr_t cookie,
+        const struct mod_dvfs_level_limits *limits);
 };
 
 /*!
- * \brief DVFS notification API.
+ * \brief DVFS updates notification API.
  *
- * \details API used by the domain when a notification is required.
+ * \details API used by the domain to notify the HAL when either the
+ *      limits or level has been changed.
  */
-struct mod_dvfs_notification_api {
+struct mod_dvfs_perf_updated_api {
     /*!
-     * \brief Send a limitschanged notification for the domain.
+     * \brief Inform the HAL that the domain limits have been updated.
      *
      * \param domain_id Domain identifier.
      * \param cookie Context-specific value.
      * \param range_min Min allowed performance level.
      * \param range_max Max allowed performance level.
      */
-    void (*notify_limits)(fwk_id_t domain_id, uintptr_t cookie,
-        uint32_t range_min, uint32_t range_max);
+    void (*notify_limits_updated)(
+        fwk_id_t domain_id,
+        uintptr_t cookie,
+        uint32_t range_min,
+        uint32_t range_max);
 
     /*!
-     * \brief Send a level changed notification for the domain.
+     * \brief Inform the HAL that the domain level has been updated.
      *
      * \param domain_id Domain identifier.
      * \param cookie Context-specific value.
      * \param level The new performance level of the domain.
      */
-    void (*notify_level)(fwk_id_t domain_id, uintptr_t cookie,
+    void (*notify_level_updated)(
+        fwk_id_t domain_id,
+        uintptr_t cookie,
         uint32_t level);
 };
 
@@ -241,7 +264,7 @@ struct mod_dvfs_params_response {
     int status;
 
     /*! Event response frequency */
-    uint64_t performance_level;
+    uint32_t performance_level;
 };
 
 /*!
@@ -268,9 +291,9 @@ static const fwk_id_t mod_dvfs_api_id_dvfs =
  * \brief Event indices.
  */
 enum mod_dvfs_event_idx {
-    MOD_DVFS_EVENT_IDX_SET,     /*!< Set level/limits */
-    MOD_DVFS_EVENT_IDX_GET_OPP, /*!< Get frequency */
-    MOD_DVFS_EVENT_IDX_COUNT,   /*!< event count */
+    MOD_DVFS_EVENT_IDX_SET, /*!< Set level/limits */
+    MOD_DVFS_EVENT_IDX_GET_OPP, /*!< Get Operating Performance Point */
+    MOD_DVFS_EVENT_IDX_COUNT, /*!< event count */
 };
 
 /*! <tt>Set operating point/limits</tt> event identifier */

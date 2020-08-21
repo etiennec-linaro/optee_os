@@ -17,6 +17,7 @@
 import argparse
 import os
 import sys
+import tempfile
 
 DEFAULT_PATH = 'build/'
 
@@ -44,35 +45,43 @@ TEMPLATE_C = "/* This file was auto generated using {} */\n" \
              "\n" \
              "const struct fwk_module *module_table[] = {{\n" \
              "{}" \
-             "    NULL\n" \
              "}};\n" \
              "\n" \
              "const struct fwk_module_config *module_config_table[] = {{\n" \
              "{}" \
-             "    NULL\n" \
              "}};\n"
 
 
 def generate_file(path, filename, content):
     full_filename = os.path.join(path, filename)
-    with open(full_filename, 'a+') as f:
-        f.seek(0)
-        if f.read() != content:
+
+    try:
+        with open(full_filename) as f:
+            rewrite = f.read() != content
+    except FileNotFoundError:
+        rewrite = True
+
+    if rewrite:
+        with tempfile.NamedTemporaryFile(prefix="gen-module-code",
+                                         dir=path,
+                                         delete=False,
+                                         mode="wt") as f:
             print("[GEN] {}...".format(full_filename))
-            f.seek(0)
-            f.truncate()
             f.write(content)
+        os.replace(f.name, full_filename)
 
 
 def generate_header(path, modules):
     enum = ""
     const = ""
-    for module in modules:
-        enum += "    FWK_MODULE_IDX_{},\n".format(module.upper())
+    for idx, module in enumerate(modules):
+        enum += "    FWK_MODULE_IDX_{} = {},\n".format(module.upper(), idx)
         const += "static const fwk_id_t fwk_module_id_{} = " \
                  "FWK_ID_MODULE_INIT(FWK_MODULE_IDX_{});\n".format(module,
                                                                    module
                                                                    .upper())
+
+    enum += "    FWK_MODULE_IDX_COUNT = {},\n".format(idx + 1)
 
     content = TEMPLATE_H.format(sys.argv[0], enum, const)
     generate_file(path, FILENAME_H, content)

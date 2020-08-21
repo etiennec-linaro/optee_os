@@ -21,272 +21,23 @@
 #include <stdint.h>
 #include <string.h>
 
-#ifdef BUILD_OPTEE
-#include <console.h>
-#include <trace.h>
-#endif
-
 static const struct mod_log_config *log_config;
 static struct mod_log_driver_api *log_driver;
 
-#define ALL_GROUPS_MASK (MOD_LOG_GROUP_DEBUG | \
-                         MOD_LOG_GROUP_ERROR | \
-                         MOD_LOG_GROUP_INFO | \
-                         MOD_LOG_GROUP_WARNING)
-
-#ifdef BUILD_OPTEE
-static int do_print(enum mod_log_group group, const char *fmt, va_list *args)
-{
-#if TRACE_LEVEL > 0
-	int level = TRACE_DEBUG;
-
-	switch (group) {
-	case MOD_LOG_GROUP_ERROR:
-		level = TRACE_ERROR;
-		break;
-	case MOD_LOG_GROUP_INFO:
-	case MOD_LOG_GROUP_WARNING:
-		level = TRACE_INFO;
-		break;
-	case MOD_LOG_GROUP_DEBUG:
-	default:
-		break;
-	}
-
-	trace_vprintf("[scmi-server]", 0, level, true, fmt, *args);
-#endif
-
-	return 0;
-}
-#else /* BUILD_OPTEE */
-static int do_putchar(char c)
+static int log_backend_print(char ch)
 {
     int status;
 
-    /* Include a 'carriage return' before the new line */
-    if (c == '\n') {
-        status = do_putchar('\r');
-        if (status != FWK_SUCCESS)
-            return status;
-    }
-
-    status = log_driver->putchar(log_config->device_id, c);
+    status = log_driver->putchar(log_config->device_id, ch);
     if (status != FWK_SUCCESS)
         return FWK_E_DEVICE;
 
     return FWK_SUCCESS;
 }
 
-static int print_uint64(uint64_t value, unsigned int base, unsigned int fill)
-{
-    /* Just need enough space to store 64 bit decimal integer */
-    unsigned char str[20];
-    unsigned int i = 0;
-    int status;
-
-    /* Decimal or hexadecimal only */
-    assert((base == 10) || (base == 16));
-
-    do {
-        str[i++] = "0123456789abcdef"[value % base];
-    } while (value /= base);
-
-    while (fill-- > i) {
-        status = do_putchar('0');
-        if (status != FWK_SUCCESS)
-            return status;
-    }
-
-    while (i > 0) {
-        status = do_putchar(str[--i]);
-        if (status != FWK_SUCCESS)
-            return status;
-    }
-
-    return FWK_SUCCESS;
-}
-
-static int print_int32(int32_t num, unsigned int fill)
+static int log_backend_flush(void)
 {
     int status;
-    uint64_t unum;
-
-    if (num < 0) {
-        status = do_putchar('-');
-        if (status != FWK_SUCCESS)
-            return status;
-        unum = (uint64_t)-num;
-    } else
-        unum = (uint64_t)num;
-
-    return print_uint64(unum, 10, fill);
-}
-
-static int print_string(const char *str)
-{
-    int status;
-
-    while (*str) {
-        status = do_putchar(*str++);
-        if (status != FWK_SUCCESS)
-            return status;
-    }
-
-    return FWK_SUCCESS;
-}
-
-static int do_print(enum mod_log_group group __unused,
-                    const char *fmt, va_list *args)
-{
-    int status;
-    int bit64;
-    int64_t num;
-    uint64_t unum;
-    unsigned int fill;
-
-    while (*fmt) {
-
-        if (*fmt == '%') {
-            fmt++;
-            bit64 = 0;
-            fill = 0;
-
-next_symbol:
-            /* Check the format specifier */
-            switch (*fmt) {
-            case 'i': /* Fall through to next one */
-            case 'd':
-                if (bit64)
-                    return FWK_E_DATA;
-
-                num = va_arg(*args, int32_t);
-
-                status = print_int32(num, fill);
-                if (status != FWK_SUCCESS)
-                    return status;
-                break;
-
-            case 's':
-                status = print_string(va_arg(*args, const char *));
-                if (status != FWK_SUCCESS)
-                    return status;
-                break;
-
-            case 'c':
-                status = do_putchar(va_arg(*args, int));
-                if (status != FWK_SUCCESS)
-                    return status;
-                break;
-
-            case 'x':
-                if (bit64)
-                    unum = va_arg(*args, uint64_t);
-                else
-                    unum = va_arg(*args, uint32_t);
-                status = print_uint64(unum, 16, fill);
-                if (status != FWK_SUCCESS)
-                    return status;
-                break;
-
-            case 'l':
-                bit64 = 1;
-                fmt++;
-                goto next_symbol;
-
-            case 'u':
-                if (bit64)
-                    unum = va_arg(*args, uint64_t);
-                else
-                    unum = va_arg(*args, uint32_t);
-
-                status = print_uint64(unum, 10, fill);
-                if (status != FWK_SUCCESS)
-                    return status;
-                break;
-
-            case '0':
-                fmt++;
-                if (((*fmt) < '0') || ((*fmt) > '9'))
-                    return FWK_E_DATA;
-                fill = *(fmt++) - '0';
-                goto next_symbol;
-
-            default:
-                /* Exit on any other format specifier */
-                return FWK_E_DATA;
-            }
-            fmt++;
-            continue;
-        }
-        status = do_putchar(*fmt++);
-        if (status != FWK_SUCCESS)
-            return status;
-    }
-
-    return FWK_SUCCESS;
-}
-#endif /* BUILD_OPTEE */
-
-static bool is_valid_group(unsigned int group)
-{
-    /* Check if group is 'none' */
-    if (group == MOD_LOG_GROUP_NONE)
-        return false;
-
-    /* Check if group is within the limits of valid groups */
-    if (group & ~ALL_GROUPS_MASK)
-        return false;
-
-    /* Check if only one group was set */
-    return !(group & (group - 1));
-}
-
-/*
- * Module API
- */
-
-static int do_log(enum mod_log_group group, const char *fmt, ...)
-{
-    int status;
-    va_list args;
-
-    /* API called too early */
-    if ((log_config != NULL) && (log_driver == NULL))
-        return FWK_E_STATE;
-
-    if (!is_valid_group(group))
-        return FWK_E_PARAM;
-
-    if (fmt == NULL)
-        return FWK_E_PARAM;
-
-    if ((log_config == NULL) || (group & log_config->log_groups)) {
-        va_start(args, fmt);
-        status = do_print(group, fmt, &args);
-        va_end(args);
-
-        if (status != FWK_SUCCESS)
-            return status;
-    }
-
-    return FWK_SUCCESS;
-}
-
-#ifdef BUILD_OPTEE
-static int do_flush(void)
-{
-    console_flush();
-
-    return FWK_SUCCESS;
-}
-#else
-static int do_flush(void)
-{
-    int status;
-
-    /* API called too early */
-    if ((log_config != NULL) && (log_driver == NULL))
-        return FWK_E_STATE;
 
     status = log_driver->flush(log_config->device_id);
     if (status != FWK_SUCCESS)
@@ -294,16 +45,7 @@ static int do_flush(void)
 
     return FWK_SUCCESS;
 }
-#endif /*BUILD_OPTEE*/
 
-static const struct mod_log_api module_api = {
-    .log = do_log,
-    .flush = do_flush,
-};
-
-/*
- * Framework handlers
- */
 static int log_init(fwk_id_t module_id, unsigned int element_count,
     const void *data)
 {
@@ -312,10 +54,6 @@ static int log_init(fwk_id_t module_id, unsigned int element_count,
     /* Module does not support elements */
     if (element_count > 0)
         return FWK_E_DATA;
-
-    /* Check for invalid groups in the 'log_groups' mask */
-    if (config && (config->log_groups & ~ALL_GROUPS_MASK))
-        return FWK_E_PARAM;
 
     log_config = config;
 
@@ -329,10 +67,6 @@ static int log_bind(fwk_id_t id, unsigned int round)
 
     /* Skip second round */
     if (round == 1)
-        return FWK_SUCCESS;
-
-    /* If there is no expected driver then we're done */
-    if (log_config == NULL)
         return FWK_SUCCESS;
 
     /* Get the device driver's API */
@@ -350,23 +84,36 @@ static int log_bind(fwk_id_t id, unsigned int round)
 
     log_driver = driver;
 
-    if (log_config->banner) {
-        status = do_log(MOD_LOG_GROUP_INFO, log_config->banner);
-        if (status != FWK_SUCCESS)
-            return status;
-
-        status = do_flush();
-        if (status != FWK_SUCCESS)
-            return status;
-    }
-
     return FWK_SUCCESS;
 }
 
-static int log_process_bind_request(fwk_id_t requester_id, fwk_id_t id,
-    fwk_id_t api_id, const void **api)
+static int log_start(fwk_id_t id)
 {
-    *api = &module_api;
+    int status;
+
+    const char *banner;
+
+    static const struct fwk_log_backend backend = {
+        .print = log_backend_print,
+        .flush = log_backend_flush,
+    };
+
+    fwk_assert(fwk_id_is_type(id, FWK_ID_TYPE_MODULE));
+
+    status = fwk_log_register(&backend);
+    fwk_check(status == FWK_SUCCESS);
+
+    banner = log_config->banner;
+
+    while (banner != NULL) {
+        FWK_LOG_CRIT("%s", banner);
+
+        banner = strchr(banner, '\n');
+        if (banner != NULL)
+            banner += 1;
+    }
+
+    FWK_LOG_FLUSH();
 
     return FWK_SUCCESS;
 }
@@ -375,8 +122,7 @@ static int log_process_bind_request(fwk_id_t requester_id, fwk_id_t id,
 const struct fwk_module module_log = {
     .name = "Log",
     .type = FWK_MODULE_TYPE_HAL,
-    .api_count = 1,
     .init = log_init,
     .bind = log_bind,
-    .process_bind_request = log_process_bind_request,
+    .start = log_start,
 };

@@ -1,6 +1,6 @@
 /*
- * Arm SCP/MCP Software
- * Copyright (c) 2015-2019, Arm Limited and Contributors. All rights reserved.
+ * Copyright (c) 2019-2020, Linaro Limited
+ * Copyright (c) 2015-2020, Arm Limited and Contributors. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -29,7 +29,7 @@ static const struct fwk_element service_table[] = {
     [SCMI_SERVICE_IDX_COUNT] = { 0 }
 };
 
-static const struct fwk_element *get_service_table(fwk_id_t module_id)
+static const struct fwk_element *get_scmi_service_table(fwk_id_t module_id)
 {
     return service_table;
 }
@@ -42,7 +42,7 @@ static const struct mod_scmi_agent agent_table[] = {
 };
 
 struct fwk_module_config config_scmi = {
-    .get_element_table = get_service_table,
+    .elements = FWK_MODULE_DYNAMIC_ELEMENTS(get_scmi_service_table),
     .data = &((struct mod_scmi_config) {
         .protocol_count_max = 9,
         .agent_count = FWK_ARRAY_SIZE(agent_table) - 1,

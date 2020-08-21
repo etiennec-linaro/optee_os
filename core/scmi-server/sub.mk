@@ -73,11 +73,11 @@ endef
 $(eval $(call define-if-enable,BUILD_HAS_MULTITHREADING,CFG_SCMI_SERVER_MULTITHREADING))
 $(eval $(call define-if-enable,BUILD_HAS_NOTIFICATION,CFG_SCMI_SERVER_NOTIFICATION))
 
-$(eval $(call define-as-binary,BUILD_HAS_MOD_CLOCK,CFG_SCMI_SERVER_CLOCK))
-$(eval $(call define-as-binary,BUILD_HAS_MOD_POWER_DOMAIN,CFG_SCMI_SERVER_POWER_DOMAIN))
-$(eval $(call define-as-binary,BUILD_HAS_MOD_RESET_DOMAIN,CFG_SCMI_SERVER_RESET_DOMAIN))
-$(eval $(call define-as-binary,BUILD_HAS_MOD_SYSTEM_POWER,CFG_SCMI_SERVER_SYSTEM_POWER))
-$(eval $(call define-as-binary,BUILD_HAS_MOD_TIMER,CFG_SCMI_SERVER_TIMER))
+$(eval $(call define-if-enable,BUILD_HAS_MOD_CLOCK,CFG_SCMI_SERVER_CLOCK))
+$(eval $(call define-if-enable,BUILD_HAS_MOD_POWER_DOMAIN,CFG_SCMI_SERVER_POWER_DOMAIN))
+$(eval $(call define-if-enable,BUILD_HAS_MOD_RESET_DOMAIN,CFG_SCMI_SERVER_RESET_DOMAIN))
+$(eval $(call define-if-enable,BUILD_HAS_MOD_SYSTEM_POWER,CFG_SCMI_SERVER_SYSTEM_POWER))
+$(eval $(call define-if-enable,BUILD_HAS_MOD_TIMER,CFG_SCMI_SERVER_TIMER))
 
 srcs-y += scmi_server.c
 cflags-scmi_server.c-y = -Wno-aggregate-return

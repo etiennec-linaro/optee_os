@@ -8,9 +8,11 @@
  *     SCMI sensor management protocol support.
  */
 
-#include <internal/scmi.h>
 #include <internal/scmi_sensor.h>
 
+#ifdef BUILD_HAS_RESOURCE_PERMISSIONS
+#    include <mod_resource_perms.h>
+#endif
 #include <mod_scmi.h>
 #include <mod_sensor.h>
 
@@ -48,6 +50,11 @@ struct scmi_sensor_ctx {
 
     /* Pointer to a table of sensor operations */
     struct sensor_operations *sensor_ops_table;
+
+#ifdef BUILD_HAS_RESOURCE_PERMISSIONS
+    /* SCMI Resource Permissions API */
+    const struct mod_res_permissions_api *res_perms_api;
+#endif
 };
 
 static int scmi_sensor_protocol_version_handler(fwk_id_t service_id,
@@ -75,26 +82,23 @@ static const fwk_id_t mod_scmi_sensor_event_id_get_request =
 static struct scmi_sensor_ctx scmi_sensor_ctx;
 
 static int (*handler_table[])(fwk_id_t, const uint32_t *) = {
-    [SCMI_PROTOCOL_VERSION] =
-                       scmi_sensor_protocol_version_handler,
-    [SCMI_PROTOCOL_ATTRIBUTES] =
-                       scmi_sensor_protocol_attributes_handler,
-    [SCMI_PROTOCOL_MESSAGE_ATTRIBUTES] =
-                       scmi_sensor_protocol_msg_attributes_handler,
-    [SCMI_SENSOR_DESCRIPTION_GET] =
-                       scmi_sensor_protocol_desc_get_handler,
-    [SCMI_SENSOR_READING_GET] = scmi_sensor_reading_get_handler
+    [MOD_SCMI_PROTOCOL_VERSION] = scmi_sensor_protocol_version_handler,
+    [MOD_SCMI_PROTOCOL_ATTRIBUTES] = scmi_sensor_protocol_attributes_handler,
+    [MOD_SCMI_PROTOCOL_MESSAGE_ATTRIBUTES] =
+        scmi_sensor_protocol_msg_attributes_handler,
+    [MOD_SCMI_SENSOR_DESCRIPTION_GET] = scmi_sensor_protocol_desc_get_handler,
+    [MOD_SCMI_SENSOR_READING_GET] = scmi_sensor_reading_get_handler
 };
 
 static unsigned int payload_size_table[] = {
-    [SCMI_PROTOCOL_VERSION] = 0,
-    [SCMI_PROTOCOL_ATTRIBUTES] = 0,
-    [SCMI_PROTOCOL_MESSAGE_ATTRIBUTES] =
-                       sizeof(struct scmi_protocol_message_attributes_a2p),
-    [SCMI_SENSOR_DESCRIPTION_GET] =
-                       sizeof(struct scmi_sensor_protocol_description_get_a2p),
-    [SCMI_SENSOR_READING_GET] =
-                       sizeof(struct scmi_sensor_protocol_reading_get_a2p),
+    [MOD_SCMI_PROTOCOL_VERSION] = 0,
+    [MOD_SCMI_PROTOCOL_ATTRIBUTES] = 0,
+    [MOD_SCMI_PROTOCOL_MESSAGE_ATTRIBUTES] =
+        sizeof(struct scmi_protocol_message_attributes_a2p),
+    [MOD_SCMI_SENSOR_DESCRIPTION_GET] =
+        sizeof(struct scmi_sensor_protocol_description_get_a2p),
+    [MOD_SCMI_SENSOR_READING_GET] =
+        sizeof(struct scmi_sensor_protocol_reading_get_a2p),
 };
 
 /*
@@ -209,7 +213,7 @@ static int scmi_sensor_protocol_desc_get_handler(fwk_id_t service_id,
 
     if (SCMI_SENSOR_DESCS_MAX(max_payload_size) == 0) {
         /* Can't even fit one sensor description in the payload */
-        assert(false);
+        fwk_unexpected();
         status = FWK_E_SIZE;
         goto exit;
     }
@@ -238,7 +242,7 @@ static int scmi_sensor_protocol_desc_get_handler(fwk_id_t service_id,
         sensor_id = FWK_ID_ELEMENT(FWK_MODULE_IDX_SENSOR, desc_index);
         if (!fwk_module_is_valid_element_id(sensor_id)) {
             /* domain_idx did not map to a sensor device */
-            assert(false);
+            fwk_unexpected();
             return_values.status = SCMI_NOT_FOUND;
             goto exit;
         }
@@ -246,13 +250,13 @@ static int scmi_sensor_protocol_desc_get_handler(fwk_id_t service_id,
         status = scmi_sensor_ctx.sensor_api->get_info(sensor_id, &sensor_info);
         if (status != FWK_SUCCESS) {
             /* Unable to get sensor info */
-            assert(false);
+            fwk_unexpected();
             goto exit;
         }
 
         if (sensor_info.type >= MOD_SENSOR_TYPE_COUNT) {
             /* Invalid sensor type */
-            assert(false);
+            fwk_unexpected();
             goto exit;
         }
 
@@ -262,7 +266,7 @@ static int scmi_sensor_protocol_desc_get_handler(fwk_id_t service_id,
              SCMI_SENSOR_DESC_ATTRS_HIGH_SENSOR_UNIT_MULTIPLIER_MAX)) {
 
             /* Sensor unit multiplier out of range */
-            assert(false);
+            fwk_unexpected();
             goto exit;
         }
 
@@ -272,7 +276,7 @@ static int scmi_sensor_protocol_desc_get_handler(fwk_id_t service_id,
              SCMI_SENSOR_DESC_ATTRS_HIGH_SENSOR_UPDATE_MULTIPLIER_MAX)) {
 
             /* Sensor update interval multiplier is out of range */
-            assert(false);
+            fwk_unexpected();
             goto exit;
         }
 
@@ -280,7 +284,7 @@ static int scmi_sensor_protocol_desc_get_handler(fwk_id_t service_id,
             SCMI_SENSOR_DESC_ATTRS_HIGH_SENSOR_UPDATE_INTERVAL_MASK) {
 
             /* Update interval is too big to fit in its mask */
-            assert(false);
+            fwk_unexpected();
             goto exit;
         }
 
@@ -302,7 +306,7 @@ static int scmi_sensor_protocol_desc_get_handler(fwk_id_t service_id,
             payload_size, &desc, sizeof(struct scmi_sensor_desc));
         if (status != FWK_SUCCESS) {
             /* Failed to write sensor description into message payload */
-            assert(false);
+            fwk_unexpected();
             goto exit;
         }
     }
@@ -348,8 +352,14 @@ static int scmi_sensor_reading_get_handler(fwk_id_t service_id,
         goto exit;
     }
 
-    /* Reject asynchronous read requests for now */
     flags = parameters->flags;
+    if ((flags & ~SCMI_SENSOR_PROTOCOL_READING_GET_ASYNC_FLAG_MASK) != 0) {
+        return_values.status = SCMI_INVALID_PARAMETERS;
+        status = FWK_SUCCESS;
+        goto exit;
+    }
+
+    /* Reject asynchronous read requests for now */
     if (flags & SCMI_SENSOR_PROTOCOL_READING_GET_ASYNC_FLAG_MASK) {
         return_values.status = SCMI_NOT_SUPPORTED;
         status = FWK_SUCCESS;
@@ -405,10 +415,63 @@ exit:
 static int scmi_sensor_get_scmi_protocol_id(fwk_id_t protocol_id,
                                             uint8_t *scmi_protocol_id)
 {
-    *scmi_protocol_id = SCMI_PROTOCOL_ID_SENSOR;
+    *scmi_protocol_id = MOD_SCMI_PROTOCOL_ID_SENSOR;
 
     return FWK_SUCCESS;
 }
+
+/*
+ * SCMI Resource Permissions handler
+ */
+#ifdef BUILD_HAS_RESOURCE_PERMISSIONS
+static unsigned int get_sensor_id(const uint32_t *payload)
+{
+    /*
+     * Every SCMI Performance message is formatted with the sensor ID
+     * as the first message element. We will use the reading_get
+     * message as a basic format to retrieve the sensor ID to avoid
+     * unnecessary code.
+     */
+    const struct scmi_sensor_protocol_reading_get_a2p *parameters =
+        (const struct scmi_sensor_protocol_reading_get_a2p *)payload;
+    return parameters->sensor_id;
+}
+
+static int scmi_sensor_permissions_handler(
+    fwk_id_t service_id,
+    const uint32_t *payload,
+    size_t payload_size,
+    unsigned int message_id)
+{
+    enum mod_res_perms_permissions perms;
+    unsigned int agent_id, sensor_id;
+    int status;
+
+    status = scmi_sensor_ctx.scmi_api->get_agent_id(service_id, &agent_id);
+    if (status != FWK_SUCCESS)
+        return FWK_E_ACCESS;
+
+    if (message_id < 3) {
+        perms = scmi_sensor_ctx.res_perms_api->agent_has_protocol_permission(
+            agent_id, MOD_SCMI_PROTOCOL_ID_SENSOR);
+        if (perms == MOD_RES_PERMS_ACCESS_ALLOWED)
+            return FWK_SUCCESS;
+        return FWK_E_ACCESS;
+    }
+
+    sensor_id = get_sensor_id(payload);
+    if (sensor_id >= scmi_sensor_ctx.sensor_count)
+        return FWK_E_PARAM;
+
+    perms = scmi_sensor_ctx.res_perms_api->agent_has_resource_permission(
+        agent_id, MOD_SCMI_PROTOCOL_ID_SENSOR, message_id, sensor_id);
+
+    if (perms == MOD_RES_PERMS_ACCESS_ALLOWED)
+        return FWK_SUCCESS;
+    else
+        return FWK_E_ACCESS;
+}
+#endif
 
 static int scmi_sensor_message_handler(fwk_id_t protocol_id,
                                        fwk_id_t service_id,
@@ -417,14 +480,17 @@ static int scmi_sensor_message_handler(fwk_id_t protocol_id,
                                        unsigned int message_id)
 {
     int32_t return_value;
+#ifdef BUILD_HAS_RESOURCE_PERMISSIONS
+    int status;
+#endif
 
     static_assert(FWK_ARRAY_SIZE(handler_table) ==
         FWK_ARRAY_SIZE(payload_size_table),
         "[SCMI] Sensor management protocol table sizes not consistent");
-    assert(payload != NULL);
+    fwk_assert(payload != NULL);
 
     if (message_id >= FWK_ARRAY_SIZE(handler_table)) {
-        return_value = SCMI_NOT_SUPPORTED;
+        return_value = SCMI_NOT_FOUND;
         goto error;
     }
 
@@ -433,6 +499,20 @@ static int scmi_sensor_message_handler(fwk_id_t protocol_id,
         return_value = SCMI_PROTOCOL_ERROR;
         goto error;
     }
+
+#ifdef BUILD_HAS_RESOURCE_PERMISSIONS
+    status = scmi_sensor_permissions_handler(
+        service_id, payload, payload_size, message_id);
+    if (status != FWK_SUCCESS) {
+        if (status == FWK_E_ACCESS)
+            return_value = SCMI_DENIED;
+        else if (message_id == MOD_SCMI_SENSOR_DESCRIPTION_GET)
+            return_value = SCMI_INVALID_PARAMETERS;
+        else
+            return_value = SCMI_NOT_FOUND;
+        goto error;
+    }
+#endif
 
     return handler_table[message_id](service_id, payload);
 
@@ -456,7 +536,7 @@ static int scmi_sensor_init(fwk_id_t module_id,
 {
     if (element_count != 0) {
         /* This module should not have any elements */
-        assert(false);
+        fwk_unexpected();
         return FWK_E_SUPPORT;
     }
 
@@ -495,7 +575,7 @@ static int scmi_sensor_bind(fwk_id_t id, unsigned int round)
                              &scmi_sensor_ctx.scmi_api);
     if (status != FWK_SUCCESS) {
         /* Failed to bind to SCMI module */
-        assert(false);
+        fwk_unexpected();
         return status;
     }
 
@@ -504,9 +584,18 @@ static int scmi_sensor_bind(fwk_id_t id, unsigned int round)
                              &scmi_sensor_ctx.sensor_api);
     if (status != FWK_SUCCESS) {
         /* Failed to bind to sensor module */
-        assert(false);
+        fwk_unexpected();
         return status;
     }
+
+#ifdef BUILD_HAS_RESOURCE_PERMISSIONS
+    status = fwk_module_bind(
+        FWK_ID_MODULE(FWK_MODULE_IDX_RESOURCE_PERMS),
+        FWK_ID_API(FWK_MODULE_IDX_RESOURCE_PERMS, MOD_RES_PERM_RESOURCE_PERMS),
+        &scmi_sensor_ctx.res_perms_api);
+    if (status != FWK_SUCCESS)
+        return status;
+#endif
 
     return FWK_SUCCESS;
 }

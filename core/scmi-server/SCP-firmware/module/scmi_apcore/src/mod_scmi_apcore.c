@@ -8,7 +8,6 @@
  *     SCMI Core Configuration Protocol Support.
  */
 
-#include <internal/scmi.h>
 #include <internal/scmi_apcore.h>
 
 #include <mod_scmi.h>
@@ -55,23 +54,23 @@ static int scmi_apcore_reset_address_get_handler(fwk_id_t service_id,
  */
 static struct scmi_apcore_ctx scmi_apcore_ctx;
 
-static int (* const handler_table[])(fwk_id_t, const uint32_t *) = {
-    [SCMI_PROTOCOL_VERSION] = scmi_apcore_protocol_version_handler,
-    [SCMI_PROTOCOL_ATTRIBUTES] = scmi_apcore_protocol_attributes_handler,
-    [SCMI_PROTOCOL_MESSAGE_ATTRIBUTES] =
+static int (*const handler_table[])(fwk_id_t, const uint32_t *) = {
+    [MOD_SCMI_PROTOCOL_VERSION] = scmi_apcore_protocol_version_handler,
+    [MOD_SCMI_PROTOCOL_ATTRIBUTES] = scmi_apcore_protocol_attributes_handler,
+    [MOD_SCMI_PROTOCOL_MESSAGE_ATTRIBUTES] =
         scmi_apcore_protocol_message_attributes_handler,
-    [SCMI_APCORE_RESET_ADDRESS_SET] = scmi_apcore_reset_address_set_handler,
-    [SCMI_APCORE_RESET_ADDRESS_GET] = scmi_apcore_reset_address_get_handler,
+    [MOD_SCMI_APCORE_RESET_ADDRESS_SET] = scmi_apcore_reset_address_set_handler,
+    [MOD_SCMI_APCORE_RESET_ADDRESS_GET] = scmi_apcore_reset_address_get_handler,
 };
 
 static const unsigned int payload_size_table[] = {
-    [SCMI_PROTOCOL_VERSION] = 0,
-    [SCMI_PROTOCOL_ATTRIBUTES] = 0,
-    [SCMI_PROTOCOL_MESSAGE_ATTRIBUTES] =
+    [MOD_SCMI_PROTOCOL_VERSION] = 0,
+    [MOD_SCMI_PROTOCOL_ATTRIBUTES] = 0,
+    [MOD_SCMI_PROTOCOL_MESSAGE_ATTRIBUTES] =
         sizeof(struct scmi_protocol_message_attributes_a2p),
-    [SCMI_APCORE_RESET_ADDRESS_SET] =
+    [MOD_SCMI_APCORE_RESET_ADDRESS_SET] =
         sizeof(struct scmi_apcore_reset_address_set_a2p),
-    [SCMI_APCORE_RESET_ADDRESS_GET] = 0,
+    [MOD_SCMI_APCORE_RESET_ADDRESS_GET] = 0,
 };
 
 /*
@@ -94,7 +93,7 @@ static int set_reset_address(uint32_t address_low, uint32_t address_high)
 
         reg_group =
             &scmi_apcore_ctx.config->reset_register_group_table[grp_idx];
-        assert(reg_group->base_register != 0);
+        fwk_assert(reg_group->base_register != 0);
 
         /* Begin with the first register in the group */
         reset_reg = reg_group->base_register;
@@ -125,7 +124,7 @@ static int scmi_apcore_protocol_version_handler(fwk_id_t service_id,
 {
     struct scmi_protocol_version_p2a return_values = {
         .status = SCMI_SUCCESS,
-        .version = SCMI_PROTOCOL_VERSION_APCORE,
+        .version = MOD_SCMI_PROTOCOL_VERSION_APCORE,
     };
 
     scmi_apcore_ctx.scmi_api->respond(
@@ -146,7 +145,8 @@ static int scmi_apcore_protocol_attributes_handler(fwk_id_t service_id,
 
     if (scmi_apcore_ctx.config->reset_register_width ==
         MOD_SCMI_APCORE_REG_WIDTH_64)
-        return_values.attributes |= SCMI_APCORE_PROTOCOL_ATTRIBUTES_64BIT_MASK;
+        return_values.attributes |=
+            MOD_SCMI_APCORE_PROTOCOL_ATTRIBUTES_64BIT_MASK;
 
     scmi_apcore_ctx.scmi_api->respond(
         service_id,
@@ -254,7 +254,7 @@ static int scmi_apcore_reset_address_set_handler(fwk_id_t service_id,
     return_values.status = SCMI_SUCCESS;
 
     /* Lock the configuration if requested */
-    if (parameters->attributes & SCMI_APCORE_RESET_ADDRESS_SET_LOCK_MASK)
+    if (parameters->attributes & MOD_SCMI_APCORE_RESET_ADDRESS_SET_LOCK_MASK)
         scmi_apcore_ctx.locked = true;
 
 exit:
@@ -307,7 +307,7 @@ static int scmi_apcore_reset_address_get_handler(fwk_id_t service_id,
     return_values.reset_address_low = (uint32_t)reset_address;
 
     return_values.attributes |=
-        (scmi_apcore_ctx.locked << SCMI_APCORE_RESET_ADDRESS_GET_LOCK_POS);
+        (scmi_apcore_ctx.locked << MOD_SCMI_APCORE_RESET_ADDRESS_GET_LOCK_POS);
     return_values.status = SCMI_SUCCESS;
 
 exit:
@@ -322,7 +322,7 @@ exit:
 static int scmi_apcore_get_scmi_protocol_id(fwk_id_t protocol_id,
     uint8_t *scmi_protocol_id)
 {
-    *scmi_protocol_id = SCMI_PROTOCOL_ID_APCORE;
+    *scmi_protocol_id = MOD_SCMI_PROTOCOL_ID_APCORE;
 
     return FWK_SUCCESS;
 }
@@ -339,10 +339,10 @@ static int scmi_apcore_message_handler(
     static_assert(FWK_ARRAY_SIZE(handler_table) ==
         FWK_ARRAY_SIZE(payload_size_table),
         "[SCMI] Core configuration protocol table sizes not consistent");
-    assert(payload != NULL);
+    fwk_assert(payload != NULL);
 
     if (message_id >= FWK_ARRAY_SIZE(handler_table)) {
-        return_value = SCMI_NOT_SUPPORTED;
+        return_value = SCMI_NOT_FOUND;
         goto error;
     }
 

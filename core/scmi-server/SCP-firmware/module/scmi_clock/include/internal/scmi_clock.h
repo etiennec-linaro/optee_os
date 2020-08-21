@@ -13,7 +13,6 @@
 
 #include <mod_clock.h>
 
-#define SCMI_PROTOCOL_ID_CLOCK      UINT32_C(0x14)
 #define SCMI_PROTOCOL_VERSION_CLOCK UINT32_C(0x10000)
 
 /*
@@ -70,20 +69,9 @@ struct event_request_params {
 };
 
 /*
- * Identifiers of the SCMI Clock Management Protocol commands
- */
-enum scmi_clock_command_id {
-    SCMI_CLOCK_ATTRIBUTES =     0x003,
-    SCMI_CLOCK_DESCRIBE_RATES = 0x004,
-    SCMI_CLOCK_RATE_SET =       0x005,
-    SCMI_CLOCK_RATE_GET =       0x006,
-    SCMI_CLOCK_CONFIG_SET =     0x007,
-};
-
-/*
  * Generic p2a
  */
-struct __attribute((packed)) scmi_clock_generic_p2a {
+struct scmi_clock_generic_p2a {
     int32_t status;
 };
 
@@ -124,13 +112,13 @@ struct __attribute((packed)) scmi_clock_generic_p2a {
             SCMI_CLOCK_ATTRIBUTES_ENABLED_MASK) \
     )
 
-struct __attribute((packed)) scmi_clock_attributes_a2p {
+struct scmi_clock_attributes_a2p {
     uint32_t clock_id;
 };
 
 #define SCMI_CLOCK_NAME_LENGTH_MAX 16
 
-struct __attribute((packed)) scmi_clock_attributes_p2a {
+struct scmi_clock_attributes_p2a {
     int32_t status;
     uint32_t attributes;
     char clock_name[SCMI_CLOCK_NAME_LENGTH_MAX];
@@ -140,11 +128,11 @@ struct __attribute((packed)) scmi_clock_attributes_p2a {
  * Clock Rate Get
  */
 
-struct __attribute((packed)) scmi_clock_rate_get_a2p {
+struct scmi_clock_rate_get_a2p {
     uint32_t clock_id;
 };
 
-struct __attribute((packed)) scmi_clock_rate_get_p2a {
+struct scmi_clock_rate_get_p2a {
     int32_t status;
     uint32_t rate[2];
 };
@@ -171,13 +159,13 @@ struct __attribute((packed)) scmi_clock_rate_get_p2a {
 #define SCMI_CLOCK_RATE_SET_ROUND_AUTO_MASK \
     (UINT32_C(0x1) << SCMI_CLOCK_RATE_SET_ROUND_AUTO_POS)
 
-struct __attribute((packed)) scmi_clock_rate_set_a2p {
+struct scmi_clock_rate_set_a2p {
     uint32_t flags;
     uint32_t clock_id;
     uint32_t rate[2];
 };
 
-struct __attribute((packed)) scmi_clock_rate_set_p2a {
+struct scmi_clock_rate_set_p2a {
     int32_t status;
 };
 
@@ -190,12 +178,12 @@ struct __attribute((packed)) scmi_clock_rate_set_p2a {
 #define SCMI_CLOCK_CONFIG_SET_ENABLE_MASK \
     (UINT32_C(0x1) << SCMI_CLOCK_CONFIG_SET_ENABLE_POS)
 
-struct __attribute((packed)) scmi_clock_config_set_a2p {
+struct scmi_clock_config_set_a2p {
     uint32_t clock_id;
     uint32_t attributes;
 };
 
-struct __attribute((packed)) scmi_clock_config_set_p2a {
+struct scmi_clock_config_set_p2a {
     int32_t status;
 };
 
@@ -234,17 +222,17 @@ struct __attribute((packed)) scmi_clock_config_set_p2a {
      (((MAILBOX_SIZE) - sizeof(struct scmi_clock_describe_rates_p2a))   \
         / sizeof(struct scmi_clock_rate)) : 0)
 
-struct __attribute((packed)) scmi_clock_rate {
+struct scmi_clock_rate {
     uint32_t low;
     uint32_t high;
 };
 
-struct __attribute((packed)) scmi_clock_describe_rates_a2p {
+struct scmi_clock_describe_rates_a2p {
     uint32_t clock_id;
     uint32_t rate_index;
 };
 
-struct __attribute((packed)) scmi_clock_describe_rates_p2a {
+struct scmi_clock_describe_rates_p2a {
     int32_t status;
     uint32_t num_rates_flags;
     struct scmi_clock_rate rates[];

@@ -31,45 +31,9 @@ static struct stm32_reset_ctx module_ctx;
 /*
  * Driver API functions
  */
-static int reset_assert(fwk_id_t dev_id)
-{
-    struct stm32_reset_dev_ctx *ctx = NULL;
 
-    if (!fwk_module_is_valid_element_id(dev_id))
-        return FWK_E_PARAM;
-
-    ctx = &module_ctx.dev_ctx_table[fwk_id_get_element_idx(dev_id)];
-
-    if (!stm32mp_nsec_can_access_reset(ctx->reset_id))
-        return FWK_E_ACCESS;
-
-    IMSG("SCMI reset assert %lu", ctx->reset_id);
-
-    (void)stm32_reset_assert(ctx->reset_id, 0);
-
-    return FWK_SUCCESS;
-}
-
-static int reset_deassert(fwk_id_t dev_id)
-{
-    struct stm32_reset_dev_ctx *ctx = NULL;
-
-    if (!fwk_module_is_valid_element_id(dev_id))
-        return FWK_E_PARAM;
-
-    ctx = &module_ctx.dev_ctx_table[fwk_id_get_element_idx(dev_id)];
-
-    if (!stm32mp_nsec_can_access_reset(ctx->reset_id))
-        return FWK_E_ACCESS;
-
-    IMSG("SCMI reset deassert %lu", ctx->reset_id);
-
-    (void)stm32_reset_deassert(ctx->reset_id, 0);
-
-    return FWK_SUCCESS;
-}
-
-static int reset_autonomous(fwk_id_t dev_id, unsigned int state)
+static int reset_set_state(fwk_id_t dev_id, enum mod_reset_domain_mode mode,
+			   uint32_t reset_state, uintptr_t cookie)
 {
     struct stm32_reset_dev_ctx *ctx = NULL;
     int status = FWK_SUCCESS;
@@ -82,25 +46,37 @@ static int reset_autonomous(fwk_id_t dev_id, unsigned int state)
     if (!stm32mp_nsec_can_access_reset(ctx->reset_id))
         return FWK_E_ACCESS;
 
-    IMSG("SCMI reset deassert %lu", ctx->reset_id);
-
     /* Supports only full reset with context loss */
-    if (state)
-	    return FWK_E_PARAM;
+    if (reset_state)
+        return FWK_E_PARAM;
 
-    if (stm32_reset_assert(ctx->reset_id, TIMEOUT_US_1MS))
-	status = FWK_E_TIMEOUT;
-
-    if (stm32_reset_deassert(ctx->reset_id, TIMEOUT_US_1MS))
-	status = FWK_E_TIMEOUT;
+    switch (mode) {
+    case MOD_RESET_DOMAIN_MODE_EXPLICIT_ASSERT:
+	IMSG("SCMI reset %u: assert", fwk_id_get_element_idx(dev_id));
+        (void)stm32_reset_assert(ctx->reset_id, 0);
+        break;
+    case MOD_RESET_DOMAIN_MODE_EXPLICIT_DEASSERT:
+	IMSG("SCMI reset %u: deassert", fwk_id_get_element_idx(dev_id));
+        (void)stm32_reset_assert(ctx->reset_id, 0);
+        break;
+    case MOD_RESET_DOMAIN_AUTO_RESET:
+	IMSG("SCMI reset %u: cycle", fwk_id_get_element_idx(dev_id));
+        if (stm32_reset_assert(ctx->reset_id, TIMEOUT_US_1MS)) {
+            status = FWK_E_TIMEOUT;
+	}
+        if (stm32_reset_deassert(ctx->reset_id, TIMEOUT_US_1MS)) {
+            status = FWK_E_TIMEOUT;
+	}
+        break;
+    default:
+        return FWK_E_PARAM;
+    }
 
     return status;
 }
 
 static const struct mod_reset_domain_drv_api api_stm32_reset = {
-    .assert_domain = reset_assert,
-    .deassert_domain = reset_deassert,
-    .auto_domain = reset_autonomous,
+    .set_reset_state = reset_set_state,
 };
 
 /*

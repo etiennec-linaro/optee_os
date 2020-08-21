@@ -150,7 +150,7 @@
  * \return The smallest value from a and b. If both are equal, b is returned.
  */
 #define FWK_MIN(a, b) \
-    __extension__({ \
+    ({ \
         __auto_type _a = (a); \
         __auto_type _b = (b); \
         _a < _b ? _a : _b; \
@@ -169,7 +169,7 @@
  * \return The largest value from a and b. If both are equal, b is returned.
  */
 #define FWK_MAX(a, b) \
-    __extension__({ \
+    ({ \
         __auto_type _a = (a); \
         __auto_type _b = (b); \
         _a > _b ? _a : _b; \
@@ -346,6 +346,28 @@
  */
 #define FWK_MAP(MACRO, ...) \
     __FWK_MAP(FWK_COUNT_ARGS(__VA_ARGS__), MACRO, __VA_ARGS__)
+
+/*!
+ * \def FWK_HAS_INCLUDE
+ *
+ * \brief Check whether a header file with a given name exists.
+ *
+ * \details This macro uses the `__has_include` compiler extension to check
+ *      whether a given header file exists and can be included. The header
+ *      name is given by its `include` directive form (`"x.h"` or `<x.h>`).
+ *
+ * \param[in] HEADER Header name.
+ *
+ * \return An expression usable in a preprocessor `if` or `elif` expression
+ *      determining whether the header exists, or `1` if the compiler does not
+ *      support the `__has_include` extension.
+ */
+
+#ifdef __has_include
+#    define FWK_HAS_INCLUDE(HEADER) __has_include(HEADER)
+#else
+#    define FWK_HAS_INCLUDE(HEADER) 1
+#endif
 
 /*!
  * @}

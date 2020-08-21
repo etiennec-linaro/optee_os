@@ -139,8 +139,8 @@ static void get_ctx(fwk_id_t clock_id, struct clock_dev_ctx **ctx)
  * Driver response API.
  */
 
-void request_complete(fwk_id_t dev_id,
-                      struct mod_clock_driver_resp_params *response)
+static void request_complete(fwk_id_t dev_id,
+                             struct mod_clock_driver_resp_params *response)
 {
     int status;
     struct fwk_event event;
@@ -421,7 +421,7 @@ static int clock_process_bind_request(fwk_id_t source_id, fwk_id_t target_id,
 
         return FWK_SUCCESS;
 
-#if defined(BUILD_HAS_NOTIFICATION)
+#ifdef BUILD_HAS_NOTIFICATION
     case MOD_CLOCK_API_TYPE_DRIVER_RESPONSE:
         if (!fwk_id_is_type(target_id, FWK_ID_TYPE_ELEMENT))
             return FWK_E_PARAM;
@@ -442,7 +442,6 @@ static int clock_process_bind_request(fwk_id_t source_id, fwk_id_t target_id,
 }
 
 #ifdef BUILD_HAS_NOTIFICATION
-
 static int clock_process_pd_pre_transition_notification(
     struct clock_dev_ctx *ctx,
     const struct fwk_event *event,
@@ -634,12 +633,8 @@ static int clock_process_notification(
 static int clock_process_event(const struct fwk_event *event,
                                struct fwk_event *resp_event)
 {
-    enum clock_event_idx event_idx;
-
     if (!fwk_module_is_valid_element_id(event->target_id))
         return FWK_E_PARAM;
-
-    event_idx = fwk_id_get_event_idx(event->id);
 
     switch (fwk_id_get_event_idx(event->id)) {
     case MOD_CLOCK_EVENT_IDX_SET_RATE_REQUEST:

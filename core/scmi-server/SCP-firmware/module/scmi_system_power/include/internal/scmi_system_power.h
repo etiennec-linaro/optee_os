@@ -10,16 +10,10 @@
 
 #include <stdint.h>
 
-#define SCMI_PROTOCOL_ID_SYS_POWER      UINT32_C(0x12)
 #define SCMI_PROTOCOL_VERSION_SYS_POWER UINT32_C(0x10000)
 
-/*
- * Identifiers of the SCMI System Power Management Protocol commands
- */
-enum scmi_sys_power_command_id {
-    SCMI_SYS_POWER_STATE_SET    = 0x003,
-    SCMI_SYS_POWER_STATE_GET    = 0x004,
-    SCMI_SYS_POWER_STATE_NOTIFY = 0x005,
+enum scmi_sys_power_notification_id {
+    SCMI_SYS_POWER_STATE_SET_NOTIFY = 0x000,
 };
 
 /*
@@ -44,12 +38,12 @@ enum scmi_system_state {
     SCMI_SYSTEM_STATE_MAX
 };
 
-struct __attribute((packed)) scmi_sys_power_state_set_a2p {
+struct scmi_sys_power_state_set_a2p {
     uint32_t flags;
     uint32_t system_state;
 };
 
-struct __attribute((packed)) scmi_sys_power_state_set_p2a {
+struct scmi_sys_power_state_set_p2a {
     int32_t status;
 };
 
@@ -57,7 +51,7 @@ struct __attribute((packed)) scmi_sys_power_state_set_p2a {
  * SYSTEM_POWER_STATE_GET
  */
 
-struct __attribute((packed)) scmi_sys_power_state_get_p2a {
+struct scmi_sys_power_state_get_p2a {
     int32_t status;
     uint32_t system_state;
 };
@@ -68,11 +62,11 @@ struct __attribute((packed)) scmi_sys_power_state_get_p2a {
 
 #define STATE_NOTIFY_FLAGS_MASK 0x1
 
-struct __attribute((packed)) scmi_sys_power_state_notify_a2p {
+struct scmi_sys_power_state_notify_a2p {
     uint32_t flags;
 };
 
-struct __attribute((packed)) scmi_sys_power_state_notify_p2a {
+struct scmi_sys_power_state_notify_p2a {
     int32_t status;
 };
 
@@ -80,8 +74,9 @@ struct __attribute((packed)) scmi_sys_power_state_notify_p2a {
  * SYSTEM_POWER_STATE_NOTIFIER
  */
 
-struct __attribute((packed)) scmi_sys_power_state_notifier_p2a {
+struct scmi_sys_power_state_notifier {
     uint32_t agent_id;
+    uint32_t flags;
     uint32_t system_state;
 };
 

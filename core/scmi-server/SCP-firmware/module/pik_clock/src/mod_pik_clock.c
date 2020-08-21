@@ -523,7 +523,7 @@ static const struct mod_clock_drv_api api_clock = {
  * Direct driver API functions
  */
 
-#if BUILD_HAS_MOD_CSS_CLOCK
+#ifdef BUILD_HAS_MOD_CSS_CLOCK
 static int pik_clock_direct_set_div(fwk_id_t clock_id, uint32_t divider_type,
                                     uint32_t divider)
 {
@@ -531,7 +531,7 @@ static int pik_clock_direct_set_div(fwk_id_t clock_id, uint32_t divider_type,
     struct pik_clock_dev_ctx *ctx;
 
     ctx = module_ctx.dev_ctx_table + fwk_id_get_element_idx(clock_id);
-    assert(ctx->config->is_group_member);
+    fwk_assert(ctx->config->is_group_member);
 
     if (ctx->current_state == MOD_CLOCK_STATE_STOPPED)
         return FWK_E_PWRSTATE;
@@ -557,7 +557,7 @@ static int pik_clock_direct_set_source(fwk_id_t clock_id, uint8_t source)
     struct pik_clock_dev_ctx *ctx;
 
     ctx = module_ctx.dev_ctx_table + fwk_id_get_element_idx(clock_id);
-    assert(ctx->config->is_group_member);
+    fwk_assert(ctx->config->is_group_member);
 
     if (ctx->current_state == MOD_CLOCK_STATE_STOPPED)
         return FWK_E_PWRSTATE;
@@ -571,7 +571,7 @@ static int pik_clock_direct_set_mod(fwk_id_t clock_id, uint32_t numerator,
     struct pik_clock_dev_ctx *ctx;
 
     ctx = module_ctx.dev_ctx_table + fwk_id_get_element_idx(clock_id);
-    assert(ctx->config->is_group_member);
+    fwk_assert(ctx->config->is_group_member);
 
     if (ctx->current_state == MOD_CLOCK_STATE_STOPPED)
         return FWK_E_PWRSTATE;
@@ -696,17 +696,17 @@ static int pik_clock_process_bind_request(fwk_id_t source_id,
     ctx = module_ctx.dev_ctx_table + fwk_id_get_element_idx(target_id);
 
     if (ctx->config->is_group_member) {
-        #if BUILD_HAS_MOD_CSS_CLOCK
-            /* Only the CSS Clock module can bind to group members. */
-            if (fwk_id_get_module_idx(source_id) == FWK_MODULE_IDX_CSS_CLOCK) {
-                *api = &api_direct;
-                return FWK_SUCCESS;
-            } else
-                return FWK_E_ACCESS;
-        #else
-            /* The CSS Clock module is required to support group members. */
-            return FWK_E_SUPPORT;
-        #endif
+#ifdef BUILD_HAS_MOD_CSS_CLOCK
+        /* Only the CSS Clock module can bind to group members. */
+        if (fwk_id_get_module_idx(source_id) == FWK_MODULE_IDX_CSS_CLOCK) {
+            *api = &api_direct;
+            return FWK_SUCCESS;
+        } else
+            return FWK_E_ACCESS;
+#else
+        /* The CSS Clock module is required to support group members. */
+        return FWK_E_SUPPORT;
+#endif
     } else
         *api = &api_clock;
 

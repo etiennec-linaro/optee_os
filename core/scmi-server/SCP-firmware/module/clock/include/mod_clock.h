@@ -32,7 +32,7 @@
  */
 enum mod_clock_state {
     /*! The clock is stopped */
-    MOD_CLOCK_STATE_STOPPED,
+    MOD_CLOCK_STATE_STOPPED = 0,
 
     /*! The clock is running */
     MOD_CLOCK_STATE_RUNNING,
@@ -55,7 +55,7 @@ enum mod_clock_notification_idx {
     MOD_CLOCK_NOTIFICATION_IDX_COUNT
 };
 
-#if BUILD_HAS_MOD_CLOCK
+#ifdef BUILD_HAS_MOD_CLOCK
 /*!
  * \brief Identifier for the \ref MOD_CLOCK_NOTIFICATION_IDX_STATE_CHANGED
  *     notification.

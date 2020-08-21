@@ -145,6 +145,9 @@ int fwk_thread_get_first_delayed_response(fwk_id_t id, struct fwk_event *event);
 /*!
  * @}
  */
+#ifdef BUILD_OPTEE
+/* Added: set a context for processing messages from device @id */
 void fwk_set_thread_ctx(fwk_id_t id);
+#endif
 
 #endif /* FWK_THREAD_H */

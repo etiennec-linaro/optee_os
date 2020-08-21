@@ -6,7 +6,6 @@
  */
 
 #include <cmsis_os2.h>
-#include <rtx_os.h>
 
 #include <internal/fwk_id.h>
 #include <internal/fwk_module.h>
@@ -29,16 +28,17 @@
 #include <fwk_status.h>
 #include <fwk_thread.h>
 
+#include <inttypes.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
 
-#if __has_include(<fmw_memory.h>)
+#if FWK_HAS_INCLUDE(<fmw_memory.h>)
 #    include <fmw_memory.h>
 #endif
 
-#ifndef FIRMWARE_STACK_SIZE
-#    define FIRMWARE_STACK_SIZE 1536
+#ifndef FMW_STACK_SIZE
+#    define FMW_STACK_SIZE 1536
 #endif
 
 #define SIGNAL_ISR_EVENT 0x01
@@ -61,29 +61,6 @@ static const char __maybe_unused err_msg_func[] = "[FWK] Error %d in %s";
 /*
  * Static functions
  */
-
-/*
- * Initialize the attributes of thread.
- *
- * \param[out] attr Thread's attributes.
- *
- * \retval FWK_SUCCESS The initialization succeeded.
- * \retval FWK_E_NOMEM A memory allocation failed.
- */
-static int init_thread_attr(osThreadAttr_t *attr)
-{
-    attr->name = "";
-    attr->attr_bits = osThreadDetached;
-    attr->cb_size = osRtxThreadCbSize;
-    attr->cb_mem = fwk_mm_calloc(1, attr->cb_size);
-
-    attr->stack_size = FIRMWARE_STACK_SIZE;
-    attr->stack_mem = fwk_mm_calloc(1, attr->stack_size);
-
-    attr->priority = osPriorityNormal;
-
-    return FWK_SUCCESS;
-}
 
 /*
  * Put back an event into the queue of free events.
@@ -113,7 +90,7 @@ static struct fwk_event *duplicate_event(struct fwk_event *event)
 {
     struct fwk_event *allocated_event;
 
-    assert(event != NULL);
+    fwk_assert(event != NULL);
 
     fwk_interrupt_global_disable();
     allocated_event = FWK_LIST_GET(fwk_list_pop_head(&ctx.event_free_queue),
@@ -128,7 +105,7 @@ static struct fwk_event *duplicate_event(struct fwk_event *event)
         return allocated_event;
     }
 
-    assert(false);
+    fwk_unexpected();
     FWK_LOG_CRIT(err_msg_func, FWK_E_NOMEM, __func__);
     return NULL;
 }
@@ -146,7 +123,7 @@ static struct __fwk_thread_ctx *thread_get_ctx(fwk_id_t id)
     struct fwk_element_ctx *element_ctx;
 
     if (fwk_module_is_valid_element_id(id)) {
-        element_ctx = __fwk_module_get_element_ctx(id);
+        element_ctx = fwk_module_get_element_ctx(id);
         if (element_ctx->thread_ctx != NULL)
             return element_ctx->thread_ctx;
         else
@@ -154,7 +131,7 @@ static struct __fwk_thread_ctx *thread_get_ctx(fwk_id_t id)
     }
 
     if (fwk_module_is_valid_module_id(id)) {
-        module_ctx = __fwk_module_get_ctx(id);
+        module_ctx = fwk_module_get_ctx(id);
         return (module_ctx->thread_ctx != NULL) ?
                module_ctx->thread_ctx : &ctx.common_thread_ctx;
     }
@@ -293,6 +270,13 @@ static int put_event(struct __fwk_thread_ctx *target_thread_ctx,
                                &target_thread_ctx->slist_node);
     }
 
+    FWK_LOG_TRACE(
+        "[FWK] Sent %" PRIu32 ": %s @ %s -> %s",
+        event->cookie,
+        FWK_ID_STR(event->id),
+        FWK_ID_STR(event->source_id),
+        FWK_ID_STR(event->target_id));
+
     return FWK_SUCCESS;
 
 error:
@@ -316,7 +300,7 @@ static void process_event_requiring_response(struct fwk_event *event)
     int (*process_event)(const struct fwk_event *event,
                          struct fwk_event *resp_event);
 
-    module = __fwk_module_get_ctx(event->target_id)->desc;
+    module = fwk_module_get_ctx(event->target_id)->desc;
     source_thread_ctx = thread_get_ctx(event->source_id);
 
     process_event = event->is_notification ?
@@ -372,12 +356,19 @@ static void process_next_thread_event(struct __fwk_thread_ctx *thread_ctx)
     ctx.current_event = event =
         FWK_LIST_GET(fwk_list_pop_head(&thread_ctx->event_queue),
                      struct fwk_event, slist_node);
-    assert(event != NULL);
+    fwk_assert(event != NULL);
+
+    FWK_LOG_TRACE(
+        "[FWK] Processing %" PRIu32 ": %s @ %s -> %s\n",
+        event->cookie,
+        FWK_ID_STR(event->id),
+        FWK_ID_STR(event->source_id),
+        FWK_ID_STR(event->target_id));
 
     if (event->response_requested)
         process_event_requiring_response(event);
     else {
-        module = __fwk_module_get_ctx(event->target_id)->desc;
+        module = fwk_module_get_ctx(event->target_id)->desc;
         if (event->is_notification)
             status = module->process_notification(event, &async_resp_event);
         else
@@ -534,7 +525,7 @@ static void thread_function(struct __fwk_thread_ctx *thread_ctx,
 
 static void specific_thread_function(void *arg)
 {
-    assert(arg != NULL);
+    fwk_assert(arg != NULL);
 
     thread_function((struct __fwk_thread_ctx *)arg, NULL);
 }
@@ -562,10 +553,10 @@ static void get_next_isr_event(void)
                                  struct fwk_event, slist_node);
         fwk_interrupt_global_enable();
 
-        assert(isr_event != NULL);
+        fwk_assert(isr_event != NULL);
 
         FWK_LOG_TRACE(
-            "[FWK] Get ISR event (%s: %s -> %s)\n",
+            "[FWK] Pulled ISR event (%s: %s -> %s)\n",
             FWK_ID_STR(isr_event->id),
             FWK_ID_STR(isr_event->source_id),
             FWK_ID_STR(isr_event->target_id));
@@ -639,11 +630,14 @@ static void logging_thread(void *arg)
  * Private interface functions
  */
 
-int __fwk_thread_init(size_t event_count, fwk_id id)
+int __fwk_thread_init(size_t event_count)
 {
     int status;
     struct fwk_event *event_table, *event_table_end, *event;
-    osThreadAttr_t thread_attr;
+
+    osThreadAttr_t thread_attr = {
+        .stack_size = FMW_STACK_SIZE,
+    };
 
     fwk_interrupt_global_enable();
     status = osKernelInitialize();
@@ -664,10 +658,6 @@ int __fwk_thread_init(size_t event_count, fwk_id id)
         fwk_list_push_tail(&ctx.event_free_queue,
                            &event->slist_node);
 
-    status = init_thread_attr(&thread_attr);
-    if (status != FWK_SUCCESS)
-        goto error;
-
     ctx.common_thread_ctx.os_thread_id = osThreadNew(common_thread_function,
         &ctx.common_thread_ctx, &thread_attr);
     if (ctx.common_thread_ctx.os_thread_id == NULL) {
@@ -676,12 +666,9 @@ int __fwk_thread_init(size_t event_count, fwk_id id)
     }
 
     /* Initialize the logging thread */
-
-    status = init_thread_attr(&thread_attr);
-    if (status != FWK_SUCCESS)
-        goto error;
-
-    thread_attr.priority = osPriorityLow;
+    thread_attr = (osThreadAttr_t){
+        .priority = osPriorityLow,
+    };
 
     ctx.log_thread_id = osThreadNew(logging_thread, NULL, &thread_attr);
     if (ctx.log_thread_id == NULL) {
@@ -747,7 +734,10 @@ int fwk_thread_create(fwk_id_t id)
 {
     int status;
     struct __fwk_thread_ctx **p_thread_ctx, *thread_ctx;
-    osThreadAttr_t thread_attr;
+
+    osThreadAttr_t thread_attr = {
+        .stack_size = FMW_STACK_SIZE,
+    };
 
     if (!ctx.initialized) {
         status = FWK_E_INIT;
@@ -755,17 +745,13 @@ int fwk_thread_create(fwk_id_t id)
     }
 
     if (fwk_module_is_valid_element_id(id))
-        p_thread_ctx = &__fwk_module_get_element_ctx(id)->thread_ctx;
+        p_thread_ctx = &fwk_module_get_element_ctx(id)->thread_ctx;
     else if (fwk_module_is_valid_module_id(id))
-        p_thread_ctx = &__fwk_module_get_ctx(id)->thread_ctx;
+        p_thread_ctx = &fwk_module_get_ctx(id)->thread_ctx;
     else {
         status = FWK_E_PARAM;
         goto error;
     }
-
-    status = init_thread_attr(&thread_attr);
-    if (status != FWK_SUCCESS)
-        goto error;
 
     if ((ctx.running) || (*p_thread_ctx != NULL)) {
         status = FWK_E_STATE;

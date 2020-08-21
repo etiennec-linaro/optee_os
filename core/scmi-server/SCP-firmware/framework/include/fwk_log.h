@@ -10,6 +10,8 @@
 
 #ifdef BUILD_OPTEE
 
+// TODO: address this dirently !!!
+
 /* This is a hack in fwk: route straight to OP-TEE trace resources */
 #define FWK_LOG_FLUSH()		do { } while (0)
 #define FWK_LOG_TRACE(...)	DMSG(__VA_ARGS__)
@@ -17,10 +19,6 @@
 #define FWK_LOG_WARN(...)	IMSG(__VA_ARGS__)
 #define FWK_LOG_ERR(...)	EMSG(__VA_ARGS__)
 #define FWK_LOG_CRIT(...)	EMSG(__VA_ARGS__)
-
-static inline void fwk_log_init(void)
-{
-}
 
 static inline void fwk_log_flush(void)
 {
@@ -33,9 +31,11 @@ static inline int fwk_log_unbuffer(void)
 
 #else /* BUILD_OPTEE */
 
+#include <fwk_attributes.h>
+#include <fwk_io.h>
 #include <fwk_macros.h>
 
-#if __has_include(<fmw_log.h>)
+#if FWK_HAS_INCLUDE(<fmw_log.h>)
 #    include <fmw_log.h>
 #endif
 
@@ -48,8 +48,8 @@ static inline int fwk_log_unbuffer(void)
  * \addtogroup GroupLogging Logging
  *
  *  \details This framework component provides logging facilities to the
- *      firmware. It is intended to be simple and flexible to enable rapid
- *      prototyping of debug-quality code, and performant release-quality code.
+ *      firmware. It is intended to be simple and flexible to enable robust
+ *      string logging for user consumption.
  *
  *      This component provides five filter levels for logging messages.
  *      Log messages are assigned a filter level based on the logging macro
@@ -68,50 +68,37 @@ static inline int fwk_log_unbuffer(void)
  *      build system configuration options, determines the minimum level a log
  *      message must be for it to be included in the binary.
  *
- *      The logging framework component supports two different backends: the
- *      always-on backend, which provides basic logging facilities for very
- *      early logging, and the dynamic backend, which is intended to
- *      supplant the always-on backend at runtime to provide a more flexible
- *      implementation. These backends are registered through
- *      ::fwk_log_register_aon() and ::fwk_log_register().
+ *      If buffering has been enabled then log messages may be buffered to
+ *      reduce overall firmware response latency; these buffered log messages
+ *      will be flushed once the system has reached an idle state. By default,
+ *      buffering is disabled in debug mode and enabled for all platforms in
+ *      release mode, but this behaviour can be adjusted by configuring
+ *      ::FMW_LOG_BUFFER_SIZE.
  *
- *      An always-on backend can be registered by any firmware at a very early
- *      stage of the boot-up process, including before initialization of
- *      individual modules. This backend is intended to provide a bridge to a
- *      simple always-on device, such as a UART, that can be used as an output
- *      for log messages before a dynamic backend has been registered. See the
- *      documentation for ::fwk_log_register_aon() for more information.
+ *      The device used for logging can also be adjusted through
+ *      ::FMW_LOG_DRAIN_ID. The default behaviour resorts to using the entity
+ *      described by ::FMW_IO_STDOUT_ID as the logging device.
  *
- *      A dynamic backend should be registered by a module, and is expected to
- *      handle more complex scenarios more robustly. This backend may choose to
- *      support multiple log devices of its own, or may support devices that are
- *      not always available. A reference implementation is provided as part of
- *      the standard logging module.
+ *      If a message is too large to fit into the remaining space of the
+ *      internal buffer, the message will be dropped.
  *
- *      If buffering has been enabled (via ::FMW_LOG_BUFFER_SIZE) then log
- *      messages may be buffered to reduce response latency; these buffered log
- *      messages will be flushed to the dynamic backend once the system has
- *      reached an idle state.
- *
- *      If buffering is enabled, log messages will be buffered if:
- *
- *       - A dynamic backend is currently registered, or
- *       - No backends are currently registered
- *
- *      Buffered log messages will only ever be flushed to the dynamic backend.
- *
- *      Log messages will be written directly to the always-on backend if:
- *
- *       - An always-on backend is currently registered, and
- *       - No dynamic backend is currently registered
- *
- *      If buffering is disabled, log messages will be written directly to the
- *      dynamic backend if one is registered, otherwise to the always-on backend
- *      if one is registered.
- *
- *      In any other case, log messages will be dropped.
+ *      Note that log messages are terminated at the column dictated by
+ *      ::FMW_LOG_COLUMNS, or the earliest newline.
  * \{
  */
+
+/*!
+ * \def FMW_LOG_DRAIN_ID
+ *
+ * \brief Identifier of the log drain.
+ *
+ * \details The log drain represents an entity to which logging messages will
+ *      be written, and defaults to ::FMW_IO_STDOUT_ID. Replacing the log drain
+ *      identifier allows log messages and normal input/output to be separated.
+ */
+#ifndef FMW_LOG_DRAIN_ID
+#    define FMW_LOG_DRAIN_ID FMW_IO_STDOUT_ID
+#endif
 
 /*!
  * \def FMW_LOG_BUFFER_SIZE
@@ -229,7 +216,7 @@ static inline int fwk_log_unbuffer(void)
  *
  * \param[in] EXPR The expression to void.
  */
-#define FWK_LOG_VOID_EXPR(EXPR) (void)(EXPR);
+#define FWK_LOG_VOID_EXPR(EXPR) ((void)(EXPR));
 
 /*!
  * \internal
@@ -268,7 +255,7 @@ static inline int fwk_log_unbuffer(void)
  */
 
 #if FWK_LOG_LEVEL <= FWK_LOG_LEVEL_TRACE
-#    define FWK_LOG_TRACE(...) fwk_log_snprintf(__VA_ARGS__)
+#    define FWK_LOG_TRACE(...) fwk_log_printf(__VA_ARGS__)
 #else
 #    define FWK_LOG_TRACE(...) FWK_LOG_VOID(__VA_ARGS__)
 #endif
@@ -282,7 +269,7 @@ static inline int fwk_log_unbuffer(void)
  */
 
 #if FWK_LOG_LEVEL <= FWK_LOG_LEVEL_INFO
-#    define FWK_LOG_INFO(...) fwk_log_snprintf(__VA_ARGS__)
+#    define FWK_LOG_INFO(...) fwk_log_printf(__VA_ARGS__)
 #else
 #    define FWK_LOG_INFO(...) FWK_LOG_VOID(__VA_ARGS__)
 #endif
@@ -296,7 +283,7 @@ static inline int fwk_log_unbuffer(void)
  */
 
 #if FWK_LOG_LEVEL <= FWK_LOG_LEVEL_WARN
-#    define FWK_LOG_WARN(...) fwk_log_snprintf(__VA_ARGS__)
+#    define FWK_LOG_WARN(...) fwk_log_printf(__VA_ARGS__)
 #else
 #    define FWK_LOG_WARN(...) FWK_LOG_VOID(__VA_ARGS__)
 #endif
@@ -310,7 +297,7 @@ static inline int fwk_log_unbuffer(void)
  */
 
 #if FWK_LOG_LEVEL <= FWK_LOG_LEVEL_ERROR
-#    define FWK_LOG_ERR(...) fwk_log_snprintf(__VA_ARGS__)
+#    define FWK_LOG_ERR(...) fwk_log_printf(__VA_ARGS__)
 #else
 #    define FWK_LOG_ERR(...) FWK_LOG_VOID(__VA_ARGS__)
 #endif
@@ -324,116 +311,10 @@ static inline int fwk_log_unbuffer(void)
  */
 
 #if FWK_LOG_LEVEL <= FWK_LOG_LEVEL_CRIT
-#    define FWK_LOG_CRIT(...) fwk_log_snprintf(__VA_ARGS__)
+#    define FWK_LOG_CRIT(...) fwk_log_printf(__VA_ARGS__)
 #else
 #    define FWK_LOG_CRIT(...) FWK_LOG_VOID(__VA_ARGS__)
 #endif
-
-/*!
- * \brief Logging backend interface.
- *
- * \details This interface represents the medium through which the framework
- *      logging logic transmits data to one or more logging backends.
- */
-struct fwk_log_backend {
-    /*!
-     * \brief Buffer a single character.
-     *
-     * \note If the backend is not buffered, it may instead choose to print
-     *      the character immediately.
-     *
-     * \param[in] ch Character to buffer.
-     *
-     * \retval ::FWK_E_DEVICE The operation failed.
-     * \retval ::FWK_SUCCESS The operation succeeded.
-     *
-     * \return Status code representing the result of the operation.
-     */
-    int (*print)(char ch);
-
-    /*!
-     * \brief Flush the backend's buffer (if one exists).
-     *
-     * \note May be set to \c NULL if the backend is not buffered.
-     *
-     * \param[in] backend Logging backend.
-     *
-     * \retval ::FWK_E_DEVICE The operation failed.
-     * \retval ::FWK_SUCCESS The operation succeeded.
-     *
-     * \return Status code representing the result of the operation.
-     */
-    int (*flush)(void);
-};
-
-/*!
- * \brief Register an always-on backend.
- *
- * \details For very early printf-style debugging, an always-on backend may be
- *      registered from within a [constructor function].
- *
- *      [constructor function]:
- * https://developer.arm.com/docs/100067/latest/compiler-specific-function-variable-and-type-attributes/__attribute__constructorpriority-function-attribute
- *
- * \param[in] backend Logging backend to register.
- *
- * \retval ::FWK_E_PARAM One or more parameters were invalid.
- * \retval ::FWK_SUCCESS The operation succeeded.
- *
- * \return Status code representing the result of the operation.
- */
-int fwk_log_register_aon(const struct fwk_log_backend *backend);
-
-/*!
- * \brief Deregister the current always-on backend.
- *
- * \details This step is recommended if your logging backend can no longer
- *      supply the facilities required.
- *
- * \return The previously registered backend, or \c NULL if no backend was
- *      registered.
- */
-const struct fwk_log_backend *fwk_log_deregister_aon(void);
-
-/*!
- * \brief Register a dynamic backend.
- *
- * \details The dynamic backend is intended to be the primary runtime backend,
- *      and can be used to handle more complex devices such as a UART behind a
- *      power domain.
- *
- * \note If buffering is enabled and a dynamic backend has been
- *      registered, log messages will be buffered.
- *
- * \param[in] backend Logging backend to register.
- *
- * \retval ::FWK_E_PARAM One or more parameters were invalid.
- * \retval ::FWK_SUCCESS The operation succeeded.
- *
- * \return Status code representing the result of the operation.
- */
-int fwk_log_register(const struct fwk_log_backend *backend);
-
-/*!
- * \brief Deregister the current dynamic backend.
- *
- * \details This step is recommended if your logging backend can no longer
- *      supply the facilities required.
- *
- * \return The previously registered backend, or \c NULL if no backend was
- *      registered.
- */
-const struct fwk_log_backend *fwk_log_deregister(void);
-
-/*!
- * \internal
- *
- * \brief Initialize the logging component.
- *
- * \details This function initializes the logging component, enabling log
- *      messages to be buffered until a backend is registered.
- */
-void fwk_log_init(void);
 
 /*!
  * \internal
@@ -443,8 +324,7 @@ void fwk_log_init(void);
  * \param[in] format Format string.
  * \param[in] ... Associated parameters.
  */
-void fwk_log_snprintf(const char *format, ...)
-    __attribute__((format(printf, 1, 2)));
+void fwk_log_printf(const char *format, ...) FWK_PRINTF(1, 2);
 
 /*!
  * \internal
@@ -473,6 +353,18 @@ void fwk_log_flush(void);
 int fwk_log_unbuffer(void);
 
 /*!
+ * \internal
+ *
+ * \brief Initialize the logging component.
+ *
+ * \details Initializes the logging framework component, making logging
+ *      facilities to the framework and, later, modules.
+ *
+ * \return Status code representing the result of the operation.
+ */
+int fwk_log_init(void);
+
+/*!
  * \}
  */
 
@@ -480,4 +372,5 @@ int fwk_log_unbuffer(void);
  * \}
  */
 #endif /* BUILD_OPTEE */
+
 #endif /* FWK_LOG_H */

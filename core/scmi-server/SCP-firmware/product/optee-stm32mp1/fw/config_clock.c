@@ -1,13 +1,7 @@
-// SPDX-License-Identifier: BSD-2-Clause
+// SPDX-License-Identifier: BSD-3-Clause
 /*
  * Copyright (c) 2019, Linaro Limited
- */
-
-/*
- * Arm SCP/MCP Software
  * Copyright (c) 2015-2019, Arm Limited and Contributors. All rights reserved.
- *
- * SPDX-License-Identifier: BSD-3-Clause
  */
 
 #include <assert.h>
@@ -88,10 +82,6 @@
 #define SCMI_CLOCK(_idx, _id)		[(_idx)] =  {			\
 		.element_id = FWK_ID_ELEMENT_INIT(FWK_MODULE_IDX_CLOCK,	\
 						  (_idx) /* same index */), \
-		.permissions = MOD_SCMI_CLOCK_PERM_ATTRIBUTES |		\
-			       MOD_SCMI_CLOCK_PERM_DESCRIBE_RATES |	\
-			       MOD_SCMI_CLOCK_PERM_GET_RATE |		\
-			       MOD_SCMI_CLOCK_PERM_SET_CONFIG,		\
 	}
 
 /*
@@ -143,7 +133,7 @@ static const struct fwk_element *clock_config_desc_table(fwk_id_t module_id)
 }
 
 const struct fwk_module_config config_clock = {
-	.get_element_table = clock_config_desc_table,
+    .elements = FWK_MODULE_DYNAMIC_ELEMENTS(clock_config_desc_table),
 };
 
 /*
@@ -164,11 +154,11 @@ static const struct fwk_element stm32_clock_elt[] = {
 
 static const struct fwk_element *stm32_clock_desc_table(fwk_id_t module_id)
 {
-	return stm32_clock_elt;
+    return stm32_clock_elt;
 }
 
 const struct fwk_module_config config_stm32_clock = {
-	.get_element_table =(void *)stm32_clock_desc_table,
+    .elements = FWK_MODULE_DYNAMIC_ELEMENTS(stm32_clock_desc_table),
 };
 
 /*

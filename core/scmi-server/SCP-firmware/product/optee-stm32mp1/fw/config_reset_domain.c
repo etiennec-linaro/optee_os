@@ -1,10 +1,5 @@
-// SPDX-License-Identifier: BSD-2-Clause
 /*
- * Copyright (c) 2019, Linaro Limited
- */
-
-/*
- * Arm SCP/MCP Software
+ * Copyright (c) 2019-2020, Linaro Limited
  * Copyright (c) 2015-2019, Arm Limited and Contributors. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
@@ -56,8 +51,12 @@
 #define RESET(_idx, _id)	[(_idx)] = {				\
 		.driver_id = FWK_ID_ELEMENT_INIT(FWK_MODULE_IDX_STM32_RESET, \
 						 (_idx) /* same index */), \
-		.api_id = FWK_ID_API_INIT(FWK_MODULE_IDX_STM32_RESET,	\
-					  0 /* API type */),		\
+		.driver_api_id = FWK_ID_API_INIT(FWK_MODULE_IDX_STM32_RESET, \
+						 0 /* API type */), \
+		.modes = MOD_RESET_DOMAIN_AUTO_RESET | \
+			 MOD_RESET_DOMAIN_MODE_EXPLICIT_ASSERT | \
+			 MOD_RESET_DOMAIN_MODE_EXPLICIT_DEASSERT, \
+		.capabilities = 0, /* No notif, no async */ \
 	}
 
 /*
@@ -113,7 +112,7 @@ static const struct fwk_element *reset_config_desc_table(fwk_id_t module_id)
 }
 
 const struct fwk_module_config config_reset_domain = {
-	.get_element_table = reset_config_desc_table,
+    .elements = FWK_MODULE_DYNAMIC_ELEMENTS(reset_config_desc_table),
 };
 
 /*
@@ -138,7 +137,7 @@ static const struct fwk_element *stm32_reset_desc_table(fwk_id_t module_id)
 }
 
 const struct fwk_module_config config_stm32_reset = {
-	.get_element_table = (void *)stm32_reset_desc_table,
+    .elements = FWK_MODULE_DYNAMIC_ELEMENTS(stm32_reset_desc_table),
 };
 
 /*
@@ -160,7 +159,7 @@ static const struct fwk_element scmi_reset_elt[] = {
 static const struct mod_scmi_reset_domain_agent reset_agents[SCMI_AGENT_ID_COUNT] = {
     [SCMI_AGENT_ID_NSEC] = {
         .device_table = scmi_reset_cfg,
-        .device_count = FWK_ARRAY_SIZE(scmi_reset_cfg),
+        .agent_domain_count = FWK_ARRAY_SIZE(scmi_reset_cfg),
     },
 };
 

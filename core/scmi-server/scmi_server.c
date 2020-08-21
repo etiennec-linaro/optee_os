@@ -15,6 +15,7 @@
 #include <internal/fwk_module.h>
 #include <internal/fwk_thread.h>
 #include <kernel/mutex.h>
+#include <kernel/panic.h>
 #include <malloc.h>
 #include <mod_optee_mhu.h>
 #include <scmi/scmi_server.h>
@@ -115,9 +116,11 @@ static TEE_Result scmi_server_initialize(void)
 	if (IS_ENABLED(BUILD_HAS_NOTIFICATION))
 		DMSG("SCMI server supports agent notification");
 
-	if (rc == FWK_SUCCESS)
-		return TEE_SUCCESS;
+	if (rc != FWK_SUCCESS) {
+		EMSG("SCMI server init failed: %d", rc);
+		panic();
+	}
 
-	return TEE_ERROR_GENERIC;
+	return TEE_SUCCESS;
 }
 driver_init(scmi_server_initialize);

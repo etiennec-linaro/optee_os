@@ -121,7 +121,6 @@ fwk_id_t optee_mhu_get_device(unsigned int id, void* mem, unsigned int size)
         for (slot = 0; slot < device_ctx->slot_count; slot++) {
             smt_channel = &device_ctx->smt_channel_table[slot];
             mailbox = smt_channel->api->get_memory(smt_channel->id);
-            mailbox = (void *)virt_to_phys(mailbox);
 
             FWK_HOST_PRINT("[MHU] device 0x%x channel %u mbx %p\n",
                            device_index, slot, mailbox);

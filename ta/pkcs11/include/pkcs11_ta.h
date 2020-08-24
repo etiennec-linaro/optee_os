@@ -833,42 +833,6 @@ struct pkcs11_attribute_head {
 	uint8_t data[];
 };
 
-// Boolean property attributes (BPA): bit position in a 64 bit mask
-// for boolean properties object can mandate as attribute, depending
-// on the object. These attributes are often accessed and it is
-// quicker to get then from a 64 bit field in the object instance
-// rather than searching into the object attributes.
-//
-// TODO: move this out of the TA API
-#define PKCS11_BOOLPROPH_FLAG		(1U << 31)
-#define PKCS11_BOOLPROPS_BASE		0
-#define PKCS11_BOOLPROPS_MAX		63
-
-enum boolprop_attr {
-	BPA_TOKEN		= 0x00,
-	BPA_PRIVATE		= 0x01,
-	BPA_TRUSTED		= 0x02,
-	BPA_SENSITIVE		= 0x03,
-	BPA_ENCRYPT		= 0x04,
-	BPA_DECRYPT		= 0x05,
-	BPA_WRAP		= 0x06,
-	BPA_UNWRAP		= 0x07,
-	BPA_SIGN		= 0x08,
-	BPA_SIGN_RECOVER	= 0x09,
-	BPA_VERIFY		= 0x0a,
-	BPA_VERIFY_RECOVER	= 0x0b,
-	BPA_DERIVE		= 0x0c,
-	BPA_EXTRACTABLE		= 0x0d,
-	BPA_LOCAL		= 0x0e,
-	BPA_NEVER_EXTRACTABLE	= 0x0f,
-	BPA_ALWAYS_SENSITIVE	= 0x10,
-	BPA_MODIFIABLE		= 0x11,
-	BPA_COPYABLE		= 0x12,
-	BPA_DESTROYABLE		= 0x13,
-	BPA_ALWAYS_AUTHENTICATE	= 0x14,
-	BPA_WRAP_WITH_TRUSTED	= 0x15,
-};
-
 /*
  * Attribute identification IDs as of v2.40 excluding deprecated IDs.
  * Valid values for struct pkcs11_attribute_head::id

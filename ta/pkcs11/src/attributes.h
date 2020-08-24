@@ -15,6 +15,41 @@
 #include "pkcs11_helpers.h"
 
 /*
+ * Boolean property attributes (BPA): bit position in a 64 bit mask
+ * for boolean properties object can mandate as attribute, depending
+ * on the object. These attributes are often accessed and it is
+ * quicker to get them from a 64 bit field in the object instance
+ * rather than searching into the object attributes.
+ */
+#define PKCS11_BOOLPROPS_BASE		0
+#define PKCS11_BOOLPROPS_MAX_COUNT	64
+
+enum boolprop_attr {
+	BPA_TOKEN = 0,
+	BPA_PRIVATE,
+	BPA_TRUSTED,
+	BPA_SENSITIVE,
+	BPA_ENCRYPT,
+	BPA_DECRYPT,
+	BPA_WRAP,
+	BPA_UNWRAP,
+	BPA_SIGN,
+	BPA_SIGN_RECOVER,
+	BPA_VERIFY,
+	BPA_VERIFY_RECOVER,
+	BPA_DERIVE,
+	BPA_EXTRACTABLE,
+	BPA_LOCAL,
+	BPA_NEVER_EXTRACTABLE,
+	BPA_ALWAYS_SENSITIVE,
+	BPA_MODIFIABLE,
+	BPA_COPYABLE,
+	BPA_DESTROYABLE,
+	BPA_ALWAYS_AUTHENTICATE,
+	BPA_WRAP_WITH_TRUSTED,
+};
+
+/*
  * Header of a serialized memory object inside PKCS11 TA.
  *
  * @attrs_size:	 byte size of the serialized data

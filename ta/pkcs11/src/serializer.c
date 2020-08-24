@@ -10,13 +10,14 @@
 #include <stdlib.h>
 #include <string.h>
 #include <string_ext.h>
-#include <tee_internal_api.h>
 #include <tee_internal_api_extensions.h>
+#include <tee_internal_api.h>
 #include <trace.h>
+#include <util.h>
 
-#include "serializer.h"
 #include "pkcs11_helpers.h"
 #include "pkcs11_token.h"
+#include "serializer.h"
 
 /*
  * Util routines for serializes unformatted arguments in a client memref

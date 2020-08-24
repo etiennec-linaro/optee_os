@@ -39,25 +39,24 @@ struct pkcs11_session;
  * Any processing operation is exclusively one of the following.
  *
  * Case 1: Create a secret from some local random value (C_CreateKey & friends)
- * - client provides a attributes list template, pkcs11 complete with default
- *   attribute values. Object is created if attributes are consistent and
- *   comply token/session stte.
+ * - client provides an attributes list template, PKCS11 TA completes with
+ *   default attribute values. Object is created if attributes are
+ *   consistent and comply token/session state.
  * - PKCS11 sequence:
  *   - check/set token/session state
- *   - create a attribute list from client template and default values.
- *   - check new secret attributes complies requested mechanism .
+ *   - create an attribute list from client template and default values.
+ *   - check new secret attributes complies requested mechanism.
  *   - check new secret attributes complies token/session state.
  *   - Generate the value for the secret.
  *   - Set some runtime attributes in the new secret.
  *   - Register the new secret and return a handle for it.
-
  *
  * Case 2: Create a secret from a client clear data (C_CreateObject)
- * - client provides a attributes list template, pkcs11 complete with default
- *   attribute values. Object is created if attributes are consistent and
- *   comply token/session state.
+ * - client provides an attributes list template, PKCS11 TA completes with
+ *   default attribute values. Object is created if attributes are
+ *   consistent and comply token/session state.
  *   - check/set token/session state
- *   - create a attribute list from client template and default values.
+ *   - create an attribute list from client template and default values.
  *   - check new secret attributes complies requested mechanism (raw-import).
  *   - check new secret attributes complies token/session state.
  *   - Set some runtime attributes in the new secret.
@@ -116,36 +115,32 @@ enum processing_step {
 	PKCS11_FUNC_STEP_FINAL,
 };
 
-/* Create an attribute list for a new object (TODO: add parent attribs) */
-uint32_t create_attributes_from_template(struct obj_attrs **out,
-					 void *template, size_t template_size,
-					 struct obj_attrs *parent,
-					 enum processing_func func,
-					 enum pkcs11_mechanism_id proc_mecha);
+/* Create an attribute list for a new object */
+enum pkcs11_rc
+create_attributes_from_template(struct obj_attrs **out, void *template,
+				size_t template_size, struct obj_attrs *parent,
+				enum processing_func func,
+				enum pkcs11_mechanism_id proc_mecha);
 
 /*
  * The various checks to be performed before a processing:
- * - create an new object in the current token state
+ * - create a new object in the current token state
  * - use a parent object in the processing
  * - use a mechanism with provided configuration
  */
-uint32_t check_created_attrs_against_token(struct pkcs11_session *session,
-					   struct obj_attrs *head);
+enum pkcs11_rc check_created_attrs_against_token(struct pkcs11_session *session,
+						 struct obj_attrs *head);
 
 uint32_t check_created_attrs_against_parent_key(
 					uint32_t proc_id,
 					struct obj_attrs *parent,
 					struct obj_attrs *head);
 
-uint32_t check_created_attrs_against_processing(uint32_t proc_id,
-						struct obj_attrs *head);
-
 uint32_t check_created_attrs(struct obj_attrs *key1,
 			     struct obj_attrs *key2);
 
-uint32_t check_parent_attrs_against_processing(uint32_t proc_id,
-					       enum processing_func func,
-					       struct obj_attrs *head);
+enum pkcs11_rc check_created_attrs_against_processing(uint32_t proc_id,
+						      struct obj_attrs *head);
 
 uint32_t check_access_attrs_against_token(struct pkcs11_session *session,
 					  struct obj_attrs *head);
@@ -154,6 +149,10 @@ uint32_t check_mechanism_against_processing(struct pkcs11_session *session,
 					    uint32_t mechanism_type,
 					    enum processing_func function,
 					    enum processing_step step);
+
+uint32_t check_parent_attrs_against_processing(uint32_t proc_id,
+					       enum processing_func function,
+					       struct obj_attrs *head);
 
 bool object_is_private(struct obj_attrs *head);
 

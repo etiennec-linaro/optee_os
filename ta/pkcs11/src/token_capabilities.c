@@ -176,8 +176,8 @@ bool mechanism_is_valid(enum pkcs11_mechanism_id id)
 /*
  * Return true if mechanism ID is valid and flags matches PKCS#11 compliancy
  */
-bool mechanism_flags_complies_pkcs11(uint32_t mechanism_type,
-				     uint32_t flags)
+bool __maybe_unused mechanism_flags_complies_pkcs11(uint32_t mechanism_type,
+						    uint32_t flags)
 {
 	size_t n = 0;
 
@@ -186,7 +186,7 @@ bool mechanism_flags_complies_pkcs11(uint32_t mechanism_type,
 	for (n = 0; n < ARRAY_SIZE(pkcs11_modes); n++) {
 		if (pkcs11_modes[n].id == mechanism_type) {
 			if (flags & ~pkcs11_modes[n].flags)
-				DMSG("%s flags: %#"PRIx32" vs %#"PRIx32,
+				EMSG("%s flags: 0x%"PRIx32" vs 0x%"PRIx32,
 				     id2str_mechanism(mechanism_type),
 				     flags, pkcs11_modes[n].flags);
 

@@ -24,19 +24,18 @@ bool sanitize_consistent_class_and_type(struct obj_attrs *attrs);
  * @size - byte size of the serialized binary blob
  *
  * This function copies an attribute list from a client API attribute head
- * into a PKCS11 TA internal attribute structure. It generates a serialized attribute
- * list with a consistent format and identified attribute IDs.
+ * into a PKCS11 TA internal attribute structure. It generates a serialized
+ * attribute list with a consistent format and identified attribute IDs.
  *
  * @head points to a blob starting with a pkcs11 attribute header.
- * @head may pointer to an unaligned address.
- * This function allocates, fill and returns a serialized attribute list
+ * @head may point to an unaligned address.
+ * This function allocates, fills and returns a serialized attribute list
  * into a serializer container.
  */
-uint32_t sanitize_client_object(struct obj_attrs **dst,
-				void *head, size_t size);
+enum pkcs11_rc sanitize_client_object(struct obj_attrs **dst, void *head,
+				      size_t size);
 
 /* Debug: dump attribute content as debug traces */
-uint32_t trace_attributes_from_api_head(const char *prefix,
-					void *ref, size_t size);
+void trace_attributes_from_api_head(const char *prefix, void *ref, size_t size);
 
 #endif /*PKCS11_TA_SANITIZE_OBJECT_H*/

@@ -3,7 +3,9 @@
  * Copyright (c) 2017-2020, Linaro Limited
  */
 
+#include <assert.h>
 #include <compiler.h>
+#include <pkcs11_ta.h>
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
@@ -17,10 +19,9 @@
 #include "pkcs11_helpers.h"
 #include "serializer.h"
 
-uint32_t init_attributes_head(struct obj_attrs **head)
+enum pkcs11_rc init_attributes_head(struct obj_attrs **head)
 {
-	*head = TEE_Malloc(sizeof(struct obj_attrs),
-			   TEE_MALLOC_FILL_ZERO);
+	*head = TEE_Malloc(sizeof(**head), TEE_MALLOC_FILL_ZERO);
 	if (!*head)
 		return PKCS11_CKR_DEVICE_MEMORY;
 
@@ -49,13 +50,13 @@ static bool attribute_is_in_head(uint32_t attribute)
 }
 #endif
 
-uint32_t add_attribute(struct obj_attrs **head,
-			uint32_t attribute, void *data, size_t size)
+enum pkcs11_rc add_attribute(struct obj_attrs **head, uint32_t attribute,
+			     void *data, size_t size)
 {
 	size_t buf_len = sizeof(struct obj_attrs) + (*head)->attrs_size;
-	uint32_t rv = 0;
-	uint32_t data32 = 0;
 	char **bstart = (void *)head;
+	enum pkcs11_rc rc = PKCS11_CKR_OK;
+	uint32_t data32 = 0;
 	int __maybe_unused shift = 0;
 
 #ifdef PKCS11_SHEAD_WITH_TYPE
@@ -91,25 +92,25 @@ uint32_t add_attribute(struct obj_attrs **head,
 #endif
 
 	data32 = attribute;
-	rv = serialize(bstart, &buf_len, &data32, sizeof(uint32_t));
-	if (rv)
-		return rv;
+	rc = serialize(bstart, &buf_len, &data32, sizeof(uint32_t));
+	if (rc)
+		return rc;
 
 	data32 = size;
-	rv = serialize(bstart, &buf_len, &data32, sizeof(uint32_t));
-	if (rv)
-		return rv;
+	rc = serialize(bstart, &buf_len, &data32, sizeof(uint32_t));
+	if (rc)
+		return rc;
 
-	rv = serialize(bstart, &buf_len, data, size);
-	if (rv)
-		return rv;
+	rc = serialize(bstart, &buf_len, data, size);
+	if (rc)
+		return rc;
 
-	/* Alloced buffer is always 64byte align, safe for us */
+	/* Alloced buffer is always well aligned */
 	head = (void *)bstart;
 	(*head)->attrs_size += 2 * sizeof(uint32_t) + size;
 	(*head)->attrs_count++;
 
-	return rv;
+	return rc;
 }
 
 uint32_t remove_attribute(struct obj_attrs **head, uint32_t attribute)
@@ -231,7 +232,7 @@ void get_attribute_ptrs(struct obj_attrs *head, uint32_t attribute,
 
 	for (; cur < end; cur += next_off) {
 		/* Structure aligned copy of the pkcs11_ref in the object */
-		struct pkcs11_attribute_head pkcs11_ref;
+		struct pkcs11_attribute_head pkcs11_ref = { };
 
 		TEE_MemMove(&pkcs11_ref, cur, sizeof(pkcs11_ref));
 		next_off = sizeof(pkcs11_ref) + pkcs11_ref.size;
@@ -263,8 +264,8 @@ void get_attribute_ptrs(struct obj_attrs *head, uint32_t attribute,
 	*count = found;
 }
 
-uint32_t get_attribute_ptr(struct obj_attrs *head, uint32_t attribute,
-			   void **attr_ptr, uint32_t *attr_size)
+enum pkcs11_rc get_attribute_ptr(struct obj_attrs *head, uint32_t attribute,
+				 void **attr_ptr, uint32_t *attr_size)
 {
 	size_t count = 1;
 
@@ -303,10 +304,10 @@ uint32_t get_attribute_ptr(struct obj_attrs *head, uint32_t attribute,
 	return PKCS11_CKR_OK;
 }
 
-uint32_t get_attribute(struct obj_attrs *head, uint32_t attribute,
-			void *attr, uint32_t *attr_size)
+enum pkcs11_rc get_attribute(struct obj_attrs *head, uint32_t attribute,
+			     void *attr, uint32_t *attr_size)
 {
-	uint32_t rc = 0;
+	enum pkcs11_rc rc = PKCS11_CKR_OK;
 	void *attr_ptr = NULL;
 	uint32_t size = 0;
 	uint8_t __maybe_unused bbool = 0;
@@ -340,12 +341,12 @@ uint32_t get_attribute(struct obj_attrs *head, uint32_t attribute,
 	}
 #endif
 	rc = get_attribute_ptr(head, attribute, &attr_ptr, &size);
-	if (rc == PKCS11_CKR_OK)
-		goto found;
+	if (rc)
+		return rc;
 
-	return rc;
-
+#if defined(PKCS11_SHEAD_WITH_TYPE) || defined(PKCS11_SHEAD_WITH_BOOLPROPS)
 found:
+#endif
 	if (attr_size && *attr_size != size) {
 		*attr_size = size;
 		/* This reuses buffer-to-small for any bad size matching */
@@ -363,7 +364,7 @@ found:
 
 bool get_bool(struct obj_attrs *head, uint32_t attribute)
 {
-	uint32_t __maybe_unused rc = 0;
+	enum pkcs11_rc rc = PKCS11_CKR_OK;
 	uint8_t bbool = 0;
 	uint32_t size = sizeof(bbool);
 	int __maybe_unused shift = 0;
@@ -387,7 +388,7 @@ bool get_bool(struct obj_attrs *head, uint32_t attribute)
 		return false;
 
 	assert(rc == PKCS11_CKR_OK);
-	return !!bbool;
+	return bbool;
 }
 
 bool attributes_match_reference(struct obj_attrs *candidate,
@@ -443,6 +444,7 @@ bool attributes_match_reference(struct obj_attrs *candidate,
 	return true;
 }
 
+#if CFG_TEE_TA_LOG_LEVEL > 0
 /*
  * Debug: dump CK attribute array to output trace
  */
@@ -454,7 +456,7 @@ bool attributes_match_reference(struct obj_attrs *candidate,
 #define ATTR_FMT_4BYTE	ATTR_TRACE_FMT ": %02x %02x %02x %02x)"
 #define ATTR_FMT_ARRAY	ATTR_TRACE_FMT ": %02x %02x %02x %02x ...)"
 
-static uint32_t __trace_attributes(char *prefix, void *src, void *end)
+static void __trace_attributes(char *prefix, void *src, void *end)
 {
 	size_t next_off = 0;
 	char *prefix2 = NULL;
@@ -464,14 +466,14 @@ static uint32_t __trace_attributes(char *prefix, void *src, void *end)
 	/* append 4 spaces to the prefix plus terminal '\0' */
 	prefix2 = TEE_Malloc(prefix_len + 1 + 4, TEE_MALLOC_FILL_ZERO);
 	if (!prefix2)
-		return PKCS11_CKR_DEVICE_MEMORY;
+		return;
 
 	TEE_MemMove(prefix2, prefix, prefix_len + 1);
 	TEE_MemFill(prefix2 + prefix_len, ' ', 4);
 	*(prefix2 + prefix_len + 4) = '\0';
 
 	for (; cur < (char *)end; cur += next_off) {
-		struct pkcs11_attribute_head pkcs11_ref;
+		struct pkcs11_attribute_head pkcs11_ref = { };
 		uint8_t data[4] = { 0 };
 
 		TEE_MemMove(&pkcs11_ref, cur, sizeof(pkcs11_ref));
@@ -489,38 +491,44 @@ static uint32_t __trace_attributes(char *prefix, void *src, void *end)
 		case 1:
 			IMSG_RAW(ATTR_FMT_1BYTE,
 				 prefix, id2str_attr(pkcs11_ref.id),
-				 id2str_attr_value(pkcs11_ref.id, pkcs11_ref.size,
-						    cur + sizeof(pkcs11_ref)),
+				 id2str_attr_value(pkcs11_ref.id,
+						   pkcs11_ref.size,
+						   cur + sizeof(pkcs11_ref)),
 				 pkcs11_ref.id, pkcs11_ref.size, data[0]);
 			break;
 		case 2:
 			IMSG_RAW(ATTR_FMT_2BYTE,
 				 prefix, id2str_attr(pkcs11_ref.id),
-				 id2str_attr_value(pkcs11_ref.id, pkcs11_ref.size,
-						    cur + sizeof(pkcs11_ref)),
-				 pkcs11_ref.id, pkcs11_ref.size, data[0], data[1]);
+				 id2str_attr_value(pkcs11_ref.id,
+						   pkcs11_ref.size,
+						   cur + sizeof(pkcs11_ref)),
+				 pkcs11_ref.id, pkcs11_ref.size, data[0],
+				 data[1]);
 			break;
 		case 3:
 			IMSG_RAW(ATTR_FMT_3BYTE,
 				 prefix, id2str_attr(pkcs11_ref.id),
-				 id2str_attr_value(pkcs11_ref.id, pkcs11_ref.size,
-						    cur + sizeof(pkcs11_ref)),
+				 id2str_attr_value(pkcs11_ref.id,
+						   pkcs11_ref.size,
+						   cur + sizeof(pkcs11_ref)),
 				 pkcs11_ref.id, pkcs11_ref.size,
 				 data[0], data[1], data[2]);
 			break;
 		case 4:
 			IMSG_RAW(ATTR_FMT_4BYTE,
 				 prefix, id2str_attr(pkcs11_ref.id),
-				 id2str_attr_value(pkcs11_ref.id, pkcs11_ref.size,
-						    cur + sizeof(pkcs11_ref)),
+				 id2str_attr_value(pkcs11_ref.id,
+						   pkcs11_ref.size,
+						   cur + sizeof(pkcs11_ref)),
 				 pkcs11_ref.id, pkcs11_ref.size,
 				 data[0], data[1], data[2], data[3]);
 			break;
 		default:
 			IMSG_RAW(ATTR_FMT_ARRAY,
 				 prefix, id2str_attr(pkcs11_ref.id),
-				 id2str_attr_value(pkcs11_ref.id, pkcs11_ref.size,
-						    cur + sizeof(pkcs11_ref)),
+				 id2str_attr_value(pkcs11_ref.id,
+						   pkcs11_ref.size,
+						   cur + sizeof(pkcs11_ref)),
 				 pkcs11_ref.id, pkcs11_ref.size,
 				 data[0], data[1], data[2], data[3]);
 			break;
@@ -530,8 +538,7 @@ static uint32_t __trace_attributes(char *prefix, void *src, void *end)
 		case PKCS11_CKA_WRAP_TEMPLATE:
 		case PKCS11_CKA_UNWRAP_TEMPLATE:
 		case PKCS11_CKA_DERIVE_TEMPLATE:
-			trace_attributes(prefix2,
-					 (void *)(cur + sizeof(pkcs11_ref)));
+			trace_attributes(prefix2, cur + sizeof(pkcs11_ref));
 			break;
 		default:
 			break;
@@ -539,11 +546,10 @@ static uint32_t __trace_attributes(char *prefix, void *src, void *end)
 	}
 
 	/* Sanity */
-	if (cur != (char *)end)
+	if (cur != end)
 		EMSG("Warning: unexpected alignment in object attributes");
 
 	TEE_Free(prefix2);
-	return PKCS11_CKR_OK;
 }
 
 #ifdef PKCS11_SHEAD_WITH_BOOLPROPS
@@ -561,18 +567,19 @@ static void trace_boolprops(const char *prefix, struct obj_attrs *head)
 }
 #endif
 
-uint32_t trace_attributes(const char *prefix, void *ref)
+void trace_attributes(const char *prefix, void *ref)
 {
-	struct obj_attrs head;
+	struct obj_attrs head = { };
 	char *pre = NULL;
-	uint32_t rc = 0;
-	size_t __maybe_unused n = 0;
 
 	TEE_MemMove(&head, ref, sizeof(head));
 
 	pre = TEE_Malloc(prefix ? strlen(prefix) + 2 : 2, TEE_MALLOC_FILL_ZERO);
-	if (!pre)
-		return PKCS11_CKR_DEVICE_MEMORY;
+	if (!pre) {
+		EMSG("%s: out of memory", prefix);
+		return;
+	}
+
 	if (prefix)
 		TEE_MemMove(pre, prefix, strlen(prefix));
 
@@ -591,14 +598,11 @@ uint32_t trace_attributes(const char *prefix, void *ref)
 #endif
 
 	pre[prefix ? strlen(prefix) : 0] = '|';
-	rc = __trace_attributes(pre, (char *)ref + sizeof(head),
-			        (char *)ref + sizeof(head) + head.attrs_size);
-	if (rc)
-		goto bail;
+	__trace_attributes(pre, (char *)ref + sizeof(head),
+			   (char *)ref + sizeof(head) + head.attrs_size);
 
 	IMSG_RAW("%s`-----------------------", prefix ? prefix : "");
 
-bail:
 	TEE_Free(pre);
-	return rc;
 }
+#endif /* CFG_TEE_TA_LOG_LEVEL > 0 */

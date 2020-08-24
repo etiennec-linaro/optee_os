@@ -20,7 +20,7 @@
  *
  * The persistent objects are each identified by a UUID.
  * The persistent object database stores the list of the UUIDs registered. For
- * each it is expected that a file of ID "UUID" is store in the OP-TEE secure
+ * each it is expected that a file of ID "UUID" is stored in the TA secure
  * storage.
  */
 static TEE_Result get_db_file_name(struct ck_token *token,
@@ -136,8 +136,8 @@ void close_persistent_db(struct ck_token *token __unused)
 }
 
 /* UUID for persistent object */
-uint32_t create_object_uuid(struct ck_token *token __unused,
-			    struct pkcs11_object *obj)
+enum pkcs11_rc create_object_uuid(struct ck_token *token __unused,
+				  struct pkcs11_object *obj)
 {
 	assert(!obj->uuid);
 
@@ -156,19 +156,17 @@ uint32_t create_object_uuid(struct ck_token *token __unused,
 	return PKCS11_CKR_OK;
 }
 
-void destroy_object_uuid(struct ck_token *token __unused,
+void destroy_object_uuid(struct ck_token *token __maybe_unused,
 			 struct pkcs11_object *obj)
 {
-	if (!obj->uuid)
-		return;
 
 	/* TODO: check uuid is not still registered in persistent db ? */
 	TEE_Free(obj->uuid);
 	obj->uuid = NULL;
 }
 
-uint32_t get_persistent_objects_list(struct ck_token *token,
-				     TEE_UUID *array, size_t *size)
+enum pkcs11_rc get_persistent_objects_list(struct ck_token *token,
+					   TEE_UUID *array, size_t *size)
 {
 	size_t out_size = *size;
 
@@ -183,7 +181,8 @@ uint32_t get_persistent_objects_list(struct ck_token *token,
 	return PKCS11_CKR_OK;
 }
 
-uint32_t unregister_persistent_object(struct ck_token *token, TEE_UUID *uuid)
+enum pkcs11_rc unregister_persistent_object(struct ck_token *token,
+					    TEE_UUID *uuid)
 {
 	int index = 0;
 	int count = 0;
@@ -252,7 +251,8 @@ out:
 	return PKCS11_CKR_OK;
 }
 
-uint32_t register_persistent_object(struct ck_token *token, TEE_UUID *uuid)
+enum pkcs11_rc register_persistent_object(struct ck_token *token,
+					  TEE_UUID *uuid)
 {
 	int count = 0;
 	void *ptr = NULL;
@@ -406,7 +406,10 @@ struct ck_token *init_persistent_db(unsigned int token_id)
 		if (res)
 			TEE_Panic(0);
 
-		/* Object stores persistent state + persistent object references */
+		/*
+		 * Object stores persistent state + persistent object
+		 * references.
+		 */
 		res = TEE_CreatePersistentObject(TEE_STORAGE_PRIVATE,
 						 file, sizeof(file),
 						 TEE_DATA_FLAG_ACCESS_READ |

@@ -14,14 +14,19 @@ struct obj_attrs;
 struct pkcs11_client;
 struct pkcs11_session;
 
+/*
+ * link: objects are referenced in a double-linked list
+ * attributes: pointer to the serialized object attributes
+ * key_handle: GPD TEE object handle if used in an operation
+ * key_type: GPD TEE key type (shortcut used for processing)
+ * uuid: object UUID in the persistent database if a persistent object, or NULL
+ * attribs_hdl: GPD TEE attributes handles if persistent object
+ */
 struct pkcs11_object {
 	LIST_ENTRY(pkcs11_object) link;
-	/* pointer to the serialized object attributes */
-	void *attributes;
-	TEE_ObjectHandle key_handle;	/* Valid handle for TEE operations */
-	uint32_t key_type;		/* TEE type of key_handle */
-
-	/* These are for persistent/token objects */
+	struct obj_attrs *attributes;
+	TEE_ObjectHandle key_handle;
+	uint32_t key_type;
 	TEE_UUID *uuid;
 	TEE_ObjectHandle attribs_hdl;
 };
@@ -37,8 +42,8 @@ uint32_t pkcs11_object2handle(struct pkcs11_object *obj,
 struct pkcs11_object *create_token_object(struct obj_attrs *head,
 					  TEE_UUID *uuid);
 
-uint32_t create_object(void *session, struct obj_attrs *attributes,
-		       uint32_t *handle);
+enum pkcs11_rc create_object(void *session, struct obj_attrs *attributes,
+			     uint32_t *handle);
 
 void destroy_object(struct pkcs11_session *session,
 		    struct pkcs11_object *object, bool session_object_only);
@@ -46,11 +51,11 @@ void destroy_object(struct pkcs11_session *session,
 /*
  * Entry function called from the PKCS11 command parser
  */
-uint32_t entry_create_object(struct pkcs11_client *client,
-			     uint32_t ptypes, TEE_Param *params);
+enum pkcs11_rc entry_create_object(struct pkcs11_client *client,
+				   uint32_t ptypes, TEE_Param *params);
 
-uint32_t entry_destroy_object(struct pkcs11_client *client,
-			      uint32_t ptypes, TEE_Param *params);
+enum pkcs11_rc entry_destroy_object(struct pkcs11_client *client,
+				    uint32_t ptypes, TEE_Param *params);
 
 uint32_t entry_find_objects_init(struct pkcs11_client *client,
 				 uint32_t ptypes, TEE_Param *params);

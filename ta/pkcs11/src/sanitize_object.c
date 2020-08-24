@@ -3,6 +3,7 @@
  * Copyright (c) 2017-2020, Linaro Limited
  */
 
+#include <bitstring.h>
 #include <pkcs11_ta.h>
 #include <stdlib.h>
 #include <string.h>
@@ -233,21 +234,20 @@ static uint32_t sanitize_boolprops(struct obj_attrs **dst, void *src)
 	return PKCS11_CKR_OK;
 }
 
-/* Counterpart of serialize_indirect_attribute() */
 static uint32_t sanitize_indirect_attr(struct obj_attrs **dst,
 					struct pkcs11_attribute_head *cli_ref,
 					char *cur)
 {
 	struct obj_attrs *obj2 = NULL;
-	uint32_t rc = 0;
+	enum pkcs11_rc rc = PKCS11_CKR_OK;
 	enum pkcs11_class_id class = get_class(*dst);
 
 	if (class == PKCS11_CKO_UNDEFINED_ID)
 		return PKCS11_CKR_GENERAL_ERROR;
 
 	/*
-	 * Serialized attributes: current applicable only the key templates
-	 * which are tables of attributes.
+	 * Serialized attributes: current applicable only to the key
+	 * templates which are tables of attributes.
 	 */
 	switch (cli_ref->id) {
 	case PKCS11_CKA_WRAP_TEMPLATE:
@@ -261,24 +261,28 @@ static uint32_t sanitize_indirect_attr(struct obj_attrs **dst,
 	if (pkcs11_attr_class_is_key(class))
 		return PKCS11_CKR_TEMPLATE_INCONSISTENT;
 
-	init_attributes_head(&obj2);
+	rc = init_attributes_head(&obj2);
+	if (rc)
+		return rc;
 
 	/* Build a new serial object while sanitizing the attributes list */
 	rc = sanitize_client_object(&obj2, cur + sizeof(*cli_ref),
 				    cli_ref->size);
 	if (rc)
-		return rc;
+		goto out;
 
-	return add_attribute(dst, cli_ref->id, obj2,
-			     sizeof(struct obj_attrs) +
-			     obj2->attrs_size);
+	rc = add_attribute(dst, cli_ref->id, obj2,
+			   sizeof(*obj2) + obj2->attrs_size);
+out:
+	TEE_Free(obj2);
+	return rc;
 }
 
-uint32_t sanitize_client_object(struct obj_attrs **dst,
-				void *src, size_t size)
+enum pkcs11_rc sanitize_client_object(struct obj_attrs **dst, void *src,
+				      size_t size)
 {
 	struct pkcs11_object_head head;
-	uint32_t rc = 0;
+	enum pkcs11_rc rc = PKCS11_CKR_OK;
 	char *cur = NULL;
 	char *end = NULL;
 	size_t next = 0;
@@ -293,7 +297,9 @@ uint32_t sanitize_client_object(struct obj_attrs **dst,
 	if (size < (sizeof(struct pkcs11_object_head) + head.attrs_size))
 		return PKCS11_CKR_ARGUMENTS_BAD;
 
-	init_attributes_head(dst);
+	rc = init_attributes_head(dst);
+	if (rc)
+		return rc;
 
 	rc = sanitize_class_and_type(dst, src);
 	if (rc)
@@ -350,18 +356,17 @@ bail:
  * Debug: dump object attribute array to output trace
  */
 
-static uint32_t __trace_attributes(char *prefix, void *src, void *end)
+static void __trace_attributes(char *prefix, void *src, void *end)
 {
 	size_t next = 0;
 	char *prefix2 = NULL;
 	size_t prefix_len = strlen(prefix);
 	char *cur = src;
-	uint32_t rc = 0;
 
 	/* append 4 spaces to the prefix plus terminal '\0' */
 	prefix2 = TEE_Malloc(prefix_len + 1 + 4, TEE_MALLOC_FILL_ZERO);
 	if (!prefix2)
-		return PKCS11_CKR_DEVICE_MEMORY;
+		return;
 
 	TEE_MemMove(prefix2, prefix, prefix_len + 1);
 	TEE_MemFill(prefix2 + prefix_len, ' ', 4);
@@ -380,7 +385,7 @@ static uint32_t __trace_attributes(char *prefix, void *src, void *end)
 
 		next = sizeof(pkcs11_ref) + pkcs11_ref.size;
 
-		IMSG_RAW("%s Attr %s / %s (%#04"PRIx32" %"PRIu32"-byte)",
+		DMSG_RAW("%s Attr %s / %s (%#04"PRIx32" %"PRIu32"-byte)",
 			 prefix, id2str_attr(pkcs11_ref.id),
 			 id2str_attr_value(pkcs11_ref.id, pkcs11_ref.size,
 					   cur + sizeof(pkcs11_ref)),
@@ -414,12 +419,9 @@ static uint32_t __trace_attributes(char *prefix, void *src, void *end)
 		case PKCS11_CKA_WRAP_TEMPLATE:
 		case PKCS11_CKA_UNWRAP_TEMPLATE:
 		case PKCS11_CKA_DERIVE_TEMPLATE:
-			rc = trace_attributes_from_api_head(prefix2,
-							    cur +
-							    sizeof(pkcs11_ref),
-							    (char *)end - cur);
-			if (rc)
-				return rc;
+			trace_attributes_from_api_head(prefix2,
+						       cur + sizeof(pkcs11_ref),
+						       (char *)end - cur);
 			break;
 		default:
 			break;
@@ -431,46 +433,40 @@ static uint32_t __trace_attributes(char *prefix, void *src, void *end)
 		EMSG("Warning: unexpected alignment issue");
 
 	TEE_Free(prefix2);
-	return PKCS11_CKR_OK;
 }
 
-uint32_t trace_attributes_from_api_head(const char *prefix,
-					void *ref, size_t size)
+void trace_attributes_from_api_head(const char *prefix, void *ref, size_t size)
 {
-	struct pkcs11_object_head head;
+	struct pkcs11_object_head head = { };
 	char *pre = NULL;
 	size_t offset = 0;
-	uint32_t rc = 0;
 
 	TEE_MemMove(&head, ref, sizeof(head));
 
 	if (size > sizeof(head) + head.attrs_size) {
-		EMSG("template overflows client buffer (%u/%u)",
+		EMSG("template overflows client buffer (%zu/%zu)",
 		     size, sizeof(head) + head.attrs_size);
-		return PKCS11_CKR_FUNCTION_FAILED;
+		return;
 	}
 
-
 	pre = TEE_Malloc(prefix ? strlen(prefix) + 2 : 2, TEE_MALLOC_FILL_ZERO);
-	if (!pre)
-		return PKCS11_CKR_DEVICE_MEMORY;
+	if (!pre) {
+		EMSG("%s: out of memory", prefix);
+		return;
+	}
 	if (prefix)
 		TEE_MemMove(pre, prefix, strlen(prefix));
 
-	IMSG_RAW("%s,--- (serial object) Attributes list --------", pre);
-	IMSG_RAW("%s| %"PRIu32" item(s) - %"PRIu32" bytes",
+	DMSG_RAW("%s,--- (serial object) Attributes list --------", pre);
+	DMSG_RAW("%s| %"PRIu32" item(s) - %"PRIu32" bytes",
 		 pre, head.attrs_count, head.attrs_size);
 
 	offset = sizeof(head);
 	pre[prefix ? strlen(prefix) : 0] = '|';
-	rc = __trace_attributes(pre, (char *)ref + offset,
-			      (char *)ref + offset + head.attrs_size);
-	if (rc)
-		goto bail;
+	__trace_attributes(pre, (char *)ref + offset,
+			   (char *)ref + offset + head.attrs_size);
 
-	IMSG_RAW("%s`-----------------------", prefix ? prefix : "");
+	DMSG_RAW("%s`-----------------------", prefix ? prefix : "");
 
-bail:
 	TEE_Free(pre);
-	return rc;
 }

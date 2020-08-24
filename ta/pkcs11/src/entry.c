@@ -52,13 +52,13 @@ void TA_CloseSessionEntryPoint(void *tee_session)
  *
  * Return a PKCS11_CKR_* value which is also loaded into the output param#0
  */
-static uint32_t entry_ping(uint32_t ptypes, TEE_Param *params)
+static enum pkcs11_rc entry_ping(uint32_t ptypes, TEE_Param *params)
 {
 	const uint32_t exp_pt = TEE_PARAM_TYPES(TEE_PARAM_TYPE_MEMREF_INOUT,
 						TEE_PARAM_TYPE_NONE,
 						TEE_PARAM_TYPE_MEMREF_OUTPUT,
 						TEE_PARAM_TYPE_NONE);
-	TEE_Param *out = &params[2];
+	TEE_Param *out = params + 2;
 	const uint32_t ver[] = {
 		PKCS11_TA_VERSION_MAJOR,
 		PKCS11_TA_VERSION_MINOR,

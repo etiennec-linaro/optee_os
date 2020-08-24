@@ -3,13 +3,13 @@
  * Copyright (c) 2017-2020, Linaro Limited
  */
 
-#include <stdlib.h>
 #include <assert.h>
 #include <inttypes.h>
 #include <pkcs11_ta.h>
+#include <stdlib.h>
 #include <string_ext.h>
-#include <tee_internal_api.h>
 #include <tee_internal_api_extensions.h>
+#include <tee_internal_api.h>
 #include <util.h>
 
 #include "attributes.h"
@@ -118,7 +118,7 @@ uint32_t check_mechanism_against_processing(struct pkcs11_session *session,
 static uint8_t *pkcs11_object_default_boolprop(uint32_t attribute)
 {
 	static const uint8_t bool_true = 1;
-	static const uint8_t bool_false = 0;
+	static const uint8_t bool_false;
 
 	switch (attribute) {
 	/* As per PKCS#11 default value */
@@ -128,7 +128,8 @@ static uint8_t *pkcs11_object_default_boolprop(uint32_t attribute)
 		return (uint8_t *)&bool_true;
 	case PKCS11_CKA_TOKEN:
 	case PKCS11_CKA_PRIVATE:
-	case PKCS11_CKA_SENSITIVE:  /* TODO: symkey false, privkey: token specific */
+	/* symkey false, privkey: token specific */
+	case PKCS11_CKA_SENSITIVE:
 		return (uint8_t *)&bool_false;
 	/* Token specific default value */
 	case PKCS11_CKA_SIGN:
@@ -148,11 +149,8 @@ static uint8_t *pkcs11_object_default_boolprop(uint32_t attribute)
 		return (uint8_t *)&bool_false;
 	default:
 		DMSG("No default for boolprop attribute %#"PRIx32, attribute);
-		TEE_Panic(0); // FIXME: errno
+		return NULL;
 	}
-
-	/* Keep compiler happy */
-	return NULL;
 }
 
 /*
@@ -160,9 +158,9 @@ static uint8_t *pkcs11_object_default_boolprop(uint32_t attribute)
  * or to a validate client configuration value. This function append the input
  * attribute (id/size/value) in the serialized object.
  */
-static uint32_t pkcs11_import_object_boolprop(struct obj_attrs **out,
-					      struct obj_attrs *templ,
-					      uint32_t attribute)
+static enum pkcs11_rc pkcs11_import_object_boolprop(struct obj_attrs **out,
+						    struct obj_attrs *templ,
+						    uint32_t attribute)
 {
 	uint32_t rv = 0;
 	uint8_t bbool = 0;
@@ -179,28 +177,29 @@ static uint32_t pkcs11_import_object_boolprop(struct obj_attrs **out,
 	return add_attribute(out, attribute, attr, sizeof(uint8_t));
 }
 
-static uint32_t set_mandatory_boolprops(struct obj_attrs **out,
-					struct obj_attrs *temp,
-					uint32_t const *bp, size_t bp_count)
+static enum pkcs11_rc set_mandatory_boolprops(struct obj_attrs **out,
+					      struct obj_attrs *temp,
+					      uint32_t const *bp,
+					      size_t bp_count)
 {
-	uint32_t rv = PKCS11_CKR_OK;
+	enum pkcs11_rc rc = PKCS11_CKR_OK;
 	size_t n = 0;
 
 	for (n = 0; n < bp_count; n++) {
-		rv = pkcs11_import_object_boolprop(out, temp, bp[n]);
-		if (rv)
-			return rv;
+		rc = pkcs11_import_object_boolprop(out, temp, bp[n]);
+		if (rc)
+			return rc;
 	}
 
-	return rv;
+	return rc;
 }
 
-static uint32_t __unused set_mandatory_attributes(
-					struct obj_attrs **out,
-					struct obj_attrs *temp,
-					uint32_t const *bp, size_t bp_count)
+static enum pkcs11_rc set_mandatory_attributes(struct obj_attrs **out,
+					       struct obj_attrs *temp,
+					       uint32_t const *bp,
+					       size_t bp_count)
 {
-	uint32_t rv = PKCS11_CKR_OK;
+	enum pkcs11_rc rc = PKCS11_CKR_OK;
 	size_t n = 0;
 
 	for (n = 0; n < bp_count; n++) {
@@ -212,19 +211,20 @@ static uint32_t __unused set_mandatory_attributes(
 			size = 0;
 		}
 
-		rv = add_attribute(out, bp[n], value, size);
-		if (rv)
-			return rv;
+		rc = add_attribute(out, bp[n], value, size);
+		if (rc)
+			return rc;
 	}
 
-	return rv;
+	return rc;
 }
 
-static uint32_t set_optional_attributes(struct obj_attrs **out,
-					struct obj_attrs *temp,
-					uint32_t const *bp, size_t bp_count)
+static enum pkcs11_rc set_optional_attributes(struct obj_attrs **out,
+					      struct obj_attrs *temp,
+					      uint32_t const *bp,
+					      size_t bp_count)
 {
-	uint32_t rv = PKCS11_CKR_OK;
+	enum pkcs11_rc rc = PKCS11_CKR_OK;
 	size_t n = 0;
 
 	for (n = 0; n < bp_count; n++) {
@@ -234,12 +234,12 @@ static uint32_t set_optional_attributes(struct obj_attrs **out,
 		if (get_attribute_ptr(temp, bp[n], &value, &size))
 			continue;
 
-		rv = add_attribute(out, bp[n], value, size);
-		if (rv)
-			return rv;
+		rc = add_attribute(out, bp[n], value, size);
+		if (rc)
+			return rc;
 	}
 
-	return rv;
+	return rc;
 }
 
 /*
@@ -257,21 +257,26 @@ static const uint32_t pkcs11_any_object_boolprops[] = {
 	PKCS11_CKA_MODIFIABLE, PKCS11_CKA_COPYABLE, PKCS11_CKA_DESTROYABLE,
 };
 static const uint32_t pkcs11_any_object_mandated[] = {
+
 	PKCS11_CKA_LABEL,
 };
+
 /* PKCS#11 specification for raw data object (+pkcs11_any_object_xxx) */
 const uint32_t pkcs11_raw_data_optional[] = {
 	PKCS11_CKA_OBJECT_ID, PKCS11_CKA_APPLICATION, PKCS11_CKA_VALUE,
 };
+
 /* PKCS#11 specification for any key object (+pkcs11_any_object_xxx) */
 static const uint32_t pkcs11_any_key_boolprops[] = {
 	PKCS11_CKA_DERIVE,
 };
+
 static const uint32_t pkcs11_any_key_optional[] = {
 	PKCS11_CKA_ID,
 	PKCS11_CKA_START_DATE, PKCS11_CKA_END_DATE,
 	PKCS11_CKA_ALLOWED_MECHANISMS,
 };
+
 /* PKCS#11 specification for any symmetric key (+pkcs11_any_key_xxx) */
 static const uint32_t pkcs11_symm_key_boolprops[] = {
 	PKCS11_CKA_ENCRYPT, PKCS11_CKA_DECRYPT,
@@ -280,23 +285,28 @@ static const uint32_t pkcs11_symm_key_boolprops[] = {
 	PKCS11_CKA_SENSITIVE, PKCS11_CKA_EXTRACTABLE,
 	PKCS11_CKA_WRAP_WITH_TRUSTED, PKCS11_CKA_TRUSTED,
 };
+
 static const uint32_t pkcs11_symm_key_optional[] = {
 	PKCS11_CKA_WRAP_TEMPLATE, PKCS11_CKA_UNWRAP_TEMPLATE,
 	PKCS11_CKA_DERIVE_TEMPLATE,
 	PKCS11_CKA_VALUE, PKCS11_CKA_VALUE_LEN,
 };
+
 /* PKCS#11 specification for any asymmetric public key (+pkcs11_any_key_xxx) */
 static const uint32_t pkcs11_public_key_boolprops[] = {
 	PKCS11_CKA_ENCRYPT, PKCS11_CKA_VERIFY, PKCS11_CKA_VERIFY_RECOVER,
 	PKCS11_CKA_WRAP,
 	PKCS11_CKA_TRUSTED,
 };
+
 static const uint32_t pkcs11_public_key_mandated[] = {
 	PKCS11_CKA_SUBJECT
 };
+
 static const uint32_t pkcs11_public_key_optional[] = {
 	PKCS11_CKA_WRAP_TEMPLATE, PKCS11_CKA_PUBLIC_KEY_INFO,
 };
+
 /* PKCS#11 specification for any asymmetric private key (+pkcs11_any_key_xxx) */
 static const uint32_t pkcs11_private_key_boolprops[] = {
 	PKCS11_CKA_DECRYPT, PKCS11_CKA_SIGN, PKCS11_CKA_SIGN_RECOVER,
@@ -304,50 +314,62 @@ static const uint32_t pkcs11_private_key_boolprops[] = {
 	PKCS11_CKA_SENSITIVE, PKCS11_CKA_EXTRACTABLE,
 	PKCS11_CKA_WRAP_WITH_TRUSTED, PKCS11_CKA_ALWAYS_AUTHENTICATE,
 };
+
 static const uint32_t pkcs11_private_key_mandated[] = {
 	PKCS11_CKA_SUBJECT
 };
+
 static const uint32_t pkcs11_private_key_optional[] = {
 	PKCS11_CKA_UNWRAP_TEMPLATE, PKCS11_CKA_PUBLIC_KEY_INFO,
 };
+
 /* PKCS#11 specification for any RSA key (+pkcs11_public/private_key_xxx) */
 static const uint32_t pkcs11_rsa_public_key_mandated[] = {
 	PKCS11_CKA_MODULUS_BITS,
 };
+
 static const uint32_t pkcs11_rsa_public_key_optional[] = {
 	PKCS11_CKA_MODULUS, PKCS11_CKA_PUBLIC_EXPONENT,
 };
+
 static const uint32_t pkcs11_rsa_private_key_optional[] = {
 	PKCS11_CKA_MODULUS, PKCS11_CKA_PUBLIC_EXPONENT,
 	PKCS11_CKA_PRIVATE_EXPONENT,
 	PKCS11_CKA_PRIME_1, PKCS11_CKA_PRIME_2,
 	PKCS11_CKA_EXPONENT_1, PKCS11_CKA_EXPONENT_2, PKCS11_CKA_COEFFICIENT,
 };
+
 /* PKCS#11 specification for any EC key (+pkcs11_public/private_key_xxx) */
 static const uint32_t pkcs11_ec_public_key_mandated[] = {
 	PKCS11_CKA_EC_PARAMS,
 };
+
 static const uint32_t pkcs11_ec_public_key_optional[] = {
 	PKCS11_CKA_EC_POINT,
 	// temporarily until DER support
 	PKCS11_CKA_EC_POINT_X, PKCS11_CKA_EC_POINT_Y,
 };
+
 static const uint32_t pkcs11_ec_private_key_mandated[] = {
 	PKCS11_CKA_EC_PARAMS,
 };
+
 static const uint32_t pkcs11_ec_private_key_optional[] = {
 	PKCS11_CKA_VALUE,
 	// temporarily until DER support
 	PKCS11_CKA_EC_POINT_X, PKCS11_CKA_EC_POINT_Y,
 };
 
-static uint32_t create_storage_attributes(struct obj_attrs **out,
-					  struct obj_attrs *temp)
+static enum pkcs11_rc create_storage_attributes(struct obj_attrs **out,
+						struct obj_attrs *temp)
 {
-	enum pkcs11_class_id class = 0;
-	uint32_t rv = 0;
+	enum pkcs11_class_id class = PKCS11_CKO_UNDEFINED_ID;
+	enum pkcs11_rc rc = PKCS11_CKR_OK;
 
-	init_attributes_head(out);
+	rc = init_attributes_head(out);
+	if (rc)
+		return rc;
+
 #ifdef PKCS11_SHEAD_WITH_BOOLPROPS
 	set_attributes_in_head(*out);
 #endif
@@ -359,62 +381,62 @@ static uint32_t create_storage_attributes(struct obj_attrs **out,
 
 		return PKCS11_CKR_TEMPLATE_INCONSISTENT;
 	}
-	rv = add_attribute(out, PKCS11_CKA_CLASS, &class, sizeof(uint32_t));
-	if (rv)
-		return rv;
+	rc = add_attribute(out, PKCS11_CKA_CLASS, &class, sizeof(uint32_t));
+	if (rc)
+		return rc;
 
-	rv = set_mandatory_boolprops(out, temp, pkcs11_any_object_boolprops,
+	rc = set_mandatory_boolprops(out, temp, pkcs11_any_object_boolprops,
 				     ARRAY_SIZE(pkcs11_any_object_boolprops));
-	if (rv)
-		return rv;
+	if (rc)
+		return rc;
 
 	return set_mandatory_attributes(out, temp, pkcs11_any_object_mandated,
 					ARRAY_SIZE(pkcs11_any_object_mandated));
 }
 
-static uint32_t create_genkey_attributes(struct obj_attrs **out,
-					 struct obj_attrs *temp)
+static enum pkcs11_rc create_genkey_attributes(struct obj_attrs **out,
+					       struct obj_attrs *temp)
 {
-	uint32_t type = 0;
-	uint32_t rv = 0;
+	uint32_t type = PKCS11_CKO_UNDEFINED_ID;
+	enum pkcs11_rc rc = PKCS11_CKR_OK;
 
-	rv = create_storage_attributes(out, temp);
-	if (rv)
-		return rv;
+	rc = create_storage_attributes(out, temp);
+	if (rc)
+		return rc;
 
-	type = get_type(temp);
+	type = get_key_type(temp);
 	if (type == PKCS11_CKK_UNDEFINED_ID) {
 		EMSG("Key type attribute not found");
 
 		return PKCS11_CKR_TEMPLATE_INCONSISTENT;
 	}
-	rv = add_attribute(out, PKCS11_CKA_KEY_TYPE, &type, sizeof(uint32_t));
-	if (rv)
-		return rv;
+	rc = add_attribute(out, PKCS11_CKA_KEY_TYPE, &type, sizeof(uint32_t));
+	if (rc)
+		return rc;
 
-	rv = set_mandatory_boolprops(out, temp, pkcs11_any_key_boolprops,
+	rc = set_mandatory_boolprops(out, temp, pkcs11_any_key_boolprops,
 				     ARRAY_SIZE(pkcs11_any_key_boolprops));
-	if (rv)
-		return rv;
+	if (rc)
+		return rc;
 
 	return set_optional_attributes(out, temp, pkcs11_any_key_optional,
 				       ARRAY_SIZE(pkcs11_any_key_optional));
 }
 
-static uint32_t create_symm_key_attributes(struct obj_attrs **out,
-					   struct obj_attrs *temp)
+static enum pkcs11_rc create_symm_key_attributes(struct obj_attrs **out,
+						 struct obj_attrs *temp)
 {
-	uint32_t rv = 0;
+	enum pkcs11_rc rc = PKCS11_CKR_OK;
 
 	assert(get_class(temp) == PKCS11_CKO_SECRET_KEY);
 
-	rv = create_genkey_attributes(out, temp);
-	if (rv)
-		return rv;
+	rc = create_genkey_attributes(out, temp);
+	if (rc)
+		return rc;
 
 	assert(get_class(*out) == PKCS11_CKO_SECRET_KEY);
 
-	switch (get_type(*out)) {
+	switch (get_key_type(*out)) {
 	case PKCS11_CKK_GENERIC_SECRET:
 	case PKCS11_CKK_AES:
 	case PKCS11_CKK_MD5_HMAC:
@@ -426,73 +448,70 @@ static uint32_t create_symm_key_attributes(struct obj_attrs **out,
 		break;
 	default:
 		EMSG("Invalid key type %#"PRIx32"/%s",
-		     get_type(*out), id2str_key_type(get_type(*out)));
+		     get_key_type(*out), id2str_key_type(get_key_type(*out)));
 
 		return PKCS11_CKR_TEMPLATE_INCONSISTENT;
 	}
 
-	rv = set_mandatory_boolprops(out, temp, pkcs11_symm_key_boolprops,
+	rc = set_mandatory_boolprops(out, temp, pkcs11_symm_key_boolprops,
 				     ARRAY_SIZE(pkcs11_symm_key_boolprops));
-	if (rv)
-		return rv;
+	if (rc)
+		return rc;
 
 	return set_optional_attributes(out, temp, pkcs11_symm_key_optional,
 				       ARRAY_SIZE(pkcs11_symm_key_optional));
 }
 
-static uint32_t create_data_attributes(struct obj_attrs **out,
-				       struct obj_attrs *temp)
+static enum pkcs11_rc create_data_attributes(struct obj_attrs **out,
+					     struct obj_attrs *temp)
 {
-	uint32_t rv = 0;
+	enum pkcs11_rc rc = PKCS11_CKR_OK;
 
 	assert(get_class(temp) == PKCS11_CKO_DATA);
 
-	rv = create_storage_attributes(out, temp);
-	if (rv)
-		return rv;
+	rc = create_storage_attributes(out, temp);
+	if (rc)
+		return rc;
 
 	assert(get_class(*out) == PKCS11_CKO_DATA);
 
-	rv = set_optional_attributes(out, temp,
-				     &pkcs11_raw_data_optional[0],
-				     ARRAY_SIZE(pkcs11_raw_data_optional));
-
-	return rv;
+	return set_optional_attributes(out, temp, pkcs11_raw_data_optional,
+				       ARRAY_SIZE(pkcs11_raw_data_optional));
 }
 
-static uint32_t create_pub_key_attributes(struct obj_attrs **out,
-					  struct obj_attrs *temp)
+static enum pkcs11_rc create_pub_key_attributes(struct obj_attrs **out,
+						struct obj_attrs *temp)
 {
 	uint32_t const *mandated = NULL;
 	uint32_t const *optional = NULL;
 	size_t mandated_count = 0;
 	size_t optional_count = 0;
-	uint32_t rv = 0;
+	enum pkcs11_rc rc = PKCS11_CKR_OK;
 
 	assert(get_class(temp) == PKCS11_CKO_PUBLIC_KEY);
 
-	rv = create_genkey_attributes(out, temp);
-	if (rv)
-		return rv;
+	rc = create_genkey_attributes(out, temp);
+	if (rc)
+		return rc;
 
 	assert(get_class(*out) == PKCS11_CKO_PUBLIC_KEY);
 
-	rv = set_mandatory_boolprops(out, temp, pkcs11_public_key_boolprops,
+	rc = set_mandatory_boolprops(out, temp, pkcs11_public_key_boolprops,
 				     ARRAY_SIZE(pkcs11_public_key_boolprops));
-	if (rv)
-		return rv;
+	if (rc)
+		return rc;
 
-	rv = set_mandatory_attributes(out, temp, pkcs11_public_key_mandated,
+	rc = set_mandatory_attributes(out, temp, pkcs11_public_key_mandated,
 				      ARRAY_SIZE(pkcs11_public_key_mandated));
-	if (rv)
-		return rv;
+	if (rc)
+		return rc;
 
-	rv = set_optional_attributes(out, temp, pkcs11_public_key_optional,
+	rc = set_optional_attributes(out, temp, pkcs11_public_key_optional,
 				     ARRAY_SIZE(pkcs11_public_key_optional));
-	if (rv)
-		return rv;
+	if (rc)
+		return rc;
 
-	switch (get_type(*out)) {
+	switch (get_key_type(*out)) {
 	case PKCS11_CKK_RSA:
 		mandated = pkcs11_rsa_public_key_mandated;
 		optional = pkcs11_rsa_public_key_optional;
@@ -507,51 +526,51 @@ static uint32_t create_pub_key_attributes(struct obj_attrs **out,
 		break;
 	default:
 		EMSG("Invalid key type %#"PRIx32"/%s",
-		     get_type(*out), id2str_key_type(get_type(*out)));
+		     get_key_type(*out), id2str_key_type(get_key_type(*out)));
 
 		return PKCS11_CKR_TEMPLATE_INCONSISTENT;
 	}
 
-	rv = set_mandatory_attributes(out, temp, mandated, mandated_count);
-	if (rv)
-		return rv;
+	rc = set_mandatory_attributes(out, temp, mandated, mandated_count);
+	if (rc)
+		return rc;
 
 	return set_optional_attributes(out, temp, optional, optional_count);
 }
 
-static uint32_t create_priv_key_attributes(struct obj_attrs **out,
-					   struct obj_attrs *temp)
+static enum pkcs11_rc create_priv_key_attributes(struct obj_attrs **out,
+						 struct obj_attrs *temp)
 {
 	uint32_t const *mandated = NULL;
 	uint32_t const *optional = NULL;
 	size_t mandated_count = 0;
 	size_t optional_count = 0;
-	uint32_t rv = 0;
+	enum pkcs11_rc rc = PKCS11_CKR_OK;
 
 	assert(get_class(temp) == PKCS11_CKO_PRIVATE_KEY);
 
-	rv = create_genkey_attributes(out, temp);
-	if (rv)
-		return rv;
+	rc = create_genkey_attributes(out, temp);
+	if (rc)
+		return rc;
 
 	assert(get_class(*out) == PKCS11_CKO_PRIVATE_KEY);
 
-	rv = set_mandatory_boolprops(out, temp, pkcs11_private_key_boolprops,
+	rc = set_mandatory_boolprops(out, temp, pkcs11_private_key_boolprops,
 				     ARRAY_SIZE(pkcs11_private_key_boolprops));
-	if (rv)
-		return rv;
+	if (rc)
+		return rc;
 
-	rv = set_mandatory_attributes(out, temp, pkcs11_private_key_mandated,
+	rc = set_mandatory_attributes(out, temp, pkcs11_private_key_mandated,
 				      ARRAY_SIZE(pkcs11_private_key_mandated));
-	if (rv)
-		return rv;
+	if (rc)
+		return rc;
 
-	rv = set_optional_attributes(out, temp, pkcs11_private_key_optional,
+	rc = set_optional_attributes(out, temp, pkcs11_private_key_optional,
 				     ARRAY_SIZE(pkcs11_private_key_optional));
-	if (rv)
-		return rv;
+	if (rc)
+		return rc;
 
-	switch (get_type(*out)) {
+	switch (get_key_type(*out)) {
 	case PKCS11_CKK_RSA:
 		optional = pkcs11_rsa_private_key_optional;
 		optional_count = ARRAY_SIZE(pkcs11_rsa_private_key_optional);
@@ -564,14 +583,14 @@ static uint32_t create_priv_key_attributes(struct obj_attrs **out,
 		break;
 	default:
 		EMSG("Invalid key type %#"PRIx32"/%s",
-		     get_type(*out), id2str_key_type(get_type(*out)));
+		     get_key_type(*out), id2str_key_type(get_key_type(*out)));
 
 		return PKCS11_CKR_TEMPLATE_INCONSISTENT;
 	}
 
-	rv = set_mandatory_attributes(out, temp, mandated, mandated_count);
-	if (rv)
-		return rv;
+	rc = set_mandatory_attributes(out, temp, mandated, mandated_count);
+	if (rc)
+		return rc;
 
 	return set_optional_attributes(out, temp, optional, optional_count);
 }
@@ -594,15 +613,16 @@ static uint32_t create_priv_key_attributes(struct obj_attrs **out,
  * - SENSITIVE can change from false to true, not from true to false.
  * - LOCAL is the parent LOCAL
  */
-uint32_t create_attributes_from_template(struct obj_attrs **out,
-					 void *template, size_t template_size,
-					 struct obj_attrs *parent,
-					 enum processing_func function,
-					 enum pkcs11_mechanism_id proc_mecha)
+enum pkcs11_rc
+create_attributes_from_template(struct obj_attrs **out, void *template,
+				size_t template_size,
+				struct obj_attrs *parent __unused,
+				enum processing_func function,
+				enum pkcs11_mechanism_id mecha)
 {
 	struct obj_attrs *temp = NULL;
 	struct obj_attrs *attrs = NULL;
-	uint32_t rv = 0;
+	enum pkcs11_rc rc = PKCS11_CKR_OK;
 	uint8_t local = 0;
 	uint8_t always_sensitive = 0;
 	uint8_t never_extract = 0;
@@ -625,14 +645,14 @@ uint32_t create_attributes_from_template(struct obj_attrs **out,
 	}
 #endif
 
-	rv = sanitize_client_object(&temp, template, template_size);
-	if (rv)
-		goto bail;
+	rc = sanitize_client_object(&temp, template, template_size);
+	if (rc)
+		goto out;
 
 	/* If class/type not defined, match from mechanism */
 	if (get_class(temp) == PKCS11_UNDEFINED_ID &&
-	    get_type(temp) == PKCS11_UNDEFINED_ID) {
-		switch (proc_mecha) {
+	    get_key_type(temp) == PKCS11_UNDEFINED_ID) {
+		switch (mecha) {
 		case PKCS11_CKM_GENERIC_SECRET_KEY_GEN:
 			class = PKCS11_CKO_SECRET_KEY;
 			type = PKCS11_CKK_GENERIC_SECRET;
@@ -649,59 +669,59 @@ uint32_t create_attributes_from_template(struct obj_attrs **out,
 			break;
 		default:
 			EMSG("Unable to define class/type from mechanism");
-			rv = PKCS11_CKR_TEMPLATE_INCOMPLETE;
-			goto bail;
+			rc = PKCS11_CKR_TEMPLATE_INCOMPLETE;
+			goto out;
 		}
 		if (class != PKCS11_UNDEFINED_ID) {
-			rv = add_attribute(&temp, PKCS11_CKA_CLASS,
+			rc = add_attribute(&temp, PKCS11_CKA_CLASS,
 					   &class, sizeof(uint32_t));
-			if (rv)
-				goto bail;
+			if (rc)
+				goto out;
 		}
 		if (type != PKCS11_UNDEFINED_ID) {
-			rv = add_attribute(&temp, PKCS11_CKA_KEY_TYPE,
+			rc = add_attribute(&temp, PKCS11_CKA_KEY_TYPE,
 					   &type, sizeof(uint32_t));
-			if (rv)
-				goto bail;
+			if (rc)
+				goto out;
 		}
 	}
 
 	if (!sanitize_consistent_class_and_type(temp)) {
-		EMSG("inconsistent class/type");
-		rv = PKCS11_CKR_TEMPLATE_INCONSISTENT;
-		goto bail;
+		EMSG("Inconsistent class/type");
+		rc = PKCS11_CKR_TEMPLATE_INCONSISTENT;
+		goto out;
 	}
 
 	switch (get_class(temp)) {
 	case PKCS11_CKO_DATA:
-		rv = create_data_attributes(&attrs, temp);
+		rc = create_data_attributes(&attrs, temp);
 		break;
 	case PKCS11_CKO_SECRET_KEY:
-		rv = create_symm_key_attributes(&attrs, temp);
+		rc = create_symm_key_attributes(&attrs, temp);
 		break;
 	case PKCS11_CKO_PUBLIC_KEY:
-		rv = create_pub_key_attributes(&attrs, temp);
+		rc = create_pub_key_attributes(&attrs, temp);
 		break;
 	case PKCS11_CKO_PRIVATE_KEY:
-		rv = create_priv_key_attributes(&attrs, temp);
+		rc = create_priv_key_attributes(&attrs, temp);
 		break;
 	default:
 		DMSG("Invalid object class %#"PRIx32"/%s",
 		     get_class(temp), id2str_class(get_class(temp)));
 
-		rv = PKCS11_CKR_TEMPLATE_INCONSISTENT;
+		rc = PKCS11_CKR_TEMPLATE_INCONSISTENT;
 		break;
 	}
-	if (rv)
-		goto bail;
+	if (rc)
+		goto out;
 
 	if (get_attribute(attrs, PKCS11_CKA_LOCAL, NULL, NULL) !=
 	    PKCS11_RV_NOT_FOUND)
-		goto bail;
+		goto out;
 
 	if (get_attribute(attrs, PKCS11_CKA_KEY_GEN_MECHANISM, NULL, NULL) !=
 	    PKCS11_RV_NOT_FOUND)
-		goto bail;
+		goto out;
 
 	switch (function) {
 	case PKCS11_FUNCTION_GENERATE:
@@ -712,13 +732,14 @@ uint32_t create_attributes_from_template(struct obj_attrs **out,
 		local = get_bool(parent, PKCS11_CKA_LOCAL);
 		break;
 	case PKCS11_FUNCTION_DERIVE:
+	case PKCS11_FUNCTION_IMPORT:
 	default:
 		local = PKCS11_FALSE;
 		break;
 	}
-	rv = add_attribute(&attrs, PKCS11_CKA_LOCAL, &local, sizeof(local));
-	if (rv)
-		goto bail;
+	rc = add_attribute(&attrs, PKCS11_CKA_LOCAL, &local, sizeof(local));
+	if (rc)
+		goto out;
 
 	switch (get_class(attrs)) {
 	case PKCS11_CKO_SECRET_KEY:
@@ -748,35 +769,34 @@ uint32_t create_attributes_from_template(struct obj_attrs **out,
 			break;
 		}
 
-		rv = add_attribute(&attrs, PKCS11_CKA_ALWAYS_SENSITIVE,
+		rc = add_attribute(&attrs, PKCS11_CKA_ALWAYS_SENSITIVE,
 				   &always_sensitive, sizeof(always_sensitive));
-		if (rv)
-			goto bail;
+		if (rc)
+			goto out;
 
-		rv = add_attribute(&attrs, PKCS11_CKA_NEVER_EXTRACTABLE,
+		rc = add_attribute(&attrs, PKCS11_CKA_NEVER_EXTRACTABLE,
 				   &never_extract, sizeof(never_extract));
-		if (rv)
-			goto bail;
+		if (rc)
+			goto out;
 
 		/* Keys mandate attribute PKCS11_CKA_KEY_GEN_MECHANISM */
 		if (function == PKCS11_FUNCTION_COPY) {
 			uint32_t sz = 0;
 
-			rv = get_attribute(parent, PKCS11_CKA_KEY_GEN_MECHANISM,
+			rc = get_attribute(parent, PKCS11_CKA_KEY_GEN_MECHANISM,
 					   &mechanism_id, &sz);
 			assert(sz == sizeof(mechanism_id));
-			if (rv)
-				goto bail;
+			if (rc)
+				goto out;
 		} else if (local) {
-			mechanism_id = proc_mecha;
+			mechanism_id = mecha;
 		} else {
 			mechanism_id = PKCS11_CK_UNAVAILABLE_INFORMATION;
 		}
-		rv = add_attribute(&attrs, PKCS11_CKA_KEY_GEN_MECHANISM,
+		rc = add_attribute(&attrs, PKCS11_CKA_KEY_GEN_MECHANISM,
 				   &mechanism_id, sizeof(mechanism_id));
-		if (rv)
-			goto bail;
-
+		if (rc)
+			goto out;
 		break;
 
 	default:
@@ -789,17 +809,16 @@ uint32_t create_attributes_from_template(struct obj_attrs **out,
 	trace_attributes("object", attrs);
 #endif
 
-bail:
+out:
 	TEE_Free(temp);
-	if (rv)
+	if (rc)
 		TEE_Free(attrs);
 
-	return rv;
+	return rc;
 }
 
-static uint32_t check_attrs_misc_integrity(struct obj_attrs *head)
+static enum pkcs11_rc check_attrs_misc_integrity(struct obj_attrs *head)
 {
-	/* FIXME: is it useful? */
 	if (get_bool(head, PKCS11_CKA_NEVER_EXTRACTABLE) &&
 	    get_bool(head, PKCS11_CKA_EXTRACTABLE)) {
 		DMSG("Never/Extractable attributes mismatch %d/%d",
@@ -824,8 +843,8 @@ static uint32_t check_attrs_misc_integrity(struct obj_attrs *head)
 /*
  * Check access to object against authentication to token
  */
-uint32_t check_access_attrs_against_token(struct pkcs11_session *session,
-					  struct obj_attrs *head)
+enum pkcs11_rc check_access_attrs_against_token(struct pkcs11_session *session,
+						struct obj_attrs *head)
 {
 	bool private = true;
 
@@ -857,10 +876,10 @@ uint32_t check_access_attrs_against_token(struct pkcs11_session *session,
 /*
  * Check the attributes of a to-be-created object matches the token state
  */
-uint32_t check_created_attrs_against_token(struct pkcs11_session *session,
-					   struct obj_attrs *head)
+enum pkcs11_rc check_created_attrs_against_token(struct pkcs11_session *session,
+						 struct obj_attrs *head)
 {
-	uint32_t rc = 0;
+	enum pkcs11_rc rc = PKCS11_CKR_OK;
 
 	rc = check_attrs_misc_integrity(head);
 	if (rc)
@@ -889,7 +908,7 @@ uint32_t check_created_attrs_against_token(struct pkcs11_session *session,
 /*
  * Check the attributes of new secret match the requirements of the parent key.
  */
-uint32_t check_created_attrs_against_parent_key(
+enum pkcs11_rc check_created_attrs_against_parent_key(
 				uint32_t proc_id __unused,
 				struct obj_attrs *parent __unused,
 				struct obj_attrs *head __unused)
@@ -906,36 +925,45 @@ uint32_t check_created_attrs_against_parent_key(
 
 #define DMSG_BAD_BBOOL(attr, proc, head)				\
 	do {								\
-		uint8_t __maybe_unused bvalue = 0;			\
-		uint32_t __maybe_unused rv = PKCS11_CKR_OK;		\
+		uint32_t __maybe_unused _attr = (attr);			\
+		uint8_t __maybe_unused _bvalue = 0;			\
+		enum pkcs11_rc __maybe_unused _rc = PKCS11_CKR_OK;	\
 									\
-		rv = get_attribute(head, attr, &bvalue, NULL);		\
+		_rc = get_attribute((head), _attr, &_bvalue, NULL);	\
 		DMSG("%s issue for %s: %sfound, value %"PRIu8,		\
-		     id2str_attr(attr), id2str_proc(proc),		\
-		     rv ? "not " : "", bvalue);				\
+		     id2str_attr(_attr), id2str_proc((proc)),		\
+		     _rc ? "not " : "", _bvalue);			\
 	} while (0)
+
+static bool __maybe_unused check_attr_bval(uint32_t proc_id __maybe_unused,
+					   struct obj_attrs *head,
+					   uint32_t attribute, bool val)
+{
+	uint8_t bbool = 0;
+	uint32_t sz = sizeof(bbool);
+
+	if (!get_attribute(head, attribute, &bbool, &sz) && !!bbool == val)
+		return true;
+
+	DMSG_BAD_BBOOL(attribute, proc_id, head);
+	return false;
+}
 
 /*
  * Check the attributes of a new secret match the processing/mechanism
  * used to create it.
  *
- * @proc_id - PKCS11_CKM__xxx
- * @subproc_id - boolean attribute id as encrypt/decrypt/sign/verify,
- *		 if applicable to proc_id.
+ * @proc_id - PKCS11_CKM_xxx
  * @head - head of the attributes of the to-be-created object.
  */
-uint32_t check_created_attrs_against_processing(uint32_t proc_id,
-						struct obj_attrs *head)
+enum pkcs11_rc check_created_attrs_against_processing(uint32_t proc_id,
+						      struct obj_attrs *head)
 {
-	uint8_t bbool = 0;
+	bool bbool = false;
 
 	/*
 	 * Processing that do not create secrets are not expected to call
 	 * this function which would panic.
-	 */
-	/*
-	 * FIXME: really need to check LOCAL here? it was safely set from
-	 * create_attributes_from_template(). Maybe only in debug mode?
 	 */
 	switch (proc_id) {
 	case PKCS11_PROCESSING_IMPORT:

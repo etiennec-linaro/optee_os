@@ -112,7 +112,7 @@ struct any_id {
 	id2str(id, table, ARRAY_SIZE(table), prefix)
 
 #if CFG_TEE_TA_LOG_LEVEL > 0
-/* Convert a PKCS11 TA ID into its label string */
+/* Convert a PKCS11 ID into its label string */
 static const char *id2str(uint32_t id, const struct any_id *table,
 			  size_t count, const char *prefix)
 {
@@ -146,19 +146,16 @@ static const struct any_id __maybe_unused string_ta_cmd[] = {
 	PKCS11_ID(PKCS11_CMD_TOKEN_INFO),
 	PKCS11_ID(PKCS11_CMD_MECHANISM_IDS),
 	PKCS11_ID(PKCS11_CMD_MECHANISM_INFO),
+	PKCS11_ID(PKCS11_CMD_OPEN_SESSION),
+	PKCS11_ID(PKCS11_CMD_SESSION_INFO),
+	PKCS11_ID(PKCS11_CMD_CLOSE_SESSION),
+	PKCS11_ID(PKCS11_CMD_CLOSE_ALL_SESSIONS),
 	PKCS11_ID(PKCS11_CMD_INIT_TOKEN),
 	PKCS11_ID(PKCS11_CMD_INIT_PIN),
 	PKCS11_ID(PKCS11_CMD_SET_PIN),
 	PKCS11_ID(PKCS11_CMD_LOGIN),
 	PKCS11_ID(PKCS11_CMD_LOGOUT),
-	PKCS11_ID(PKCS11_CMD_OPEN_SESSION),
-	PKCS11_ID(PKCS11_CMD_SESSION_INFO),
-	PKCS11_ID(PKCS11_CMD_CLOSE_SESSION),
-	PKCS11_ID(PKCS11_CMD_CLOSE_ALL_SESSIONS),
-	PKCS11_ID(PKCS11_CMD_GET_SESSION_STATE),
-	PKCS11_ID(PKCS11_CMD_SET_SESSION_STATE),
 	PKCS11_ID(PKCS11_CMD_CREATE_OBJECT),
-	PKCS11_ID(PKCS11_CMD_COPY_OBJECT),
 	PKCS11_ID(PKCS11_CMD_DESTROY_OBJECT),
 	PKCS11_ID(PKCS11_CMD_ENCRYPT_INIT),
 	PKCS11_ID(PKCS11_CMD_DECRYPT_INIT),
@@ -176,6 +173,9 @@ static const struct any_id __maybe_unused string_ta_cmd[] = {
 	PKCS11_ID(PKCS11_CMD_VERIFY_FINAL),
 	PKCS11_ID(PKCS11_CMD_SIGN_ONESHOT),
 	PKCS11_ID(PKCS11_CMD_VERIFY_ONESHOT),
+	PKCS11_ID(PKCS11_CMD_COPY_OBJECT),
+	PKCS11_ID(PKCS11_CMD_GET_SESSION_STATE),
+	PKCS11_ID(PKCS11_CMD_SET_SESSION_STATE),
 	PKCS11_ID(PKCS11_CMD_FIND_OBJECTS_INIT),
 	PKCS11_ID(PKCS11_CMD_FIND_OBJECTS),
 	PKCS11_ID(PKCS11_CMD_FIND_OBJECTS_FINAL),
@@ -354,12 +354,40 @@ static const struct any_id __maybe_unused string_proc_flags[] = {
 };
 
 static const struct any_id __maybe_unused string_functions[] = {
+	PKCS11_ID(PKCS11_FUNCTION_IMPORT),
 	PKCS11_ID(PKCS11_FUNCTION_ENCRYPT),
 	PKCS11_ID(PKCS11_FUNCTION_DECRYPT),
 	PKCS11_ID(PKCS11_FUNCTION_SIGN),
 	PKCS11_ID(PKCS11_FUNCTION_VERIFY),
 	PKCS11_ID(PKCS11_FUNCTION_DERIVE),
 };
+
+/*
+ * Conversion between PKCS11 TA and GPD TEE return codes
+ */
+enum pkcs11_rc tee2pkcs_error(TEE_Result res)
+{
+	switch (res) {
+	case TEE_SUCCESS:
+		return PKCS11_CKR_OK;
+
+	case TEE_ERROR_BAD_PARAMETERS:
+		return PKCS11_CKR_ARGUMENTS_BAD;
+
+	case TEE_ERROR_OUT_OF_MEMORY:
+		return PKCS11_CKR_DEVICE_MEMORY;
+
+	case TEE_ERROR_SHORT_BUFFER:
+		return PKCS11_CKR_BUFFER_TOO_SMALL;
+
+	case TEE_ERROR_MAC_INVALID:
+	case TEE_ERROR_SIGNATURE_INVALID:
+		return PKCS11_CKR_SIGNATURE_INVALID;
+
+	default:
+		return PKCS11_CKR_GENERAL_ERROR;
+	}
+}
 
 /*
  * Helper functions to analyse PKCS11 identifiers
@@ -398,9 +426,9 @@ bool pkcs11_class_has_type(uint32_t class)
 	case PKCS11_CKO_SECRET_KEY:
 	case PKCS11_CKO_MECHANISM:
 	case PKCS11_CKO_HW_FEATURE:
-		return 1;
+		return true;
 	default:
-		return 0;
+		return false;
 	}
 }
 
@@ -452,33 +480,6 @@ int pkcs11_attr2boolprop_shift(uint32_t attr)
 			return (int)pos;
 
 	return -1;
-}
-
-/*
- * Conversion between PKCS11 TA and GPD TEE return codes
- */
-enum pkcs11_rc tee2pkcs_error(TEE_Result res)
-{
-	switch (res) {
-	case TEE_SUCCESS:
-		return PKCS11_CKR_OK;
-
-	case TEE_ERROR_BAD_PARAMETERS:
-		return PKCS11_CKR_ARGUMENTS_BAD;
-
-	case TEE_ERROR_OUT_OF_MEMORY:
-		return PKCS11_CKR_DEVICE_MEMORY;
-
-	case TEE_ERROR_SHORT_BUFFER:
-		return PKCS11_CKR_BUFFER_TOO_SMALL;
-
-	case TEE_ERROR_MAC_INVALID:
-	case TEE_ERROR_SIGNATURE_INVALID:
-		return PKCS11_CKR_SIGNATURE_INVALID;
-
-	default:
-		return PKCS11_CKR_GENERAL_ERROR;
-	}
 }
 
 /* Check attribute ID is known and size matches if fixed */

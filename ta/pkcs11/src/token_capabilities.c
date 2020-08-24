@@ -328,8 +328,8 @@ uint32_t mechanism_supported_flags(enum pkcs11_mechanism_id id)
 	return 0;
 }
 
-void mechanism_supported_key_sizes(uint32_t proc_id, uint32_t *min_key_size,
-				   uint32_t *max_key_size)
+void supported_mechanism_key_size(uint32_t proc_id, uint32_t *min_key_size,
+				  uint32_t *max_key_size)
 {
 	switch (proc_id) {
 	case PKCS11_CKM_GENERIC_SECRET_KEY_GEN:

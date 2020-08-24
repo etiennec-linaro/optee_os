@@ -1084,8 +1084,8 @@ static void get_key_min_max_sizes(enum pkcs11_key_type key_type,
 		break;
 	}
 
-	mechanism_supported_key_sizes(mechanism, min_key_size,
-				      max_key_size);
+	supported_mechanism_key_size(mechanism, min_key_size,
+				     max_key_size);
 }
 
 uint32_t check_created_attrs(struct obj_attrs *key1,

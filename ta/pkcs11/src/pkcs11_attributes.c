@@ -162,16 +162,21 @@ static enum pkcs11_rc pkcs11_import_object_boolprop(struct obj_attrs **out,
 						    struct obj_attrs *templ,
 						    uint32_t attribute)
 {
-	uint32_t rv = 0;
+	enum pkcs11_rc rc = PKCS11_CKR_OK;
 	uint8_t bbool = 0;
 	uint32_t size = sizeof(uint8_t);
 	void *attr = NULL;
 
-	rv = get_attribute(templ, attribute, &bbool, &size);
-	if (rv || !bbool)
+	rc = get_attribute(templ, attribute, &bbool, &size);
+	if (rc) {
+		if (rc != PKCS11_RV_NOT_FOUND)
+			return rc;
 		attr = pkcs11_object_default_boolprop(attribute);
-	else
+		if (!attr)
+			return PKCS11_CKR_TEMPLATE_INCOMPLETE;
+	} else {
 		attr = &bbool;
+	}
 
 	/* Boolean attributes are 1byte in the ABI, no alignment issue */
 	return add_attribute(out, attribute, attr, sizeof(uint8_t));
@@ -982,10 +987,8 @@ static bool __maybe_unused check_attr_bval(uint32_t proc_id __maybe_unused,
 enum pkcs11_rc check_created_attrs_against_processing(uint32_t proc_id,
 						      struct obj_attrs *head)
 {
-	bool bbool = false;
-
 	/*
-	 * Processing that do not create secrets are not expected to call
+	 * Processings that do not create secrets are not expected to call
 	 * this function which would panic.
 	 */
 	switch (proc_id) {
@@ -993,23 +996,13 @@ enum pkcs11_rc check_created_attrs_against_processing(uint32_t proc_id,
 	case PKCS11_CKM_ECDH1_DERIVE:
 	case PKCS11_CKM_ECDH1_COFACTOR_DERIVE:
 	case PKCS11_CKM_DH_PKCS_DERIVE:
-		if (get_attribute(head, PKCS11_CKA_LOCAL, &bbool, NULL) ||
-		    bbool) {
-			DMSG_BAD_BBOOL(PKCS11_CKA_LOCAL, proc_id, head);
-
-			return PKCS11_CKR_TEMPLATE_INCONSISTENT;
-		}
+		assert(check_attr_bval(proc_id, head, PKCS11_CKA_LOCAL, false));
 		break;
 	case PKCS11_CKM_GENERIC_SECRET_KEY_GEN:
 	case PKCS11_CKM_AES_KEY_GEN:
 	case PKCS11_CKM_EC_KEY_PAIR_GEN:
 	case PKCS11_CKM_RSA_PKCS_KEY_PAIR_GEN:
-		if (get_attribute(head, PKCS11_CKA_LOCAL, &bbool, NULL) ||
-		    !bbool) {
-			DMSG_BAD_BBOOL(PKCS11_CKA_LOCAL, proc_id, head);
-
-			return PKCS11_CKR_TEMPLATE_INCONSISTENT;
-		}
+		assert(check_attr_bval(proc_id, head, PKCS11_CKA_LOCAL, true));
 		break;
 	default:
 		TEE_Panic(proc_id);

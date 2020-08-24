@@ -402,6 +402,18 @@ size_t pkcs11_attr_is_class(uint32_t attribute_id)
 		return 0;
 }
 
+/* Check attribute ID is known and size matches if fixed */
+bool valid_pkcs11_attribute_id(uint32_t id, uint32_t size)
+{
+	size_t n = 0;
+
+	for (n = 0; n < ARRAY_SIZE(attr_ids); n++)
+		if (id == attr_ids[n].id)
+			return !attr_ids[n].size || size == attr_ids[n].size;
+
+	return false;
+}
+
 size_t pkcs11_attr_is_type(uint32_t attribute_id)
 {
 	enum pkcs11_attr_id id = attribute_id;
@@ -447,7 +459,42 @@ bool pkcs11_attr_class_is_key(uint32_t class)
 	}
 }
 
-/* Returns shift position or -1 on error */
+bool key_type_is_symm_key(uint32_t id)
+{
+	enum pkcs11_key_type key_type = id;
+
+	switch (key_type) {
+	case PKCS11_CKK_AES:
+	case PKCS11_CKK_GENERIC_SECRET:
+	case PKCS11_CKK_MD5_HMAC:
+	case PKCS11_CKK_SHA_1_HMAC:
+	case PKCS11_CKK_SHA224_HMAC:
+	case PKCS11_CKK_SHA256_HMAC:
+	case PKCS11_CKK_SHA384_HMAC:
+	case PKCS11_CKK_SHA512_HMAC:
+		return true;
+	default:
+		return false;
+	}
+}
+
+bool key_type_is_asymm_key(uint32_t id)
+{
+	enum pkcs11_key_type key_type = id;
+
+	switch (key_type) {
+	case PKCS11_CKK_EC:
+	case PKCS11_CKK_RSA:
+		return true;
+	default:
+		return false;
+	}
+}
+
+/*
+ * Returns shift position or -1 on error.
+ * Mainly used when PKCS11_SHEAD_WITH_BOOLPROPS is enabled
+ */
 int pkcs11_attr2boolprop_shift(uint32_t attr)
 {
 	static const uint32_t bpa[] = {
@@ -481,50 +528,6 @@ int pkcs11_attr2boolprop_shift(uint32_t attr)
 			return (int)pos;
 
 	return -1;
-}
-
-/* Check attribute ID is known and size matches if fixed */
-bool valid_pkcs11_attribute_id(uint32_t id, uint32_t size)
-{
-	size_t n = 0;
-
-	for (n = 0; n < ARRAY_SIZE(attr_ids); n++)
-		if (id == attr_ids[n].id)
-			return !attr_ids[n].size || size == attr_ids[n].size;
-
-	return false;
-}
-
-bool key_type_is_symm_key(uint32_t id)
-{
-	enum pkcs11_key_type key_type = id;
-
-	switch (key_type) {
-	case PKCS11_CKK_AES:
-	case PKCS11_CKK_GENERIC_SECRET:
-	case PKCS11_CKK_MD5_HMAC:
-	case PKCS11_CKK_SHA_1_HMAC:
-	case PKCS11_CKK_SHA224_HMAC:
-	case PKCS11_CKK_SHA256_HMAC:
-	case PKCS11_CKK_SHA384_HMAC:
-	case PKCS11_CKK_SHA512_HMAC:
-		return true;
-	default:
-		return false;
-	}
-}
-
-bool key_type_is_asymm_key(uint32_t id)
-{
-	enum pkcs11_key_type key_type = id;
-
-	switch (key_type) {
-	case PKCS11_CKK_EC:
-	case PKCS11_CKK_RSA:
-		return true;
-	default:
-		return false;
-	}
 }
 
 /* Initialize a TEE attribute for a target PKCS11 TA attribute in an object */
@@ -599,17 +602,6 @@ const char *id2str_ta_cmd(uint32_t id)
 	return ID2STR(id, string_ta_cmd, NULL);
 }
 
-const char *id2str_proc(uint32_t id)
-{
-	const char *str = ID2STR(id, string_internal_processing,
-				 "PKCS11_PROCESSING_");
-
-	if (str != unknown)
-		return str;
-
-	return id2str_mechanism(id);
-}
-
 const char *id2str_proc_flag(uint32_t id)
 {
 	return ID2STR(id, string_proc_flags, "PKCS11_CKFM_");
@@ -640,11 +632,10 @@ const char *id2str_attr(uint32_t id)
 	size_t n = 0;
 
 	for (n = 0; n < ARRAY_SIZE(attr_ids); n++) {
-		if (id != attr_ids[n].id)
-			continue;
-
-		/* Skip PKCS11_ prefix */
-		return (char *)attr_ids[n].string + strlen("PKCS11_CKA_");
+		if (id == attr_ids[n].id) {
+			/* Skip PKCS11_CKA_ prefix */
+			return attr_ids[n].string + strlen("PKCS11_CKA_");
+		}
 	}
 
 	return unknown;
@@ -690,16 +681,27 @@ const char *id2str_attr_value(uint32_t id, size_t size, void *value)
 
 	TEE_MemMove(&type, value, sizeof(uint32_t));
 
-	if (pkcs11_attr_is_class(id))
+	switch (id) {
+	case PKCS11_CKA_CLASS:
 		return id2str_class(type);
-
-	if (id == PKCS11_CKA_KEY_TYPE)
+	case PKCS11_CKA_KEY_TYPE:
 		return id2str_key_type(type);
-
-	if (id == PKCS11_CKA_MECHANISM_TYPE)
+	case PKCS11_CKA_MECHANISM_TYPE:
 		return id2str_mechanism(type);
+	default:
+		return str_unknown;
+	}
+}
 
-	return str_unknown;
+const char *id2str_proc(uint32_t id)
+{
+	const char *str = ID2STR(id, string_internal_processing,
+				 "PKCS11_PROCESSING_");
+
+	if (str != unknown)
+		return str;
+
+	return id2str_mechanism(id);
 }
 
 const char *id2str_function(uint32_t id)

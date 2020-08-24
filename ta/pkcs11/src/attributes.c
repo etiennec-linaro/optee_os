@@ -4,7 +4,6 @@
  */
 
 #include <compiler.h>
-#include <pkcs11_internal_abi.h>
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>

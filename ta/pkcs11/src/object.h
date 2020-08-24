@@ -6,7 +6,6 @@
 #ifndef PKCS11_TA_OBJECT_H
 #define PKCS11_TA_OBJECT_H
 
-#include <pkcs11_internal_abi.h>
 #include <sys/queue.h>
 #include <tee_internal_api.h>
 

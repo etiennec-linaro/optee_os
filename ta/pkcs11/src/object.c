@@ -4,7 +4,6 @@
  */
 
 #include <inttypes.h>
-#include <pkcs11_internal_abi.h>
 #include <string_ext.h>
 #include <tee_internal_api.h>
 #include <tee_internal_api_extensions.h>

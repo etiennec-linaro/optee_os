@@ -3,7 +3,6 @@
  * Copyright (c) 2017-2020, Linaro Limited
  */
 
-#include <pkcs11_internal_abi.h>
 #include <pkcs11_ta.h>
 #include <stdbool.h>
 #include <stddef.h>

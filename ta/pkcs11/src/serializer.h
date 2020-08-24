@@ -6,7 +6,6 @@
 #ifndef PKCS11_TA_SERIALIZER_H
 #define PKCS11_TA_SERIALIZER_H
 
-#include <pkcs11_internal_abi.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>

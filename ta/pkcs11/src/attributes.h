@@ -7,7 +7,6 @@
 #define PKCS11_TA_ATTRIBUTES_H
 
 #include <assert.h>
-#include <pkcs11_internal_abi.h>
 #include <stdint.h>
 #include <stddef.h>
 

@@ -611,7 +611,7 @@ bail:
 uint32_t do_symm_derivation(struct pkcs11_session *session __unused,
 			     struct pkcs11_attribute_head *proc_params __unused,
 			     struct pkcs11_object *parent_key __unused,
-			     struct pkcs11_attrs_head **head __unused)
+			     struct obj_attrs **head __unused)
 {
 	EMSG("Symm key derivation not yet supported");
 

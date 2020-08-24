@@ -161,8 +161,8 @@ static uint8_t *pkcs11_object_default_boolprop(uint32_t attribute)
  * or to a validate client configuration value. This function append the input
  * attribute (id/size/value) in the serialized object.
  */
-static uint32_t pkcs11_import_object_boolprop(struct pkcs11_attrs_head **out,
-					      struct pkcs11_attrs_head *templ,
+static uint32_t pkcs11_import_object_boolprop(struct obj_attrs **out,
+					      struct obj_attrs *templ,
 					      uint32_t attribute)
 {
 	uint32_t rv = 0;
@@ -180,8 +180,8 @@ static uint32_t pkcs11_import_object_boolprop(struct pkcs11_attrs_head **out,
 	return add_attribute(out, attribute, attr, sizeof(uint8_t));
 }
 
-static uint32_t set_mandatory_boolprops(struct pkcs11_attrs_head **out,
-					struct pkcs11_attrs_head *temp,
+static uint32_t set_mandatory_boolprops(struct obj_attrs **out,
+					struct obj_attrs *temp,
 					uint32_t const *bp, size_t bp_count)
 {
 	uint32_t rv = PKCS11_CKR_OK;
@@ -197,8 +197,8 @@ static uint32_t set_mandatory_boolprops(struct pkcs11_attrs_head **out,
 }
 
 static uint32_t __unused set_mandatory_attributes(
-					struct pkcs11_attrs_head **out,
-					struct pkcs11_attrs_head *temp,
+					struct obj_attrs **out,
+					struct obj_attrs *temp,
 					uint32_t const *bp, size_t bp_count)
 {
 	uint32_t rv = PKCS11_CKR_OK;
@@ -221,8 +221,8 @@ static uint32_t __unused set_mandatory_attributes(
 	return rv;
 }
 
-static uint32_t set_optional_attributes(struct pkcs11_attrs_head **out,
-					struct pkcs11_attrs_head *temp,
+static uint32_t set_optional_attributes(struct obj_attrs **out,
+					struct obj_attrs *temp,
 					uint32_t const *bp, size_t bp_count)
 {
 	uint32_t rv = PKCS11_CKR_OK;
@@ -342,8 +342,8 @@ static const uint32_t pkcs11_ec_private_key_optional[] = {
 	PKCS11_CKA_EC_POINT_X, PKCS11_CKA_EC_POINT_Y,
 };
 
-static uint32_t create_storage_attributes(struct pkcs11_attrs_head **out,
-					  struct pkcs11_attrs_head *temp)
+static uint32_t create_storage_attributes(struct obj_attrs **out,
+					  struct obj_attrs *temp)
 {
 	enum pkcs11_class_id class = 0;
 	uint32_t rv = 0;
@@ -373,8 +373,8 @@ static uint32_t create_storage_attributes(struct pkcs11_attrs_head **out,
 					ARRAY_SIZE(pkcs11_any_object_mandated));
 }
 
-static uint32_t create_genkey_attributes(struct pkcs11_attrs_head **out,
-					 struct pkcs11_attrs_head *temp)
+static uint32_t create_genkey_attributes(struct obj_attrs **out,
+					 struct obj_attrs *temp)
 {
 	uint32_t type = 0;
 	uint32_t rv = 0;
@@ -402,8 +402,8 @@ static uint32_t create_genkey_attributes(struct pkcs11_attrs_head **out,
 				       ARRAY_SIZE(pkcs11_any_key_optional));
 }
 
-static uint32_t create_symm_key_attributes(struct pkcs11_attrs_head **out,
-					   struct pkcs11_attrs_head *temp)
+static uint32_t create_symm_key_attributes(struct obj_attrs **out,
+					   struct obj_attrs *temp)
 {
 	uint32_t rv = 0;
 
@@ -441,8 +441,8 @@ static uint32_t create_symm_key_attributes(struct pkcs11_attrs_head **out,
 				       ARRAY_SIZE(pkcs11_symm_key_optional));
 }
 
-static uint32_t create_data_attributes(struct pkcs11_attrs_head **out,
-				       struct pkcs11_attrs_head *temp)
+static uint32_t create_data_attributes(struct obj_attrs **out,
+				       struct obj_attrs *temp)
 {
 	uint32_t rv = 0;
 
@@ -461,8 +461,8 @@ static uint32_t create_data_attributes(struct pkcs11_attrs_head **out,
 	return rv;
 }
 
-static uint32_t create_pub_key_attributes(struct pkcs11_attrs_head **out,
-					  struct pkcs11_attrs_head *temp)
+static uint32_t create_pub_key_attributes(struct obj_attrs **out,
+					  struct obj_attrs *temp)
 {
 	uint32_t const *mandated = NULL;
 	uint32_t const *optional = NULL;
@@ -520,8 +520,8 @@ static uint32_t create_pub_key_attributes(struct pkcs11_attrs_head **out,
 	return set_optional_attributes(out, temp, optional, optional_count);
 }
 
-static uint32_t create_priv_key_attributes(struct pkcs11_attrs_head **out,
-					   struct pkcs11_attrs_head *temp)
+static uint32_t create_priv_key_attributes(struct obj_attrs **out,
+					   struct obj_attrs *temp)
 {
 	uint32_t const *mandated = NULL;
 	uint32_t const *optional = NULL;
@@ -595,14 +595,14 @@ static uint32_t create_priv_key_attributes(struct pkcs11_attrs_head **out,
  * - SENSITIVE can change from false to true, not from true to false.
  * - LOCAL is the parent LOCAL
  */
-uint32_t create_attributes_from_template(struct pkcs11_attrs_head **out,
+uint32_t create_attributes_from_template(struct obj_attrs **out,
 					 void *template, size_t template_size,
-					 struct pkcs11_attrs_head *parent,
+					 struct obj_attrs *parent,
 					 enum processing_func function,
 					 enum pkcs11_mechanism_id proc_mecha)
 {
-	struct pkcs11_attrs_head *temp = NULL;
-	struct pkcs11_attrs_head *attrs = NULL;
+	struct obj_attrs *temp = NULL;
+	struct obj_attrs *attrs = NULL;
 	uint32_t rv = 0;
 	uint8_t local = 0;
 	uint8_t always_sensitive = 0;
@@ -798,7 +798,7 @@ bail:
 	return rv;
 }
 
-static uint32_t check_attrs_misc_integrity(struct pkcs11_attrs_head *head)
+static uint32_t check_attrs_misc_integrity(struct obj_attrs *head)
 {
 	/* FIXME: is it useful? */
 	if (get_bool(head, PKCS11_CKA_NEVER_EXTRACTABLE) &&
@@ -826,7 +826,7 @@ static uint32_t check_attrs_misc_integrity(struct pkcs11_attrs_head *head)
  * Check access to object against authentication to token
  */
 uint32_t check_access_attrs_against_token(struct pkcs11_session *session,
-					  struct pkcs11_attrs_head *head)
+					  struct obj_attrs *head)
 {
 	bool private = true;
 
@@ -859,7 +859,7 @@ uint32_t check_access_attrs_against_token(struct pkcs11_session *session,
  * Check the attributes of a to-be-created object matches the token state
  */
 uint32_t check_created_attrs_against_token(struct pkcs11_session *session,
-					   struct pkcs11_attrs_head *head)
+					   struct obj_attrs *head)
 {
 	uint32_t rc = 0;
 
@@ -892,8 +892,8 @@ uint32_t check_created_attrs_against_token(struct pkcs11_session *session,
  */
 uint32_t check_created_attrs_against_parent_key(
 				uint32_t proc_id __unused,
-				struct pkcs11_attrs_head *parent __unused,
-				struct pkcs11_attrs_head *head __unused)
+				struct obj_attrs *parent __unused,
+				struct obj_attrs *head __unused)
 {
 	/*
 	 * TODO
@@ -926,7 +926,7 @@ uint32_t check_created_attrs_against_parent_key(
  * @head - head of the attributes of the to-be-created object.
  */
 uint32_t check_created_attrs_against_processing(uint32_t proc_id,
-						struct pkcs11_attrs_head *head)
+						struct obj_attrs *head)
 {
 	uint8_t bbool = 0;
 
@@ -1045,12 +1045,12 @@ static void get_key_min_max_sizes(enum pkcs11_key_type key_type,
 				      max_key_size);
 }
 
-uint32_t check_created_attrs(struct pkcs11_attrs_head *key1,
-			     struct pkcs11_attrs_head *key2)
+uint32_t check_created_attrs(struct obj_attrs *key1,
+			     struct obj_attrs *key2)
 {
-	struct pkcs11_attrs_head *secret = NULL;
-	struct pkcs11_attrs_head *private = NULL;
-	struct pkcs11_attrs_head *public = NULL;
+	struct obj_attrs *secret = NULL;
+	struct obj_attrs *private = NULL;
+	struct obj_attrs *public = NULL;
 	uint32_t max_key_size = 0;
 	uint32_t min_key_size = 0;
 	uint32_t key_length = 0;
@@ -1177,7 +1177,7 @@ uint32_t check_created_attrs(struct pkcs11_attrs_head *key1,
 /* Check processing ID against attribute ALLOWED_PROCESSINGS if any */
 static bool parent_key_complies_allowed_processings(
 						uint32_t proc_id,
-						struct pkcs11_attrs_head *head)
+						struct obj_attrs *head)
 {
 	char *attr = NULL;
 	uint32_t size = 0;
@@ -1213,7 +1213,7 @@ static bool parent_key_complies_allowed_processings(
  */
 uint32_t check_parent_attrs_against_processing(uint32_t proc_id,
 					       enum processing_func function,
-					       struct pkcs11_attrs_head *head)
+					       struct obj_attrs *head)
 {
 	uint32_t __maybe_unused rc = 0;
 	enum pkcs11_class_id key_class = get_class(head);
@@ -1391,7 +1391,7 @@ uint32_t check_parent_attrs_against_processing(uint32_t proc_id,
 	return PKCS11_CKR_OK;
 }
 
-bool object_is_private(struct pkcs11_attrs_head *head)
+bool object_is_private(struct obj_attrs *head)
 {
 	if (get_class(head) == PKCS11_CKO_PRIVATE_KEY)
 		return true;
@@ -1411,8 +1411,8 @@ bool object_is_private(struct pkcs11_attrs_head *head)
  * @attrs2 - Object paired to attrs1 or NULL
  * Return an PKCS11 return code
  */
-uint32_t add_missing_attribute_id(struct pkcs11_attrs_head **attrs1,
-				  struct pkcs11_attrs_head **attrs2)
+uint32_t add_missing_attribute_id(struct obj_attrs **attrs1,
+				  struct obj_attrs **attrs2)
 {
 	uint32_t rv = 0;
 	void *id1 = NULL;

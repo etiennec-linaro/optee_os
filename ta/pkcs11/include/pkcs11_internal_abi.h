@@ -44,7 +44,7 @@ struct pkcs11_ref {
  * @boolproph - 32bit bitmask storing boolean properties #32 to #64.
  * @attrs - then starts the blob binary data
  */
-struct pkcs11_attrs_head {
+struct obj_attrs {
 	uint32_t attrs_size;
 	uint32_t attrs_count;
 #ifdef PKCS11_SHEAD_WITH_TYPE

@@ -616,7 +616,7 @@ bail:
 
 uint32_t do_asymm_derivation(struct pkcs11_session *session,
 			     struct pkcs11_attribute_head *proc_params,
-			     struct pkcs11_attrs_head **head)
+			     struct obj_attrs **head)
 {
 	uint32_t rv = PKCS11_CKR_GENERAL_ERROR;
 	TEE_Result res = TEE_ERROR_GENERIC;

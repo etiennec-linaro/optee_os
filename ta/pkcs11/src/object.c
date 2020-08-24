@@ -145,7 +145,7 @@ void destroy_object(struct pkcs11_session *session, struct pkcs11_object *obj,
 	}
 }
 
-static struct pkcs11_object *create_obj_instance(struct pkcs11_attrs_head *head)
+static struct pkcs11_object *create_obj_instance(struct obj_attrs *head)
 {
 	struct pkcs11_object *obj = NULL;
 
@@ -160,7 +160,7 @@ static struct pkcs11_object *create_obj_instance(struct pkcs11_attrs_head *head)
 	return obj;
 }
 
-struct pkcs11_object *create_token_object(struct pkcs11_attrs_head *head,
+struct pkcs11_object *create_token_object(struct obj_attrs *head,
 					  TEE_UUID *uuid)
 {
 	struct pkcs11_object *obj = create_obj_instance(head);
@@ -178,7 +178,7 @@ struct pkcs11_object *create_token_object(struct pkcs11_attrs_head *head,
  * @attributes - reference to serialized attributes
  * @handle - generated handle for the created object
  */
-uint32_t create_object(void *sess, struct pkcs11_attrs_head *head,
+uint32_t create_object(void *sess, struct obj_attrs *head,
 		       uint32_t *out_handle)
 {
 	uint32_t rv = 0;
@@ -272,7 +272,7 @@ uint32_t entry_import_object(struct pkcs11_client *client,
 	uint32_t rv = 0;
 	struct serialargs ctrlargs = { };
 	struct pkcs11_session *session = NULL;
-	struct pkcs11_attrs_head *head = NULL;
+	struct obj_attrs *head = NULL;
 	struct pkcs11_object_head *template = NULL;
 	size_t template_size = 0;
 	uint32_t obj_handle = 0;
@@ -403,14 +403,14 @@ uint32_t entry_destroy_object(struct pkcs11_client *client,
 	return rv;
 }
 
-static uint32_t token_obj_matches_ref(struct pkcs11_attrs_head *req_attrs,
+static uint32_t token_obj_matches_ref(struct obj_attrs *req_attrs,
 				      struct pkcs11_object *obj)
 {
 	uint32_t rv = 0;
 	TEE_Result res = TEE_ERROR_GENERIC;
 	TEE_ObjectHandle hdl = obj->attribs_hdl;
 	TEE_ObjectInfo info = { };
-	struct pkcs11_attrs_head *attr = NULL;
+	struct obj_attrs *attr = NULL;
 	uint32_t read_bytes = 0;
 
 	if (obj->attributes) {
@@ -516,7 +516,7 @@ uint32_t entry_find_objects_init(struct pkcs11_client *client,
 	struct serialargs ctrlargs = { };
 	struct pkcs11_session *session = NULL;
 	struct pkcs11_object_head *template = NULL;
-	struct pkcs11_attrs_head *req_attrs = NULL;
+	struct obj_attrs *req_attrs = NULL;
 	struct pkcs11_object *obj = NULL;
 	struct pkcs11_find_objects *find_ctx = NULL;
 
@@ -984,8 +984,8 @@ uint32_t entry_get_object_size(struct pkcs11_client *client,
 
 	assert(obj->attributes);
 
-	obj_size = ((struct pkcs11_attrs_head *)obj->attributes)->attrs_size +
-		   sizeof(struct pkcs11_attrs_head);
+	obj_size = ((struct obj_attrs *)obj->attributes)->attrs_size +
+		   sizeof(struct obj_attrs);
 	TEE_MemMove(out->memref.buffer, &obj_size, sizeof(obj_size));
 
 	return PKCS11_CKR_OK;

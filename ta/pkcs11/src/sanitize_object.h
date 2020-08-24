@@ -14,7 +14,7 @@
  * @attrs - object attributes
  * Return true if class/type matches, else return false
  */
-bool sanitize_consistent_class_and_type(struct pkcs11_attrs_head *attrs);
+bool sanitize_consistent_class_and_type(struct obj_attrs *attrs);
 
 /**
  * sanitize_client_object - Setup a serializer from a serialized object
@@ -32,7 +32,7 @@ bool sanitize_consistent_class_and_type(struct pkcs11_attrs_head *attrs);
  * This function allocates, fill and returns a serialized attribute list
  * into a serializer container.
  */
-uint32_t sanitize_client_object(struct pkcs11_attrs_head **dst,
+uint32_t sanitize_client_object(struct obj_attrs **dst,
 				void *head, size_t size);
 
 /* Debug: dump attribute content as debug traces */

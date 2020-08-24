@@ -386,8 +386,8 @@ uint32_t load_tee_rsa_key_attrs(TEE_Attribute **tee_attrs, size_t *tee_count,
 	return rv;
 }
 
-static uint32_t tee2pkcs_rsa_attributes(struct pkcs11_attrs_head **pub_head,
-					struct pkcs11_attrs_head **priv_head,
+static uint32_t tee2pkcs_rsa_attributes(struct obj_attrs **pub_head,
+					struct obj_attrs **priv_head,
 					TEE_ObjectHandle tee_obj)
 {
 	uint32_t rv;
@@ -449,8 +449,8 @@ bail:
 }
 
 uint32_t generate_rsa_keys(struct pkcs11_attribute_head *proc_params,
-			   struct pkcs11_attrs_head **pub_head,
-			   struct pkcs11_attrs_head **priv_head)
+			   struct obj_attrs **pub_head,
+			   struct obj_attrs **priv_head)
 {
 	uint32_t rv;
 	void *a_ptr;

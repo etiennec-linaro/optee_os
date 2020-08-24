@@ -110,7 +110,7 @@ size_t get_object_key_bit_size(struct pkcs11_object *obj)
 {
 	void *a_ptr = NULL;
 	uint32_t a_size = 0;
-	struct pkcs11_attrs_head *attrs = obj->attributes;
+	struct obj_attrs *attrs = obj->attributes;
 
 	switch (get_type(attrs)) {
 	case PKCS11_CKK_AES:
@@ -145,7 +145,7 @@ size_t get_object_key_bit_size(struct pkcs11_object *obj)
 	}
 }
 
-static uint32_t generate_random_key_value(struct pkcs11_attrs_head **head)
+static uint32_t generate_random_key_value(struct obj_attrs **head)
 {
 	uint32_t rv = 0;
 	void *data;
@@ -194,7 +194,7 @@ uint32_t entry_generate_secret(struct pkcs11_client *client,
 	struct serialargs ctrlargs = { };
 	struct pkcs11_session *session = NULL;
 	struct pkcs11_attribute_head *proc_params = NULL;
-	struct pkcs11_attrs_head *head = NULL;
+	struct obj_attrs *head = NULL;
 	struct pkcs11_object_head *template = NULL;
 	size_t template_size = 0;
 	uint32_t obj_handle = 0;
@@ -337,7 +337,7 @@ uint32_t alloc_get_tee_attribute_data(TEE_ObjectHandle tee_obj,
 	return tee2pkcs_error(res);
 }
 
-uint32_t tee2pkcs_add_attribute(struct pkcs11_attrs_head **head,
+uint32_t tee2pkcs_add_attribute(struct obj_attrs **head,
 				uint32_t pkcs11_id, TEE_ObjectHandle tee_obj,
 				uint32_t tee_id)
 {
@@ -373,8 +373,8 @@ uint32_t entry_generate_key_pair(struct pkcs11_client *client,
 	struct serialargs ctrlargs = { };
 	struct pkcs11_session *session = NULL;
 	struct pkcs11_attribute_head *proc_params = NULL;
-	struct pkcs11_attrs_head *pub_head = NULL;
-	struct pkcs11_attrs_head *priv_head = NULL;
+	struct obj_attrs *pub_head = NULL;
+	struct obj_attrs *priv_head = NULL;
 	struct pkcs11_object_head *template = NULL;
 	size_t template_size = 0;
 	uint32_t pubkey_handle = 0;
@@ -789,7 +789,7 @@ uint32_t entry_derive_key(struct pkcs11_client *client,
 	struct pkcs11_attribute_head *proc_params = NULL;
 	uint32_t parent_handle = 0;
 	struct pkcs11_object *parent_obj;
-	struct pkcs11_attrs_head *head = NULL;
+	struct obj_attrs *head = NULL;
 	struct pkcs11_object_head *template = NULL;
 	size_t template_size = 0;
 	uint32_t out_handle = 0;

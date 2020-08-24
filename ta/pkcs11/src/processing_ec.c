@@ -1140,8 +1140,8 @@ uint32_t pkcs2tee_algo_ecdsa(uint32_t *tee_id,
 	return PKCS11_CKR_OK;
 }
 
-static uint32_t tee2pkcs_ec_attributes(struct pkcs11_attrs_head **pub_head,
-				 struct pkcs11_attrs_head **priv_head,
+static uint32_t tee2pkcs_ec_attributes(struct obj_attrs **pub_head,
+				 struct obj_attrs **priv_head,
 				 TEE_ObjectHandle tee_obj)
 {
 	uint32_t rv = 0;
@@ -1176,8 +1176,8 @@ bail:
 }
 
 uint32_t generate_ec_keys(struct pkcs11_attribute_head *proc_params,
-			  struct pkcs11_attrs_head **pub_head,
-			  struct pkcs11_attrs_head **priv_head)
+			  struct obj_attrs **pub_head,
+			  struct obj_attrs **priv_head)
 {
 	uint32_t rv = 0;
 	void *a_ptr = NULL;

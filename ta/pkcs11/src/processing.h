@@ -53,7 +53,7 @@ uint32_t alloc_get_tee_attribute_data(TEE_ObjectHandle tee_obj,
 					     uint32_t attribute,
 					     void **data, size_t *size);
 
-uint32_t tee2pkcs_add_attribute(struct pkcs11_attrs_head **head,
+uint32_t tee2pkcs_add_attribute(struct obj_attrs **head,
 				uint32_t pkcs11_id, TEE_ObjectHandle tee_obj,
 				uint32_t tee_id);
 
@@ -104,7 +104,7 @@ uint32_t init_asymm_operation(struct pkcs11_session *session,
 uint32_t do_symm_derivation(struct pkcs11_session *session,
 			     struct pkcs11_attribute_head *proc_params,
 			     struct pkcs11_object *parent_key,
-			     struct pkcs11_attrs_head **head);
+			     struct obj_attrs **head);
 
 uint32_t step_asymm_operation(struct pkcs11_session *session,
 			      enum processing_func function,
@@ -113,7 +113,7 @@ uint32_t step_asymm_operation(struct pkcs11_session *session,
 
 uint32_t do_asymm_derivation(struct pkcs11_session *session,
 			     struct pkcs11_attribute_head *proc_params,
-			     struct pkcs11_attrs_head **head);
+			     struct obj_attrs **head);
 
 
 /*
@@ -138,8 +138,8 @@ uint32_t pkcs2tee_algo_ecdsa(uint32_t *tee_id,
 			   struct pkcs11_object *obj);
 
 uint32_t generate_ec_keys(struct pkcs11_attribute_head *proc_params,
-			  struct pkcs11_attrs_head **pub_head,
-			  struct pkcs11_attrs_head **priv_head);
+			  struct obj_attrs **pub_head,
+			  struct obj_attrs **priv_head);
 
 size_t ecdsa_get_input_max_byte_size(TEE_OperationHandle op);
 
@@ -165,7 +165,7 @@ uint32_t tee_init_rsa_aes_key_wrap_operation(struct active_processing *proc,
 					     size_t params_size);
 
 uint32_t generate_rsa_keys(struct pkcs11_attribute_head *proc_params,
-			   struct pkcs11_attrs_head **pub_head,
-			   struct pkcs11_attrs_head **priv_head);
+			   struct obj_attrs **pub_head,
+			   struct obj_attrs **priv_head);
 
 #endif /*PKCS11_TA_PROCESSING_H*/

@@ -10,7 +10,7 @@
 
 #include "serializer.h"
 
-struct pkcs11_attrs_head;
+struct obj_attrs;
 struct pkcs11_object;
 struct pkcs11_session;
 
@@ -117,9 +117,9 @@ enum processing_step {
 };
 
 /* Create an attribute list for a new object (TODO: add parent attribs) */
-uint32_t create_attributes_from_template(struct pkcs11_attrs_head **out,
+uint32_t create_attributes_from_template(struct obj_attrs **out,
 					 void *template, size_t template_size,
-					 struct pkcs11_attrs_head *parent,
+					 struct obj_attrs *parent,
 					 enum processing_func func,
 					 enum pkcs11_mechanism_id proc_mecha);
 
@@ -130,37 +130,37 @@ uint32_t create_attributes_from_template(struct pkcs11_attrs_head **out,
  * - use a mechanism with provided configuration
  */
 uint32_t check_created_attrs_against_token(struct pkcs11_session *session,
-					   struct pkcs11_attrs_head *head);
+					   struct obj_attrs *head);
 
 uint32_t check_created_attrs_against_parent_key(
 					uint32_t proc_id,
-					struct pkcs11_attrs_head *parent,
-					struct pkcs11_attrs_head *head);
+					struct obj_attrs *parent,
+					struct obj_attrs *head);
 
 uint32_t check_created_attrs_against_processing(uint32_t proc_id,
-						struct pkcs11_attrs_head *head);
+						struct obj_attrs *head);
 
-uint32_t check_created_attrs(struct pkcs11_attrs_head *key1,
-			     struct pkcs11_attrs_head *key2);
+uint32_t check_created_attrs(struct obj_attrs *key1,
+			     struct obj_attrs *key2);
 
 uint32_t check_parent_attrs_against_processing(uint32_t proc_id,
 					       enum processing_func func,
-					       struct pkcs11_attrs_head *head);
+					       struct obj_attrs *head);
 
 uint32_t check_access_attrs_against_token(struct pkcs11_session *session,
-					  struct pkcs11_attrs_head *head);
+					  struct obj_attrs *head);
 
 uint32_t check_mechanism_against_processing(struct pkcs11_session *session,
 					    uint32_t mechanism_type,
 					    enum processing_func function,
 					    enum processing_step step);
 
-bool object_is_private(struct pkcs11_attrs_head *head);
+bool object_is_private(struct obj_attrs *head);
 
 bool attribute_is_exportable(struct pkcs11_attribute_head *req_attr,
 			     struct pkcs11_object *obj);
 
-uint32_t add_missing_attribute_id(struct pkcs11_attrs_head **attrs1,
-				  struct pkcs11_attrs_head **attrs2);
+uint32_t add_missing_attribute_id(struct obj_attrs **attrs1,
+				  struct obj_attrs **attrs2);
 
 #endif /*PKCS11_TA_PKCS11_ATTRIBUTES_H*/

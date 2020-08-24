@@ -14,12 +14,12 @@
 #include "pkcs11_helpers.h"
 
 #ifdef PKCS11_SHEAD_WITH_BOOLPROPS
-static inline void set_attributes_in_head(struct pkcs11_attrs_head *head)
+static inline void set_attributes_in_head(struct obj_attrs *head)
 {
 	head->boolproph |= PKCS11_BOOLPROPH_FLAG;
 }
 
-static inline bool head_contains_boolprops(struct pkcs11_attrs_head *head)
+static inline bool head_contains_boolprops(struct obj_attrs *head)
 {
 	return head->boolproph & PKCS11_BOOLPROPH_FLAG;
 }
@@ -31,7 +31,7 @@ static inline bool head_contains_boolprops(struct pkcs11_attrs_head *head)
  *
  * Return a PKCS11_OK on success or a PKCS11 return code.
  */
-uint32_t init_attributes_head(struct pkcs11_attrs_head **head);
+uint32_t init_attributes_head(struct obj_attrs **head);
 
 /*
  * Update serialized attributes to add an entry. Can relocate the attribute
@@ -39,7 +39,7 @@ uint32_t init_attributes_head(struct pkcs11_attrs_head **head);
  *
  * Return a PKCS11_OK on success or a PKCS11 return code.
  */
-uint32_t add_attribute(struct pkcs11_attrs_head **head,
+uint32_t add_attribute(struct obj_attrs **head,
 			uint32_t attribute, void *data, size_t size);
 
 /*
@@ -48,7 +48,7 @@ uint32_t add_attribute(struct pkcs11_attrs_head **head,
  *
  * Return a PKCS11_OK on success or a PKCS11 return code.
  */
-uint32_t remove_attribute(struct pkcs11_attrs_head **head, uint32_t attrib);
+uint32_t remove_attribute(struct obj_attrs **head, uint32_t attrib);
 
 /*
  * Update serialized attributes to remove an entry. Can relocate the attribute
@@ -56,7 +56,7 @@ uint32_t remove_attribute(struct pkcs11_attrs_head **head, uint32_t attrib);
  *
  * Return a PKCS11_OK on success or a PKCS11 return code.
  */
-uint32_t remove_attribute_check(struct pkcs11_attrs_head **head,
+uint32_t remove_attribute_check(struct obj_attrs **head,
 				uint32_t attribute, size_t max_check);
 
 /*
@@ -71,7 +71,7 @@ uint32_t remove_attribute_check(struct pkcs11_attrs_head **head,
  * If attr_size != NULL, return in in *attr_size attribute value size.
  * If attr != NULL return in *attr the address of the attribute value.
  */
-void get_attribute_ptrs(struct pkcs11_attrs_head *head, uint32_t attribute,
+void get_attribute_ptrs(struct obj_attrs *head, uint32_t attribute,
 			void **attr, uint32_t *attr_size, size_t *count);
 
 /*
@@ -81,7 +81,7 @@ void get_attribute_ptrs(struct pkcs11_attrs_head *head, uint32_t attribute,
  *
  * Return a PKCS11_OK or PKCS11_NOT_FOUND on success, or a PKCS11 return code.
  */
-uint32_t get_attribute_ptr(struct pkcs11_attrs_head *head, uint32_t attribute,
+uint32_t get_attribute_ptr(struct obj_attrs *head, uint32_t attribute,
 			   void **attr_ptr, uint32_t *attr_size);
 /*
  * If attribute is not found, return PKCS11_NOT_FOUND.
@@ -92,10 +92,10 @@ uint32_t get_attribute_ptr(struct pkcs11_attrs_head *head, uint32_t attribute,
  *
  * Return a PKCS11_OK or PKCS11_NOT_FOUND on success, or a PKCS11 return code.
  */
-uint32_t get_attribute(struct pkcs11_attrs_head *head, uint32_t attribute,
+uint32_t get_attribute(struct obj_attrs *head, uint32_t attribute,
 			void *attr, uint32_t *attr_size);
 
-static inline uint32_t get_u32_attribute(struct pkcs11_attrs_head *head,
+static inline uint32_t get_u32_attribute(struct obj_attrs *head,
 					 uint32_t attribute, uint32_t *attr)
 {
 	uint32_t size = sizeof(uint32_t);
@@ -113,29 +113,29 @@ static inline uint32_t get_u32_attribute(struct pkcs11_attrs_head *head,
  *
  * Return a PKCS11_OK on success, or a PKCS11 return code.
  */
-bool attributes_match_reference(struct pkcs11_attrs_head *ref,
-				struct pkcs11_attrs_head *candidate);
+bool attributes_match_reference(struct obj_attrs *ref,
+				struct obj_attrs *candidate);
 
 /*
  * Some helpers
  */
-static inline size_t attributes_size(struct pkcs11_attrs_head *head)
+static inline size_t attributes_size(struct obj_attrs *head)
 {
-	return sizeof(struct pkcs11_attrs_head) + head->attrs_size;
+	return sizeof(struct obj_attrs) + head->attrs_size;
 }
 
 #ifdef PKCS11_SHEAD_WITH_TYPE
-static inline uint32_t get_class(struct pkcs11_attrs_head *head)
+static inline uint32_t get_class(struct obj_attrs *head)
 {
 	return head->class;
 }
 
-static inline uint32_t get_type(struct pkcs11_attrs_head *head)
+static inline uint32_t get_type(struct obj_attrs *head)
 {
 	return head->type;
 }
 #else
-static inline uint32_t get_class(struct pkcs11_attrs_head *head)
+static inline uint32_t get_class(struct obj_attrs *head)
 {
 	uint32_t class;
 	uint32_t size = sizeof(class);
@@ -145,7 +145,7 @@ static inline uint32_t get_class(struct pkcs11_attrs_head *head)
 
 	return class;
 }
-static inline uint32_t get_type(struct pkcs11_attrs_head *head)
+static inline uint32_t get_type(struct obj_attrs *head)
 {
 	uint32_t type;
 	uint32_t size = sizeof(type);
@@ -157,7 +157,7 @@ static inline uint32_t get_type(struct pkcs11_attrs_head *head)
 }
 #endif
 
-bool get_bool(struct pkcs11_attrs_head *head, uint32_t attribute);
+bool get_bool(struct obj_attrs *head, uint32_t attribute);
 
 /* Debug: dump object attributes to IMSG() trace console */
 uint32_t trace_attributes(const char *prefix, void *ref);

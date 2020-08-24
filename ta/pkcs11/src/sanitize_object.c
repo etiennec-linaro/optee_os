@@ -24,7 +24,7 @@
  */
 #define PKCS11_ID(id)			case id:
 
-bool sanitize_consistent_class_and_type(struct pkcs11_attrs_head *attrs)
+bool sanitize_consistent_class_and_type(struct obj_attrs *attrs)
 {
 	enum pkcs11_class_id class = get_class(attrs);
 	enum pkcs11_key_type type = get_type(attrs);
@@ -51,7 +51,7 @@ bool sanitize_consistent_class_and_type(struct pkcs11_attrs_head *attrs)
 }
 
 /* Sanitize class/type in a client attribute list */
-static uint32_t sanitize_class_and_type(struct pkcs11_attrs_head **dst,
+static uint32_t sanitize_class_and_type(struct obj_attrs **dst,
 				     void *src)
 {
 	struct pkcs11_object_head head;
@@ -150,7 +150,7 @@ bail:
 	return rc;
 }
 
-static uint32_t sanitize_boolprop(struct pkcs11_attrs_head **dst,
+static uint32_t sanitize_boolprop(struct obj_attrs **dst,
 				struct pkcs11_attribute_head *cli_ref,
 				char *cur, uint32_t *boolprop_base,
 				uint32_t *sanity)
@@ -204,7 +204,7 @@ static uint32_t sanitize_boolprop(struct pkcs11_attrs_head **dst,
 	return PKCS11_CKR_OK;
 }
 
-static uint32_t sanitize_boolprops(struct pkcs11_attrs_head **dst, void *src)
+static uint32_t sanitize_boolprops(struct obj_attrs **dst, void *src)
 {
 	struct pkcs11_object_head head;
 	char *cur = NULL;
@@ -235,11 +235,11 @@ static uint32_t sanitize_boolprops(struct pkcs11_attrs_head **dst, void *src)
 }
 
 /* Counterpart of serialize_indirect_attribute() */
-static uint32_t sanitize_indirect_attr(struct pkcs11_attrs_head **dst,
+static uint32_t sanitize_indirect_attr(struct obj_attrs **dst,
 					struct pkcs11_attribute_head *cli_ref,
 					char *cur)
 {
-	struct pkcs11_attrs_head *obj2 = NULL;
+	struct obj_attrs *obj2 = NULL;
 	uint32_t rc = 0;
 	enum pkcs11_class_id class = get_class(*dst);
 
@@ -271,11 +271,11 @@ static uint32_t sanitize_indirect_attr(struct pkcs11_attrs_head **dst,
 		return rc;
 
 	return add_attribute(dst, cli_ref->id, obj2,
-			     sizeof(struct pkcs11_attrs_head) +
+			     sizeof(struct obj_attrs) +
 			     obj2->attrs_size);
 }
 
-uint32_t sanitize_client_object(struct pkcs11_attrs_head **dst,
+uint32_t sanitize_client_object(struct obj_attrs **dst,
 				void *src, size_t size)
 {
 	struct pkcs11_object_head head;

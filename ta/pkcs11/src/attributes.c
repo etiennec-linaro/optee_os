@@ -18,9 +18,9 @@
 #include "pkcs11_helpers.h"
 #include "serializer.h"
 
-uint32_t init_attributes_head(struct pkcs11_attrs_head **head)
+uint32_t init_attributes_head(struct obj_attrs **head)
 {
-	*head = TEE_Malloc(sizeof(struct pkcs11_attrs_head),
+	*head = TEE_Malloc(sizeof(struct obj_attrs),
 			   TEE_MALLOC_FILL_ZERO);
 	if (!*head)
 		return PKCS11_CKR_DEVICE_MEMORY;
@@ -50,10 +50,10 @@ static bool attribute_is_in_head(uint32_t attribute)
 }
 #endif
 
-uint32_t add_attribute(struct pkcs11_attrs_head **head,
+uint32_t add_attribute(struct obj_attrs **head,
 			uint32_t attribute, void *data, size_t size)
 {
-	size_t buf_len = sizeof(struct pkcs11_attrs_head) + (*head)->attrs_size;
+	size_t buf_len = sizeof(struct obj_attrs) + (*head)->attrs_size;
 	uint32_t rv = 0;
 	uint32_t data32 = 0;
 	char **bstart = (void *)head;
@@ -113,9 +113,9 @@ uint32_t add_attribute(struct pkcs11_attrs_head **head,
 	return rv;
 }
 
-uint32_t remove_attribute(struct pkcs11_attrs_head **head, uint32_t attribute)
+uint32_t remove_attribute(struct obj_attrs **head, uint32_t attribute)
 {
-	struct pkcs11_attrs_head *h = *head;
+	struct obj_attrs *h = *head;
 	char *cur = NULL;
 	char *end = NULL;
 	size_t next_off = 0;
@@ -129,7 +129,7 @@ uint32_t remove_attribute(struct pkcs11_attrs_head **head, uint32_t attribute)
 #endif
 
 	/* Let's find the target attribute */
-	cur = (char *)h + sizeof(struct pkcs11_attrs_head);
+	cur = (char *)h + sizeof(struct obj_attrs);
 	end = cur + h->attrs_size;
 	for (; cur < end; cur += next_off) {
 		struct pkcs11_ref pkcs11_ref;
@@ -153,10 +153,10 @@ uint32_t remove_attribute(struct pkcs11_attrs_head **head, uint32_t attribute)
 	return PKCS11_RV_NOT_FOUND;
 }
 
-uint32_t remove_attribute_check(struct pkcs11_attrs_head **head,
+uint32_t remove_attribute_check(struct obj_attrs **head,
 				uint32_t attribute, size_t max_check)
 {
-	struct pkcs11_attrs_head *h = *head;
+	struct obj_attrs *h = *head;
 	char *cur = NULL;
 	char *end = NULL;
 	size_t next_off = 0;
@@ -171,7 +171,7 @@ uint32_t remove_attribute_check(struct pkcs11_attrs_head **head,
 #endif
 
 	/* Let's find the target attribute */
-	cur = (char *)h + sizeof(struct pkcs11_attrs_head);
+	cur = (char *)h + sizeof(struct obj_attrs);
 	end = cur + h->attrs_size;
 	for (; cur < end; cur += next_off) {
 		struct pkcs11_ref pkcs11_ref;
@@ -211,10 +211,10 @@ uint32_t remove_attribute_check(struct pkcs11_attrs_head **head,
 	return PKCS11_CKR_OK;
 }
 
-void get_attribute_ptrs(struct pkcs11_attrs_head *head, uint32_t attribute,
+void get_attribute_ptrs(struct obj_attrs *head, uint32_t attribute,
 			void **attr, uint32_t *attr_size, size_t *count)
 {
-	char *cur = (char *)head + sizeof(struct pkcs11_attrs_head);
+	char *cur = (char *)head + sizeof(struct obj_attrs);
 	char *end = cur + head->attrs_size;
 	size_t next_off = 0;
 	size_t max_found = *count;
@@ -264,7 +264,7 @@ void get_attribute_ptrs(struct pkcs11_attrs_head *head, uint32_t attribute,
 	*count = found;
 }
 
-uint32_t get_attribute_ptr(struct pkcs11_attrs_head *head, uint32_t attribute,
+uint32_t get_attribute_ptr(struct obj_attrs *head, uint32_t attribute,
 			   void **attr_ptr, uint32_t *attr_size)
 {
 	size_t count = 1;
@@ -304,7 +304,7 @@ uint32_t get_attribute_ptr(struct pkcs11_attrs_head *head, uint32_t attribute,
 	return PKCS11_CKR_OK;
 }
 
-uint32_t get_attribute(struct pkcs11_attrs_head *head, uint32_t attribute,
+uint32_t get_attribute(struct obj_attrs *head, uint32_t attribute,
 			void *attr, uint32_t *attr_size)
 {
 	uint32_t rc = 0;
@@ -362,7 +362,7 @@ found:
 	return PKCS11_CKR_OK;
 }
 
-bool get_bool(struct pkcs11_attrs_head *head, uint32_t attribute)
+bool get_bool(struct obj_attrs *head, uint32_t attribute)
 {
 	uint32_t __maybe_unused rc = 0;
 	uint8_t bbool = 0;
@@ -391,8 +391,8 @@ bool get_bool(struct pkcs11_attrs_head *head, uint32_t attribute)
 	return !!bbool;
 }
 
-bool attributes_match_reference(struct pkcs11_attrs_head *candidate,
-				struct pkcs11_attrs_head *ref)
+bool attributes_match_reference(struct obj_attrs *candidate,
+				struct obj_attrs *ref)
 {
 	size_t count = ref->attrs_count;
 	unsigned char *ref_attr = ref->attrs;
@@ -548,7 +548,7 @@ static uint32_t __trace_attributes(char *prefix, void *src, void *end)
 }
 
 #ifdef PKCS11_SHEAD_WITH_BOOLPROPS
-static void trace_boolprops(const char *prefix, struct pkcs11_attrs_head *head)
+static void trace_boolprops(const char *prefix, struct obj_attrs *head)
 {
 	size_t __maybe_unused n = 0;
 
@@ -564,7 +564,7 @@ static void trace_boolprops(const char *prefix, struct pkcs11_attrs_head *head)
 
 uint32_t trace_attributes(const char *prefix, void *ref)
 {
-	struct pkcs11_attrs_head head;
+	struct obj_attrs head;
 	char *pre = NULL;
 	uint32_t rc = 0;
 	size_t __maybe_unused n = 0;

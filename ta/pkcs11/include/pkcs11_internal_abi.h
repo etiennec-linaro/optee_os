@@ -33,29 +33,4 @@ struct pkcs11_ref {
 	uint8_t data[];
 };
 
-/*
- * Header of a serialised memory object inside PKCS11 TA.
- *
- * @attrs_size; byte size of the serialized data
- * @attrs_count; number of items in the blob
- * @class - object class id (from CK literature): key, certif, etc...
- * @type - object type id, per class, i.e aes or des3 in the key class.
- * @boolpropl - 32bit bitmask storing boolean properties #0 to #31.
- * @boolproph - 32bit bitmask storing boolean properties #32 to #64.
- * @attrs - then starts the blob binary data
- */
-struct obj_attrs {
-	uint32_t attrs_size;
-	uint32_t attrs_count;
-#ifdef PKCS11_SHEAD_WITH_TYPE
-	uint32_t class;
-	uint32_t type;
-#endif
-#ifdef PKCS11_SHEAD_WITH_BOOLPROPS
-	uint32_t boolpropl;
-	uint32_t boolproph;
-#endif
-	uint8_t attrs[];
-};
-
 #endif /*PKCS11_INTERNAL_ABI_H*/

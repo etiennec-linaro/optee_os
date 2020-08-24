@@ -369,7 +369,7 @@ static uint32_t __trace_attributes(char *prefix, void *src, void *end)
 	*(prefix2 + prefix_len + 4) = '\0';
 
 	for (; cur < (char *)end; cur += next) {
-		struct pkcs11_ref pkcs11_ref;
+		struct pkcs11_attribute_head pkcs11_ref;
 		uint8_t data[4] = { 0 };
 		uint32_t data_u32 = 0;
 

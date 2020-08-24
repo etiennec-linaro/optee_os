@@ -132,7 +132,7 @@ uint32_t remove_attribute(struct obj_attrs **head, uint32_t attribute)
 	cur = (char *)h + sizeof(struct obj_attrs);
 	end = cur + h->attrs_size;
 	for (; cur < end; cur += next_off) {
-		struct pkcs11_ref pkcs11_ref;
+		struct pkcs11_attribute_head pkcs11_ref;
 
 		TEE_MemMove(&pkcs11_ref, cur, sizeof(pkcs11_ref));
 		next_off = sizeof(pkcs11_ref) + pkcs11_ref.size;
@@ -174,7 +174,7 @@ uint32_t remove_attribute_check(struct obj_attrs **head,
 	cur = (char *)h + sizeof(struct obj_attrs);
 	end = cur + h->attrs_size;
 	for (; cur < end; cur += next_off) {
-		struct pkcs11_ref pkcs11_ref;
+		struct pkcs11_attribute_head pkcs11_ref;
 
 		TEE_MemMove(&pkcs11_ref, cur, sizeof(pkcs11_ref));
 		next_off = sizeof(pkcs11_ref) + pkcs11_ref.size;
@@ -232,7 +232,7 @@ void get_attribute_ptrs(struct obj_attrs *head, uint32_t attribute,
 
 	for (; cur < end; cur += next_off) {
 		/* Structure aligned copy of the pkcs11_ref in the object */
-		struct pkcs11_ref pkcs11_ref;
+		struct pkcs11_attribute_head pkcs11_ref;
 
 		TEE_MemMove(&pkcs11_ref, cur, sizeof(pkcs11_ref));
 		next_off = sizeof(pkcs11_ref) + pkcs11_ref.size;
@@ -412,7 +412,7 @@ bool attributes_match_reference(struct obj_attrs *candidate,
 #endif
 
 	for (count = 0; count < ref->attrs_count; count++) {
-		struct pkcs11_ref pkcs11_ref;
+		struct pkcs11_attribute_head pkcs11_ref;
 		void *found = NULL;
 		uint32_t size = 0;
 		int shift = 0;
@@ -472,7 +472,7 @@ static uint32_t __trace_attributes(char *prefix, void *src, void *end)
 	*(prefix2 + prefix_len + 4) = '\0';
 
 	for (; cur < (char *)end; cur += next_off) {
-		struct pkcs11_ref pkcs11_ref;
+		struct pkcs11_attribute_head pkcs11_ref;
 		uint8_t data[4] = { 0 };
 
 		TEE_MemMove(&pkcs11_ref, cur, sizeof(pkcs11_ref));

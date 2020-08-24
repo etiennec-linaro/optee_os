@@ -203,8 +203,8 @@ TEE_Result TA_InvokeCommandEntryPoint(void *tee_session, uint32_t cmd,
 		rc = entry_ck_logout(client, ptypes, params);
 		break;
 
-	case PKCS11_CMD_IMPORT_OBJECT:
-		rc = entry_import_object(client, ptypes, params);
+	case PKCS11_CMD_CREATE_OBJECT:
+		rc = entry_create_object(client, ptypes, params);
 		break;
 	case PKCS11_CMD_DESTROY_OBJECT:
 		rc = entry_destroy_object(client, ptypes, params);

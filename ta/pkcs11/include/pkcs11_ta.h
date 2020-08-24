@@ -20,7 +20,7 @@
 
 /* Attribute specific values */
 #define PKCS11_CK_UNAVAILABLE_INFORMATION	UINT32_C(0xFFFFFFFF)
-#define PKCS11_UNDEFINED_ID			PKCS11_CK_UNAVAILABLE_INFORMATION
+#define PKCS11_UNDEFINED_ID			UINT32_C(0xFFFFFFFF)
 #define PKCS11_FALSE				false
 #define PKCS11_TRUE				true
 
@@ -44,13 +44,13 @@
  * return code for the invoked command.
  *
  * Param#1 can be used for input data arguments of the invoked command.
- * It is unused or is a input memory reference, aka memref[1].
+ * It is unused or is an input memory reference, aka memref[1].
  * Evolution of the API may use memref[1] for output data as well.
  *
  * Param#2 is mostly used for output data arguments of the invoked command
  * and for output handles generated from invoked commands.
  * Few commands uses it for a secondary input data buffer argument.
- * It is unused or is a input/output/in-out memory reference, aka memref[2].
+ * It is unused or is an input/output/in-out memory reference, aka memref[2].
  *
  * Param#3 is currently unused and reserved for evolution of the API.
  */
@@ -252,29 +252,9 @@ enum pkcs11_ta_cmd {
 	PKCS11_CMD_LOGOUT = 14,
 
 	/*
-	 * PKCS11_CMD_GET_SESSION_STATE - Retrieve the session state for later restore
+	 * PKCS11_CMD_CREATE_OBJECT - Create a raw client assembled object in
+	 *			      the session or token
 	 *
-	 * [in]  memref[0] = 32bit session handle
-	 * [out] memref[0] = 32bit return code, enum pkcs11_rc
-	 * [out] memref[2] = byte array containing session state binary blob
-	 *
-	 * This command relates to the PKCS#11 API function C_GetOperationState().
-	 */
-	PKCS11_CMD_GET_SESSION_STATE = 116,
-
-	/*
-	 * PKCS11_CMD_SET_SESSION_STATE - Retrieve the session state for later restore
-	 *
-	 * [in]  memref[0] = 32bit session handle
-	 * [out] memref[0] = 32bit return code, enum pkcs11_rc
-	 * [in]  memref[1] = byte array containing session state binary blob
-	 *
-	 * This command relates to the PKCS#11 API function C_SetOperationState().
-	 */
-	PKCS11_CMD_SET_SESSION_STATE = 117,
-
-	/*
-	 * PKCS11_CMD_IMPORT_OBJECT - Import a raw object in the session or token
 	 *
 	 * [in]  memref[0] = [
 	 *              32bit session handle,
@@ -285,22 +265,7 @@ enum pkcs11_ta_cmd {
 	 *
 	 * This command relates to the PKCS#11 API function C_CreateObject().
 	 */
-	PKCS11_CMD_IMPORT_OBJECT = 118,
-
-	/*
-	 * PKCS11_CMD_COPY_OBJECT - Duplicate an object possibly with new attributes
-	 *
-	 * [in]  memref[0] = [
-	 *              32bit session handle,
-	 *              32bit object handle,
-	 *              (struct pkcs11_object_head)attribs + attributes data,
-	 *	 ]
-	 * [out] memref[0] = 32bit return code, enum pkcs11_rc
-	 * [out] memref[2] = 32bit object handle
-	 *
-	 * This command relates to the PKCS#11 API function C_CopyObject().
-	 */
-	PKCS11_CMD_COPY_OBJECT = 119,
+	PKCS11_CMD_CREATE_OBJECT = 15,
 
 	/*
 	 * PKCS11_CMD_DESTROY_OBJECT - Destroy an object
@@ -313,105 +278,7 @@ enum pkcs11_ta_cmd {
 	 *
 	 * This command relates to the PKCS#11 API function C_DestroyObject().
 	 */
-	PKCS11_CMD_DESTROY_OBJECT = 120,
-
-	/*
-	 * PKCS11_CMD_FIND_OBJECTS_INIT - Initialize an object search
-	 *
-	 * [in]  memref[0] = [
-	 *              32bit session handle,
-	 *              (struct pkcs11_object_head)attribs + attributes data
-	 *	 ]
-	 * [out] memref[0] = 32bit return code, enum pkcs11_rc
-	 *
-	 * This command relates to the PKCS#11 API function C_FindOjectsInit().
-	 */
-	PKCS11_CMD_FIND_OBJECTS_INIT = 121,
-
-	/*
-	 * PKCS11_CMD_FIND_OBJECTS - Get handles of matching objects
-	 *
-	 * [in]  memref[0] = 32bit session handle
-	 * [out] memref[0] = 32bit return code, enum pkcs11_rc
-	 * [out] memref[2] = 32bit array object_handle_array[N]
-	 *
-	 * This command relates to the PKCS#11 API function C_FindOjects().
-	 * The size of object_handle_array depends on the size of the output buffer
-	 * provided by the client.
-	 */
-	PKCS11_CMD_FIND_OBJECTS = 122,
-
-	/*
-	 * PKCS11_CMD_FIND_OBJECTS_FINAL - Finalize current objects search
-	 *
-	 * [in]  memref[0] = 32bit session handle
-	 * [out] memref[0] = 32bit return code, enum pkcs11_rc
-	 *
-	 * This command relates to the PKCS#11 API function C_FindOjectsFinal().
-	 */
-	PKCS11_CMD_FIND_OBJECTS_FINAL = 123,
-
-	/*
-	 * PKCS11_CMD_GET_OBJECT_SIZE - Get byte size used by object in the TEE
-	 *
-	 * [in]  memref[0] = [
-	 *              32bit session handle,
-	 *              32bit object handle
-	 *	 ]
-	 * [out] memref[0] = 32bit return code, enum pkcs11_rc
-	 * [out] memref[2] = 32bit object_byte_size
-	 *
-	 * This command relates to the PKCS#11 API function C_GetObjectSize().
-	 */
-	PKCS11_CMD_GET_OBJECT_SIZE = 124,
-
-	/*
-	 * PKCS11_CMD_GET_ATTRIBUTE_VALUE - Get the value of object attribute(s)
-	 *
-	 * [in]  memref[0] = [
-	 *              32bit session handle,
-	 *              32bit object handle,
-	 *              (struct pkcs11_object_head)attribs + attributes data
-	 *	 ]
-	 * [out] memref[0] = 32bit return code, enum pkcs11_rc
-	 * [out] memref[2] = (struct pkcs11_object_head)attribs + attributes data
-	 *
-	 * This command relates to the PKCS#11 API function C_GetAttributeValue.
-	 * Caller provides an attribute template as 3rd argument in memref[0]
-	 * (referred here as attribs + attributes data). Upon successful completion,
-	 * the TA returns the provided template filled with expected data through
-	 * output argument memref[2] (referred here again as attribs + attributes data).
-	 */
-	PKCS11_CMD_GET_ATTRIBUTE_VALUE = 125,
-
-	/*
-	 * PKCS11_CMD_SET_ATTRIBUTE_VALUE - Set the value for object attribute(s)
-	 *
-	 * [in]  memref[0] = [
-	 *              32bit session handle,
-	 *              32bit object handle,
-	 *              (struct pkcs11_object_head)attribs + attributes data
-	 *	 ]
-	 * [out] memref[0] = 32bit return code, enum pkcs11_rc
-	 *
-	 * This command relates to the PKCS#11 API function C_SetAttributeValue().
-	 */
-	PKCS11_CMD_SET_ATTRIBUTE_VALUE = 126,
-
-	/*
-	 * PKCS11_CMD_GENERATE_KEY - Generate a symmetric key or domain parameters
-	 *
-	 * [in]  memref[0] = [
-	 *              32bit session handle,
-	 *              (struct pkcs11_attribute_head)mechanism + mecha params,
-	 *              (struct pkcs11_object_head)attribs + attributes data
-	 *	 ]
-	 * [out] memref[0] = 32bit return code, enum pkcs11_rc
-	 * [out] memref[2] = 32bit object handle
-	 *
-	 * This command relates to the PKCS#11 API functions C_GenerateKey().
-	 */
-	PKCS11_CMD_GENERATE_KEY = 127,
+	PKCS11_CMD_DESTROY_OBJECT = 16,
 
 	/*
 	 * PKCS11_CMD_ENCRYPT_INIT - Initialize encryption processing
@@ -542,6 +409,141 @@ enum pkcs11_ta_cmd {
 	 * This command relates to the PKCS#11 API function C_Verify().
 	 */
 	PKCS11_CMD_VERIFY_ONESHOT = 143,
+
+	/*
+	 * PKCS11_CMD_COPY_OBJECT - Duplicate an object possibly with new attributes
+	 *
+	 * [in]  memref[0] = [
+	 *              32bit session handle,
+	 *              32bit object handle,
+	 *              (struct pkcs11_object_head)attribs + attributes data,
+	 *	 ]
+	 * [out] memref[0] = 32bit return code, enum pkcs11_rc
+	 * [out] memref[2] = 32bit object handle
+	 *
+	 * This command relates to the PKCS#11 API function C_CopyObject().
+	 */
+	PKCS11_CMD_COPY_OBJECT = 119,
+
+	/*
+	 * PKCS11_CMD_GET_SESSION_STATE - Retrieve the session state for later restore
+	 *
+	 * [in]  memref[0] = 32bit session handle
+	 * [out] memref[0] = 32bit return code, enum pkcs11_rc
+	 * [out] memref[2] = byte array containing session state binary blob
+	 *
+	 * This command relates to the PKCS#11 API function C_GetOperationState().
+	 */
+	PKCS11_CMD_GET_SESSION_STATE = 116,
+
+	/*
+	 * PKCS11_CMD_SET_SESSION_STATE - Retrieve the session state for later restore
+	 *
+	 * [in]  memref[0] = 32bit session handle
+	 * [out] memref[0] = 32bit return code, enum pkcs11_rc
+	 * [in]  memref[1] = byte array containing session state binary blob
+	 *
+	 * This command relates to the PKCS#11 API function C_SetOperationState().
+	 */
+	PKCS11_CMD_SET_SESSION_STATE = 117,
+
+	/*
+	 * PKCS11_CMD_FIND_OBJECTS_INIT - Initialize an object search
+	 *
+	 * [in]  memref[0] = [
+	 *              32bit session handle,
+	 *              (struct pkcs11_object_head)attribs + attributes data
+	 *	 ]
+	 * [out] memref[0] = 32bit return code, enum pkcs11_rc
+	 *
+	 * This command relates to the PKCS#11 API function C_FindOjectsInit().
+	 */
+	PKCS11_CMD_FIND_OBJECTS_INIT = 121,
+
+	/*
+	 * PKCS11_CMD_FIND_OBJECTS - Get handles of matching objects
+	 *
+	 * [in]  memref[0] = 32bit session handle
+	 * [out] memref[0] = 32bit return code, enum pkcs11_rc
+	 * [out] memref[2] = 32bit array object_handle_array[N]
+	 *
+	 * This command relates to the PKCS#11 API function C_FindOjects().
+	 * The size of object_handle_array depends on the size of the output buffer
+	 * provided by the client.
+	 */
+	PKCS11_CMD_FIND_OBJECTS = 122,
+
+	/*
+	 * PKCS11_CMD_FIND_OBJECTS_FINAL - Finalize current objects search
+	 *
+	 * [in]  memref[0] = 32bit session handle
+	 * [out] memref[0] = 32bit return code, enum pkcs11_rc
+	 *
+	 * This command relates to the PKCS#11 API function C_FindOjectsFinal().
+	 */
+	PKCS11_CMD_FIND_OBJECTS_FINAL = 123,
+
+	/*
+	 * PKCS11_CMD_GET_OBJECT_SIZE - Get byte size used by object in the TEE
+	 *
+	 * [in]  memref[0] = [
+	 *              32bit session handle,
+	 *              32bit object handle
+	 *	 ]
+	 * [out] memref[0] = 32bit return code, enum pkcs11_rc
+	 * [out] memref[2] = 32bit object_byte_size
+	 *
+	 * This command relates to the PKCS#11 API function C_GetObjectSize().
+	 */
+	PKCS11_CMD_GET_OBJECT_SIZE = 124,
+
+	/*
+	 * PKCS11_CMD_GET_ATTRIBUTE_VALUE - Get the value of object attribute(s)
+	 *
+	 * [in]  memref[0] = [
+	 *              32bit session handle,
+	 *              32bit object handle,
+	 *              (struct pkcs11_object_head)attribs + attributes data
+	 *	 ]
+	 * [out] memref[0] = 32bit return code, enum pkcs11_rc
+	 * [out] memref[2] = (struct pkcs11_object_head)attribs + attributes data
+	 *
+	 * This command relates to the PKCS#11 API function C_GetAttributeValue.
+	 * Caller provides an attribute template as 3rd argument in memref[0]
+	 * (referred here as attribs + attributes data). Upon successful completion,
+	 * the TA returns the provided template filled with expected data through
+	 * output argument memref[2] (referred here again as attribs + attributes data).
+	 */
+	PKCS11_CMD_GET_ATTRIBUTE_VALUE = 125,
+
+	/*
+	 * PKCS11_CMD_SET_ATTRIBUTE_VALUE - Set the value for object attribute(s)
+	 *
+	 * [in]  memref[0] = [
+	 *              32bit session handle,
+	 *              32bit object handle,
+	 *              (struct pkcs11_object_head)attribs + attributes data
+	 *	 ]
+	 * [out] memref[0] = 32bit return code, enum pkcs11_rc
+	 *
+	 * This command relates to the PKCS#11 API function C_SetAttributeValue().
+	 */
+	PKCS11_CMD_SET_ATTRIBUTE_VALUE = 126,
+
+	/*
+	 * PKCS11_CMD_GENERATE_KEY - Generate a symmetric key or domain parameters
+	 *
+	 * [in]  memref[0] = [
+	 *              32bit session handle,
+	 *              (struct pkcs11_attribute_head)mechanism + mecha params,
+	 *              (struct pkcs11_object_head)attribs + attributes data
+	 *	 ]
+	 * [out] memref[0] = 32bit return code, enum pkcs11_rc
+	 * [out] memref[2] = 32bit object handle
+	 *
+	 * This command relates to the PKCS#11 API functions C_GenerateKey().
+	 */
+	PKCS11_CMD_GENERATE_KEY = 127,
 
 	/*
 	 * PKCS11_CMD_DERIVE_KEY - Derive a key from already provisioned parent key
@@ -801,10 +803,10 @@ struct pkcs11_mechanism_info {
  * pkcs11_object_head - Header of object whose data are serialized in memory
  *
  * An object is made of several attributes. Attributes are stored one next to
- * the other with byte alignment as a serialized byte arrays. Appended
- * attributes byte arrays are prepend with this header structure that
- * defines the number of attribute items and the overall byte size of byte
- * array field pkcs11_object_head::attrs.
+ * the other with byte alignment as a serialized byte array. The byte array
+ * of serialized attributes is prepended with the size of the attrs[] array
+ * in bytes and the number of attributes in the array, yielding the struct
+ * pkcs11_object_head.
  *
  * @attrs_size - byte size of whole byte array attrs[]
  * @attrs_count - number of attribute items stored in attrs[]
@@ -868,7 +870,7 @@ enum boolprop_attr {
 };
 
 /*
- * Attribute identification IDs
+ * Attribute identification IDs as of v2.40 excluding deprecated IDs.
  * Valid values for struct pkcs11_attribute_head::id
  * PKCS11_CKA_<x> reflects CryptoKi client API attribute IDs CKA_<x>.
  */
@@ -938,6 +940,10 @@ enum pkcs11_attr_id {
 	PKCS11_CKA_EC_POINT			= 0x0181,
 	PKCS11_CKA_ALWAYS_AUTHENTICATE		= 0x0202,
 	PKCS11_CKA_WRAP_WITH_TRUSTED		= 0x0210,
+	/*
+	 * The leading 4 comes from the PKCS#11 spec or:ing with
+	 * CKF_ARRAY_ATTRIBUTE = 0x40000000.
+	 */
 	PKCS11_CKA_WRAP_TEMPLATE		= 0x40000211,
 	PKCS11_CKA_UNWRAP_TEMPLATE		= 0x40000212,
 	PKCS11_CKA_DERIVE_TEMPLATE		= 0x40000213,
@@ -975,6 +981,10 @@ enum pkcs11_attr_id {
 	PKCS11_CKA_REQUIRED_CMS_ATTRIBUTES	= 0x0501,
 	PKCS11_CKA_DEFAULT_CMS_ATTRIBUTES	= 0x0502,
 	PKCS11_CKA_SUPPORTED_CMS_ATTRIBUTES	= 0x0503,
+	/*
+	 * The leading 4 comes from the PKCS#11 spec or:ing with
+	 * CKF_ARRAY_ATTRIBUTE = 0x40000000.
+	 */
 	PKCS11_CKA_ALLOWED_MECHANISMS		= 0x40000600,
 	/* Temporary storage until DER/BigInt conversion is available */
 	PKCS11_CKA_EC_POINT_X			= 0x80001000,
@@ -1004,6 +1014,7 @@ enum pkcs11_class_id {
 /*
  * Valid values for attribute PKCS11_CKA_KEY_TYPE
  * PKCS11_CKK_<x> reflects CryptoKi client API key type IDs CKK_<x>.
+ * Note that this is only a subset of the PKCS#11 specification.
  */
 enum pkcs11_key_type {
 	PKCS11_CKK_RSA				= 0x000,
@@ -1025,6 +1036,7 @@ enum pkcs11_key_type {
 /*
  * Valid values for mechanism IDs
  * PKCS11_CKM_<x> reflects CryptoKi client API mechanism IDs CKM_<x>.
+ * Note that this will be extended as needed.
  */
 enum pkcs11_mechanism_id {
 	PKCS11_CKM_RSA_PKCS_KEY_PAIR_GEN	= 0x00000,
@@ -1121,7 +1133,10 @@ enum pkcs11_mechanism_id {
 	PKCS11_CKM_AES_CBC_ENCRYPT_DATA		= 0x01105,
 	PKCS11_CKM_AES_KEY_WRAP			= 0x02109,
 	PKCS11_CKM_AES_KEY_WRAP_PAD		= 0x0210a,
-	/* PKCS11 added IDs for operation no related to a CK mechanism ID */
+	/*
+	 * Vendor extensions below.
+	 * PKCS11 added IDs for operation not related to a CK mechanism ID
+	 */
 	PKCS11_PROCESSING_IMPORT		= 0x80000000,
 	PKCS11_PROCESSING_COPY			= 0x80000001,
 	PKCS11_CKM_UNDEFINED_ID			= PKCS11_UNDEFINED_ID,

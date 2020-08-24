@@ -6,9 +6,11 @@
 #ifndef PKCS11_TA_OBJECT_H
 #define PKCS11_TA_OBJECT_H
 
+#include <pkcs11_ta.h>
 #include <sys/queue.h>
 #include <tee_internal_api.h>
 
+struct obj_attrs;
 struct pkcs11_client;
 struct pkcs11_session;
 
@@ -44,7 +46,7 @@ void destroy_object(struct pkcs11_session *session,
 /*
  * Entry function called from the PKCS11 command parser
  */
-uint32_t entry_import_object(struct pkcs11_client *client,
+uint32_t entry_create_object(struct pkcs11_client *client,
 			     uint32_t ptypes, TEE_Param *params);
 
 uint32_t entry_destroy_object(struct pkcs11_client *client,

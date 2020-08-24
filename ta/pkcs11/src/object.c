@@ -259,7 +259,7 @@ bail:
 	return rv;
 }
 
-uint32_t entry_import_object(struct pkcs11_client *client,
+uint32_t entry_create_object(struct pkcs11_client *client,
 			     uint32_t ptypes, TEE_Param *params)
 {
         const uint32_t exp_pt = TEE_PARAM_TYPES(TEE_PARAM_TYPE_MEMREF_INOUT,

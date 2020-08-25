@@ -697,7 +697,7 @@ enum pkcs11_rc entry_ck_close_session(struct pkcs11_client *client,
 
 	serialargs_init(&ctrlargs, ctrl->memref.buffer, ctrl->memref.size);
 
-	rc = serialargs_get_session(&ctrlargs, client, &session);
+	rc = serialargs_get_session_from_handle(&ctrlargs, client, &session);
 	if (rc)
 		return rc;
 
@@ -770,7 +770,7 @@ enum pkcs11_rc entry_ck_session_info(struct pkcs11_client *client,
 
 	serialargs_init(&ctrlargs, ctrl->memref.buffer, ctrl->memref.size);
 
-	rc = serialargs_get_session(&ctrlargs, client, &session);
+	rc = serialargs_get_session_from_handle(&ctrlargs, client, &session);
 	if (rc)
 		return rc;
 
@@ -986,7 +986,7 @@ enum pkcs11_rc entry_ck_init_pin(struct pkcs11_client *client,
 
 	serialargs_init(&ctrlargs, ctrl->memref.buffer, ctrl->memref.size);
 
-	rc = serialargs_get_session(&ctrlargs, client, &session);
+	rc = serialargs_get_session_from_handle(&ctrlargs, client, &session);
 	if (rc)
 		return rc;
 
@@ -1141,7 +1141,7 @@ enum pkcs11_rc entry_ck_set_pin(struct pkcs11_client *client,
 
 	serialargs_init(&ctrlargs, ctrl->memref.buffer, ctrl->memref.size);
 
-	rc = serialargs_get_session(&ctrlargs, client, &session);
+	rc = serialargs_get_session_from_handle(&ctrlargs, client, &session);
 	if (rc)
 		return rc;
 
@@ -1263,7 +1263,7 @@ enum pkcs11_rc entry_ck_login(struct pkcs11_client *client,
 
 	serialargs_init(&ctrlargs, ctrl->memref.buffer, ctrl->memref.size);
 
-	rc = serialargs_get_session(&ctrlargs, client, &session);
+	rc = serialargs_get_session_from_handle(&ctrlargs, client, &session);
 	if (rc)
 		return rc;
 
@@ -1390,7 +1390,7 @@ enum pkcs11_rc entry_ck_logout(struct pkcs11_client *client,
 
 	serialargs_init(&ctrlargs, ctrl->memref.buffer, ctrl->memref.size);
 
-	rc = serialargs_get_session(&ctrlargs, client, &session);
+	rc = serialargs_get_session_from_handle(&ctrlargs, client, &session);
 	if (rc)
 		return rc;
 

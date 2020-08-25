@@ -293,7 +293,7 @@ enum pkcs11_rc entry_create_object(struct pkcs11_client *client,
 
 	serialargs_init(&ctrlargs, ctrl->memref.buffer, ctrl->memref.size);
 
-	rc = serialargs_get_session(&ctrlargs, client, &session);
+	rc = serialargs_get_session_from_handle(&ctrlargs, client, &session);
 	if (rc)
 		return rc;
 
@@ -383,7 +383,7 @@ enum pkcs11_rc entry_destroy_object(struct pkcs11_client *client,
 
 	serialargs_init(&ctrlargs, ctrl->memref.buffer, ctrl->memref.size);
 
-	rc = serialargs_get_session(&ctrlargs, client, &session);
+	rc = serialargs_get_session_from_handle(&ctrlargs, client, &session);
 	if (rc)
 		return rc;
 
@@ -528,7 +528,7 @@ uint32_t entry_find_objects_init(struct pkcs11_client *client,
 
 	serialargs_init(&ctrlargs, ctrl->memref.buffer, ctrl->memref.size);
 
-	rv = serialargs_get_session(&ctrlargs, client, &session);
+	rv = serialargs_get_session_from_handle(&ctrlargs, client, &session);
 	if (rv)
 		return rv;
 
@@ -707,7 +707,7 @@ uint32_t entry_find_objects(struct pkcs11_client *client,
 
 	serialargs_init(&ctrlargs, ctrl->memref.buffer, ctrl->memref.size);
 
-	rv = serialargs_get_session(&ctrlargs, client, &session);
+	rv = serialargs_get_session_from_handle(&ctrlargs, client, &session);
 	if (rv)
 		return rv;
 
@@ -774,7 +774,7 @@ uint32_t entry_find_objects_final(struct pkcs11_client *client,
 
 	serialargs_init(&ctrlargs, ctrl->memref.buffer, ctrl->memref.size);
 
-	rv = serialargs_get_session(&ctrlargs, client, &session);
+	rv = serialargs_get_session_from_handle(&ctrlargs, client, &session);
 	if (rv)
 		return rv;
 
@@ -816,7 +816,7 @@ uint32_t entry_get_attribute_value(struct pkcs11_client *client,
 
 	serialargs_init(&ctrlargs, ctrl->memref.buffer, ctrl->memref.size);
 
-	rv = serialargs_get_session(&ctrlargs, client, &session);
+	rv = serialargs_get_session_from_handle(&ctrlargs, client, &session);
 	if (rv)
 		return rv;
 
@@ -963,7 +963,7 @@ uint32_t entry_get_object_size(struct pkcs11_client *client,
 
 	serialargs_init(&ctrlargs, ctrl->memref.buffer, ctrl->memref.size);
 
-	rv = serialargs_get_session(&ctrlargs, client, &session);
+	rv = serialargs_get_session_from_handle(&ctrlargs, client, &session);
 	if (rv)
 		return rv;
 

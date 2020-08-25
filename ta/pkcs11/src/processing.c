@@ -209,7 +209,7 @@ uint32_t entry_generate_secret(struct pkcs11_client *client,
 
 	serialargs_init(&ctrlargs, ctrl->memref.buffer, ctrl->memref.size);
 
-	rv = serialargs_get_session(&ctrlargs, client, &session);
+	rv = serialargs_get_session_from_handle(&ctrlargs, client, &session);
 	if (rv)
 		return rv;
 
@@ -391,7 +391,7 @@ uint32_t entry_generate_key_pair(struct pkcs11_client *client,
 
 	serialargs_init(&ctrlargs, ctrl->memref.buffer, ctrl->memref.size);
 
-	rv = serialargs_get_session(&ctrlargs, client, &session);
+	rv = serialargs_get_session_from_handle(&ctrlargs, client, &session);
 	if (rv)
 		return rv;
 
@@ -561,7 +561,7 @@ uint32_t entry_processing_init(struct pkcs11_client *client,
 
 	serialargs_init(&ctrlargs, ctrl->memref.buffer, ctrl->memref.size);
 
-	rv = serialargs_get_session(&ctrlargs, client, &session);
+	rv = serialargs_get_session_from_handle(&ctrlargs, client, &session);
 	if (rv)
 		return rv;
 
@@ -659,7 +659,7 @@ uint32_t entry_processing_step(struct pkcs11_client *client,
 
 	serialargs_init(&ctrlargs, ctrl->memref.buffer, ctrl->memref.size);
 
-	rv = serialargs_get_session(&ctrlargs, client, &session);
+	rv = serialargs_get_session_from_handle(&ctrlargs, client, &session);
 	if (rv)
 		return rv;
 
@@ -740,7 +740,7 @@ uint32_t entry_verify_oneshot(struct pkcs11_client *client,
 
 	serialargs_init(&ctrlargs, ctrl->memref.buffer, ctrl->memref.size);
 
-	rv = serialargs_get_session(&ctrlargs, client, &session);
+	rv = serialargs_get_session_from_handle(&ctrlargs, client, &session);
 	if (rv)
 		return rv;
 
@@ -805,7 +805,7 @@ uint32_t entry_derive_key(struct pkcs11_client *client,
 
 	serialargs_init(&ctrlargs, ctrl->memref.buffer, ctrl->memref.size);
 
-	rv = serialargs_get_session(&ctrlargs, client, &session);
+	rv = serialargs_get_session_from_handle(&ctrlargs, client, &session);
 	if (rv)
 		return rv;
 

@@ -174,28 +174,23 @@ bool serialargs_remaining_bytes(struct serialargs *args)
 	return args->next < args->start + args->size;
 }
 
-/*
- * Specific helper has PKCS11_CKR_SESSION_HANDLE_INVALID shall take precedence
- * other errors when a request is invoked with a bad PKCS#11 session handle
- * as specified by the PKCS#11 specification.
- */
-uint32_t serialargs_get_session(struct serialargs *args,
-				struct pkcs11_client *client,
-				struct pkcs11_session **session)
+enum pkcs11_rc serialargs_get_session_from_handle(struct serialargs *args,
+						  struct pkcs11_client *client,
+						  struct pkcs11_session **sess)
 {
 	uint32_t rv = PKCS11_CKR_GENERAL_ERROR;
 	uint32_t session_handle = 0;
-	struct pkcs11_session *sess = NULL;
+	struct pkcs11_session *session = NULL;
 
-	rv = serialargs_get(args, &session_handle, sizeof(session_handle));
+	rv = serialargs_get(args, &session_handle, sizeof(uint32_t));
 	if (rv)
 		return rv;
 
-	sess = pkcs11_handle2session(session_handle, client);
-	if (!sess)
+	session = pkcs11_handle2session(session_handle, client);
+	if (!session)
 		return PKCS11_CKR_SESSION_HANDLE_INVALID;
 
-	*session = sess;
+	*sess = session;
 
 	return PKCS11_CKR_OK;
 }

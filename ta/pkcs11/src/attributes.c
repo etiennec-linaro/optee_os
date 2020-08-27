@@ -542,7 +542,8 @@ static void __trace_attributes(char *prefix, void *src, void *end)
 		case PKCS11_CKA_WRAP_TEMPLATE:
 		case PKCS11_CKA_UNWRAP_TEMPLATE:
 		case PKCS11_CKA_DERIVE_TEMPLATE:
-			trace_attributes(prefix2, cur + sizeof(pkcs11_ref));
+			if (pkcs11_ref.size)
+				trace_attributes(prefix2, cur + sizeof(pkcs11_ref));
 			break;
 		default:
 			break;
@@ -577,6 +578,9 @@ void trace_attributes(const char *prefix, void *ref)
 	char *pre = NULL;
 
 	TEE_MemMove(&head, ref, sizeof(head));
+
+	if (!head.attrs_count)
+		return;
 
 	pre = TEE_Malloc(prefix ? strlen(prefix) + 2 : 2, TEE_MALLOC_FILL_ZERO);
 	if (!pre) {

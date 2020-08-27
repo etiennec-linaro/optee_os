@@ -1210,12 +1210,25 @@ static bool parent_key_complies_allowed_processings(
 	uint32_t size = 0;
 	uint32_t proc = 0;
 	size_t count = 0;
+	enum pkcs11_rc rc = PKCS11_CKR_GENERAL_ERROR;
 
-	/* Check only if restricted allowed mechanisms list is defined */
-	if (get_attribute_ptr(head, PKCS11_CKA_ALLOWED_MECHANISMS,
-			      (void *)&attr, &size) != PKCS11_CKR_OK) {
+
+	/*
+	 * Check only if restricted allowed mechanisms list is defined
+	 * (FIXME: ALLOWED_MECHANISMS should always be found!!!)
+	 */
+	rc = get_attribute_ptr(head, PKCS11_CKA_ALLOWED_MECHANISMS,
+			       (void *)&attr, &size);
+	switch (rc) {
+	case PKCS11_RV_NOT_FOUND:
 		return true;
+	case PKCS11_CKR_OK:
+		break;
+	default:
+		TEE_Panic(0);
 	}
+	if (!attr)
+		return true;
 
 	for (count = size / sizeof(uint32_t); count; count--) {
 		TEE_MemMove(&proc, attr, sizeof(uint32_t));

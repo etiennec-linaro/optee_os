@@ -135,8 +135,23 @@ void close_persistent_db(struct ck_token *token __unused)
 {
 }
 
+static int get_persistent_obj_idx(struct ck_token *token, TEE_UUID *uuid)
+{
+	size_t i = 0;
+
+	if (!uuid)
+		return -1;
+
+	for (i = 0; i < token->db_objs->count; i++)
+		if (!TEE_MemCompare(token->db_objs->uuids + i,
+				    uuid, sizeof(TEE_UUID)))
+			return i;
+
+	return -1;
+}
+
 /* UUID for persistent object */
-enum pkcs11_rc create_object_uuid(struct ck_token *token __unused,
+enum pkcs11_rc create_object_uuid(struct ck_token *token,
 				  struct pkcs11_object *obj)
 {
 	assert(!obj->uuid);
@@ -146,21 +161,18 @@ enum pkcs11_rc create_object_uuid(struct ck_token *token __unused,
 	if (!obj->uuid)
 		return PKCS11_CKR_DEVICE_MEMORY;
 
-	TEE_GenerateRandom(obj->uuid, sizeof(TEE_UUID));
+	do {
+		TEE_GenerateRandom(obj->uuid, sizeof(TEE_UUID));
+	} while (get_persistent_obj_idx(token, obj->uuid) >= 0);
 
-	/*
-	 * TODO: check uuid against already registered one (in persistent
-	 * database) and the pending created uuids (not already registered
-	 * if any).
-	 */
 	return PKCS11_CKR_OK;
 }
 
 void destroy_object_uuid(struct ck_token *token __maybe_unused,
 			 struct pkcs11_object *obj)
 {
+	assert(get_persistent_obj_idx(token, obj->uuid) < 0);
 
-	/* TODO: check uuid is not still registered in persistent db ? */
 	TEE_Free(obj->uuid);
 	obj->uuid = NULL;
 }
@@ -184,21 +196,17 @@ enum pkcs11_rc get_persistent_objects_list(struct ck_token *token,
 enum pkcs11_rc unregister_persistent_object(struct ck_token *token,
 					    TEE_UUID *uuid)
 {
-	int index = 0;
-	int count = 0;
-	struct token_persistent_objs *ptr;
-	TEE_Result res = TEE_ERROR_GENERIC;
 	TEE_ObjectHandle db_hdl = TEE_HANDLE_NULL;
+	struct token_persistent_objs *ptr = NULL;
+	TEE_Result res = TEE_ERROR_GENERIC;
+	int count = 0;
+	int idx = 0;
 
 	if (!uuid)
 		return PKCS11_CKR_OK;
 
-	for (index = (int)(token->db_objs->count) - 1; index >= 0; index--)
-		if (!TEE_MemCompare(token->db_objs->uuids + index,
-				    uuid, sizeof(TEE_UUID)))
-			break;
-
-	if (index < 0) {
+	idx = get_persistent_obj_idx(token, uuid);
+	if (idx < 0) {
 		DMSG("Cannot unregister an invalid persistent object");
 		return PKCS11_RV_NOT_FOUND;
 	}
@@ -222,13 +230,13 @@ enum pkcs11_rc unregister_persistent_object(struct ck_token *token,
 
 	TEE_MemMove(ptr, token->db_objs,
 		    sizeof(struct token_persistent_objs) +
-		    index * sizeof(TEE_UUID));
+		    idx * sizeof(TEE_UUID));
 
 	ptr->count--;
-	count = ptr->count - index;
+	count = ptr->count - idx;
 
-	TEE_MemMove(&ptr->uuids[index],
-		    &token->db_objs->uuids[index + 1],
+	TEE_MemMove(&ptr->uuids[idx],
+		    &token->db_objs->uuids[idx + 1],
 		    count * sizeof(TEE_UUID));
 
 	res = TEE_WriteObjectData(db_hdl, ptr,
@@ -236,34 +244,28 @@ enum pkcs11_rc unregister_persistent_object(struct ck_token *token,
 				  ptr->count * sizeof(TEE_UUID));
 	if (res)
 		DMSG("Failed to update database");
+	TEE_Free(token->db_objs);
+	token->db_objs = ptr;
+	ptr = NULL;
 
 out:
 	TEE_CloseObject(db_hdl);
+	TEE_Free(ptr);
 
-	TEE_Free(token->db_objs);
-	token->db_objs = ptr;
-
-	if (res) {
-		TEE_Free(ptr);
-		tee2pkcs_error(res);
-	}
-
-	return PKCS11_CKR_OK;
+	return tee2pkcs_error(res);
 }
 
 enum pkcs11_rc register_persistent_object(struct ck_token *token,
 					  TEE_UUID *uuid)
 {
-	int count = 0;
-	void *ptr = NULL;
-	size_t __maybe_unused size = 0;
-	TEE_Result res = TEE_ERROR_GENERIC;
 	TEE_ObjectHandle db_hdl = TEE_HANDLE_NULL;
+	TEE_Result res = TEE_ERROR_GENERIC;
+	void *ptr = NULL;
+	size_t size = 0;
+	int count = 0;
 
-	for (count = (int)token->db_objs->count - 1; count >= 0; count--)
-		if (!TEE_MemCompare(token->db_objs->uuids + count, uuid,
-				    sizeof(TEE_UUID)))
-			TEE_Panic(0);
+	if (get_persistent_obj_idx(token, uuid) >= 0)
+		TEE_Panic(0);
 
 	count = token->db_objs->count;
 	ptr = TEE_Realloc(token->db_objs,
@@ -301,11 +303,7 @@ enum pkcs11_rc register_persistent_object(struct ck_token *token,
 		token->db_objs->count--;
 
 out:
-	if (db_hdl != TEE_HANDLE_NULL)
-		TEE_CloseObject(db_hdl);
-
-	if (!res)
-		return PKCS11_CKR_OK;
+	TEE_CloseObject(db_hdl);
 
 	return tee2pkcs_error(res);
 }

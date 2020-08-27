@@ -84,10 +84,20 @@ enum pkcs11_rc add_attribute(struct obj_attrs **head, uint32_t attribute,
 uint32_t remove_attribute(struct obj_attrs **head, uint32_t attrib);
 
 /*
- * Update serialized attributes to remove an entry. Can relocate the attribute
- * list buffer. If attribute ID is find several times, remove all of them.
+ * Update serialized attributes to remove an empty entry. Can relocate the
+ * attribute list buffer. Only 1 instance of the entry is expected.
  *
- * Return a PKCS11_OK on success or a PKCS11 return code.
+ * Return PKCS11_OK on success or a PKCS11 return code.
+ */
+enum pkcs11_rc remove_empty_attribute(struct obj_attrs **head, uint32_t attrib);
+
+/*
+ * Update serialized attributes to remove an entry if found. Can relocate the
+ * attribute list buffer. If attribute ID is find several times, remove all
+ * of them.
+ *
+ * Return a PKCS11_OK on success if attribute(s) is/are found,
+ * PKCS11_RV_NOT_FOUND if attribute is not found or a PKCS11 error code.
  */
 uint32_t remove_attribute_check(struct obj_attrs **head,
 				uint32_t attribute, size_t max_check);

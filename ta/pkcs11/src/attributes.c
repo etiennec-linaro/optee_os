@@ -113,7 +113,8 @@ enum pkcs11_rc add_attribute(struct obj_attrs **head, uint32_t attribute,
 	return rc;
 }
 
-uint32_t remove_attribute(struct obj_attrs **head, uint32_t attribute)
+static uint32_t _remove_attribute(struct obj_attrs **head, uint32_t attribute,
+				  bool empty)
 {
 	struct obj_attrs *h = *head;
 	char *cur = NULL;
@@ -140,6 +141,9 @@ uint32_t remove_attribute(struct obj_attrs **head, uint32_t attribute)
 		if (pkcs11_ref.id != attribute)
 			continue;
 
+		if (empty && pkcs11_ref.size)
+			return PKCS11_CKR_FUNCTION_FAILED;
+
 		TEE_MemMove(cur, cur + next_off, end - (cur + next_off));
 
 		h->attrs_count--;
@@ -151,6 +155,17 @@ uint32_t remove_attribute(struct obj_attrs **head, uint32_t attribute)
 
 	DMSG("PKCS11_VALUE not found");
 	return PKCS11_RV_NOT_FOUND;
+}
+
+uint32_t remove_attribute(struct obj_attrs **head, uint32_t attribute)
+{
+	return _remove_attribute(head, attribute, false);
+}
+
+enum pkcs11_rc remove_empty_attribute(struct obj_attrs **head,
+				      uint32_t attribute)
+{
+	return _remove_attribute(head, attribute, true /* empty */);
 }
 
 uint32_t remove_attribute_check(struct obj_attrs **head,

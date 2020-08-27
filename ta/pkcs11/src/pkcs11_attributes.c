@@ -207,8 +207,8 @@ static enum pkcs11_rc set_mandatory_attributes(struct obj_attrs **out,
 		void *value = NULL;
 
 		if (get_attribute_ptr(temp, bp[n], &value, &size)) {
-			/* FIXME: currently set attribute as empty. Fail? */
-			size = 0;
+			DMSG("Missing attribute %s", id2str_attr(bp[n]));
+			return PKCS11_CKR_TEMPLATE_INCOMPLETE;
 		}
 
 		rc = add_attribute(out, bp[n], value, size);

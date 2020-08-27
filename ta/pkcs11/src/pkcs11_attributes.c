@@ -256,8 +256,8 @@ static const uint32_t pkcs11_any_object_boolprops[] = {
 	PKCS11_CKA_TOKEN, PKCS11_CKA_PRIVATE,
 	PKCS11_CKA_MODIFIABLE, PKCS11_CKA_COPYABLE, PKCS11_CKA_DESTROYABLE,
 };
-static const uint32_t pkcs11_any_object_mandated[] = {
 
+static const uint32_t pkcs11_any_object_optional[] = {
 	PKCS11_CKA_LABEL,
 };
 
@@ -390,8 +390,8 @@ static enum pkcs11_rc create_storage_attributes(struct obj_attrs **out,
 	if (rc)
 		return rc;
 
-	return set_mandatory_attributes(out, temp, pkcs11_any_object_mandated,
-					ARRAY_SIZE(pkcs11_any_object_mandated));
+	return set_optional_attributes(out, temp, pkcs11_any_object_optional,
+				       ARRAY_SIZE(pkcs11_any_object_optional));
 }
 
 static enum pkcs11_rc create_genkey_attributes(struct obj_attrs **out,

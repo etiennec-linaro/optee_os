@@ -113,8 +113,8 @@ enum pkcs11_rc add_attribute(struct obj_attrs **head, uint32_t attribute,
 	return rc;
 }
 
-static uint32_t _remove_attribute(struct obj_attrs **head, uint32_t attribute,
-				  bool empty)
+static enum pkcs11_rc _remove_attribute(struct obj_attrs **head,
+					uint32_t attribute, bool empty)
 {
 	struct obj_attrs *h = *head;
 	char *cur = NULL;
@@ -151,6 +151,7 @@ static uint32_t _remove_attribute(struct obj_attrs **head, uint32_t attribute,
 		h->attrs_size -= next_off;
 		end -= next_off;
 		next_off = 0;
+
 		return PKCS11_CKR_OK;
 	}
 
@@ -158,7 +159,7 @@ static uint32_t _remove_attribute(struct obj_attrs **head, uint32_t attribute,
 	return PKCS11_RV_NOT_FOUND;
 }
 
-uint32_t remove_attribute(struct obj_attrs **head, uint32_t attribute)
+enum pkcs11_rc remove_attribute(struct obj_attrs **head, uint32_t attribute)
 {
 	return _remove_attribute(head, attribute, false);
 }
@@ -169,8 +170,8 @@ enum pkcs11_rc remove_empty_attribute(struct obj_attrs **head,
 	return _remove_attribute(head, attribute, true /* empty */);
 }
 
-uint32_t remove_attribute_check(struct obj_attrs **head,
-				uint32_t attribute, size_t max_check)
+enum pkcs11_rc remove_attribute_check(struct obj_attrs **head,
+				      uint32_t attribute, size_t max_check)
 {
 	struct obj_attrs *h = *head;
 	char *cur = NULL;
@@ -414,7 +415,7 @@ bool attributes_match_reference(struct obj_attrs *candidate,
 {
 	size_t count = ref->attrs_count;
 	unsigned char *ref_attr = ref->attrs;
-	uint32_t rc = 0;
+	uint32_t rc = PKCS11_CKR_GENERAL_ERROR;
 
 	if (!ref->attrs_count) {
 		DMSG("Empty reference: no match");

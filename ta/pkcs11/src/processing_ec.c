@@ -935,7 +935,7 @@ uint32_t load_tee_ec_key_attrs(TEE_Attribute **tee_attrs, size_t *tee_count,
 {
 	TEE_Attribute *attrs = NULL;
 	size_t count = 0;
-	uint32_t rv = PKCS11_CKR_GENERAL_ERROR;
+	enum pkcs11_rc rc = PKCS11_CKR_GENERAL_ERROR;
 
 	assert(get_key_type(obj->attributes) == PKCS11_CKK_EC);
 
@@ -963,7 +963,7 @@ uint32_t load_tee_ec_key_attrs(TEE_Attribute **tee_attrs, size_t *tee_count,
 			count++;
 
 		if (count == 3)
-			rv = PKCS11_CKR_OK;
+			rc = PKCS11_CKR_OK;
 
 		break;
 
@@ -997,7 +997,7 @@ uint32_t load_tee_ec_key_attrs(TEE_Attribute **tee_attrs, size_t *tee_count,
 			count++;
 
 		if (count == 4)
-			rv = PKCS11_CKR_OK;
+			rc = PKCS11_CKR_OK;
 
 		break;
 
@@ -1006,12 +1006,12 @@ uint32_t load_tee_ec_key_attrs(TEE_Attribute **tee_attrs, size_t *tee_count,
 		break;
 	}
 
-	if (rv == PKCS11_CKR_OK) {
+	if (rc == PKCS11_CKR_OK) {
 		*tee_attrs = attrs;
 		*tee_count = count;
 	}
 
-	return rv;
+	return rc;
 }
 
 uint32_t pkcs2tee_algo_ecdh(uint32_t *tee_id,
@@ -1019,16 +1019,16 @@ uint32_t pkcs2tee_algo_ecdh(uint32_t *tee_id,
 			   struct pkcs11_object *obj)
 {
 	struct serialargs args;
-	uint32_t rv = 0;
+	enum pkcs11_rc rc = PKCS11_CKR_GENERAL_ERROR;
 	uint32_t kdf = 0;
 
 	TEE_MemFill(&args, 0, sizeof(args));
 
 	serialargs_init(&args, proc_params->data, proc_params->size);
 
-	rv = serialargs_get(&args, &kdf, sizeof(uint32_t));
-	if (rv)
-		return rv;
+	rc = serialargs_get(&args, &kdf, sizeof(uint32_t));
+	if (rc)
+		return rc;
 
 	/* Remaining arguments are extracted by pkcs2tee_ecdh_param_pub() */
 
@@ -1065,7 +1065,7 @@ uint32_t pkcs2tee_ecdh_param_pub(struct pkcs11_attribute_head *proc_params,
 			        void **pub_data, size_t *pub_size)
 {
 	struct serialargs args;
-	uint32_t rv = 0;
+	enum pkcs11_rc rc = PKCS11_CKR_GENERAL_ERROR;
 	uint32_t temp = 0;
 
 	TEE_MemFill(&args, 0, sizeof(args));
@@ -1073,23 +1073,23 @@ uint32_t pkcs2tee_ecdh_param_pub(struct pkcs11_attribute_head *proc_params,
 	serialargs_init(&args, proc_params->data, proc_params->size);
 
 	/* Skip KDF already extracted by pkcs2tee_algo_ecdh() */
-	rv = serialargs_get(&args, &temp, sizeof(uint32_t));
-	if (rv)
-		return rv;
+	rc = serialargs_get(&args, &temp, sizeof(uint32_t));
+	if (rc)
+		return rc;
 
 	/* Shared data size, shall be 0 */
-	rv = serialargs_get(&args, &temp, sizeof(uint32_t));
-	if (rv || temp)
-		return rv;
+	rc = serialargs_get(&args, &temp, sizeof(uint32_t));
+	if (rc || temp)
+		return rc;
 
 	/* Public data size and content */
-	rv = serialargs_get(&args, &temp, sizeof(uint32_t));
-	if (rv || !temp)
-		return rv;
+	rc = serialargs_get(&args, &temp, sizeof(uint32_t));
+	if (rc || !temp)
+		return rc;
 
-	rv = serialargs_get_ptr(&args, pub_data, temp);
-	if (rv)
-		return rv;
+	rc = serialargs_get_ptr(&args, pub_data, temp);
+	if (rc)
+		return rc;
 
 	if (serialargs_remaining_bytes(&args))
 		return PKCS11_CKR_ARGUMENTS_BAD;
@@ -1143,42 +1143,42 @@ static uint32_t tee2pkcs_ec_attributes(struct obj_attrs **pub_head,
 				 struct obj_attrs **priv_head,
 				 TEE_ObjectHandle tee_obj)
 {
-	uint32_t rv = 0;
+	enum pkcs11_rc rc = PKCS11_CKR_GENERAL_ERROR;
 
-	rv = tee2pkcs_add_attribute(priv_head, PKCS11_CKA_VALUE,
+	rc = tee2pkcs_add_attribute(priv_head, PKCS11_CKA_VALUE,
 				   tee_obj, TEE_ATTR_ECC_PRIVATE_VALUE);
-	if (rv)
+	if (rc)
 		goto bail;
 
 	// FIXME: 1 DER formatted x/y point instead of 2 CKA_EC_POINT attributes
-	rv = tee2pkcs_add_attribute(priv_head, PKCS11_CKA_EC_POINT_X,
+	rc = tee2pkcs_add_attribute(priv_head, PKCS11_CKA_EC_POINT_X,
 				   tee_obj, TEE_ATTR_ECC_PUBLIC_VALUE_X);
-	if (rv)
+	if (rc)
 		goto bail;
 
-	rv = tee2pkcs_add_attribute(priv_head, PKCS11_CKA_EC_POINT_Y,
+	rc = tee2pkcs_add_attribute(priv_head, PKCS11_CKA_EC_POINT_Y,
 				   tee_obj, TEE_ATTR_ECC_PUBLIC_VALUE_Y);
-	if (rv)
+	if (rc)
 		goto bail;
 
 	// FIXME: 1 DER formatted x/y point instead of 2 CKA_EC_POINT attributes
-	rv = tee2pkcs_add_attribute(pub_head, PKCS11_CKA_EC_POINT_X,
+	rc = tee2pkcs_add_attribute(pub_head, PKCS11_CKA_EC_POINT_X,
 				   tee_obj, TEE_ATTR_ECC_PUBLIC_VALUE_X);
-	if (rv)
+	if (rc)
 		goto bail;
 
-	rv = tee2pkcs_add_attribute(pub_head, PKCS11_CKA_EC_POINT_Y,
+	rc = tee2pkcs_add_attribute(pub_head, PKCS11_CKA_EC_POINT_Y,
 				   tee_obj, TEE_ATTR_ECC_PUBLIC_VALUE_Y);
 
 bail:
-	return rv;
+	return rc;
 }
 
 uint32_t generate_ec_keys(struct pkcs11_attribute_head *proc_params,
 			  struct obj_attrs **pub_head,
 			  struct obj_attrs **priv_head)
 {
-	uint32_t rv = 0;
+	enum pkcs11_rc rc = PKCS11_CKR_GENERAL_ERROR;
 	void *a_ptr = NULL;
 	uint32_t a_size = 0;
 	uint32_t tee_size = 0;
@@ -1243,23 +1243,23 @@ uint32_t generate_ec_keys(struct pkcs11_attribute_head *proc_params,
 
 	res = TEE_RestrictObjectUsage1(tee_obj, TEE_USAGE_EXTRACTABLE);
 	if (res) {
-		rv = tee2pkcs_error(res);
+		rc = tee2pkcs_error(res);
 		goto bail;
 	}
 
 	res = TEE_GenerateKey(tee_obj, tee_size, &tee_key_attr[0], 1);
 	if (res) {
-		rv = tee2pkcs_error(res);
+		rc = tee2pkcs_error(res);
 		goto bail;
 	}
 
-	rv = tee2pkcs_ec_attributes(pub_head, priv_head, tee_obj);
+	rc = tee2pkcs_ec_attributes(pub_head, priv_head, tee_obj);
 
 bail:
 	if (tee_obj != TEE_HANDLE_NULL)
 		TEE_CloseObject(tee_obj);
 
-	return rv;
+	return rc;
 }
 
 size_t ecdsa_get_input_max_byte_size(TEE_OperationHandle op)

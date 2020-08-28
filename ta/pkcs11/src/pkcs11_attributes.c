@@ -1453,27 +1453,27 @@ bool object_is_private(struct obj_attrs *head)
  * @attrs2 - Object paired to attrs1 or NULL
  * Return an PKCS11 return code
  */
-uint32_t add_missing_attribute_id(struct obj_attrs **attrs1,
-				  struct obj_attrs **attrs2)
+enum pkcs11_rc add_missing_attribute_id(struct obj_attrs **attrs1,
+					struct obj_attrs **attrs2)
 {
-	uint32_t rv = 0;
+	enum pkcs11_rc rc = PKCS11_CKR_GENERAL_ERROR;
 	void *id1 = NULL;
 	uint32_t id1_size = 0;
 	void *id2 = NULL;
 	uint32_t id2_size = 0;
 
-	rv = get_attribute_ptr(*attrs1, PKCS11_CKA_ID, &id1, &id1_size);
-	if (rv) {
-		if (rv != PKCS11_RV_NOT_FOUND)
-			return rv;
+	rc = get_attribute_ptr(*attrs1, PKCS11_CKA_ID, &id1, &id1_size);
+	if (rc) {
+		if (rc != PKCS11_RV_NOT_FOUND)
+			return rc;
 		id1 = NULL;
 	}
 
 	if (attrs2) {
-		rv = get_attribute_ptr(*attrs2, PKCS11_CKA_ID, &id2, &id2_size);
-		if (rv) {
-			if (rv != PKCS11_RV_NOT_FOUND)
-				return rv;
+		rc = get_attribute_ptr(*attrs2, PKCS11_CKA_ID, &id2, &id2_size);
+		if (rc) {
+			if (rc != PKCS11_RV_NOT_FOUND)
+				return rc;
 			id2 = NULL;
 		}
 
@@ -1499,13 +1499,13 @@ uint32_t add_missing_attribute_id(struct obj_attrs **attrs1,
 
 	TEE_GenerateRandom(id1, (uint32_t)id1_size);
 
-	rv = add_attribute(attrs1, PKCS11_CKA_ID, id1, id1_size);
-	if (rv == PKCS11_CKR_OK && attrs2)
-		rv = add_attribute(attrs2, PKCS11_CKA_ID, id1, id1_size);
+	rc = add_attribute(attrs1, PKCS11_CKA_ID, id1, id1_size);
+	if (rc == PKCS11_CKR_OK && attrs2)
+		rc = add_attribute(attrs2, PKCS11_CKA_ID, id1, id1_size);
 
 	TEE_Free(id1);
 
-	return rv;
+	return rc;
 }
 
 bool attribute_is_exportable(struct pkcs11_attribute_head *req_attr,
@@ -1513,7 +1513,7 @@ bool attribute_is_exportable(struct pkcs11_attribute_head *req_attr,
 {
 	uint8_t boolval = 0;
 	uint32_t boolsize = 0;
-	uint32_t rv = 0;
+	enum pkcs11_rc rc = PKCS11_CKR_GENERAL_ERROR;
 
 	switch (req_attr->id) {
 	case PKCS11_CKA_PRIVATE_EXPONENT:
@@ -1523,15 +1523,15 @@ bool attribute_is_exportable(struct pkcs11_attribute_head *req_attr,
 	case PKCS11_CKA_EXPONENT_2:
 	case PKCS11_CKA_COEFFICIENT:
 		boolsize = sizeof(boolval);
-		rv = get_attribute(obj->attributes, PKCS11_CKA_EXTRACTABLE,
+		rc = get_attribute(obj->attributes, PKCS11_CKA_EXTRACTABLE,
 				   &boolval, &boolsize);
-		if (rv || boolval == PKCS11_FALSE)
+		if (rc || boolval == PKCS11_FALSE)
 			return false;
 
 		boolsize = sizeof(boolval);
-		rv = get_attribute(obj->attributes, PKCS11_CKA_SENSITIVE,
+		rc = get_attribute(obj->attributes, PKCS11_CKA_SENSITIVE,
 				   &boolval, &boolsize);
-		if (rv || boolval == PKCS11_TRUE)
+		if (rc || boolval == PKCS11_TRUE)
 			return false;
 		break;
 	default:

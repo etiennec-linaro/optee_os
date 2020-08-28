@@ -185,7 +185,7 @@ struct pkcs11_object *create_token_object(struct obj_attrs *head,
 enum pkcs11_rc create_object(void *sess, struct obj_attrs *head,
 			     uint32_t *out_handle)
 {
-	enum pkcs11_rc rc = 0;
+	enum pkcs11_rc rc = PKCS11_CKR_GENERAL_ERROR;
 	struct pkcs11_object *obj = NULL;
 	struct pkcs11_session *session = (struct pkcs11_session *)sess;
 	uint32_t obj_handle = 0;
@@ -406,10 +406,10 @@ enum pkcs11_rc entry_destroy_object(struct pkcs11_client *client,
 	return rc;
 }
 
-static uint32_t token_obj_matches_ref(struct obj_attrs *req_attrs,
-				      struct pkcs11_object *obj)
+static enum pkcs11_rc token_obj_matches_ref(struct obj_attrs *req_attrs,
+					    struct pkcs11_object *obj)
 {
-	uint32_t rv = 0;
+	enum pkcs11_rc rc = PKCS11_CKR_GENERAL_ERROR;
 	TEE_Result res = TEE_ERROR_GENERIC;
 	TEE_ObjectHandle hdl = obj->attribs_hdl;
 	TEE_ObjectInfo info = { };
@@ -437,13 +437,13 @@ static uint32_t token_obj_matches_ref(struct obj_attrs *req_attrs,
 	res = TEE_GetObjectInfo1(hdl, &info);
 	if (res) {
 		EMSG("GetObjectInfo failed %#"PRIx32, res);
-		rv = tee2pkcs_error(res);
+		rc = tee2pkcs_error(res);
 		goto bail;
 	}
 
 	attr = TEE_Malloc(info.dataSize, TEE_MALLOC_FILL_ZERO);
 	if (!attr) {
-		rv = PKCS11_CKR_DEVICE_MEMORY;
+		rc = PKCS11_CKR_DEVICE_MEMORY;
 		goto bail;
 	}
 
@@ -455,7 +455,7 @@ static uint32_t token_obj_matches_ref(struct obj_attrs *req_attrs,
 	}
 
 	if (res) {
-		rv = tee2pkcs_error(res);
+		rc = tee2pkcs_error(res);
 		EMSG("Read %"PRIu32" bytes, failed %#"PRIx32,
 		     read_bytes, res);
 		goto bail;
@@ -463,12 +463,12 @@ static uint32_t token_obj_matches_ref(struct obj_attrs *req_attrs,
 	if (read_bytes != info.dataSize) {
 		EMSG("Read %"PRIu32" bytes, expected %"PRIu32,
 		     read_bytes, info.dataSize);
-		rv = PKCS11_CKR_GENERAL_ERROR;
+		rc = PKCS11_CKR_GENERAL_ERROR;
 		goto bail;
 	}
 
 	if (!attributes_match_reference(attr, req_attrs)) {
-		rv = PKCS11_RV_NOT_FOUND;
+		rc = PKCS11_RV_NOT_FOUND;
 		goto bail;
 	}
 
@@ -476,14 +476,15 @@ static uint32_t token_obj_matches_ref(struct obj_attrs *req_attrs,
 	attr = NULL;
 	obj->attribs_hdl = hdl;
 	hdl = TEE_HANDLE_NULL;
-	rv = PKCS11_CKR_OK;
+
+	rc = PKCS11_CKR_OK;
 
 bail:
 	TEE_Free(attr);
 	if (obj->attribs_hdl == TEE_HANDLE_NULL && hdl != TEE_HANDLE_NULL)
 		TEE_CloseObject(hdl);
 
-	return rv;
+	return rc;
 }
 
 static void release_find_obj_context(struct pkcs11_session *session,
@@ -507,15 +508,15 @@ static void release_find_obj_context(struct pkcs11_session *session,
 	TEE_Free(find_ctx);
 }
 
-uint32_t entry_find_objects_init(struct pkcs11_client *client,
-				 uint32_t ptypes, TEE_Param *params)
+enum pkcs11_rc entry_find_objects_init(struct pkcs11_client *client,
+				       uint32_t ptypes, TEE_Param *params)
 {
         const uint32_t exp_pt = TEE_PARAM_TYPES(TEE_PARAM_TYPE_MEMREF_INOUT,
 						TEE_PARAM_TYPE_NONE,
 						TEE_PARAM_TYPE_NONE,
 						TEE_PARAM_TYPE_NONE);
 	TEE_Param *ctrl = &params[0];
-	uint32_t rv = 0;
+	enum pkcs11_rc rc = PKCS11_CKR_GENERAL_ERROR;
 	struct serialargs ctrlargs = { };
 	struct pkcs11_session *session = NULL;
 	struct pkcs11_object_head *template = NULL;
@@ -528,41 +529,41 @@ uint32_t entry_find_objects_init(struct pkcs11_client *client,
 
 	serialargs_init(&ctrlargs, ctrl->memref.buffer, ctrl->memref.size);
 
-	rv = serialargs_get_session_from_handle(&ctrlargs, client, &session);
-	if (rv)
-		return rv;
+	rc = serialargs_get_session_from_handle(&ctrlargs, client, &session);
+	if (rc)
+		return rc;
 
-	rv = serialargs_alloc_get_attributes(&ctrlargs, &template);
-	if (rv)
-		return rv;
+	rc = serialargs_alloc_get_attributes(&ctrlargs, &template);
+	if (rc)
+		return rc;
 
 	if (serialargs_remaining_bytes(&ctrlargs)) {
-		rv = PKCS11_CKR_ARGUMENTS_BAD;
+		rc = PKCS11_CKR_ARGUMENTS_BAD;
 		goto bail;
 	}
 
 	/* Search objects only if no operation is on-going */
 	if (session_is_active(session)) {
-		rv = PKCS11_CKR_OPERATION_ACTIVE;
+		rc = PKCS11_CKR_OPERATION_ACTIVE;
 		goto bail;
 	}
 
 	if (session->find_ctx) {
 		EMSG("Active object search already in progress");
-		rv = PKCS11_CKR_FUNCTION_FAILED;
+		rc = PKCS11_CKR_FUNCTION_FAILED;
 		goto bail;
 	}
 
 	/* Must zero init the structure */
 	find_ctx = TEE_Malloc(sizeof(*find_ctx), TEE_MALLOC_FILL_ZERO);
 	if (!find_ctx) {
-		rv = PKCS11_CKR_DEVICE_MEMORY;
+		rc = PKCS11_CKR_DEVICE_MEMORY;
 		goto bail;
 	}
 
-	rv = sanitize_client_object(&req_attrs, template,
+	rc = sanitize_client_object(&req_attrs, template,
 				    sizeof(*template) + template->attrs_size);
-	if (rv)
+	if (rc)
 		goto bail;
 
 	TEE_Free(template);
@@ -580,7 +581,7 @@ uint32_t entry_find_objects_init(struct pkcs11_client *client,
 		EMSG("Find object of class %s (%"PRIu32") is not supported",
 		     id2str_class(get_class(req_attrs)),
 		     get_class(req_attrs));
-		rv = PKCS11_CKR_ARGUMENTS_BAD;
+		rc = PKCS11_CKR_ARGUMENTS_BAD;
 		goto bail;
 
 	}
@@ -596,8 +597,8 @@ uint32_t entry_find_objects_init(struct pkcs11_client *client,
 	LIST_FOREACH(obj, &session->object_list, link) {
 		uint32_t *handles = NULL;
 
-		rv = check_access_attrs_against_token(session, obj->attributes);
-		if (rv)
+		rc = check_access_attrs_against_token(session, obj->attributes);
+		if (rc)
 			continue;
 
 		if (!attributes_match_reference(obj->attributes, req_attrs))
@@ -606,7 +607,7 @@ uint32_t entry_find_objects_init(struct pkcs11_client *client,
 		handles = TEE_Realloc(find_ctx->handles,
 				      (find_ctx->count + 1) * sizeof(*handles));
 		if (!handles) {
-			rv = PKCS11_CKR_DEVICE_MEMORY;
+			rc = PKCS11_CKR_DEVICE_MEMORY;
 			goto bail;
 		}
 		find_ctx->handles = handles;
@@ -628,15 +629,15 @@ uint32_t entry_find_objects_init(struct pkcs11_client *client,
 		 * every object
 		 */
 		if (req_attrs->attrs_count) {
-			rv = token_obj_matches_ref(req_attrs, obj);
-			if (rv == PKCS11_RV_NOT_FOUND)
+			rc = token_obj_matches_ref(req_attrs, obj);
+			if (rc == PKCS11_RV_NOT_FOUND)
 				continue;
-			if (rv != PKCS11_CKR_OK)
+			if (rc != PKCS11_CKR_OK)
 				goto bail;
 		}
 
-		rv = check_access_attrs_against_token(session, obj->attributes);
-		if (rv)
+		rc = check_access_attrs_against_token(session, obj->attributes);
+		if (rc)
 			continue;
 
 		/* Object may not yet be published in the session */
@@ -645,7 +646,7 @@ uint32_t entry_find_objects_init(struct pkcs11_client *client,
 			obj_handle = handle_get(&session->object_handle_db,
 						obj);
 			if (!obj_handle) {
-				rv = PKCS11_CKR_DEVICE_MEMORY;
+				rc = PKCS11_CKR_DEVICE_MEMORY;
 				goto bail;
 			}
 		}
@@ -653,7 +654,7 @@ uint32_t entry_find_objects_init(struct pkcs11_client *client,
 		handles = TEE_Realloc(find_ctx->handles,
 				      (find_ctx->count + 1) * sizeof(*handles));
 		if (!handles) {
-			rv = PKCS11_CKR_DEVICE_MEMORY;
+			rc = PKCS11_CKR_DEVICE_MEMORY;
 			goto bail;
 		}
 
@@ -663,26 +664,26 @@ uint32_t entry_find_objects_init(struct pkcs11_client *client,
 		find_ctx->count++;
 	}
 
-	if (rv == PKCS11_RV_NOT_FOUND)
-		rv = PKCS11_CKR_OK;
+	if (rc == PKCS11_RV_NOT_FOUND)
+		rc = PKCS11_CKR_OK;
 
 	/* Save target attributes to search (if needed later) */
 	find_ctx->attributes = req_attrs;
 	req_attrs = NULL;
 	session->find_ctx = find_ctx;
 	find_ctx = NULL;
-	rv = PKCS11_CKR_OK;
+	rc = PKCS11_CKR_OK;
 
 bail:
 	TEE_Free(req_attrs);
 	TEE_Free(template);
 	release_find_obj_context(session, find_ctx);
 
-	return rv;
+	return rc;
 }
 
-uint32_t entry_find_objects(struct pkcs11_client *client,
-			    uint32_t ptypes, TEE_Param *params)
+enum pkcs11_rc entry_find_objects(struct pkcs11_client *client,
+				  uint32_t ptypes, TEE_Param *params)
 {
         const uint32_t exp_pt = TEE_PARAM_TYPES(TEE_PARAM_TYPE_MEMREF_INOUT,
 						TEE_PARAM_TYPE_NONE,
@@ -690,7 +691,7 @@ uint32_t entry_find_objects(struct pkcs11_client *client,
 						TEE_PARAM_TYPE_NONE);
 	TEE_Param *ctrl = &params[0];
 	TEE_Param *out = &params[2];
-	uint32_t rv = 0;
+	enum pkcs11_rc rc = PKCS11_CKR_GENERAL_ERROR;
 	struct serialargs ctrlargs = { };
 	struct pkcs11_session *session = NULL;
 	struct pkcs11_find_objects *ctx = NULL;
@@ -707,9 +708,9 @@ uint32_t entry_find_objects(struct pkcs11_client *client,
 
 	serialargs_init(&ctrlargs, ctrl->memref.buffer, ctrl->memref.size);
 
-	rv = serialargs_get_session_from_handle(&ctrlargs, client, &session);
-	if (rv)
-		return rv;
+	rc = serialargs_get_session_from_handle(&ctrlargs, client, &session);
+	if (rc)
+		return rc;
 
 	if (serialargs_remaining_bytes(&ctrlargs))
 		return PKCS11_CKR_ARGUMENTS_BAD;
@@ -765,7 +766,7 @@ uint32_t entry_find_objects_final(struct pkcs11_client *client,
 						TEE_PARAM_TYPE_NONE,
 						TEE_PARAM_TYPE_NONE);
 	TEE_Param *ctrl = &params[0];
-	uint32_t rv = 0;
+	enum pkcs11_rc rc = PKCS11_CKR_GENERAL_ERROR;
 	struct serialargs ctrlargs = { };
 	struct pkcs11_session *session = NULL;
 
@@ -774,9 +775,9 @@ uint32_t entry_find_objects_final(struct pkcs11_client *client,
 
 	serialargs_init(&ctrlargs, ctrl->memref.buffer, ctrl->memref.size);
 
-	rv = serialargs_get_session_from_handle(&ctrlargs, client, &session);
-	if (rv)
-		return rv;
+	rc = serialargs_get_session_from_handle(&ctrlargs, client, &session);
+	if (rc)
+		return rc;
 
 	if (serialargs_remaining_bytes(&ctrlargs))
 		return PKCS11_CKR_ARGUMENTS_BAD;
@@ -798,7 +799,7 @@ uint32_t entry_get_attribute_value(struct pkcs11_client *client,
 						TEE_PARAM_TYPE_NONE);
 	TEE_Param *ctrl = &params[0];
 	TEE_Param *out = &params[2];
-	uint32_t rv = 0;
+	enum pkcs11_rc rc = PKCS11_CKR_GENERAL_ERROR;
 	struct serialargs ctrlargs = { };
 	struct pkcs11_session *session = NULL;
 	struct pkcs11_object_head *template = NULL;
@@ -816,32 +817,32 @@ uint32_t entry_get_attribute_value(struct pkcs11_client *client,
 
 	serialargs_init(&ctrlargs, ctrl->memref.buffer, ctrl->memref.size);
 
-	rv = serialargs_get_session_from_handle(&ctrlargs, client, &session);
-	if (rv)
-		return rv;
+	rc = serialargs_get_session_from_handle(&ctrlargs, client, &session);
+	if (rc)
+		return rc;
 
-	rv = serialargs_get(&ctrlargs, &object_handle, sizeof(uint32_t));
-	if (rv)
-		return rv;
+	rc = serialargs_get(&ctrlargs, &object_handle, sizeof(uint32_t));
+	if (rc)
+		return rc;
 
-	rv = serialargs_alloc_get_attributes(&ctrlargs, &template);
-	if (rv)
-		return rv;
+	rc = serialargs_alloc_get_attributes(&ctrlargs, &template);
+	if (rc)
+		return rc;
 
 	if (serialargs_remaining_bytes(&ctrlargs)) {
-		rv = PKCS11_CKR_ARGUMENTS_BAD;
+		rc = PKCS11_CKR_ARGUMENTS_BAD;
 		goto bail;
 	}
 
 	obj = pkcs11_handle2object(object_handle, session);
 	if (!obj) {
-		rv = PKCS11_CKR_OBJECT_HANDLE_INVALID;
+		rc = PKCS11_CKR_OBJECT_HANDLE_INVALID;
 		goto bail;
 	}
 
-	rv = check_access_attrs_against_token(session, obj->attributes);
-	if (rv) {
-		rv = PKCS11_CKR_OBJECT_HANDLE_INVALID;
+	rc = check_access_attrs_against_token(session, obj->attributes);
+	if (rc) {
+		rc = PKCS11_CKR_OBJECT_HANDLE_INVALID;
 		goto bail;
 	}
 
@@ -890,11 +891,11 @@ uint32_t entry_get_attribute_value(struct pkcs11_client *client,
 		 * We assume that if size is 0, pValue was NULL, so we return
 		 * the size of the required buffer for it (3., 4.)
 		 */
-		rv = get_attribute(obj->attributes, cli_ref->id,
+		rc = get_attribute(obj->attributes, cli_ref->id,
 				   cli_ref->size ? cli_ref->data : NULL,
 				   &(cli_ref->size));
 		/* Check 2. */
-		switch (rv) {
+		switch (rc) {
 		case PKCS11_CKR_OK:
 			break;
 		case PKCS11_RV_NOT_FOUND:
@@ -905,7 +906,7 @@ uint32_t entry_get_attribute_value(struct pkcs11_client *client,
 			buffer_too_small = 1;
 			break;
 		default:
-			rv = PKCS11_CKR_GENERAL_ERROR;
+			rc = PKCS11_CKR_GENERAL_ERROR;
 			goto bail;
 		}
 	}
@@ -921,13 +922,13 @@ uint32_t entry_get_attribute_value(struct pkcs11_client *client,
 	 * applies to any of the requested attributes will CKR_OK be returned.
 	 */
 
-	rv = PKCS11_CKR_OK;
+	rc = PKCS11_CKR_OK;
 	if (attr_sensitive)
-		rv = PKCS11_CKR_ATTRIBUTE_SENSITIVE;
+		rc = PKCS11_CKR_ATTRIBUTE_SENSITIVE;
 	if (attr_type_invalid)
-		rv = PKCS11_CKR_ATTRIBUTE_TYPE_INVALID;
+		rc = PKCS11_CKR_ATTRIBUTE_TYPE_INVALID;
 	if (buffer_too_small)
-		rv = PKCS11_CKR_BUFFER_TOO_SMALL;
+		rc = PKCS11_CKR_BUFFER_TOO_SMALL;
 
 	/* Move updated template to out buffer */
 	TEE_MemMove(out->memref.buffer, template, out->memref.size);
@@ -939,7 +940,7 @@ bail:
 	TEE_Free(template);
 	template = NULL;
 
-	return rv;
+	return rc;
 }
 
 uint32_t entry_get_object_size(struct pkcs11_client *client,
@@ -951,7 +952,7 @@ uint32_t entry_get_object_size(struct pkcs11_client *client,
 						TEE_PARAM_TYPE_NONE);
 	TEE_Param *ctrl = &params[0];
 	TEE_Param *out = &params[2];
-	uint32_t rv = 0;
+	enum pkcs11_rc rc = PKCS11_CKR_GENERAL_ERROR;
 	struct serialargs ctrlargs = { };
 	struct pkcs11_session *session = NULL;
 	uint32_t object_handle = 0;
@@ -963,13 +964,13 @@ uint32_t entry_get_object_size(struct pkcs11_client *client,
 
 	serialargs_init(&ctrlargs, ctrl->memref.buffer, ctrl->memref.size);
 
-	rv = serialargs_get_session_from_handle(&ctrlargs, client, &session);
-	if (rv)
-		return rv;
+	rc = serialargs_get_session_from_handle(&ctrlargs, client, &session);
+	if (rc)
+		return rc;
 
-	rv = serialargs_get(&ctrlargs, &object_handle, sizeof(uint32_t));
-	if (rv)
-		return rv;
+	rc = serialargs_get(&ctrlargs, &object_handle, sizeof(uint32_t));
+	if (rc)
+		return rc;
 
 	if (serialargs_remaining_bytes(&ctrlargs))
 		return PKCS11_CKR_ARGUMENTS_BAD;
@@ -978,8 +979,8 @@ uint32_t entry_get_object_size(struct pkcs11_client *client,
 	if (!obj)
 		return PKCS11_CKR_OBJECT_HANDLE_INVALID;
 
-	rv = check_access_attrs_against_token(session, obj->attributes);
-	if (rv)
+	rc = check_access_attrs_against_token(session, obj->attributes);
+	if (rc)
 		return PKCS11_CKR_OBJECT_HANDLE_INVALID;
 
 	if (out->memref.size != sizeof(uint32_t))

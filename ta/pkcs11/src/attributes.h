@@ -116,7 +116,7 @@ enum pkcs11_rc add_attribute(struct obj_attrs **head, uint32_t attribute,
  *
  * Return PKCS11_CKR_OK on success or a PKCS11 return code.
  */
-uint32_t remove_attribute(struct obj_attrs **head, uint32_t attrib);
+enum pkcs11_rc remove_attribute(struct obj_attrs **head, uint32_t attrib);
 
 /*
  * Update serialized attributes to remove an empty entry. Can relocate the
@@ -134,8 +134,8 @@ enum pkcs11_rc remove_empty_attribute(struct obj_attrs **head, uint32_t attrib);
  * Return PKCS11_CKR_OK on success if attribute(s) is/are found,
  * PKCS11_RV_NOT_FOUND if attribute is not found or a PKCS11 error code.
  */
-uint32_t remove_attribute_check(struct obj_attrs **head,
-				uint32_t attribute, size_t max_check);
+enum pkcs11_rc remove_attribute_check(struct obj_attrs **head,
+				      uint32_t attribute, size_t max_check);
 
 /*
  * get_attribute_ptrs() - Get pointers to attributes with a given ID
@@ -241,7 +241,7 @@ static inline size_t attributes_size(struct obj_attrs *head)
 }
 
 #ifdef PKCS11_SHEAD_WITH_TYPE
-static inline uint32_t get_class(struct obj_attrs *head)
+static inline enum pkcs11_class_id get_class(struct obj_attrs *head)
 {
 	return head->class;
 }

@@ -87,7 +87,7 @@ static uint32_t pkcs2tee_algorithm(uint32_t *tee_id,
 	};
 	size_t end = sizeof(pkcs2tee_algo) / (2 * sizeof(uint32_t));
 	size_t n = 0;
-	uint32_t rv = 0;
+	enum pkcs11_rc rc = PKCS11_CKR_GENERAL_ERROR;
 
 	for (n = 0; n < end; n++) {
 		if (proc_params->id == pkcs2tee_algo[n][0]) {
@@ -116,13 +116,13 @@ static uint32_t pkcs2tee_algorithm(uint32_t *tee_id,
 	case PKCS11_CKM_SHA256_RSA_PKCS_PSS:
 	case PKCS11_CKM_SHA384_RSA_PKCS_PSS:
 	case PKCS11_CKM_SHA512_RSA_PKCS_PSS:
-		rv = pkcs2tee_algo_rsa_pss(tee_id, proc_params);
+		rc = pkcs2tee_algo_rsa_pss(tee_id, proc_params);
 		break;
 	case PKCS11_CKM_RSA_PKCS_OAEP:
-		rv = pkcs2tee_algo_rsa_oaep(tee_id, proc_params);
+		rc = pkcs2tee_algo_rsa_oaep(tee_id, proc_params);
 		break;
 	case PKCS11_CKM_ECDH1_DERIVE:
-		rv = pkcs2tee_algo_ecdh(tee_id, proc_params, obj);
+		rc = pkcs2tee_algo_ecdh(tee_id, proc_params, obj);
 		break;
 	case PKCS11_CKM_ECDH1_COFACTOR_DERIVE:
 		return PKCS11_RV_NOT_IMPLEMENTED;
@@ -132,10 +132,10 @@ static uint32_t pkcs2tee_algorithm(uint32_t *tee_id,
 	case PKCS11_CKM_ECDSA_SHA256:
 	case PKCS11_CKM_ECDSA_SHA384:
 	case PKCS11_CKM_ECDSA_SHA512:
-		rv = pkcs2tee_algo_ecdsa(tee_id, proc_params, obj);
+		rc = pkcs2tee_algo_ecdsa(tee_id, proc_params, obj);
 		break;
 	default:
-		rv = PKCS11_CKR_OK;
+		rc = PKCS11_CKR_OK;
 		break;
 	}
 
@@ -144,7 +144,7 @@ static uint32_t pkcs2tee_algorithm(uint32_t *tee_id,
 	     function == PKCS11_FUNCTION_VERIFY))
 		*tee_id = TEE_ALG_RSASSA_PKCS1_V1_5;
 
-	return rv;
+	return rc;
 }
 
 static uint32_t pkcs2tee_key_type(uint32_t *tee_type, struct pkcs11_object *obj,
@@ -223,7 +223,7 @@ static uint32_t load_tee_key(struct pkcs11_session *session,
 	TEE_Attribute *tee_attrs = NULL;
 	size_t tee_attrs_count = 0;
 	size_t object_size = 0;
-	uint32_t rv = 0;
+	enum pkcs11_rc rc = PKCS11_CKR_GENERAL_ERROR;
 	TEE_Result res = TEE_ERROR_GENERIC;
 	enum pkcs11_class_id __maybe_unused class = get_class(obj->attributes);
 	enum pkcs11_key_type type = get_key_type(obj->attributes);
@@ -267,9 +267,9 @@ static uint32_t load_tee_key(struct pkcs11_session *session,
 		obj->key_handle = TEE_HANDLE_NULL;
 	}
 
-	rv = pkcs2tee_key_type(&obj->key_type, obj, function);
-	if (rv)
-		return rv;
+	rc = pkcs2tee_key_type(&obj->key_type, obj, function);
+	if (rc)
+		return rc;
 
 	object_size = get_object_key_bit_size(obj);
 	if (!object_size)
@@ -277,16 +277,16 @@ static uint32_t load_tee_key(struct pkcs11_session *session,
 
 	switch (type) {
 	case PKCS11_CKK_RSA:
-		rv = load_tee_rsa_key_attrs(&tee_attrs, &tee_attrs_count, obj);
+		rc = load_tee_rsa_key_attrs(&tee_attrs, &tee_attrs_count, obj);
 		break;
 	case PKCS11_CKK_EC:
-		rv = load_tee_ec_key_attrs(&tee_attrs, &tee_attrs_count, obj);
+		rc = load_tee_ec_key_attrs(&tee_attrs, &tee_attrs_count, obj);
 		break;
 	default:
 		break;
 	}
-	if (rv)
-		return rv;
+	if (rc)
+		return rc;
 
 	res = TEE_AllocateTransientObject(obj->key_type, object_size,
 					  &obj->key_handle);
@@ -327,7 +327,7 @@ error:
 static uint32_t init_tee_operation(struct pkcs11_session *session,
 				   struct pkcs11_attribute_head *proc_params)
 {
-	uint32_t rv = PKCS11_CKR_OK;
+	enum pkcs11_rc rc = PKCS11_CKR_OK;
 
 	switch (proc_params->id) {
 	case PKCS11_CKM_SHA1_RSA_PKCS_PSS:
@@ -335,14 +335,14 @@ static uint32_t init_tee_operation(struct pkcs11_session *session,
 	case PKCS11_CKM_SHA384_RSA_PKCS_PSS:
 	case PKCS11_CKM_SHA512_RSA_PKCS_PSS:
 	case PKCS11_CKM_SHA224_RSA_PKCS_PSS:
-		rv = pkcs2tee_proc_params_rsa_pss(session->processing,
+		rc = pkcs2tee_proc_params_rsa_pss(session->processing,
 						 proc_params);
 		break;
 	default:
 		break;
 	}
 
-	return rv;
+	return rc;
 }
 
 uint32_t init_asymm_operation(struct pkcs11_session *session,
@@ -350,17 +350,17 @@ uint32_t init_asymm_operation(struct pkcs11_session *session,
 				struct pkcs11_attribute_head *proc_params,
 				struct pkcs11_object *obj)
 {
-	uint32_t rv = 0;
+	enum pkcs11_rc rc = PKCS11_CKR_GENERAL_ERROR;
 
 	assert(processing_is_tee_asymm(proc_params->id));
 
-	rv = allocate_tee_operation(session, function, proc_params, obj);
-	if (rv)
-		return rv;
+	rc = allocate_tee_operation(session, function, proc_params, obj);
+	if (rc)
+		return rc;
 
-	rv = load_tee_key(session, obj, function);
-	if (rv)
-		return rv;
+	rc = load_tee_key(session, obj, function);
+	if (rc)
+		return rc;
 
 	return init_tee_operation(session, proc_params);
 }
@@ -379,7 +379,7 @@ uint32_t step_asymm_operation(struct pkcs11_session *session,
 			      enum processing_step step,
 			      uint32_t ptypes, TEE_Param *params)
 {
-	uint32_t rv = PKCS11_CKR_GENERAL_ERROR;
+	enum pkcs11_rc rc = PKCS11_CKR_GENERAL_ERROR;
 	TEE_Result res = TEE_ERROR_GENERIC;
 	void *in_buf = NULL;
 	void *in2_buf = NULL;
@@ -434,7 +434,7 @@ uint32_t step_asymm_operation(struct pkcs11_session *session,
 		tee_attrs = TEE_Malloc(sizeof(TEE_Attribute),
 					TEE_USER_MEM_HINT_NO_FILL_ZERO);
 		if (!tee_attrs) {
-			rv = PKCS11_CKR_DEVICE_MEMORY;
+			rc = PKCS11_CKR_DEVICE_MEMORY;
 			goto bail;
 		}
 
@@ -459,11 +459,11 @@ uint32_t step_asymm_operation(struct pkcs11_session *session,
 			break;
 
 		EMSG("TODO: compute hash for later authentication");
-		rv = PKCS11_RV_NOT_IMPLEMENTED;
+		rc = PKCS11_RV_NOT_IMPLEMENTED;
 		goto bail;
 	default:
 		/* Other mechanism do not expect multi stage operation */
-		rv = PKCS11_CKR_GENERAL_ERROR;
+		rc = PKCS11_CKR_GENERAL_ERROR;
 		break;
 	}
 
@@ -479,7 +479,7 @@ uint32_t step_asymm_operation(struct pkcs11_session *session,
 	case PKCS11_CKM_ECDSA:
 		sz = ecdsa_get_input_max_byte_size(proc->tee_op_handle);
 		if (!in_size || !sz) {
-			rv = PKCS11_CKR_FUNCTION_FAILED;
+			rc = PKCS11_CKR_FUNCTION_FAILED;
 			goto bail;
 		}
 		/*
@@ -492,7 +492,7 @@ uint32_t step_asymm_operation(struct pkcs11_session *session,
 
 		if (function == PKCS11_FUNCTION_VERIFY &&
 		    in2_size != 2 * sz) {
-			rv = PKCS11_CKR_SIGNATURE_LEN_RANGE;
+			rc = PKCS11_CKR_SIGNATURE_LEN_RANGE;
 			goto bail;
 		}
 		break;
@@ -518,7 +518,7 @@ uint32_t step_asymm_operation(struct pkcs11_session *session,
 		break;
 	default:
 		if (step != PKCS11_FUNC_STEP_ONESHOT) {
-			rv = PKCS11_CKR_GENERAL_ERROR;
+			rc = PKCS11_CKR_GENERAL_ERROR;
 			goto bail;
 		}
 		break;
@@ -555,7 +555,7 @@ uint32_t step_asymm_operation(struct pkcs11_session *session,
 						    in_buf, in_size,
 						    out_buf, &out_size);
 			output_data = true;
-			rv = tee2pkcs_error(res);
+			rc = tee2pkcs_error(res);
 			break;
 
 		case PKCS11_FUNCTION_DECRYPT:
@@ -564,7 +564,7 @@ uint32_t step_asymm_operation(struct pkcs11_session *session,
 						    in_buf, in_size,
 						    out_buf, &out_size);
 			output_data = true;
-			rv = tee2pkcs_error(res);
+			rc = tee2pkcs_error(res);
 			break;
 
 		case PKCS11_FUNCTION_SIGN:
@@ -574,7 +574,7 @@ uint32_t step_asymm_operation(struct pkcs11_session *session,
 							in_buf, in_size,
 							out_buf, &out_size);
 			output_data = true;
-			rv = tee2pkcs_error(res);
+			rc = tee2pkcs_error(res);
 			break;
 
 		case PKCS11_FUNCTION_VERIFY:
@@ -583,7 +583,7 @@ uint32_t step_asymm_operation(struct pkcs11_session *session,
 							 tee_attrs_count,
 							 in_buf, in_size,
 							 in2_buf, in2_size);
-			rv = tee2pkcs_error(res);
+			rc = tee2pkcs_error(res);
 			break;
 
 		default:
@@ -597,28 +597,28 @@ uint32_t step_asymm_operation(struct pkcs11_session *session,
 	}
 bail:
 	if (output_data &&
-	    (rv == PKCS11_CKR_OK || rv == PKCS11_CKR_BUFFER_TOO_SMALL)) {
+	    (rc == PKCS11_CKR_OK || rc == PKCS11_CKR_BUFFER_TOO_SMALL)) {
 		switch (TEE_PARAM_TYPE_GET(ptypes, 2)) {
 		case TEE_PARAM_TYPE_MEMREF_OUTPUT:
 		case TEE_PARAM_TYPE_MEMREF_INOUT:
 			params[2].memref.size = out_size;
 			break;
 		default:
-			rv = PKCS11_CKR_GENERAL_ERROR;
+			rc = PKCS11_CKR_GENERAL_ERROR;
 			break;
 		}
 	}
 
 	TEE_Free(tee_attrs);
 
-	return rv;
+	return rc;
 }
 
 uint32_t do_asymm_derivation(struct pkcs11_session *session,
 			     struct pkcs11_attribute_head *proc_params,
 			     struct obj_attrs **head)
 {
-	uint32_t rv = PKCS11_CKR_GENERAL_ERROR;
+	enum pkcs11_rc rc = PKCS11_CKR_GENERAL_ERROR;
 	TEE_Result res = TEE_ERROR_GENERIC;
 	TEE_Attribute tee_attrs[2];
 	size_t tee_attrs_count = 0;
@@ -634,9 +634,9 @@ uint32_t do_asymm_derivation(struct pkcs11_session *session,
 	if (remove_empty_attribute(head, PKCS11_CKA_VALUE))
 		return PKCS11_CKR_FUNCTION_FAILED;
 
-	rv = get_u32_attribute(*head, PKCS11_CKA_VALUE_LEN, &key_bit_size);
-	if (rv)
-		return rv;
+	rc = get_u32_attribute(*head, PKCS11_CKA_VALUE_LEN, &key_bit_size);
+	if (rc)
+		return rc;
 
 	if (get_key_type(*head) != PKCS11_CKK_GENERIC_SECRET)
 		key_bit_size *= 8;
@@ -654,8 +654,8 @@ uint32_t do_asymm_derivation(struct pkcs11_session *session,
 	switch (proc_params->id) {
 	case PKCS11_CKM_ECDH1_DERIVE:
 	case PKCS11_CKM_ECDH1_COFACTOR_DERIVE:
-		rv = pkcs2tee_ecdh_param_pub(proc_params, &a_ptr, &a_size);
-		if (rv)
+		rc = pkcs2tee_ecdh_param_pub(proc_params, &a_ptr, &a_size);
+		if (rc)
 			goto bail;
 
 		// TODO: check size is the expected one (active proc key)
@@ -685,20 +685,20 @@ uint32_t do_asymm_derivation(struct pkcs11_session *session,
 	TEE_DeriveKey(session->processing->tee_op_handle,
 			&tee_attrs[0], tee_attrs_count, out_handle);
 
-	rv = alloc_get_tee_attribute_data(out_handle, TEE_ATTR_SECRET_VALUE,
+	rc = alloc_get_tee_attribute_data(out_handle, TEE_ATTR_SECRET_VALUE,
 					  &a_ptr, &a_size);
-	if (rv)
+	if (rc)
 		goto bail;
 
 	if (a_size * 8 < key_bit_size)
-		rv = PKCS11_CKR_KEY_SIZE_RANGE;
+		rc = PKCS11_CKR_KEY_SIZE_RANGE;
 	else
-		rv = add_attribute(head, PKCS11_CKA_VALUE, a_ptr,
+		rc = add_attribute(head, PKCS11_CKA_VALUE, a_ptr,
 				   key_byte_size);
 
 	TEE_Free(a_ptr);
 bail:
 	release_active_processing(session);
 	TEE_FreeTransientObject(out_handle);
-	return rv;
+	return rc;
 }

@@ -144,9 +144,9 @@ size_t get_object_key_bit_size(struct pkcs11_object *obj)
 	}
 }
 
-static uint32_t generate_random_key_value(struct obj_attrs **head)
+static enum pkcs11_rc generate_random_key_value(struct obj_attrs **head)
 {
-	uint32_t rv = 0;
+	enum pkcs11_rc rc = PKCS11_CKR_GENERAL_ERROR;
 	void *data;
 	uint32_t data_size;
 	uint32_t value_len;
@@ -155,9 +155,9 @@ static uint32_t generate_random_key_value(struct obj_attrs **head)
 	if (!*head)
 		return PKCS11_CKR_TEMPLATE_INCONSISTENT;
 
-	rv = get_attribute_ptr(*head, PKCS11_CKA_VALUE_LEN, &data, &data_size);
-	if (rv || data_size != sizeof(uint32_t)) {
-		DMSG("%s", rv ? "No attribute value_len found" :
+	rc = get_attribute_ptr(*head, PKCS11_CKA_VALUE_LEN, &data, &data_size);
+	if (rc || data_size != sizeof(uint32_t)) {
+		DMSG("%s", rc ? "No attribute value_len found" :
 		     "Invalid size for attribute VALUE_LEN");
 
 		return PKCS11_CKR_ATTRIBUTE_VALUE_INVALID;
@@ -168,8 +168,8 @@ static uint32_t generate_random_key_value(struct obj_attrs **head)
 		value_len = (value_len + 7) / 8;
 
 	/* Remove the default empty value attribute if found */
-	rv = remove_empty_attribute(head, PKCS11_CKA_VALUE);
-	if (rv != PKCS11_CKR_OK && rv != PKCS11_RV_NOT_FOUND)
+	rc = remove_empty_attribute(head, PKCS11_CKA_VALUE);
+	if (rc != PKCS11_CKR_OK && rc != PKCS11_RV_NOT_FOUND)
 		return PKCS11_CKR_GENERAL_ERROR;
 
 	value = TEE_Malloc(value_len, TEE_USER_MEM_HINT_NO_FILL_ZERO);
@@ -178,15 +178,15 @@ static uint32_t generate_random_key_value(struct obj_attrs **head)
 
 	TEE_GenerateRandom(value, value_len);
 
-	rv = add_attribute(head, PKCS11_CKA_VALUE, value, value_len);
+	rc = add_attribute(head, PKCS11_CKA_VALUE, value, value_len);
 
 	TEE_Free(value);
 
-	return rv;
+	return rc;
 }
 
-uint32_t entry_generate_secret(struct pkcs11_client *client,
-			       uint32_t ptypes, TEE_Param *params)
+enum pkcs11_rc entry_generate_secret(struct pkcs11_client *client,
+				     uint32_t ptypes, TEE_Param *params)
 {
         const uint32_t exp_pt = TEE_PARAM_TYPES(TEE_PARAM_TYPE_MEMREF_INOUT,
 						TEE_PARAM_TYPE_NONE,
@@ -194,7 +194,7 @@ uint32_t entry_generate_secret(struct pkcs11_client *client,
 						TEE_PARAM_TYPE_NONE);
 	TEE_Param *ctrl = &params[0];
 	TEE_Param *out = &params[2];
-	uint32_t rv = 0;
+	enum pkcs11_rc rc = PKCS11_CKR_GENERAL_ERROR;
 	struct serialargs ctrlargs = { };
 	struct pkcs11_session *session = NULL;
 	struct pkcs11_attribute_head *proc_params = NULL;
@@ -209,58 +209,58 @@ uint32_t entry_generate_secret(struct pkcs11_client *client,
 
 	serialargs_init(&ctrlargs, ctrl->memref.buffer, ctrl->memref.size);
 
-	rv = serialargs_get_session_from_handle(&ctrlargs, client, &session);
-	if (rv)
-		return rv;
+	rc = serialargs_get_session_from_handle(&ctrlargs, client, &session);
+	if (rc)
+		return rc;
 
-	rv = serialargs_alloc_get_one_attribute(&ctrlargs, &proc_params);
-	if (rv)
+	rc = serialargs_alloc_get_one_attribute(&ctrlargs, &proc_params);
+	if (rc)
 		goto bail;
 
-	rv = serialargs_alloc_get_attributes(&ctrlargs, &template);
-	if (rv)
+	rc = serialargs_alloc_get_attributes(&ctrlargs, &template);
+	if (rc)
 		goto bail;
 
 	if (serialargs_remaining_bytes(&ctrlargs)) {
-		rv = PKCS11_CKR_ARGUMENTS_BAD;
+		rc = PKCS11_CKR_ARGUMENTS_BAD;
 		goto bail;
 	}
 
-	rv = get_ready_session(session);
-	if (rv)
+	rc = get_ready_session(session);
+	if (rc)
 		goto bail;
 
 	template_size = sizeof(*template) + template->attrs_size;
 
-	rv = check_mechanism_against_processing(session, proc_params->id,
+	rc = check_mechanism_against_processing(session, proc_params->id,
 						PKCS11_FUNCTION_GENERATE,
 						PKCS11_FUNC_STEP_INIT);
-	if (rv)
+	if (rc)
 		goto bail;
 
 	/*
 	 * Prepare a clean initial state for the requested object attributes.
 	 * Free temporary template once done.
 	 */
-	rv = create_attributes_from_template(&head, template, template_size,
+	rc = create_attributes_from_template(&head, template, template_size,
 					     NULL, PKCS11_FUNCTION_GENERATE,
 					     proc_params->id);
-	if (rv)
+	if (rc)
 		goto bail;
 
 	TEE_Free(template);
 	template = NULL;
 
-	rv = check_created_attrs(head, NULL);
-	if (rv)
+	rc = check_created_attrs(head, NULL);
+	if (rc)
 		goto bail;
 
-	rv = check_created_attrs_against_processing(proc_params->id, head);
-	if (rv)
+	rc = check_created_attrs_against_processing(proc_params->id, head);
+	if (rc)
 		goto bail;
 
-	rv = check_created_attrs_against_token(session, head);
-	if (rv)
+	rc = check_created_attrs_against_token(session, head);
+	if (rc)
 		goto bail;
 
 	/*
@@ -272,13 +272,13 @@ uint32_t entry_generate_secret(struct pkcs11_client *client,
 	case PKCS11_CKM_GENERIC_SECRET_KEY_GEN:
 	case PKCS11_CKM_AES_KEY_GEN:
 		/* Generate random of size specified by attribute VALUE_LEN */
-		rv = generate_random_key_value(&head);
-		if (rv)
+		rc = generate_random_key_value(&head);
+		if (rc)
 			goto bail;
 		break;
 
 	default:
-		rv = PKCS11_CKR_MECHANISM_INVALID;
+		rc = PKCS11_CKR_MECHANISM_INVALID;
 		goto bail;
 	}
 
@@ -288,8 +288,8 @@ uint32_t entry_generate_secret(struct pkcs11_client *client,
 	/*
 	 * Object is ready, register it and return a handle.
 	 */
-	rv = create_object(session, head, &obj_handle);
-	if (rv)
+	rc = create_object(session, head, &obj_handle);
+	if (rc)
 		goto bail;
 
 	/*
@@ -311,12 +311,12 @@ bail:
 	TEE_Free(template);
 	TEE_Free(head);
 
-	return rv;
+	return rc;
 }
 
-uint32_t alloc_get_tee_attribute_data(TEE_ObjectHandle tee_obj,
-					     uint32_t attribute,
-					     void **data, size_t *size)
+enum pkcs11_rc alloc_get_tee_attribute_data(TEE_ObjectHandle tee_obj,
+					    uint32_t attribute,
+					    void **data, size_t *size)
 {
 	TEE_Result res = TEE_ERROR_GENERIC;
 	void *ptr = NULL;
@@ -341,31 +341,32 @@ uint32_t alloc_get_tee_attribute_data(TEE_ObjectHandle tee_obj,
 	return tee2pkcs_error(res);
 }
 
-uint32_t tee2pkcs_add_attribute(struct obj_attrs **head,
-				uint32_t pkcs11_id, TEE_ObjectHandle tee_obj,
-				uint32_t tee_id)
+enum pkcs11_rc tee2pkcs_add_attribute(struct obj_attrs **head,
+				      uint32_t pkcs11_id,
+				      TEE_ObjectHandle tee_obj,
+				      uint32_t tee_id)
 {
-	uint32_t rv = 0;
+	enum pkcs11_rc rc = PKCS11_CKR_GENERAL_ERROR;
 	void *a_ptr = NULL;
 	size_t a_size = 0;
 
-	rv = alloc_get_tee_attribute_data(tee_obj, tee_id, &a_ptr, &a_size);
-	if (rv)
+	rc = alloc_get_tee_attribute_data(tee_obj, tee_id, &a_ptr, &a_size);
+	if (rc)
 		goto bail;
 
-	rv = add_attribute(head, pkcs11_id, a_ptr, a_size);
+	rc = add_attribute(head, pkcs11_id, a_ptr, a_size);
 
 	TEE_Free(a_ptr);
 
 bail:
-	if (rv)
+	if (rc)
 		EMSG("Failed TEE attribute %#"PRIx32" for %#"PRIx32"/%s",
 		     tee_id, pkcs11_id, id2str_attr(pkcs11_id));
-	return rv;
+	return rc;
 }
 
-uint32_t entry_generate_key_pair(struct pkcs11_client *client,
-				 uint32_t ptypes, TEE_Param *params)
+enum pkcs11_rc entry_generate_key_pair(struct pkcs11_client *client,
+				       uint32_t ptypes, TEE_Param *params)
 {
         const uint32_t exp_pt = TEE_PARAM_TYPES(TEE_PARAM_TYPE_MEMREF_INOUT,
 						TEE_PARAM_TYPE_NONE,
@@ -391,103 +392,103 @@ uint32_t entry_generate_key_pair(struct pkcs11_client *client,
 
 	serialargs_init(&ctrlargs, ctrl->memref.buffer, ctrl->memref.size);
 
-	rv = serialargs_get_session_from_handle(&ctrlargs, client, &session);
-	if (rv)
-		return rv;
+	rc = serialargs_get_session_from_handle(&ctrlargs, client, &session);
+	if (rc)
+		return rc;
 
 	/* Get mechanism parameters */
-	rv = serialargs_alloc_get_one_attribute(&ctrlargs, &proc_params);
-	if (rv)
-		return rv;
+	rc = serialargs_alloc_get_one_attribute(&ctrlargs, &proc_params);
+	if (rc)
+		return rc;
 
 	/* Get and check public key attributes */
-	rv = serialargs_alloc_get_attributes(&ctrlargs, &template);
-	if (rv)
+	rc = serialargs_alloc_get_attributes(&ctrlargs, &template);
+	if (rc)
 		goto bail;
 
-	rv = get_ready_session(session);
-	if (rv)
+	rc = get_ready_session(session);
+	if (rc)
 		goto bail;
 
-	rv = check_mechanism_against_processing(session, proc_params->id,
+	rc = check_mechanism_against_processing(session, proc_params->id,
 						PKCS11_FUNCTION_GENERATE_PAIR,
 						PKCS11_FUNC_STEP_INIT);
-	if (rv)
+	if (rc)
 		goto bail;
 
 	template_size = sizeof(*template) + template->attrs_size;
 
-	rv = create_attributes_from_template(&pub_head,
+	rc = create_attributes_from_template(&pub_head,
 					     template, template_size, NULL,
 					     PKCS11_FUNCTION_GENERATE_PAIR,
 					     proc_params->id);
-	if (rv)
+	if (rc)
 		goto bail;
 
 	TEE_Free(template);
 	template = NULL;
 
-	rv = serialargs_alloc_get_attributes(&ctrlargs, &template);
-	if (rv)
+	rc = serialargs_alloc_get_attributes(&ctrlargs, &template);
+	if (rc)
 		goto bail;
 
 	if (serialargs_remaining_bytes(&ctrlargs)) {
-		rv = PKCS11_CKR_ARGUMENTS_BAD;
+		rc = PKCS11_CKR_ARGUMENTS_BAD;
 		goto bail;
 	}
 
 	template_size = sizeof(*template) + template->attrs_size;
 
-	rv = create_attributes_from_template(&priv_head,
+	rc = create_attributes_from_template(&priv_head,
 					     template, template_size, NULL,
 					     PKCS11_FUNCTION_GENERATE_PAIR,
 					     proc_params->id);
-	if (rv)
+	if (rc)
 		goto bail;
 
 	TEE_Free(template);
 	template = NULL;
 
 	/* Generate CKA_ID for keys if not specified by the templates */
-	rv = add_missing_attribute_id(&pub_head, &priv_head);
-	if (rv)
+	rc = add_missing_attribute_id(&pub_head, &priv_head);
+	if (rc)
 		goto bail;
 
 	/* Check created object against processing and token state */
-	rv = check_created_attrs(pub_head, priv_head);
-	if (rv)
+	rc = check_created_attrs(pub_head, priv_head);
+	if (rc)
 		goto bail;
 
-	rv = check_created_attrs_against_processing(proc_params->id, pub_head);
-	if (rv)
+	rc = check_created_attrs_against_processing(proc_params->id, pub_head);
+	if (rc)
 		goto bail;
 
-	rv = check_created_attrs_against_processing(proc_params->id, priv_head);
-	if (rv)
+	rc = check_created_attrs_against_processing(proc_params->id, priv_head);
+	if (rc)
 		goto bail;
 
-	rv = check_created_attrs_against_token(session, pub_head);
-	if (rv)
+	rc = check_created_attrs_against_token(session, pub_head);
+	if (rc)
 		goto bail;
 
-	rv = check_created_attrs_against_token(session, priv_head);
-	if (rv)
+	rc = check_created_attrs_against_token(session, priv_head);
+	if (rc)
 		goto bail;
 
 	/* Generate key pair */
 	switch (proc_params->id) {
 	case PKCS11_CKM_EC_KEY_PAIR_GEN:
-		rv = generate_ec_keys(proc_params, &pub_head, &priv_head);
+		rc = generate_ec_keys(proc_params, &pub_head, &priv_head);
 		break;
 
 	case PKCS11_CKM_RSA_PKCS_KEY_PAIR_GEN:
-		rv = generate_rsa_keys(proc_params, &pub_head, &priv_head);
+		rc = generate_rsa_keys(proc_params, &pub_head, &priv_head);
 		break;
 	default:
-		rv = PKCS11_CKR_MECHANISM_INVALID;
+		rc = PKCS11_CKR_MECHANISM_INVALID;
 		break;
 	}
-	if (rv)
+	if (rc)
 		goto bail;
 
 	TEE_Free(proc_params);
@@ -496,12 +497,12 @@ uint32_t entry_generate_key_pair(struct pkcs11_client *client,
 	/*
 	 * Object is ready, register it and return a handle.
 	 */
-	rv = create_object(session, pub_head, &pubkey_handle);
-	if (rv)
+	rc = create_object(session, pub_head, &pubkey_handle);
+	if (rc)
 		goto bail;
 
-	rv = create_object(session, priv_head, &privkey_handle);
-	if (rv)
+	rc = create_object(session, priv_head, &privkey_handle);
+	if (rc)
 		goto bail;
 
 	/*
@@ -526,7 +527,7 @@ bail:
 	TEE_Free(pub_head);
 	TEE_Free(priv_head);
 
-	return rv;
+	return rc;
 }
 
 /*
@@ -769,8 +770,8 @@ out:
 	return rc;
 }
 
-uint32_t entry_derive_key(struct pkcs11_client *client,
-			  uint32_t ptypes, TEE_Param *params)
+enum pkcs11_rc entry_derive_key(struct pkcs11_client *client,
+				uint32_t ptypes, TEE_Param *params)
 {
         const uint32_t exp_pt = TEE_PARAM_TYPES(TEE_PARAM_TYPE_MEMREF_INOUT,
 						TEE_PARAM_TYPE_NONE,
@@ -778,7 +779,7 @@ uint32_t entry_derive_key(struct pkcs11_client *client,
 						TEE_PARAM_TYPE_NONE);
 	TEE_Param *ctrl = &params[0];
 	TEE_Param *out = &params[2];
-	uint32_t rv = 0;
+	enum pkcs11_rc rc = PKCS11_CKR_GENERAL_ERROR;
 	struct serialargs ctrlargs = { };
 	struct pkcs11_session *session = NULL;
 	struct pkcs11_attribute_head *proc_params = NULL;
@@ -796,95 +797,95 @@ uint32_t entry_derive_key(struct pkcs11_client *client,
 
 	serialargs_init(&ctrlargs, ctrl->memref.buffer, ctrl->memref.size);
 
-	rv = serialargs_get_session_from_handle(&ctrlargs, client, &session);
-	if (rv)
-		return rv;
+	rc = serialargs_get_session_from_handle(&ctrlargs, client, &session);
+	if (rc)
+		return rc;
 
-	rv = serialargs_alloc_get_one_attribute(&ctrlargs, &proc_params);
-	if (rv)
+	rc = serialargs_alloc_get_one_attribute(&ctrlargs, &proc_params);
+	if (rc)
 		goto bail;
 
-	rv = serialargs_get(&ctrlargs, &parent_handle, sizeof(uint32_t));
-	if (rv)
+	rc = serialargs_get(&ctrlargs, &parent_handle, sizeof(uint32_t));
+	if (rc)
 		goto bail;
 
-	rv = serialargs_alloc_get_attributes(&ctrlargs, &template);
-	if (rv)
+	rc = serialargs_alloc_get_attributes(&ctrlargs, &template);
+	if (rc)
 		goto bail;
 
 	if (serialargs_remaining_bytes(&ctrlargs)) {
-		rv = PKCS11_CKR_ARGUMENTS_BAD;
+		rc = PKCS11_CKR_ARGUMENTS_BAD;
 		goto bail;
 	}
 
-	rv = get_ready_session(session);
-	if (rv)
+	rc = get_ready_session(session);
+	if (rc)
 		goto bail;
 
 	parent_obj = pkcs11_handle2object(parent_handle, session);
 	if (!parent_obj) {
-		rv = PKCS11_CKR_KEY_HANDLE_INVALID;
+		rc = PKCS11_CKR_KEY_HANDLE_INVALID;
 		goto bail;
 	}
 
-	rv = set_processing_state(session, PKCS11_FUNCTION_DERIVE,
+	rc = set_processing_state(session, PKCS11_FUNCTION_DERIVE,
 				  parent_obj, NULL);
-	if (rv)
+	if (rc)
 		goto bail;
 
 	template_size = sizeof(*template) + template->attrs_size;
 
-	rv = check_mechanism_against_processing(session, proc_params->id,
+	rc = check_mechanism_against_processing(session, proc_params->id,
 						PKCS11_FUNCTION_DERIVE,
 						PKCS11_FUNC_STEP_INIT);
-	if (rv)
+	if (rc)
 		goto bail;
 
-	rv = create_attributes_from_template(&head, template, template_size,
+	rc = create_attributes_from_template(&head, template, template_size,
 					     parent_obj->attributes,
 					     PKCS11_FUNCTION_DERIVE,
 					     proc_params->id);
-	if (rv)
+	if (rc)
 		goto bail;
 
 	TEE_Free(template);
 	template = NULL;
 
-	rv = check_created_attrs(head, NULL);
-	if (rv)
+	rc = check_created_attrs(head, NULL);
+	if (rc)
 		goto bail;
 
-	rv = check_created_attrs_against_processing(proc_params->id, head);
-	if (rv)
+	rc = check_created_attrs_against_processing(proc_params->id, head);
+	if (rc)
 		goto bail;
 
-	rv = check_created_attrs_against_token(session, head);
-	if (rv)
+	rc = check_created_attrs_against_token(session, head);
+	if (rc)
 		goto bail;
 
 	// TODO: check_created_against_parent(session, parent, child);
 	// This can handle DERVIE_TEMPLATE attributes from the parent key.
 
 	if (processing_is_tee_symm(proc_params->id)) {
-		rv = init_symm_operation(session, PKCS11_FUNCTION_DERIVE,
+		rc = init_symm_operation(session, PKCS11_FUNCTION_DERIVE,
 					 proc_params, parent_obj);
-		if (rv)
+		if (rc)
 			goto bail;
 
-		rv = do_symm_derivation(session, proc_params,
+		rc = do_symm_derivation(session, proc_params,
 					parent_obj, &head);
 	} else if (processing_is_tee_asymm(proc_params->id)) {
-		rv = init_asymm_operation(session, PKCS11_FUNCTION_DERIVE,
+		rc = init_asymm_operation(session, PKCS11_FUNCTION_DERIVE,
 					  proc_params, parent_obj);
-		if (rv)
+		if (rc)
 			goto bail;
 
-		rv = do_asymm_derivation(session, proc_params, &head);
+		rc = do_asymm_derivation(session, proc_params, &head);
 	} else {
-		rv = PKCS11_CKR_MECHANISM_INVALID;
+		rc = PKCS11_CKR_MECHANISM_INVALID;
 	}
 
-	if (rv)
+	if (rc)
 		goto bail;
 
 #if 0
@@ -920,8 +921,8 @@ uint32_t entry_derive_key(struct pkcs11_client *client,
 	/*
 	 * Object is ready, register it and return a handle.
 	 */
-	rv = create_object(session, head, &out_handle);
-	if (rv)
+	rc = create_object(session, head, &out_handle);
+	if (rc)
 		goto bail;
 
 	/*
@@ -944,5 +945,5 @@ bail:
 	TEE_Free(template);
 	TEE_Free(head);
 
-	return rv;
+	return rc;
 }

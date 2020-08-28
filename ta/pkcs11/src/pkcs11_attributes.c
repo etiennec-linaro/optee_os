@@ -1017,19 +1017,19 @@ enum pkcs11_rc check_created_attrs_against_processing(uint32_t proc_id,
 
 	switch (proc_id) {
 	case PKCS11_CKM_GENERIC_SECRET_KEY_GEN:
-		if (get_type(head) != PKCS11_CKK_GENERIC_SECRET)
+		if (get_key_type(head) != PKCS11_CKK_GENERIC_SECRET)
 			return PKCS11_CKR_TEMPLATE_INCONSISTENT;
 		break;
 	case PKCS11_CKM_AES_KEY_GEN:
-		if (get_type(head) != PKCS11_CKK_AES)
+		if (get_key_type(head) != PKCS11_CKK_AES)
 			return PKCS11_CKR_TEMPLATE_INCONSISTENT;
 		break;
 	case PKCS11_CKM_EC_KEY_PAIR_GEN:
-		if (get_type(head) != PKCS11_CKK_EC)
+		if (get_key_type(head) != PKCS11_CKK_EC)
 			return PKCS11_CKR_TEMPLATE_INCONSISTENT;
 		break;
 	case PKCS11_CKM_RSA_PKCS_KEY_PAIR_GEN:
-		if (get_type(head) != PKCS11_CKK_RSA)
+		if (get_key_type(head) != PKCS11_CKK_RSA)
 			return PKCS11_CKR_TEMPLATE_INCONSISTENT;
 		break;
 	case PKCS11_CKM_ECDH1_DERIVE:

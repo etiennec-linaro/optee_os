@@ -151,7 +151,7 @@ static uint32_t pkcs2tee_key_type(uint32_t *tee_type, struct pkcs11_object *obj,
 				 enum processing_func function)
 {
 	enum pkcs11_class_id class = get_class(obj->attributes);
-	enum pkcs11_key_type type = get_type(obj->attributes);
+	enum pkcs11_key_type type = get_key_type(obj->attributes);
 
 	switch (class) {
 	case PKCS11_CKO_PUBLIC_KEY:
@@ -226,7 +226,7 @@ static uint32_t load_tee_key(struct pkcs11_session *session,
 	uint32_t rv = 0;
 	TEE_Result res = TEE_ERROR_GENERIC;
 	enum pkcs11_class_id __maybe_unused class = get_class(obj->attributes);
-	enum pkcs11_key_type type = get_type(obj->attributes);
+	enum pkcs11_key_type type = get_key_type(obj->attributes);
 
 	assert(class == PKCS11_CKO_PUBLIC_KEY ||
 	       class == PKCS11_CKO_PRIVATE_KEY);
@@ -638,7 +638,7 @@ uint32_t do_asymm_derivation(struct pkcs11_session *session,
 	if (rv)
 		return rv;
 
-	if (get_type(*head) != PKCS11_CKK_GENERIC_SECRET)
+	if (get_key_type(*head) != PKCS11_CKK_GENERIC_SECRET)
 		key_bit_size *= 8;
 
 	key_byte_size = (key_bit_size + 7) / 8;

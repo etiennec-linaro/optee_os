@@ -164,7 +164,7 @@ static uint32_t generate_random_key_value(struct obj_attrs **head)
 	}
 	TEE_MemMove(&value_len, data, data_size);
 
-	if (get_type(*head) == PKCS11_CKK_GENERIC_SECRET)
+	if (get_key_type(*head) == PKCS11_CKK_GENERIC_SECRET)
 		value_len = (value_len + 7) / 8;
 
 	/* Remove the default empty value attribute if found */

@@ -288,11 +288,6 @@ static inline enum pkcs11_key_type get_key_type(struct obj_attrs *head)
 }
 #endif
 
-static inline uint32_t get_type(struct obj_attrs *head)
-{
-	return get_key_type(head);
-}
-
 /*
  * get_mechanism_type() - Get the mechanism type of an object
  * @head:	Pointer to serialized attributes

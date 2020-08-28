@@ -292,7 +292,7 @@ uint32_t load_tee_rsa_key_attrs(TEE_Attribute **tee_attrs, size_t *tee_count,
 	uint32_t rv = PKCS11_CKR_GENERAL_ERROR;
 	void *a_ptr = NULL;
 
-	assert(get_type(obj->attributes) == PKCS11_CKK_RSA);
+	assert(get_key_type(obj->attributes) == PKCS11_CKK_RSA);
 
 	switch (get_class(obj->attributes)) {
 	case PKCS11_CKO_PUBLIC_KEY:

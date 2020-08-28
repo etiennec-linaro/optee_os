@@ -937,7 +937,7 @@ uint32_t load_tee_ec_key_attrs(TEE_Attribute **tee_attrs, size_t *tee_count,
 	size_t count = 0;
 	uint32_t rv = PKCS11_CKR_GENERAL_ERROR;
 
-	assert(get_type(obj->attributes) == PKCS11_CKK_EC);
+	assert(get_key_type(obj->attributes) == PKCS11_CKK_EC);
 
 	switch (get_class(obj->attributes)) {
 	case PKCS11_CKO_PUBLIC_KEY:

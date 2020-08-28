@@ -444,7 +444,7 @@ uint32_t tee_init_ccm_operation(struct active_processing *processing,
 {
 	enum pkcs11_rc rc = PKCS11_CKR_GENERAL_ERROR;
 	struct ae_aes_context *params = NULL;
-	struct serialargs args;
+	struct serialargs args = { };
 	/* CCM parameters */
 	uint32_t data_len = 0;
 	uint32_t nonce_len = 0;
@@ -452,8 +452,6 @@ uint32_t tee_init_ccm_operation(struct active_processing *processing,
 	uint32_t aad_len = 0;
 	void *aad = NULL;
 	uint32_t mac_len = 0;
-
-	TEE_MemFill(&args, 0, sizeof(args));
 
 	if (!proc_params)
 		return PKCS11_CKR_ARGUMENTS_BAD;
@@ -560,7 +558,7 @@ void tee_release_ccm_operation(struct active_processing *processing)
 uint32_t tee_init_gcm_operation(struct active_processing *processing,
 				    void *proc_params, size_t params_size)
 {
-	struct serialargs args;
+	struct serialargs args = { };
 	enum pkcs11_rc rc = PKCS11_CKR_GENERAL_ERROR;
 	uint32_t tag_len = 0;
 	struct ae_aes_context *params = NULL;
@@ -570,8 +568,6 @@ uint32_t tee_init_gcm_operation(struct active_processing *processing,
 	uint32_t aad_len = 0;
 	void *aad = NULL;
 	uint32_t tag_bitlen = 0;
-
-	TEE_MemFill(&args, 0, sizeof(args));
 
 	if (!proc_params)
 		return PKCS11_CKR_ARGUMENTS_BAD;

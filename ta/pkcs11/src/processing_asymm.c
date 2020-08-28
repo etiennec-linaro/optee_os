@@ -620,15 +620,13 @@ uint32_t do_asymm_derivation(struct pkcs11_session *session,
 {
 	enum pkcs11_rc rc = PKCS11_CKR_GENERAL_ERROR;
 	TEE_Result res = TEE_ERROR_GENERIC;
-	TEE_Attribute tee_attrs[2];
+	TEE_Attribute tee_attrs[2] = { };
 	size_t tee_attrs_count = 0;
 	TEE_ObjectHandle out_handle = TEE_HANDLE_NULL;
 	void *a_ptr = NULL;
 	size_t a_size = 0;
 	uint32_t key_bit_size = 0;
 	uint32_t key_byte_size = 0;
-
-	TEE_MemFill(tee_attrs, 0, sizeof(tee_attrs));
 
 	/* Remove default attribute set at template sanitization */
 	if (remove_empty_attribute(head, PKCS11_CKA_VALUE))

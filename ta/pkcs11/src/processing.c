@@ -147,10 +147,10 @@ size_t get_object_key_bit_size(struct pkcs11_object *obj)
 static enum pkcs11_rc generate_random_key_value(struct obj_attrs **head)
 {
 	enum pkcs11_rc rc = PKCS11_CKR_GENERAL_ERROR;
-	void *data;
-	uint32_t data_size;
-	uint32_t value_len;
-	void *value;
+	void *data = NULL;
+	uint32_t data_size = 0;
+	uint32_t value_len = 0;
+	void *value = NULL;
 
 	if (!*head)
 		return PKCS11_CKR_TEMPLATE_INCONSISTENT;
@@ -192,8 +192,8 @@ enum pkcs11_rc entry_generate_secret(struct pkcs11_client *client,
 						TEE_PARAM_TYPE_NONE,
 						TEE_PARAM_TYPE_MEMREF_OUTPUT,
 						TEE_PARAM_TYPE_NONE);
-	TEE_Param *ctrl = &params[0];
-	TEE_Param *out = &params[2];
+	TEE_Param *ctrl = params;
+	TEE_Param *out = params + 2;
 	enum pkcs11_rc rc = PKCS11_CKR_GENERAL_ERROR;
 	struct serialargs ctrlargs = { };
 	struct pkcs11_session *session = NULL;
@@ -372,9 +372,9 @@ enum pkcs11_rc entry_generate_key_pair(struct pkcs11_client *client,
 						TEE_PARAM_TYPE_NONE,
 						TEE_PARAM_TYPE_MEMREF_OUTPUT,
 						TEE_PARAM_TYPE_NONE);
-	TEE_Param *ctrl = &params[0];
-	TEE_Param *out = &params[2];
-	uint32_t rv = 0;
+	TEE_Param *ctrl = params;
+	TEE_Param *out = params + 2;
+	enum pkcs11_rc rc = PKCS11_CKR_GENERAL_ERROR;
 	struct serialargs ctrlargs = { };
 	struct pkcs11_session *session = NULL;
 	struct pkcs11_attribute_head *proc_params = NULL;
@@ -777,8 +777,8 @@ enum pkcs11_rc entry_derive_key(struct pkcs11_client *client,
 						TEE_PARAM_TYPE_NONE,
 						TEE_PARAM_TYPE_MEMREF_OUTPUT,
 						TEE_PARAM_TYPE_NONE);
-	TEE_Param *ctrl = &params[0];
-	TEE_Param *out = &params[2];
+	TEE_Param *ctrl = params;
+	TEE_Param *out = params + 2;
 	enum pkcs11_rc rc = PKCS11_CKR_GENERAL_ERROR;
 	struct serialargs ctrlargs = { };
 	struct pkcs11_session *session = NULL;

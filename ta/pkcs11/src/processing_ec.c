@@ -1018,11 +1018,9 @@ uint32_t pkcs2tee_algo_ecdh(uint32_t *tee_id,
 			   struct pkcs11_attribute_head *proc_params,
 			   struct pkcs11_object *obj)
 {
-	struct serialargs args;
+	struct serialargs args = { };
 	enum pkcs11_rc rc = PKCS11_CKR_GENERAL_ERROR;
 	uint32_t kdf = 0;
-
-	TEE_MemFill(&args, 0, sizeof(args));
 
 	serialargs_init(&args, proc_params->data, proc_params->size);
 
@@ -1064,11 +1062,9 @@ uint32_t pkcs2tee_algo_ecdh(uint32_t *tee_id,
 uint32_t pkcs2tee_ecdh_param_pub(struct pkcs11_attribute_head *proc_params,
 			        void **pub_data, size_t *pub_size)
 {
-	struct serialargs args;
+	struct serialargs args = { };
 	enum pkcs11_rc rc = PKCS11_CKR_GENERAL_ERROR;
 	uint32_t temp = 0;
-
-	TEE_MemFill(&args, 0, sizeof(args));
 
 	serialargs_init(&args, proc_params->data, proc_params->size);
 
@@ -1184,10 +1180,8 @@ uint32_t generate_ec_keys(struct pkcs11_attribute_head *proc_params,
 	uint32_t tee_size = 0;
 	uint32_t tee_curve = 0;
 	TEE_ObjectHandle tee_obj = TEE_HANDLE_NULL;
-	TEE_Attribute tee_key_attr[1];
+	TEE_Attribute tee_key_attr[1] = { };
 	TEE_Result res = TEE_ERROR_GENERIC;
-
-	TEE_MemFill(tee_key_attr, 0, sizeof(tee_key_attr));
 
 	if (!proc_params || !*pub_head || !*priv_head)
 		return PKCS11_CKR_TEMPLATE_INCONSISTENT;

@@ -515,7 +515,7 @@ enum pkcs11_rc entry_find_objects_init(struct pkcs11_client *client,
 						TEE_PARAM_TYPE_NONE,
 						TEE_PARAM_TYPE_NONE,
 						TEE_PARAM_TYPE_NONE);
-	TEE_Param *ctrl = &params[0];
+	TEE_Param *ctrl = params;
 	enum pkcs11_rc rc = PKCS11_CKR_GENERAL_ERROR;
 	struct serialargs ctrlargs = { };
 	struct pkcs11_session *session = NULL;
@@ -689,8 +689,8 @@ enum pkcs11_rc entry_find_objects(struct pkcs11_client *client,
 						TEE_PARAM_TYPE_NONE,
 						TEE_PARAM_TYPE_MEMREF_OUTPUT,
 						TEE_PARAM_TYPE_NONE);
-	TEE_Param *ctrl = &params[0];
-	TEE_Param *out = &params[2];
+	TEE_Param *ctrl = params;
+	TEE_Param *out = params + 2;
 	enum pkcs11_rc rc = PKCS11_CKR_GENERAL_ERROR;
 	struct serialargs ctrlargs = { };
 	struct pkcs11_session *session = NULL;
@@ -765,7 +765,7 @@ uint32_t entry_find_objects_final(struct pkcs11_client *client,
 						TEE_PARAM_TYPE_NONE,
 						TEE_PARAM_TYPE_NONE,
 						TEE_PARAM_TYPE_NONE);
-	TEE_Param *ctrl = &params[0];
+	TEE_Param *ctrl = params;
 	enum pkcs11_rc rc = PKCS11_CKR_GENERAL_ERROR;
 	struct serialargs ctrlargs = { };
 	struct pkcs11_session *session = NULL;
@@ -797,8 +797,8 @@ uint32_t entry_get_attribute_value(struct pkcs11_client *client,
 						TEE_PARAM_TYPE_NONE,
 						TEE_PARAM_TYPE_MEMREF_OUTPUT,
 						TEE_PARAM_TYPE_NONE);
-	TEE_Param *ctrl = &params[0];
-	TEE_Param *out = &params[2];
+	TEE_Param *ctrl = params;
+	TEE_Param *out = params + 2;
 	enum pkcs11_rc rc = PKCS11_CKR_GENERAL_ERROR;
 	struct serialargs ctrlargs = { };
 	struct pkcs11_session *session = NULL;
@@ -950,8 +950,8 @@ uint32_t entry_get_object_size(struct pkcs11_client *client,
 						TEE_PARAM_TYPE_NONE,
 						TEE_PARAM_TYPE_MEMREF_OUTPUT,
 						TEE_PARAM_TYPE_NONE);
-	TEE_Param *ctrl = &params[0];
-	TEE_Param *out = &params[2];
+	TEE_Param *ctrl = params;
+	TEE_Param *out = params + 2;
 	enum pkcs11_rc rc = PKCS11_CKR_GENERAL_ERROR;
 	struct serialargs ctrlargs = { };
 	struct pkcs11_session *session = NULL;

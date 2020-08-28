@@ -13,7 +13,7 @@
 
 #include <token_capabilities.h>
 
-/* Short aliases for return code */
+/* Short aliases for return code (FIXME: deprecate) */
 #define PKCS11_OK			PKCS11_CKR_OK
 #define PKCS11_ERROR			PKCS11_CKR_GENERAL_ERROR
 #define PKCS11_MEMORY			PKCS11_CKR_DEVICE_MEMORY

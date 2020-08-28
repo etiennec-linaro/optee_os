@@ -92,7 +92,7 @@ static inline bool head_contains_boolprops(struct obj_attrs *head)
  *
  * Retrieved pointer can be freed from a simple TEE_Free(reference).
  *
- * Return a PKCS11_OK on success or a PKCS11 return code.
+ * Return PKCS11_CKR_OK on success or a PKCS11 return code.
  */
 enum pkcs11_rc init_attributes_head(struct obj_attrs **head);
 
@@ -105,7 +105,7 @@ enum pkcs11_rc init_attributes_head(struct obj_attrs **head);
  * @data:	Opaque data of attribute
  * @size:	Size of data
  *
- * Return a PKCS11_OK on success or a PKCS11 return code.
+ * Return PKCS11_CKR_OK on success or a PKCS11 return code.
  */
 enum pkcs11_rc add_attribute(struct obj_attrs **head, uint32_t attribute,
 			     void *data, size_t size);
@@ -114,7 +114,7 @@ enum pkcs11_rc add_attribute(struct obj_attrs **head, uint32_t attribute,
  * Update serialized attributes to remove an entry. Can relocate the attribute
  * list buffer. Only 1 instance of the entry is expected (TODO factory with _check)
  *
- * Return a PKCS11_OK on success or a PKCS11 return code.
+ * Return PKCS11_CKR_OK on success or a PKCS11 return code.
  */
 uint32_t remove_attribute(struct obj_attrs **head, uint32_t attrib);
 
@@ -122,7 +122,7 @@ uint32_t remove_attribute(struct obj_attrs **head, uint32_t attrib);
  * Update serialized attributes to remove an empty entry. Can relocate the
  * attribute list buffer. Only 1 instance of the entry is expected.
  *
- * Return PKCS11_OK on success or a PKCS11 return code.
+ * Return PKCS11_CKR_OK on success or a PKCS11 return code.
  */
 enum pkcs11_rc remove_empty_attribute(struct obj_attrs **head, uint32_t attrib);
 
@@ -131,7 +131,7 @@ enum pkcs11_rc remove_empty_attribute(struct obj_attrs **head, uint32_t attrib);
  * attribute list buffer. If attribute ID is find several times, remove all
  * of them.
  *
- * Return a PKCS11_OK on success if attribute(s) is/are found,
+ * Return PKCS11_CKR_OK on success if attribute(s) is/are found,
  * PKCS11_RV_NOT_FOUND if attribute is not found or a PKCS11 error code.
  */
 uint32_t remove_attribute_check(struct obj_attrs **head,
@@ -171,7 +171,7 @@ void get_attribute_ptrs(struct obj_attrs *head, uint32_t attribute,
  * If attr_size != NULL, return in *attr_size attribute value size.
  * If attr != NULL, return in *attr the address of the attribute value.
  *
- * Return a PKCS11_OK or PKCS11_RV_NOT_FOUND on success, or a PKCS11 return
+ * Return PKCS11_CKR_OK or PKCS11_RV_NOT_FOUND on success, or a PKCS11 return
  * code.
  */
 enum pkcs11_rc get_attribute_ptr(struct obj_attrs *head, uint32_t attribute,
@@ -190,7 +190,7 @@ enum pkcs11_rc get_attribute_ptr(struct obj_attrs *head, uint32_t attribute,
  * If attr != NULL and attr_size is NULL or gives expected buffer size,
  * copy attribute value into attr.
  *
- * Return a PKCS11_OK or PKCS11_RV_NOT_FOUND on success, or a PKCS11 return
+ * Return PKCS11_CKR_OK or PKCS11_RV_NOT_FOUND on success, or a PKCS11 return
  * code.
  */
 enum pkcs11_rc get_attribute(struct obj_attrs *head, uint32_t attribute,
@@ -206,7 +206,7 @@ enum pkcs11_rc get_attribute(struct obj_attrs *head, uint32_t attribute,
  * If the retreived attribute doesn't have a 4 byte sized value
  * PKCS11_CKR_GENERAL_ERROR is returned.
  *
- * Return a PKCS11_OK or PKCS11_RV_NOT_FOUND on success, or a PKCS11 return
+ * Return PKCS11_CKR_OK or PKCS11_RV_NOT_FOUND on success, or a PKCS11 return
  * code.
  */
 
@@ -227,7 +227,7 @@ static inline enum pkcs11_rc get_u32_attribute(struct obj_attrs *head,
  * Return true all attributes from the reference are found and match value
  * in the candidate attribute list.
  *
- * Return a PKCS11_OK on success, or a PKCS11 return code.
+ * Return PKCS11_CKR_OK on success, or a PKCS11 return code.
  */
 bool attributes_match_reference(struct obj_attrs *ref,
 				struct obj_attrs *candidate);

@@ -435,7 +435,7 @@ uint32_t step_asymm_operation(struct pkcs11_session *session,
 					TEE_USER_MEM_HINT_NO_FILL_ZERO);
 		if (!tee_attrs) {
 			rc = PKCS11_CKR_DEVICE_MEMORY;
-			goto bail;
+			goto out;
 		}
 
 		data32 = *(uint32_t *)proc->extra_ctx;
@@ -460,7 +460,7 @@ uint32_t step_asymm_operation(struct pkcs11_session *session,
 
 		EMSG("TODO: compute hash for later authentication");
 		rc = PKCS11_RV_NOT_IMPLEMENTED;
-		goto bail;
+		goto out;
 	default:
 		/* Other mechanism do not expect multi stage operation */
 		rc = PKCS11_CKR_GENERAL_ERROR;
@@ -468,7 +468,7 @@ uint32_t step_asymm_operation(struct pkcs11_session *session,
 	}
 
 	if (step == PKCS11_FUNC_STEP_UPDATE)
-		goto bail;
+		goto out;
 
 	/*
 	 * Finalize
@@ -480,7 +480,7 @@ uint32_t step_asymm_operation(struct pkcs11_session *session,
 		sz = ecdsa_get_input_max_byte_size(proc->tee_op_handle);
 		if (!in_size || !sz) {
 			rc = PKCS11_CKR_FUNCTION_FAILED;
-			goto bail;
+			goto out;
 		}
 		/*
 		 * Limit input size upon key size
@@ -493,7 +493,7 @@ uint32_t step_asymm_operation(struct pkcs11_session *session,
 		if (function == PKCS11_FUNCTION_VERIFY &&
 		    in2_size != 2 * sz) {
 			rc = PKCS11_CKR_SIGNATURE_LEN_RANGE;
-			goto bail;
+			goto out;
 		}
 		break;
 	case PKCS11_CKM_ECDSA_SHA1:
@@ -519,7 +519,7 @@ uint32_t step_asymm_operation(struct pkcs11_session *session,
 	default:
 		if (step != PKCS11_FUNC_STEP_ONESHOT) {
 			rc = PKCS11_CKR_GENERAL_ERROR;
-			goto bail;
+			goto out;
 		}
 		break;
 	}
@@ -595,7 +595,7 @@ uint32_t step_asymm_operation(struct pkcs11_session *session,
 		TEE_Panic(proc->mecha_type);
 		break;
 	}
-bail:
+out:
 	if (output_data &&
 	    (rc == PKCS11_CKR_OK || rc == PKCS11_CKR_BUFFER_TOO_SMALL)) {
 		switch (TEE_PARAM_TYPE_GET(ptypes, 2)) {
@@ -654,7 +654,7 @@ uint32_t do_asymm_derivation(struct pkcs11_session *session,
 	case PKCS11_CKM_ECDH1_COFACTOR_DERIVE:
 		rc = pkcs2tee_ecdh_param_pub(proc_params, &a_ptr, &a_size);
 		if (rc)
-			goto bail;
+			goto out;
 
 		// TODO: check size is the expected one (active proc key)
 		TEE_InitRefAttribute(&tee_attrs[tee_attrs_count],
@@ -686,7 +686,7 @@ uint32_t do_asymm_derivation(struct pkcs11_session *session,
 	rc = alloc_get_tee_attribute_data(out_handle, TEE_ATTR_SECRET_VALUE,
 					  &a_ptr, &a_size);
 	if (rc)
-		goto bail;
+		goto out;
 
 	if (a_size * 8 < key_bit_size)
 		rc = PKCS11_CKR_KEY_SIZE_RANGE;
@@ -695,7 +695,7 @@ uint32_t do_asymm_derivation(struct pkcs11_session *session,
 				   key_byte_size);
 
 	TEE_Free(a_ptr);
-bail:
+out:
 	release_active_processing(session);
 	TEE_FreeTransientObject(out_handle);
 	return rc;

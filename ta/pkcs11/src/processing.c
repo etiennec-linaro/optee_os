@@ -215,20 +215,20 @@ enum pkcs11_rc entry_generate_secret(struct pkcs11_client *client,
 
 	rc = serialargs_alloc_get_one_attribute(&ctrlargs, &proc_params);
 	if (rc)
-		goto bail;
+		goto out;
 
 	rc = serialargs_alloc_get_attributes(&ctrlargs, &template);
 	if (rc)
-		goto bail;
+		goto out;
 
 	if (serialargs_remaining_bytes(&ctrlargs)) {
 		rc = PKCS11_CKR_ARGUMENTS_BAD;
-		goto bail;
+		goto out;
 	}
 
 	rc = get_ready_session(session);
 	if (rc)
-		goto bail;
+		goto out;
 
 	template_size = sizeof(*template) + template->attrs_size;
 
@@ -236,7 +236,7 @@ enum pkcs11_rc entry_generate_secret(struct pkcs11_client *client,
 						PKCS11_FUNCTION_GENERATE,
 						PKCS11_FUNC_STEP_INIT);
 	if (rc)
-		goto bail;
+		goto out;
 
 	/*
 	 * Prepare a clean initial state for the requested object attributes.
@@ -246,22 +246,22 @@ enum pkcs11_rc entry_generate_secret(struct pkcs11_client *client,
 					     NULL, PKCS11_FUNCTION_GENERATE,
 					     proc_params->id);
 	if (rc)
-		goto bail;
+		goto out;
 
 	TEE_Free(template);
 	template = NULL;
 
 	rc = check_created_attrs(head, NULL);
 	if (rc)
-		goto bail;
+		goto out;
 
 	rc = check_created_attrs_against_processing(proc_params->id, head);
 	if (rc)
-		goto bail;
+		goto out;
 
 	rc = check_created_attrs_against_token(session, head);
 	if (rc)
-		goto bail;
+		goto out;
 
 	/*
 	 * Execute target processing and add value as attribute
@@ -274,12 +274,12 @@ enum pkcs11_rc entry_generate_secret(struct pkcs11_client *client,
 		/* Generate random of size specified by attribute VALUE_LEN */
 		rc = generate_random_key_value(&head);
 		if (rc)
-			goto bail;
+			goto out;
 		break;
 
 	default:
 		rc = PKCS11_CKR_MECHANISM_INVALID;
-		goto bail;
+		goto out;
 	}
 
 	TEE_Free(proc_params);
@@ -290,7 +290,7 @@ enum pkcs11_rc entry_generate_secret(struct pkcs11_client *client,
 	 */
 	rc = create_object(session, head, &obj_handle);
 	if (rc)
-		goto bail;
+		goto out;
 
 	/*
 	 * Now obj_handle (through the related struct pkcs11_object instance)
@@ -306,7 +306,7 @@ enum pkcs11_rc entry_generate_secret(struct pkcs11_client *client,
 	DMSG("PKCS11 session %"PRIu32": generate secret %#"PRIx32,
 	     session->handle, obj_handle);
 
-bail:
+out:
 	TEE_Free(proc_params);
 	TEE_Free(template);
 	TEE_Free(head);
@@ -352,13 +352,13 @@ enum pkcs11_rc tee2pkcs_add_attribute(struct obj_attrs **head,
 
 	rc = alloc_get_tee_attribute_data(tee_obj, tee_id, &a_ptr, &a_size);
 	if (rc)
-		goto bail;
+		goto out;
 
 	rc = add_attribute(head, pkcs11_id, a_ptr, a_size);
 
 	TEE_Free(a_ptr);
 
-bail:
+out:
 	if (rc)
 		EMSG("Failed TEE attribute %#"PRIx32" for %#"PRIx32"/%s",
 		     tee_id, pkcs11_id, id2str_attr(pkcs11_id));
@@ -404,17 +404,17 @@ enum pkcs11_rc entry_generate_key_pair(struct pkcs11_client *client,
 	/* Get and check public key attributes */
 	rc = serialargs_alloc_get_attributes(&ctrlargs, &template);
 	if (rc)
-		goto bail;
+		goto out;
 
 	rc = get_ready_session(session);
 	if (rc)
-		goto bail;
+		goto out;
 
 	rc = check_mechanism_against_processing(session, proc_params->id,
 						PKCS11_FUNCTION_GENERATE_PAIR,
 						PKCS11_FUNC_STEP_INIT);
 	if (rc)
-		goto bail;
+		goto out;
 
 	template_size = sizeof(*template) + template->attrs_size;
 
@@ -423,18 +423,18 @@ enum pkcs11_rc entry_generate_key_pair(struct pkcs11_client *client,
 					     PKCS11_FUNCTION_GENERATE_PAIR,
 					     proc_params->id);
 	if (rc)
-		goto bail;
+		goto out;
 
 	TEE_Free(template);
 	template = NULL;
 
 	rc = serialargs_alloc_get_attributes(&ctrlargs, &template);
 	if (rc)
-		goto bail;
+		goto out;
 
 	if (serialargs_remaining_bytes(&ctrlargs)) {
 		rc = PKCS11_CKR_ARGUMENTS_BAD;
-		goto bail;
+		goto out;
 	}
 
 	template_size = sizeof(*template) + template->attrs_size;
@@ -444,7 +444,7 @@ enum pkcs11_rc entry_generate_key_pair(struct pkcs11_client *client,
 					     PKCS11_FUNCTION_GENERATE_PAIR,
 					     proc_params->id);
 	if (rc)
-		goto bail;
+		goto out;
 
 	TEE_Free(template);
 	template = NULL;
@@ -452,28 +452,28 @@ enum pkcs11_rc entry_generate_key_pair(struct pkcs11_client *client,
 	/* Generate CKA_ID for keys if not specified by the templates */
 	rc = add_missing_attribute_id(&pub_head, &priv_head);
 	if (rc)
-		goto bail;
+		goto out;
 
 	/* Check created object against processing and token state */
 	rc = check_created_attrs(pub_head, priv_head);
 	if (rc)
-		goto bail;
+		goto out;
 
 	rc = check_created_attrs_against_processing(proc_params->id, pub_head);
 	if (rc)
-		goto bail;
+		goto out;
 
 	rc = check_created_attrs_against_processing(proc_params->id, priv_head);
 	if (rc)
-		goto bail;
+		goto out;
 
 	rc = check_created_attrs_against_token(session, pub_head);
 	if (rc)
-		goto bail;
+		goto out;
 
 	rc = check_created_attrs_against_token(session, priv_head);
 	if (rc)
-		goto bail;
+		goto out;
 
 	/* Generate key pair */
 	switch (proc_params->id) {
@@ -489,7 +489,7 @@ enum pkcs11_rc entry_generate_key_pair(struct pkcs11_client *client,
 		break;
 	}
 	if (rc)
-		goto bail;
+		goto out;
 
 	TEE_Free(proc_params);
 	proc_params = NULL;
@@ -499,11 +499,11 @@ enum pkcs11_rc entry_generate_key_pair(struct pkcs11_client *client,
 	 */
 	rc = create_object(session, pub_head, &pubkey_handle);
 	if (rc)
-		goto bail;
+		goto out;
 
 	rc = create_object(session, priv_head, &privkey_handle);
 	if (rc)
-		goto bail;
+		goto out;
 
 	/*
 	 * Now obj_handle (through the related struct pkcs11_object instance)
@@ -521,7 +521,7 @@ enum pkcs11_rc entry_generate_key_pair(struct pkcs11_client *client,
 	DMSG("PKCS11 session %"PRIu32": create key pair %#"PRIx32"/%#"PRIx32,
 	     session->handle, privkey_handle, pubkey_handle);
 
-bail:
+out:
 	TEE_Free(proc_params);
 	TEE_Free(template);
 	TEE_Free(pub_head);
@@ -803,35 +803,35 @@ enum pkcs11_rc entry_derive_key(struct pkcs11_client *client,
 
 	rc = serialargs_alloc_get_one_attribute(&ctrlargs, &proc_params);
 	if (rc)
-		goto bail;
+		goto out;
 
 	rc = serialargs_get(&ctrlargs, &parent_handle, sizeof(uint32_t));
 	if (rc)
-		goto bail;
+		goto out;
 
 	rc = serialargs_alloc_get_attributes(&ctrlargs, &template);
 	if (rc)
-		goto bail;
+		goto out;
 
 	if (serialargs_remaining_bytes(&ctrlargs)) {
 		rc = PKCS11_CKR_ARGUMENTS_BAD;
-		goto bail;
+		goto out;
 	}
 
 	rc = get_ready_session(session);
 	if (rc)
-		goto bail;
+		goto out;
 
 	parent_obj = pkcs11_handle2object(parent_handle, session);
 	if (!parent_obj) {
 		rc = PKCS11_CKR_KEY_HANDLE_INVALID;
-		goto bail;
+		goto out;
 	}
 
 	rc = set_processing_state(session, PKCS11_FUNCTION_DERIVE,
 				  parent_obj, NULL);
 	if (rc)
-		goto bail;
+		goto out;
 
 	template_size = sizeof(*template) + template->attrs_size;
 
@@ -839,29 +839,29 @@ enum pkcs11_rc entry_derive_key(struct pkcs11_client *client,
 						PKCS11_FUNCTION_DERIVE,
 						PKCS11_FUNC_STEP_INIT);
 	if (rc)
-		goto bail;
+		goto out;
 
 	rc = create_attributes_from_template(&head, template, template_size,
 					     parent_obj->attributes,
 					     PKCS11_FUNCTION_DERIVE,
 					     proc_params->id);
 	if (rc)
-		goto bail;
+		goto out;
 
 	TEE_Free(template);
 	template = NULL;
 
 	rc = check_created_attrs(head, NULL);
 	if (rc)
-		goto bail;
+		goto out;
 
 	rc = check_created_attrs_against_processing(proc_params->id, head);
 	if (rc)
-		goto bail;
+		goto out;
 
 	rc = check_created_attrs_against_token(session, head);
 	if (rc)
-		goto bail;
+		goto out;
 
 	// TODO: check_created_against_parent(session, parent, child);
 	// This can handle DERVIE_TEMPLATE attributes from the parent key.
@@ -870,7 +870,7 @@ enum pkcs11_rc entry_derive_key(struct pkcs11_client *client,
 		rc = init_symm_operation(session, PKCS11_FUNCTION_DERIVE,
 					 proc_params, parent_obj);
 		if (rc)
-			goto bail;
+			goto out;
 
 		rc = do_symm_derivation(session, proc_params,
 					parent_obj, &head);
@@ -878,7 +878,7 @@ enum pkcs11_rc entry_derive_key(struct pkcs11_client *client,
 		rc = init_asymm_operation(session, PKCS11_FUNCTION_DERIVE,
 					  proc_params, parent_obj);
 		if (rc)
-			goto bail;
+			goto out;
 
 		rc = do_asymm_derivation(session, proc_params, &head);
 	} else {
@@ -886,7 +886,7 @@ enum pkcs11_rc entry_derive_key(struct pkcs11_client *client,
 	}
 
 	if (rc)
-		goto bail;
+		goto out;
 
 #if 0
 	/* Exaustive list */
@@ -923,7 +923,7 @@ enum pkcs11_rc entry_derive_key(struct pkcs11_client *client,
 	 */
 	rc = create_object(session, head, &out_handle);
 	if (rc)
-		goto bail;
+		goto out;
 
 	/*
 	 * Now out_handle (through the related struct pkcs11_object instance)
@@ -939,7 +939,7 @@ enum pkcs11_rc entry_derive_key(struct pkcs11_client *client,
 	DMSG("PKCS11 session %"PRIu32": derive key %#"PRIx32"/%s",
 	     session->handle, out_handle, id2str_proc(mecha_id));
 
-bail:
+out:
 	release_active_processing(session);
 	TEE_Free(proc_params);
 	TEE_Free(template);

@@ -1144,29 +1144,29 @@ static uint32_t tee2pkcs_ec_attributes(struct obj_attrs **pub_head,
 	rc = tee2pkcs_add_attribute(priv_head, PKCS11_CKA_VALUE,
 				   tee_obj, TEE_ATTR_ECC_PRIVATE_VALUE);
 	if (rc)
-		goto bail;
+		goto out;
 
 	// FIXME: 1 DER formatted x/y point instead of 2 CKA_EC_POINT attributes
 	rc = tee2pkcs_add_attribute(priv_head, PKCS11_CKA_EC_POINT_X,
 				   tee_obj, TEE_ATTR_ECC_PUBLIC_VALUE_X);
 	if (rc)
-		goto bail;
+		goto out;
 
 	rc = tee2pkcs_add_attribute(priv_head, PKCS11_CKA_EC_POINT_Y,
 				   tee_obj, TEE_ATTR_ECC_PUBLIC_VALUE_Y);
 	if (rc)
-		goto bail;
+		goto out;
 
 	// FIXME: 1 DER formatted x/y point instead of 2 CKA_EC_POINT attributes
 	rc = tee2pkcs_add_attribute(pub_head, PKCS11_CKA_EC_POINT_X,
 				   tee_obj, TEE_ATTR_ECC_PUBLIC_VALUE_X);
 	if (rc)
-		goto bail;
+		goto out;
 
 	rc = tee2pkcs_add_attribute(pub_head, PKCS11_CKA_EC_POINT_Y,
 				   tee_obj, TEE_ATTR_ECC_PUBLIC_VALUE_Y);
 
-bail:
+out:
 	return rc;
 }
 
@@ -1238,18 +1238,18 @@ uint32_t generate_ec_keys(struct pkcs11_attribute_head *proc_params,
 	res = TEE_RestrictObjectUsage1(tee_obj, TEE_USAGE_EXTRACTABLE);
 	if (res) {
 		rc = tee2pkcs_error(res);
-		goto bail;
+		goto out;
 	}
 
 	res = TEE_GenerateKey(tee_obj, tee_size, &tee_key_attr[0], 1);
 	if (res) {
 		rc = tee2pkcs_error(res);
-		goto bail;
+		goto out;
 	}
 
 	rc = tee2pkcs_ec_attributes(pub_head, priv_head, tee_obj);
 
-bail:
+out:
 	if (tee_obj != TEE_HANDLE_NULL)
 		TEE_CloseObject(tee_obj);
 

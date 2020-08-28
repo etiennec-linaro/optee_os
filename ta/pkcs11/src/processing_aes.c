@@ -166,7 +166,7 @@ uint32_t tee_ae_decrypt_update(struct active_processing *processing,
 		if (res != TEE_ERROR_SHORT_BUFFER &&
 		    (res != TEE_SUCCESS || ct_size)) {
 			rc = PKCS11_CKR_GENERAL_ERROR;
-			goto bail;
+			goto out;
 		}
 
 		/*
@@ -178,14 +178,14 @@ uint32_t tee_ae_decrypt_update(struct active_processing *processing,
 					TEE_USER_MEM_HINT_NO_FILL_ZERO);
 			if (!ct) {
 				rc = PKCS11_CKR_DEVICE_MEMORY;
-				goto bail;
+				goto out;
 			}
 
 			res = TEE_AEUpdate(processing->tee_op_handle,
 					   ctx->pending_tag, len, ct, &ct_size);
 			if (res) {
 				rc = tee2pkcs_error(res);
-				goto bail;
+				goto out;
 			}
 
 			/* Finally, no out data? Release temp buffer. */
@@ -213,14 +213,14 @@ uint32_t tee_ae_decrypt_update(struct active_processing *processing,
 		if (res != TEE_ERROR_SHORT_BUFFER &&
 		    (res != TEE_SUCCESS || size)) {
 			rc = PKCS11_CKR_GENERAL_ERROR;
-			goto bail;
+			goto out;
 		}
 
 		if (size) {
 			ptr = TEE_Realloc(ct, ct_size + size);
 			if (!ptr) {
 				rc = PKCS11_CKR_DEVICE_MEMORY;
-				goto bail;
+				goto out;
 			}
 			ct = ptr;
 
@@ -228,7 +228,7 @@ uint32_t tee_ae_decrypt_update(struct active_processing *processing,
 					   in, data_len, ct + ct_size, &size);
 			if (res) {
 				rc = tee2pkcs_error(res);
-				goto bail;
+				goto out;
 			}
 
 			ct_size += size;
@@ -240,7 +240,7 @@ uint32_t tee_ae_decrypt_update(struct active_processing *processing,
 	if (data_len > (ctx->tag_byte_len - ctx->pending_size)) {
 		/* This could be asserted */
 		rc = PKCS11_CKR_GENERAL_ERROR;
-		goto bail;
+		goto out;
 	}
 
 	if (data_len) {
@@ -256,7 +256,7 @@ uint32_t tee_ae_decrypt_update(struct active_processing *processing,
 				  sizeof(struct out_data_ref));
 		if (!ptr) {
 			rc = PKCS11_CKR_DEVICE_MEMORY;
-			goto bail;
+			goto out;
 		}
 		ctx->out_data = ptr;
 		ctx->out_data[ctx->out_count].size = ct_size;
@@ -266,7 +266,7 @@ uint32_t tee_ae_decrypt_update(struct active_processing *processing,
 
 	rc = PKCS11_CKR_OK;
 
-bail:
+out:
 	if (rc) {
 		TEE_Free(ct);
 	}
@@ -345,7 +345,7 @@ uint32_t tee_ae_decrypt_final(struct active_processing *processing,
 				      TEE_USER_MEM_HINT_NO_FILL_ZERO);
 		if (!data_ptr) {
 			rc = PKCS11_CKR_DEVICE_MEMORY;
-			goto bail;
+			goto out;
 		}
 
 		res = TEE_AEDecryptFinal(processing->tee_op_handle,
@@ -365,7 +365,7 @@ uint32_t tee_ae_decrypt_final(struct active_processing *processing,
 
 	rc = tee2pkcs_error(res);
 	if (rc)
-		goto bail;
+		goto out;
 
 	if (data_ptr) {
 		void *tmp_ptr = NULL;
@@ -375,7 +375,7 @@ uint32_t tee_ae_decrypt_final(struct active_processing *processing,
 					sizeof(struct out_data_ref));
 		if (!tmp_ptr) {
 			rc = PKCS11_CKR_DEVICE_MEMORY;
-			goto bail;
+			goto out;
 		}
 		ctx->out_data = tmp_ptr;
 		ctx->out_data[ctx->out_count].size = data_size;
@@ -387,7 +387,7 @@ uint32_t tee_ae_decrypt_final(struct active_processing *processing,
 
 	rc = reveale_ae_data(ctx, out, out_size);
 
-bail:
+out:
 	TEE_Free(data_ptr);
 
 	return rc;
@@ -473,20 +473,20 @@ uint32_t tee_init_ccm_operation(struct active_processing *processing,
 
 	rc = serialargs_get(&args, &aad_len, sizeof(uint32_t));
 	if (rc)
-		goto bail;
+		goto out;
 
 	// TODO: no need to copy aad into secure world
 	rc = serialargs_alloc_and_get(&args, &aad, aad_len);
 	if (rc)
-		goto bail;
+		goto out;
 
 	rc = serialargs_get(&args, &mac_len, sizeof(uint32_t));
 	if (rc)
-		goto bail;
+		goto out;
 
 	if (serialargs_remaining_bytes(&args)) {
 		rc = PKCS11_CKR_ARGUMENTS_BAD;
-		goto bail;
+		goto out;
 	}
 
 	/* As per pkcs#11 mechanism specification */
@@ -499,14 +499,14 @@ uint32_t tee_init_ccm_operation(struct active_processing *processing,
 		     ", mac_len %"PRIu32, data_len, nonce_len,
 		     aad_len, mac_len);
 		rc = PKCS11_CKR_MECHANISM_PARAM_INVALID;
-		goto bail;
+		goto out;
 	}
 
 	params = TEE_Malloc(sizeof(struct ae_aes_context),
 			    TEE_USER_MEM_HINT_NO_FILL_ZERO);
 	if (!params) {
 		rc = PKCS11_CKR_DEVICE_MEMORY;
-		goto bail;
+		goto out;
 	}
 
 	params->tag_byte_len = mac_len;
@@ -518,7 +518,7 @@ uint32_t tee_init_ccm_operation(struct active_processing *processing,
 					 TEE_USER_MEM_HINT_NO_FILL_ZERO);
 	if (!params->out_data || !params->pending_tag) {
 		rc = PKCS11_CKR_DEVICE_MEMORY;
-		goto bail;
+		goto out;
 	}
 
 	TEE_AEInit(processing->tee_op_handle, nonce, nonce_len, mac_len * 8,
@@ -532,7 +532,7 @@ uint32_t tee_init_ccm_operation(struct active_processing *processing,
 
 	rc = PKCS11_CKR_OK;
 
-bail:
+out:
 	TEE_Free(nonce);
 	TEE_Free(aad);
 	if (rc && params) {
@@ -585,20 +585,20 @@ uint32_t tee_init_gcm_operation(struct active_processing *processing,
 
 	rc = serialargs_get(&args, &aad_len, sizeof(uint32_t));
 	if (rc)
-		goto bail;
+		goto out;
 
 	// TODO: no need to copy aad into secure world
 	rc = serialargs_alloc_and_get(&args, &aad, aad_len);
 	if (rc)
-		goto bail;
+		goto out;
 
 	rc = serialargs_get(&args, &tag_bitlen, sizeof(uint32_t));
 	if (rc)
-		goto bail;
+		goto out;
 
 	if (serialargs_remaining_bytes(&args)) {
 		rc = PKCS11_CKR_ARGUMENTS_BAD;
-		goto bail;
+		goto out;
 	}
 
 	tag_len = ROUNDUP(tag_bitlen, 8) / 8;
@@ -609,14 +609,14 @@ uint32_t tee_init_gcm_operation(struct active_processing *processing,
 		DMSG("Invalid parameters: tag_bit_len %"PRIu32
 		     ", iv_len %"PRIu32, tag_bitlen, iv_len);
 		rc = PKCS11_CKR_MECHANISM_PARAM_INVALID;
-		goto bail;
+		goto out;
 	}
 
 	params = TEE_Malloc(sizeof(struct ae_aes_context),
 			    TEE_USER_MEM_HINT_NO_FILL_ZERO);
 	if (!params) {
 		rc = PKCS11_CKR_DEVICE_MEMORY;
-		goto bail;
+		goto out;
 	}
 
 	/* Store the byte round up byte length for the tag */
@@ -630,7 +630,7 @@ uint32_t tee_init_gcm_operation(struct active_processing *processing,
 
 	if (!params->out_data || !params->pending_tag) {
 		rc = PKCS11_CKR_DEVICE_MEMORY;
-		goto bail;
+		goto out;
 	}
 
 	/* Session processing owns the active processing params */
@@ -644,7 +644,7 @@ uint32_t tee_init_gcm_operation(struct active_processing *processing,
 
 	rc = PKCS11_CKR_OK;
 
-bail:
+out:
 	TEE_Free(iv);
 	TEE_Free(aad);
 	if (rc && params) {

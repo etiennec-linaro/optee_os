@@ -438,13 +438,13 @@ static enum pkcs11_rc token_obj_matches_ref(struct obj_attrs *req_attrs,
 	if (res) {
 		EMSG("GetObjectInfo failed %#"PRIx32, res);
 		rc = tee2pkcs_error(res);
-		goto bail;
+		goto out;
 	}
 
 	attr = TEE_Malloc(info.dataSize, TEE_MALLOC_FILL_ZERO);
 	if (!attr) {
 		rc = PKCS11_CKR_DEVICE_MEMORY;
-		goto bail;
+		goto out;
 	}
 
 	res = TEE_ReadObjectData(hdl, attr, info.dataSize, &read_bytes);
@@ -458,18 +458,18 @@ static enum pkcs11_rc token_obj_matches_ref(struct obj_attrs *req_attrs,
 		rc = tee2pkcs_error(res);
 		EMSG("Read %"PRIu32" bytes, failed %#"PRIx32,
 		     read_bytes, res);
-		goto bail;
+		goto out;
 	}
 	if (read_bytes != info.dataSize) {
 		EMSG("Read %"PRIu32" bytes, expected %"PRIu32,
 		     read_bytes, info.dataSize);
 		rc = PKCS11_CKR_GENERAL_ERROR;
-		goto bail;
+		goto out;
 	}
 
 	if (!attributes_match_reference(attr, req_attrs)) {
 		rc = PKCS11_RV_NOT_FOUND;
-		goto bail;
+		goto out;
 	}
 
 	obj->attributes = attr;
@@ -479,7 +479,7 @@ static enum pkcs11_rc token_obj_matches_ref(struct obj_attrs *req_attrs,
 
 	rc = PKCS11_CKR_OK;
 
-bail:
+out:
 	TEE_Free(attr);
 	if (obj->attribs_hdl == TEE_HANDLE_NULL && hdl != TEE_HANDLE_NULL)
 		TEE_CloseObject(hdl);
@@ -539,32 +539,32 @@ enum pkcs11_rc entry_find_objects_init(struct pkcs11_client *client,
 
 	if (serialargs_remaining_bytes(&ctrlargs)) {
 		rc = PKCS11_CKR_ARGUMENTS_BAD;
-		goto bail;
+		goto out;
 	}
 
 	/* Search objects only if no operation is on-going */
 	if (session_is_active(session)) {
 		rc = PKCS11_CKR_OPERATION_ACTIVE;
-		goto bail;
+		goto out;
 	}
 
 	if (session->find_ctx) {
 		EMSG("Active object search already in progress");
 		rc = PKCS11_CKR_FUNCTION_FAILED;
-		goto bail;
+		goto out;
 	}
 
 	/* Must zero init the structure */
 	find_ctx = TEE_Malloc(sizeof(*find_ctx), TEE_MALLOC_FILL_ZERO);
 	if (!find_ctx) {
 		rc = PKCS11_CKR_DEVICE_MEMORY;
-		goto bail;
+		goto out;
 	}
 
 	rc = sanitize_client_object(&req_attrs, template,
 				    sizeof(*template) + template->attrs_size);
 	if (rc)
-		goto bail;
+		goto out;
 
 	TEE_Free(template);
 	template = NULL;
@@ -582,7 +582,7 @@ enum pkcs11_rc entry_find_objects_init(struct pkcs11_client *client,
 		     id2str_class(get_class(req_attrs)),
 		     get_class(req_attrs));
 		rc = PKCS11_CKR_ARGUMENTS_BAD;
-		goto bail;
+		goto out;
 
 	}
 
@@ -608,7 +608,7 @@ enum pkcs11_rc entry_find_objects_init(struct pkcs11_client *client,
 				      (find_ctx->count + 1) * sizeof(*handles));
 		if (!handles) {
 			rc = PKCS11_CKR_DEVICE_MEMORY;
-			goto bail;
+			goto out;
 		}
 		find_ctx->handles = handles;
 
@@ -633,7 +633,7 @@ enum pkcs11_rc entry_find_objects_init(struct pkcs11_client *client,
 			if (rc == PKCS11_RV_NOT_FOUND)
 				continue;
 			if (rc != PKCS11_CKR_OK)
-				goto bail;
+				goto out;
 		}
 
 		rc = check_access_attrs_against_token(session, obj->attributes);
@@ -647,7 +647,7 @@ enum pkcs11_rc entry_find_objects_init(struct pkcs11_client *client,
 						obj);
 			if (!obj_handle) {
 				rc = PKCS11_CKR_DEVICE_MEMORY;
-				goto bail;
+				goto out;
 			}
 		}
 
@@ -655,7 +655,7 @@ enum pkcs11_rc entry_find_objects_init(struct pkcs11_client *client,
 				      (find_ctx->count + 1) * sizeof(*handles));
 		if (!handles) {
 			rc = PKCS11_CKR_DEVICE_MEMORY;
-			goto bail;
+			goto out;
 		}
 
 		/* Store object handle for later publishing */
@@ -674,7 +674,7 @@ enum pkcs11_rc entry_find_objects_init(struct pkcs11_client *client,
 	find_ctx = NULL;
 	rc = PKCS11_CKR_OK;
 
-bail:
+out:
 	TEE_Free(req_attrs);
 	TEE_Free(template);
 	release_find_obj_context(session, find_ctx);
@@ -831,19 +831,19 @@ uint32_t entry_get_attribute_value(struct pkcs11_client *client,
 
 	if (serialargs_remaining_bytes(&ctrlargs)) {
 		rc = PKCS11_CKR_ARGUMENTS_BAD;
-		goto bail;
+		goto out;
 	}
 
 	obj = pkcs11_handle2object(object_handle, session);
 	if (!obj) {
 		rc = PKCS11_CKR_OBJECT_HANDLE_INVALID;
-		goto bail;
+		goto out;
 	}
 
 	rc = check_access_attrs_against_token(session, obj->attributes);
 	if (rc) {
 		rc = PKCS11_CKR_OBJECT_HANDLE_INVALID;
-		goto bail;
+		goto out;
 	}
 
 	/* iterate over attributes and set their values */
@@ -907,7 +907,7 @@ uint32_t entry_get_attribute_value(struct pkcs11_client *client,
 			break;
 		default:
 			rc = PKCS11_CKR_GENERAL_ERROR;
-			goto bail;
+			goto out;
 		}
 	}
 
@@ -936,7 +936,7 @@ uint32_t entry_get_attribute_value(struct pkcs11_client *client,
 	DMSG("PKCS11 session %"PRIu32": get attributes %#"PRIx32,
 	     session->handle, object_handle);
 
-bail:
+out:
 	TEE_Free(template);
 	template = NULL;
 

@@ -398,12 +398,12 @@ static uint32_t tee2pkcs_rsa_attributes(struct obj_attrs **pub_head,
 	rc = tee2pkcs_add_attribute(pub_head, PKCS11_CKA_MODULUS,
 				   tee_obj, TEE_ATTR_RSA_MODULUS);
 	if (rc)
-		goto bail;
+		goto out;
 
 	rc = get_attribute_ptr(*pub_head, PKCS11_CKA_PUBLIC_EXPONENT,
 			       &a_ptr, NULL);
 	if (rc != PKCS11_CKR_OK && rc != PKCS11_RV_NOT_FOUND)
-		goto bail;
+		goto out;
 
 	if (rc == PKCS11_RV_NOT_FOUND || !a_ptr) {
 		rc = tee2pkcs_add_attribute(pub_head,
@@ -411,47 +411,47 @@ static uint32_t tee2pkcs_rsa_attributes(struct obj_attrs **pub_head,
 					   tee_obj,
 					   TEE_ATTR_RSA_PUBLIC_EXPONENT);
 		if (rc)
-			goto bail;
+			goto out;
 	}
 
 	rc = tee2pkcs_add_attribute(priv_head, PKCS11_CKA_MODULUS,
 				   tee_obj, TEE_ATTR_RSA_MODULUS);
 	if (rc)
-		goto bail;
+		goto out;
 
 	rc = tee2pkcs_add_attribute(priv_head, PKCS11_CKA_PUBLIC_EXPONENT,
 				   tee_obj, TEE_ATTR_RSA_PUBLIC_EXPONENT);
 	if (rc)
-		goto bail;
+		goto out;
 
 	rc = tee2pkcs_add_attribute(priv_head, PKCS11_CKA_PRIVATE_EXPONENT,
 				   tee_obj, TEE_ATTR_RSA_PRIVATE_EXPONENT);
 	if (rc)
-		goto bail;
+		goto out;
 
 	rc = tee2pkcs_add_attribute(priv_head, PKCS11_CKA_PRIME_1,
 				   tee_obj, TEE_ATTR_RSA_PRIME1);
 	if (rc)
-		goto bail;
+		goto out;
 
 	rc = tee2pkcs_add_attribute(priv_head, PKCS11_CKA_PRIME_2,
 				   tee_obj, TEE_ATTR_RSA_PRIME2);
 	if (rc)
-		goto bail;
+		goto out;
 
 	rc = tee2pkcs_add_attribute(priv_head, PKCS11_CKA_EXPONENT_1,
 				   tee_obj, TEE_ATTR_RSA_EXPONENT1);
 	if (rc)
-		goto bail;
+		goto out;
 
 	rc = tee2pkcs_add_attribute(priv_head, PKCS11_CKA_EXPONENT_2,
 				   tee_obj, TEE_ATTR_RSA_EXPONENT2);
 	if (rc)
-		goto bail;
+		goto out;
 
 	rc = tee2pkcs_add_attribute(priv_head, PKCS11_CKA_COEFFICIENT,
 				   tee_obj, TEE_ATTR_RSA_COEFFICIENT);
-bail:
+out:
 	return rc;
 }
 
@@ -522,7 +522,7 @@ uint32_t generate_rsa_keys(struct pkcs11_attribute_head *proc_params,
 		DMSG("TEE_RestrictObjectUsage1 failed %#"PRIx32, res);
 
 		rc = tee2pkcs_error(res);
-		goto bail;
+		goto out;
 	}
 
 	res = TEE_GenerateKey(tee_obj, tee_size, &tee_attrs[0], tee_count);
@@ -530,12 +530,12 @@ uint32_t generate_rsa_keys(struct pkcs11_attribute_head *proc_params,
 		DMSG("TEE_GenerateKey failed %#"PRIx32, res);
 
 		rc = tee2pkcs_error(res);
-		goto bail;
+		goto out;
 	}
 
 	rc = tee2pkcs_rsa_attributes(pub_head, priv_head, tee_obj);
 
-bail:
+out:
 	if (tee_obj != TEE_HANDLE_NULL)
 		TEE_CloseObject(tee_obj);
 

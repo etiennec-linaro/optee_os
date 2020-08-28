@@ -124,8 +124,9 @@ static uint32_t _remove_attribute(struct obj_attrs **head, uint32_t attribute,
 #ifdef PKCS11_SHEAD_WITH_BOOLPROPS
 	/* Can't remove an attribute that is defined in the head */
 	if (head_contains_boolprops(*head) && attribute_is_in_head(attribute)) {
-		EMSG("Can't remove attribute from the head");
-		return PKCS11_CKR_FUNCTION_FAILED;
+		EMSG("Can't remove attribute %s from head",
+		     id2str_attr(attribute));
+		TEE_Panic(0);
 	}
 #endif
 
@@ -153,7 +154,7 @@ static uint32_t _remove_attribute(struct obj_attrs **head, uint32_t attribute,
 		return PKCS11_CKR_OK;
 	}
 
-	DMSG("PKCS11_VALUE not found");
+	DMSG("Attribute %s (%#x) not found", id2str_attr(attribute), attribute);
 	return PKCS11_RV_NOT_FOUND;
 }
 
@@ -180,7 +181,8 @@ uint32_t remove_attribute_check(struct obj_attrs **head,
 #ifdef PKCS11_SHEAD_WITH_BOOLPROPS
 	/* Can't remove an attribute that is defined in the head */
 	if (head_contains_boolprops(*head) && attribute_is_in_head(attribute)) {
-		EMSG("Can't remove attribute from the head");
+		EMSG("Can't remove attribute %s from head",
+		     id2str_attr(attribute));
 		TEE_Panic(0);
 	}
 #endif
@@ -217,11 +219,8 @@ uint32_t remove_attribute_check(struct obj_attrs **head,
 		return PKCS11_CKR_GENERAL_ERROR;
 	}
 
-	if (!found) {
-		EMSG("PKCS11_VALUE not found");
-		return PKCS11_CKR_FUNCTION_FAILED;
-
-	}
+	if (!found)
+		return PKCS11_RV_NOT_FOUND;
 
 	return PKCS11_CKR_OK;
 }

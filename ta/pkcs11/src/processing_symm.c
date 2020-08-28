@@ -73,7 +73,6 @@ pkcs2tee_algorithm(uint32_t *tee_id, struct pkcs11_attribute_head *proc_params)
 		{ PKCS11_CKM_SHA384_HMAC, TEE_ALG_HMAC_SHA384 },
 		{ PKCS11_CKM_SHA512_HMAC, TEE_ALG_HMAC_SHA512 },
 	};
-	size_t end = sizeof(pkcs2tee_algo) / (2 * sizeof(uint32_t));
 	size_t n = 0;
 
 	for (n = 0; n < ARRAY_SIZE(pkcs2tee_algo); n++) {

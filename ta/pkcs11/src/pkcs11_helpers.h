@@ -11,25 +11,16 @@
 #include <stddef.h>
 #include <tee_internal_api.h>
 
+#include <pkcs11_attributes.h>
 #include <token_capabilities.h>
 
-/* Short aliases for return code (FIXME: deprecate) */
-#define PKCS11_OK			PKCS11_CKR_OK
-#define PKCS11_ERROR			PKCS11_CKR_GENERAL_ERROR
-#define PKCS11_MEMORY			PKCS11_CKR_DEVICE_MEMORY
-#define PKCS11_BAD_PARAM		PKCS11_CKR_ARGUMENTS_BAD
-#define PKCS11_SHORT_BUFFER		PKCS11_CKR_BUFFER_TOO_SMALL
-#define PKCS11_FAILED			PKCS11_CKR_FUNCTION_FAILED
-#define PKCS11_NOT_FOUND		PKCS11_RV_NOT_FOUND
-#define PKCS11_NOT_IMPLEMENTED		PKCS11_RV_NOT_IMPLEMENTED
+struct pkcs11_object;
 
 /*
  * TEE invocation parameter#0 is an in/out buffer of at least 32bit
  * to store the TA PKCS#11 compliant return value.
  */
 #define TEE_PARAM0_SIZE_MIN		sizeof(uint32_t)
-
-struct pkcs11_object;
 
 /* GPD TEE to PKCS11 status conversion */
 enum pkcs11_rc tee2pkcs_error(TEE_Result res);
@@ -70,18 +61,19 @@ bool key_type_is_asymm_key(uint32_t key_type_id);
 /* Boolprop flag shift position if @attribute_id is boolean, else -1 */
 int pkcs11_attr2boolprop_shift(uint32_t attribute_id);
 
+/* Convert PKCS11 TA function ID into a TEE crypto operation mode */
+void pkcs2tee_mode(uint32_t *tee_id, enum processing_func function);
+
+/* Load TEE operation attributes from a PKCS11 object, return false on error */
+bool pkcs2tee_load_attr(TEE_Attribute *tee_ref, uint32_t tee_id,
+			struct pkcs11_object *obj,
+			enum pkcs11_attr_id pkcs11_id);
+
 /* Return true if attribute is a boolean, false otherwise */
 static inline bool pkcs11_attr_is_boolean(enum pkcs11_attr_id id)
 {
 	return pkcs11_attr2boolprop_shift(id) >= 0;
 }
-
-/* Convert PKCS11 TA function ID into a TEE crypto operation mode */
-void pkcs2tee_mode(uint32_t *tee_id, uint32_t function);
-
-/* Load TEE operation attributes from a PKCS11 object, return false on error */
-bool pkcs2tee_load_attr(TEE_Attribute *tee_ref, uint32_t tee_id,
-			struct pkcs11_object *obj, uint32_t pkcs11_id);
 
 #if CFG_TEE_TA_LOG_LEVEL > 0
 /* Id-to-string conversions only for trace support */

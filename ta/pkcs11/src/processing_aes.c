@@ -5,38 +5,37 @@
 
 #include <assert.h>
 #include <compiler.h>
-#include <util.h>
 #include <tee_internal_api.h>
 #include <tee_internal_api_extensions.h>
+#include <trace.h>
+#include <util.h>
 
+#include "pkcs11_helpers.h"
 #include "pkcs11_token.h"
 #include "processing.h"
 #include "serializer.h"
-#include "pkcs11_helpers.h"
 
-uint32_t tee_init_ctr_operation(struct active_processing *processing,
-				    void *proc_params, size_t params_size)
+enum pkcs11_rc tee_init_ctr_operation(struct active_processing *processing,
+				      void *proc_params, size_t params_size)
 {
-	struct serialargs args;
-	uint32_t rv = 0;
+	struct serialargs args = { };
+	enum pkcs11_rc rc = PKCS11_CKR_OK;
 	/* CTR parameters */
 	uint32_t incr_counter = 0;
 	void *counter_bits = NULL;
-
-	TEE_MemFill(&args, 0, sizeof(args));
 
 	if (!proc_params)
 		return PKCS11_CKR_ARGUMENTS_BAD;
 
 	serialargs_init(&args, proc_params, params_size);
 
-	rv = serialargs_get(&args, &incr_counter, sizeof(uint32_t));
-	if (rv)
-		return rv;
+	rc = serialargs_get(&args, &incr_counter, sizeof(uint32_t));
+	if (rc)
+		return rc;
 
-	rv = serialargs_get_ptr(&args, &counter_bits, 16);
-	if (rv)
-		return rv;
+	rc = serialargs_get_ptr(&args, &counter_bits, 16);
+	if (rc)
+		return rc;
 
 	if (serialargs_remaining_bytes(&args))
 		return PKCS11_CKR_ARGUMENTS_BAD;

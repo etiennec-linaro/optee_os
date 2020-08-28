@@ -627,4 +627,4 @@ void trace_attributes(const char *prefix, void *ref)
 
 	TEE_Free(pre);
 }
-#endif /* CFG_TEE_TA_LOG_LEVEL > 0 */
+#endif /*CFG_TEE_TA_LOG_LEVEL*/

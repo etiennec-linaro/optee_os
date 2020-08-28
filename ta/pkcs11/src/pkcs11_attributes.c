@@ -58,10 +58,11 @@ static uint32_t pkcs11_func2ckfm(enum processing_func function)
 	}
 }
 
-uint32_t check_mechanism_against_processing(struct pkcs11_session *session,
-					    uint32_t mechanism_type,
-					    enum processing_func function,
-					    enum processing_step step)
+enum pkcs11_rc
+check_mechanism_against_processing(struct pkcs11_session *session,
+				   enum pkcs11_mechanism_id mechanism_type,
+				   enum processing_func function,
+				   enum processing_step step)
 {
 	bool allowed = false;
 
@@ -76,6 +77,11 @@ uint32_t check_mechanism_against_processing(struct pkcs11_session *session,
 		default:
 			break;
 		}
+		/*
+		 * Check that the returned PKCS11_CKFM_* flag from
+		 * pkcs11_func2ckfm() is among the ones from
+		 * mechanism_supported_flags().
+		 */
 		allowed = mechanism_supported_flags(mechanism_type) &
 			  pkcs11_func2ckfm(function);
 		break;
@@ -104,12 +110,14 @@ uint32_t check_mechanism_against_processing(struct pkcs11_session *session,
 		break;
 	}
 
-	if (!allowed)
-		EMSG("Processing %#"PRIx32"/%s not permitted (%u/%u)",
-		     mechanism_type, id2str_proc(mechanism_type),
+	if (!allowed) {
+		EMSG("Processing %#x/%s not permitted (%u/%u)",
+		     (unsigned int)mechanism_type, id2str_proc(mechanism_type),
 		     function, step);
+		return PKCS11_CKR_KEY_FUNCTION_NOT_PERMITTED;
+	}
 
-	return allowed ? PKCS11_CKR_OK : PKCS11_CKR_KEY_FUNCTION_NOT_PERMITTED;
+	return PKCS11_CKR_OK;
 }
 
 /*
@@ -239,7 +247,6 @@ static enum pkcs11_rc get_default_value(enum pkcs11_attr_id id, void **value,
 	/* All other attributes have an empty default value */
 	*value = NULL;
 	*size = 0;
-
 	return PKCS11_CKR_OK;
 }
 
@@ -876,12 +883,11 @@ enum pkcs11_rc check_access_attrs_against_token(struct pkcs11_session *session,
 {
 	bool private = true;
 
-	switch(get_class(head)) {
+	switch (get_class(head)) {
 	case PKCS11_CKO_SECRET_KEY:
 	case PKCS11_CKO_PUBLIC_KEY:
 	case PKCS11_CKO_DATA:
-		if (!get_bool(head, PKCS11_CKA_PRIVATE))
-			private = false;
+		private = get_bool(head, PKCS11_CKA_PRIVATE);
 		break;
 	case PKCS11_CKO_PRIVATE_KEY:
 		break;
@@ -1084,20 +1090,20 @@ static void get_key_min_max_sizes(enum pkcs11_key_type key_type,
 		break;
 	}
 
-	supported_mechanism_key_size(mechanism, min_key_size,
-				     max_key_size);
+	mechanism_supported_key_sizes(mechanism, min_key_size,
+				      max_key_size);
 }
 
-uint32_t check_created_attrs(struct obj_attrs *key1,
-			     struct obj_attrs *key2)
+enum pkcs11_rc check_created_attrs(struct obj_attrs *key1,
+				   struct obj_attrs *key2)
 {
+	enum pkcs11_rc rc = PKCS11_CKR_OK;
 	struct obj_attrs *secret = NULL;
 	struct obj_attrs *private = NULL;
 	struct obj_attrs *public = NULL;
 	uint32_t max_key_size = 0;
 	uint32_t min_key_size = 0;
 	uint32_t key_length = 0;
-	uint32_t rv = 0;
 
 	switch (get_class(key1)) {
 	case PKCS11_CKO_SECRET_KEY:
@@ -1131,12 +1137,12 @@ uint32_t check_created_attrs(struct obj_attrs *key1,
 			return PKCS11_CKR_ATTRIBUTE_VALUE_INVALID;
 		}
 
-		if (get_type(private) != get_type(public))
+		if (get_key_type(private) != get_key_type(public))
 			return PKCS11_CKR_TEMPLATE_INCONSISTENT;
 	}
 
 	if (secret) {
-		switch (get_type(secret)) {
+		switch (get_key_type(secret)) {
 		case PKCS11_CKK_AES:
 		case PKCS11_CKK_GENERIC_SECRET:
 		case PKCS11_CKK_MD5_HMAC:
@@ -1151,20 +1157,20 @@ uint32_t check_created_attrs(struct obj_attrs *key1,
 		}
 
 		/* Get key size */
-		rv = get_u32_attribute(secret, PKCS11_CKA_VALUE_LEN,
+		rc = get_u32_attribute(secret, PKCS11_CKA_VALUE_LEN,
 				       &key_length);
-		if (rv)
+		if (rc)
 			return PKCS11_CKR_TEMPLATE_INCONSISTENT;
 	}
 	if (public) {
-		switch (get_type(public)) {
+		switch (get_key_type(public)) {
 		case PKCS11_CKK_RSA:
 		case PKCS11_CKK_DSA:
 		case PKCS11_CKK_DH:
 			/* Get key size */
-			rv = get_u32_attribute(public, PKCS11_CKA_MODULUS_BITS,
+			rc = get_u32_attribute(public, PKCS11_CKA_MODULUS_BITS,
 					       &key_length);
-			if (rv)
+			if (rc)
 				return PKCS11_CKR_TEMPLATE_INCONSISTENT;
 			break;
 		case PKCS11_CKK_EC:
@@ -1174,7 +1180,7 @@ uint32_t check_created_attrs(struct obj_attrs *key1,
 		}
 	}
 	if (private) {
-		switch (get_type(private)) {
+		switch (get_key_type(private)) {
 		case PKCS11_CKK_RSA:
 		case PKCS11_CKK_DSA:
 		case PKCS11_CKK_DH:
@@ -1182,9 +1188,9 @@ uint32_t check_created_attrs(struct obj_attrs *key1,
 			if (public)
 				break;
 
-			rv = get_u32_attribute(private, PKCS11_CKA_MODULUS_BITS,
+			rc = get_u32_attribute(private, PKCS11_CKA_MODULUS_BITS,
 					       &key_length);
-			if (rv)
+			if (rc)
 				return PKCS11_CKR_TEMPLATE_INCONSISTENT;
 			break;
 		case PKCS11_CKK_EC:
@@ -1199,14 +1205,14 @@ uint32_t check_created_attrs(struct obj_attrs *key1,
 	 * Check key size for symmetric keys and RSA keys
 	 * EC is bound to domains, no need to check here.
 	 */
-	switch (get_type(key1)) {
+	switch (get_key_type(key1)) {
 	case PKCS11_CKK_EC:
 		return PKCS11_CKR_OK;
 	default:
 		break;
 	}
 
-	get_key_min_max_sizes(get_type(key1), &min_key_size, &max_key_size);
+	get_key_min_max_sizes(get_key_type(key1), &min_key_size, &max_key_size);
 	if (key_length < min_key_size || key_length > max_key_size) {
 		EMSG("Length %"PRIu32" vs range [%"PRIu32" %"PRIu32"]",
 		     key_length, min_key_size, max_key_size);
@@ -1217,17 +1223,15 @@ uint32_t check_created_attrs(struct obj_attrs *key1,
 	return PKCS11_CKR_OK;
 }
 
-/* Check processing ID against attribute ALLOWED_PROCESSINGS if any */
-static bool parent_key_complies_allowed_processings(
-						uint32_t proc_id,
-						struct obj_attrs *head)
+/* Check processing ID against attribute ALLOWED_MECHANISMS if any */
+static bool parent_key_complies_allowed_processings(uint32_t proc_id,
+						    struct obj_attrs *head)
 {
 	char *attr = NULL;
 	uint32_t size = 0;
 	uint32_t proc = 0;
 	size_t count = 0;
 	enum pkcs11_rc rc = PKCS11_CKR_GENERAL_ERROR;
-
 
 	/*
 	 * Check only if restricted allowed mechanisms list is defined
@@ -1258,60 +1262,43 @@ static bool parent_key_complies_allowed_processings(
 	return false;
 }
 
-/*
- * Check the attributes of the parent secret (key) used in the processing
- * do match the target processing.
- *
- * @proc_id - PKCS11_CKM_xxx
- * @subproc_id - boolean attribute encrypt or decrypt or sign or verify, if
- *		 applicable to proc_id.
- * @head - head of the attributes of parent object.
- */
-uint32_t check_parent_attrs_against_processing(uint32_t proc_id,
-					       enum processing_func function,
-					       struct obj_attrs *head)
+static enum pkcs11_attr_id func_to_attr(enum processing_func func)
 {
-	uint32_t __maybe_unused rc = 0;
+	switch (func) {
+	case PKCS11_FUNCTION_ENCRYPT:
+		return PKCS11_CKA_ENCRYPT;
+	case PKCS11_FUNCTION_DECRYPT:
+		return PKCS11_CKA_DECRYPT;
+	case PKCS11_FUNCTION_SIGN:
+		return PKCS11_CKA_SIGN;
+	case PKCS11_FUNCTION_VERIFY:
+		return PKCS11_CKA_VERIFY;
+	case PKCS11_FUNCTION_WRAP:
+		return PKCS11_CKA_WRAP;
+	case PKCS11_FUNCTION_UNWRAP:
+		return PKCS11_CKA_UNWRAP;
+	case PKCS11_FUNCTION_DERIVE:
+		return PKCS11_CKA_DERIVE;
+	default:
+		return PKCS11_CKA_UNDEFINED_ID;
+	}
+}
+
+enum pkcs11_rc
+check_parent_attrs_against_processing(enum pkcs11_mechanism_id proc_id,
+				      enum processing_func function,
+				      struct obj_attrs *head)
+{
 	enum pkcs11_class_id key_class = get_class(head);
-	enum pkcs11_key_type key_type = get_type(head);
+	enum pkcs11_key_type key_type = get_key_type(head);
+	enum pkcs11_attr_id attr = func_to_attr(function);
 
-	if (function == PKCS11_FUNCTION_ENCRYPT &&
-	    !get_bool(head, PKCS11_CKA_ENCRYPT)) {
-		DMSG("encrypt not permitted");
-		return PKCS11_CKR_KEY_FUNCTION_NOT_PERMITTED;
-	}
-	if (function == PKCS11_FUNCTION_DECRYPT &&
-	    !get_bool(head, PKCS11_CKA_DECRYPT)) {
-		DMSG("decrypt not permitted");
-		return PKCS11_CKR_KEY_FUNCTION_NOT_PERMITTED;
-	}
-	if (function == PKCS11_FUNCTION_SIGN &&
-	    !get_bool(head, PKCS11_CKA_SIGN)) {
-		DMSG("sign not permitted");
-		return PKCS11_CKR_KEY_FUNCTION_NOT_PERMITTED;
-	}
-	if (function == PKCS11_FUNCTION_VERIFY &&
-	    !get_bool(head, PKCS11_CKA_VERIFY)) {
-		DMSG("verify not permitted");
-		return PKCS11_CKR_KEY_FUNCTION_NOT_PERMITTED;
-	}
-	if (function == PKCS11_FUNCTION_WRAP &&
-	    !get_bool(head, PKCS11_CKA_WRAP)) {
-		DMSG("wrap not permitted");
-		return PKCS11_CKR_KEY_FUNCTION_NOT_PERMITTED;
-	}
-	if (function == PKCS11_FUNCTION_UNWRAP &&
-	    !get_bool(head, PKCS11_CKA_UNWRAP)) {
-		DMSG("unwrap not permitted");
-		return PKCS11_CKR_KEY_FUNCTION_NOT_PERMITTED;
-	}
-	if (function == PKCS11_FUNCTION_DERIVE &&
-	    !get_bool(head, PKCS11_CKA_DERIVE)) {
-		DMSG("derive not permitted");
+	if (!get_bool(head, attr)) {
+		DMSG("%s not permitted", id2str_attr(attr));
 		return PKCS11_CKR_KEY_FUNCTION_NOT_PERMITTED;
 	}
 
-	/* Check processing complies for parent key family */
+	/* Check processing complies with parent key family */
 	switch (proc_id) {
 	case PKCS11_CKM_AES_ECB:
 	case PKCS11_CKM_AES_CBC:
@@ -1349,7 +1336,6 @@ uint32_t check_parent_attrs_against_processing(uint32_t proc_id,
 			if (key_type == PKCS11_CKK_MD5_HMAC)
 				break;
 			return PKCS11_CKR_KEY_FUNCTION_NOT_PERMITTED;
-
 		case PKCS11_CKM_SHA_1_HMAC:
 			if (key_type == PKCS11_CKK_SHA_1_HMAC)
 				break;

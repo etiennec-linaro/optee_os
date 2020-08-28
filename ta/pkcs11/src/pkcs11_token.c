@@ -156,17 +156,15 @@ void pkcs11_deinit(void)
 }
 
 /*
- * Currently not support dual operations.
+ * Currently no support for dual operations.
  */
-int set_processing_state(struct pkcs11_session *session,
-			 enum processing_func function,
-			 struct pkcs11_object *obj1,
-			 struct pkcs11_object *obj2)
+enum pkcs11_rc set_processing_state(struct pkcs11_session *session,
+				    enum processing_func function,
+				    struct pkcs11_object *obj1,
+				    struct pkcs11_object *obj2)
 {
-	enum pkcs11_proc_state state;
+	enum pkcs11_proc_state state = PKCS11_SESSION_READY;
 	struct active_processing *proc = NULL;
-
-	TEE_MemFill(&state, 0, sizeof(state));
 
 	if (session->processing)
 		return PKCS11_CKR_OPERATION_ACTIVE;
@@ -503,8 +501,8 @@ enum pkcs11_rc entry_ck_token_mecha_info(uint32_t ptypes, TEE_Param *params)
 
 	info.flags = mechanism_supported_flags(type);
 
-	supported_mechanism_key_size(type, &info.min_key_size,
-				     &info.max_key_size);
+	mechanism_supported_key_sizes(type, &info.min_key_size,
+				      &info.max_key_size);
 
 	TEE_MemMove(out->memref.buffer, &info, sizeof(info));
 

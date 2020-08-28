@@ -136,23 +136,33 @@ uint32_t check_created_attrs_against_parent_key(
 					struct obj_attrs *parent,
 					struct obj_attrs *head);
 
-uint32_t check_created_attrs(struct obj_attrs *key1,
-			     struct obj_attrs *key2);
-
 enum pkcs11_rc check_created_attrs_against_processing(uint32_t proc_id,
 						      struct obj_attrs *head);
 
-uint32_t check_access_attrs_against_token(struct pkcs11_session *session,
-					  struct obj_attrs *head);
+enum pkcs11_rc check_created_attrs(struct obj_attrs *key1,
+				   struct obj_attrs *key2);
 
-uint32_t check_mechanism_against_processing(struct pkcs11_session *session,
-					    uint32_t mechanism_type,
-					    enum processing_func function,
-					    enum processing_step step);
+/*
+ * Check the attributes of the parent secret (key) used in the processing
+ * do match the target processing.
+ *
+ * @proc_id - PKCS11_CKM_xxx
+ * @func - identifier of the processing function operated with @proc_id.
+ * @head - head of the attributes of parent object.
+ */
+enum pkcs11_rc
+check_parent_attrs_against_processing(enum pkcs11_mechanism_id proc_id,
+				      enum processing_func func,
+				      struct obj_attrs *head);
 
-uint32_t check_parent_attrs_against_processing(uint32_t proc_id,
-					       enum processing_func function,
-					       struct obj_attrs *head);
+enum pkcs11_rc check_access_attrs_against_token(struct pkcs11_session *session,
+						struct obj_attrs *head);
+
+enum pkcs11_rc
+check_mechanism_against_processing(struct pkcs11_session *session,
+				   enum pkcs11_mechanism_id mechanism_type,
+				   enum processing_func function,
+				   enum processing_step step);
 
 bool object_is_private(struct obj_attrs *head);
 

@@ -101,7 +101,7 @@ struct ck_token {
 };
 
 /*
- * A session can enter a processing state (encrypt, decrypt, digest, ...
+ * A session can enter a processing state (encrypt, decrypt, digest, ...)
  * only from the initialized state. A session must return the initialized
  * state (from a processing finalization request) before entering another
  * processing state.
@@ -126,9 +126,9 @@ enum pkcs11_proc_state {
  *
  * @state - ongoing active processing function or ready state
  * @mecha_type - mechanism type of the active processing
- * @updated - true once an active operation is updated
- * @relogged - true once client logged since last operation update
  * @always_authen - true if user need to login before each use
+ * @relogged - true once client logged since last operation update
+ * @updated - true once an active operation is updated
  * @tee_op_handle - handle on active crypto operation or TEE_HANDLE_NULL
  * @extra_ctx - context for the active processing
  */
@@ -177,7 +177,7 @@ struct pkcs11_session {
 	TAILQ_ENTRY(pkcs11_session) link;
 	struct pkcs11_client *client;
 	struct ck_token *token;
-	uint32_t handle;
+	enum pkcs11_mechanism_id handle;
 	struct object_list object_list;
 	struct handle_db object_handle_db;
 	enum pkcs11_session_state state;
@@ -230,13 +230,13 @@ struct pkcs11_session *pkcs11_handle2session(uint32_t handle,
 
 static inline bool session_is_active(struct pkcs11_session *session)
 {
-	return session->processing != NULL;
+	return session->processing;
 }
 
-int set_processing_state(struct pkcs11_session *session,
-			 enum processing_func function,
-			 struct pkcs11_object *obj1,
-			 struct pkcs11_object *obj2);
+enum pkcs11_rc set_processing_state(struct pkcs11_session *session,
+				    enum processing_func function,
+				    struct pkcs11_object *obj1,
+				    struct pkcs11_object *obj2);
 
 static inline bool pkcs11_session_is_read_write(struct pkcs11_session *session)
 {

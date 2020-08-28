@@ -532,7 +532,8 @@ int pkcs11_attr2boolprop_shift(uint32_t attr)
 
 /* Initialize a TEE attribute for a target PKCS11 TA attribute in an object */
 bool pkcs2tee_load_attr(TEE_Attribute *tee_ref, uint32_t tee_id,
-			struct pkcs11_object *obj, uint32_t pkcs11_id)
+			struct pkcs11_object *obj,
+			enum pkcs11_attr_id pkcs11_id)
 {
 	void *a_ptr = NULL;
 	uint32_t a_size = 0;
@@ -568,7 +569,7 @@ bool pkcs2tee_load_attr(TEE_Attribute *tee_ref, uint32_t tee_id,
 }
 
 /* Easy conversion between PKCS11 TA function of TEE crypto mode */
-void pkcs2tee_mode(uint32_t *tee_id, uint32_t function)
+void pkcs2tee_mode(uint32_t *tee_id, enum processing_func function)
 {
 	switch (function) {
 	case PKCS11_FUNCTION_ENCRYPT:

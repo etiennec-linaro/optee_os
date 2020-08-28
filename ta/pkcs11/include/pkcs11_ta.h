@@ -291,11 +291,11 @@ enum pkcs11_ta_cmd {
 	 *	 ]
 	 * [out] memref[0] = 32bit return code, enum pkcs11_rc
 	 *
-	 * These commands relate to the PKCS#11 API functions C_EncryptInit() and
-	 * C_DecryptInit().
+	 * These commands relate to the PKCS#11 API functions
+	 * C_EncryptInit() and C_DecryptInit().
 	 */
-	PKCS11_CMD_ENCRYPT_INIT = 128,
-	PKCS11_CMD_DECRYPT_INIT = 129,
+	PKCS11_CMD_ENCRYPT_INIT = 17,
+	PKCS11_CMD_DECRYPT_INIT = 18,
 
 	/*
 	 * PKCS11_CMD_ENCRYPT_UPDATE - Update encryption processing
@@ -306,11 +306,11 @@ enum pkcs11_ta_cmd {
 	 * [in]  memref[1] = input data to be processed
 	 * [out] memref[2] = output processed data
 	 *
-	 * These commands relate to the PKCS#11 API functions C_EncryptUpdate() and
-	 * C_DecryptUpdate().
+	 * These commands relate to the PKCS#11 API functions
+	 * C_EncryptUpdate() and C_DecryptUpdate().
 	 */
-	PKCS11_CMD_ENCRYPT_UPDATE = 130,
-	PKCS11_CMD_DECRYPT_UPDATE = 131,
+	PKCS11_CMD_ENCRYPT_UPDATE = 19,
+	PKCS11_CMD_DECRYPT_UPDATE = 20,
 
 	/*
 	 * PKCS11_CMD_ENCRYPT_FINAL - Finalize encryption processing
@@ -320,15 +320,17 @@ enum pkcs11_ta_cmd {
 	 * [out] memref[0] = 32bit return code, enum pkcs11_rc
 	 * [out] memref[2] = output processed data
 	 *
-	 * These commands relate to the PKCS#11 API functions C_EncryptFinal() and
-	 * C_DecryptFinal().
+	 * These commands relate to the PKCS#11 API functions
+	 * C_EncryptFinal() and C_DecryptFinal().
 	 */
-	PKCS11_CMD_ENCRYPT_FINAL = 132,
-	PKCS11_CMD_DECRYPT_FINAL = 133,
+	PKCS11_CMD_ENCRYPT_FINAL = 21,
+	PKCS11_CMD_DECRYPT_FINAL = 22,
 
 	/*
-	 * PKCS11_CMD_ENCRYPT_ONESHOT - Update and finalize encryption processing
-	 * PKCS11_CMD_DECRYPT_ONESHOT - Update and finalize decryption processing
+	 * PKCS11_CMD_ENCRYPT_ONESHOT - Update and finalize encryption
+	 *				processing
+	 * PKCS11_CMD_DECRYPT_ONESHOT - Update and finalize decryption
+	 *				processing
 	 *
 	 * [in]  memref[0] = 32bit session handle
 	 * [out] memref[0] = 32bit return code, enum pkcs11_rc
@@ -338,8 +340,8 @@ enum pkcs11_ta_cmd {
 	 * These commands relate to the PKCS#11 API functions C_Encrypt and
 	 * C_Decrypt.
 	 */
-	PKCS11_CMD_ENCRYPT_ONESHOT = 134,
-	PKCS11_CMD_DECRYPT_ONESHOT = 135,
+	PKCS11_CMD_ENCRYPT_ONESHOT = 23,
+	PKCS11_CMD_DECRYPT_ONESHOT = 24,
 
 	/*
 	 * PKCS11_CMD_SIGN_INIT - Initialize a signature computation processing

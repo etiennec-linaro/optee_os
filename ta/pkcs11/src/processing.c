@@ -19,7 +19,7 @@
 #include "processing.h"
 #include "serializer.h"
 
-static uint32_t get_ready_session(struct pkcs11_session *session)
+static enum pkcs11_rc get_ready_session(struct pkcs11_session *session)
 {
 	if (session_is_active(session))
 		return PKCS11_CKR_OPERATION_ACTIVE;
@@ -28,7 +28,7 @@ static uint32_t get_ready_session(struct pkcs11_session *session)
 }
 
 static bool func_matches_state(enum processing_func function,
-				enum pkcs11_proc_state state)
+			       enum pkcs11_proc_state state)
 {
 	switch (function) {
 	case PKCS11_FUNCTION_ENCRYPT:
@@ -58,16 +58,16 @@ static bool func_matches_state(enum processing_func function,
 	}
 }
 
-static uint32_t get_active_session(struct pkcs11_session *session,
-				  enum processing_func function)
+static enum pkcs11_rc get_active_session(struct pkcs11_session *session,
+					 enum processing_func function)
 {
-	uint32_t rv = PKCS11_CKR_OPERATION_NOT_INITIALIZED;
+	enum pkcs11_rc rc = PKCS11_CKR_OPERATION_NOT_INITIALIZED;
 
 	if (session->processing &&
 	    func_matches_state(function, session->processing->state))
-		rv = PKCS11_CKR_OK;
+		rc = PKCS11_CKR_OK;
 
-	return rv;
+	return rc;
 }
 
 void release_active_processing(struct pkcs11_session *session)
@@ -111,7 +111,7 @@ size_t get_object_key_bit_size(struct pkcs11_object *obj)
 	uint32_t a_size = 0;
 	struct obj_attrs *attrs = obj->attributes;
 
-	switch (get_type(attrs)) {
+	switch (get_key_type(attrs)) {
 	case PKCS11_CKK_AES:
 	case PKCS11_CKK_GENERIC_SECRET:
 	case PKCS11_CKK_MD5_HMAC:
@@ -532,24 +532,21 @@ bail:
 /*
  * entry_processing_init - Generic entry for initializing a processing
  *
- * @ctrl = [session-handle]
+ * @client = client reference
  * @ptype = Invocation parameter types
  * @params = Invocation parameters reference
  * @function - encrypt, decrypt, sign, verify, digest, ...
- *
- * The generic part come that all the commands uses the same
- * input/output invocation parameters format (ctrl/in/out).
  */
-uint32_t entry_processing_init(struct pkcs11_client *client,
-			       uint32_t ptypes, TEE_Param *params,
-			       enum processing_func function)
+enum pkcs11_rc entry_processing_init(struct pkcs11_client *client,
+				     uint32_t ptypes, TEE_Param *params,
+				     enum processing_func function)
 {
-        const uint32_t exp_pt = TEE_PARAM_TYPES(TEE_PARAM_TYPE_MEMREF_INOUT,
+	const uint32_t exp_pt = TEE_PARAM_TYPES(TEE_PARAM_TYPE_MEMREF_INOUT,
 						TEE_PARAM_TYPE_NONE,
 						TEE_PARAM_TYPE_NONE,
 						TEE_PARAM_TYPE_NONE);
-	TEE_Param *ctrl = &params[0];
-	uint32_t rv = 0;
+	TEE_Param *ctrl = params;
+	enum pkcs11_rc rc = PKCS11_CKR_OK;
 	struct serialargs ctrlargs = { };
 	struct pkcs11_session *session = NULL;
 	struct pkcs11_attribute_head *proc_params = NULL;
@@ -561,97 +558,94 @@ uint32_t entry_processing_init(struct pkcs11_client *client,
 
 	serialargs_init(&ctrlargs, ctrl->memref.buffer, ctrl->memref.size);
 
-	rv = serialargs_get_session_from_handle(&ctrlargs, client, &session);
-	if (rv)
-		return rv;
+	rc = serialargs_get_session_from_handle(&ctrlargs, client, &session);
+	if (rc)
+		return rc;
 
-	rv = serialargs_get(&ctrlargs, &key_handle, sizeof(uint32_t));
-	if (rv)
-		return rv;
+	rc = serialargs_get(&ctrlargs, &key_handle, sizeof(uint32_t));
+	if (rc)
+		return rc;
 
-	rv = serialargs_alloc_get_one_attribute(&ctrlargs, &proc_params);
-	if (rv)
-		return rv;
+	rc = serialargs_alloc_get_one_attribute(&ctrlargs, &proc_params);
+	if (rc)
+		return rc;
 
 	if (serialargs_remaining_bytes(&ctrlargs)) {
-		rv = PKCS11_CKR_ARGUMENTS_BAD;
-		goto bail;
+		rc = PKCS11_CKR_ARGUMENTS_BAD;
+		goto out;
 	}
 
-	rv = get_ready_session(session);
-	if (rv)
-		goto bail;
+	rc = get_ready_session(session);
+	if (rc)
+		goto out;
 
 	obj = pkcs11_handle2object(key_handle, session);
 	if (!obj) {
-		rv = PKCS11_CKR_KEY_HANDLE_INVALID;
-		goto bail;
+		rc = PKCS11_CKR_KEY_HANDLE_INVALID;
+		goto out;
 	}
 
-	rv = set_processing_state(session, function, obj, NULL);
-	if (rv)
-		goto bail;
+	rc = set_processing_state(session, function, obj, NULL);
+	if (rc)
+		goto out;
 
-	rv = check_mechanism_against_processing(session, proc_params->id,
+	rc = check_mechanism_against_processing(session, proc_params->id,
 						function,
 						PKCS11_FUNC_STEP_INIT);
-	if (rv)
-		goto bail;
+	if (rc)
+		goto out;
 
-	rv = check_parent_attrs_against_processing(proc_params->id, function,
+	rc = check_parent_attrs_against_processing(proc_params->id, function,
 						   obj->attributes);
-	if (rv)
-		goto bail;
+	if (rc)
+		goto out;
 
-	rv = check_access_attrs_against_token(session, obj->attributes);
-	if (rv)
-		goto bail;
+	rc = check_access_attrs_against_token(session, obj->attributes);
+	if (rc)
+		goto out;
 
 	if (processing_is_tee_symm(proc_params->id))
-		rv = init_symm_operation(session, function, proc_params, obj);
+		rc = init_symm_operation(session, function, proc_params, obj);
 	else if (processing_is_tee_asymm(proc_params->id))
-		rv = init_asymm_operation(session, function, proc_params, obj);
+		rc = init_asymm_operation(session, function, proc_params, obj);
 	else
-		rv = PKCS11_CKR_MECHANISM_INVALID;
+		rc = PKCS11_CKR_MECHANISM_INVALID;
 
-	if (rv == PKCS11_CKR_OK) {
+	if (rc == PKCS11_CKR_OK) {
 		session->processing->mecha_type = proc_params->id;
 		DMSG("PKCS11 session %"PRIu32": init processing %s %s",
 		     session->handle, id2str_proc(proc_params->id),
 		     id2str_function(function));
 	}
 
-bail:
-	if (rv && session)
+out:
+	if (rc && session)
 		release_active_processing(session);
 
 	TEE_Free(proc_params);
 
-	return rv;
+	return rc;
 }
 
 /*
  * entry_processing_step - Generic entry on active processing
  *
- * @ctrl = [session-handle]
+ * @client = client reference
  * @ptype = Invocation parameter types
  * @params = Invocation parameters reference
  * @function - encrypt, decrypt, sign, verify, digest, ...
  * @step - update, oneshot, final
- *
- * The generic part come that all the commands uses the same
- * input/output invocation parameters format (ctrl/in/out).
  */
-uint32_t entry_processing_step(struct pkcs11_client *client,
-			       uint32_t ptypes, TEE_Param *params,
-			       enum processing_func function,
-			       enum processing_step step)
+enum pkcs11_rc entry_processing_step(struct pkcs11_client *client,
+				     uint32_t ptypes, TEE_Param *params,
+				     enum processing_func function,
+				     enum processing_step step)
 {
-	TEE_Param *ctrl = &params[0];
-	uint32_t rv = 0;
+	TEE_Param *ctrl = params;
+	enum pkcs11_rc rc = PKCS11_CKR_OK;
 	struct serialargs ctrlargs = { };
 	struct pkcs11_session *session = NULL;
-	uint32_t mecha_type = 0;
+	enum pkcs11_mechanism_id mecha_type = PKCS11_CKM_UNDEFINED_ID;
 
 	if (!client ||
 	    TEE_PARAM_TYPE_GET(ptypes, 0) != TEE_PARAM_TYPE_MEMREF_INOUT)
@@ -659,79 +653,76 @@ uint32_t entry_processing_step(struct pkcs11_client *client,
 
 	serialargs_init(&ctrlargs, ctrl->memref.buffer, ctrl->memref.size);
 
-	rv = serialargs_get_session_from_handle(&ctrlargs, client, &session);
-	if (rv)
-		return rv;
+	rc = serialargs_get_session_from_handle(&ctrlargs, client, &session);
+	if (rc)
+		return rc;
 
 	if (serialargs_remaining_bytes(&ctrlargs))
 		return PKCS11_CKR_ARGUMENTS_BAD;
 
-	rv = get_active_session(session, function);
-	if (rv)
-		return rv;
+	rc = get_active_session(session, function);
+	if (rc)
+		return rc;
 
 	// TODO: check user authen and object activation dates
 	mecha_type = session->processing->mecha_type;
-	rv = check_mechanism_against_processing(session, mecha_type,
+	rc = check_mechanism_against_processing(session, mecha_type,
 						function, step);
-	if (rv)
-		goto bail;
+	if (rc)
+		goto out;
 
 	if (processing_is_tee_symm(mecha_type))
-		rv = step_symm_operation(session, function, step,
+		rc = step_symm_operation(session, function, step,
 					 ptypes, params);
 	else if (processing_is_tee_asymm(mecha_type))
-		rv = step_asymm_operation(session, function, step,
+		rc = step_asymm_operation(session, function, step,
 					  ptypes, params);
 	else
-		rv = PKCS11_CKR_MECHANISM_INVALID;
+		rc = PKCS11_CKR_MECHANISM_INVALID;
 
-	if (rv == PKCS11_CKR_OK) {
+	if (rc == PKCS11_CKR_OK) {
 		session->processing->updated = true;
 		DMSG("PKCS11 session%"PRIu32": processing %s %s",
 		     session->handle, id2str_proc(mecha_type),
 		     id2str_function(function));
 	}
 
-bail:
+out:
 	switch (step) {
 	case PKCS11_FUNC_STEP_UPDATE:
-		if (rv != PKCS11_CKR_OK && rv != PKCS11_CKR_BUFFER_TOO_SMALL)
+		if (rc != PKCS11_CKR_OK && rc != PKCS11_CKR_BUFFER_TOO_SMALL)
 			release_active_processing(session);
 		break;
 	default:
 		/* ONESHOT and FINAL terminates processing on success */
-		if (rv != PKCS11_CKR_BUFFER_TOO_SMALL)
+		if (rc != PKCS11_CKR_BUFFER_TOO_SMALL)
 			release_active_processing(session);
 		break;
 	}
 
-	return rv;
+	return rc;
 }
 
 /*
- * entry_verify_oneshot - Generic entry on active processing
+ * entry_verify_oneshot - Run a single part verification processing
  *
- * @ctrl = [session-handle]
+ * @client = client reference
  * @ptype = Invocation parameter types
  * @params = Invocation parameters reference
  * @function - encrypt, decrypt, sign, verify, digest, ...
  * @step - update, oneshot, final
- *
- * The generic part come that all the commands uses the same
- * input/output invocation parameters format (ctrl/in/out).
  */
-uint32_t entry_verify_oneshot(struct pkcs11_client *client,
-			      uint32_t ptypes, TEE_Param *params,
-			      enum processing_func function,
-			      enum processing_step step)
+enum pkcs11_rc entry_verify_oneshot(struct pkcs11_client *client,
+				    uint32_t ptypes, TEE_Param *params,
+				    enum processing_func function,
+				    enum processing_step step)
 
 {
-	TEE_Param *ctrl = &params[0];
-	uint32_t rv = 0;
+	TEE_Param *ctrl = params;
+	enum pkcs11_rc rc = PKCS11_CKR_OK;
 	struct serialargs ctrlargs = { };
 	struct pkcs11_session *session = NULL;
-	uint32_t mecha_type = 0;
+	enum pkcs11_mechanism_id mecha_type = PKCS11_CKM_UNDEFINED_ID;
 
 	assert(function == PKCS11_FUNCTION_VERIFY);
 	if (!client ||
@@ -740,42 +731,42 @@ uint32_t entry_verify_oneshot(struct pkcs11_client *client,
 
 	serialargs_init(&ctrlargs, ctrl->memref.buffer, ctrl->memref.size);
 
-	rv = serialargs_get_session_from_handle(&ctrlargs, client, &session);
-	if (rv)
-		return rv;
+	rc = serialargs_get_session_from_handle(&ctrlargs, client, &session);
+	if (rc)
+		return rc;
 
 	if (serialargs_remaining_bytes(&ctrlargs))
 		return PKCS11_CKR_ARGUMENTS_BAD;
 
-	rv = get_active_session(session, function);
-	if (rv)
-		return rv;
+	rc = get_active_session(session, function);
+	if (rc)
+		return rc;
 
 	// TODO: check user authen and object activation dates
 	mecha_type = session->processing->mecha_type;
-	rv = check_mechanism_against_processing(session, mecha_type,
+	rc = check_mechanism_against_processing(session, mecha_type,
 						function, step);
-	if (rv)
-		goto bail;
+	if (rc)
+		goto out;
 
 	if (processing_is_tee_symm(mecha_type))
-		rv = step_symm_operation(session, function, step,
+		rc = step_symm_operation(session, function, step,
 					 ptypes, params);
 	else if (processing_is_tee_asymm(mecha_type))
-		rv = step_asymm_operation(session, function, step,
+		rc = step_asymm_operation(session, function, step,
 					  ptypes, params);
 	else
-		rv = PKCS11_CKR_MECHANISM_INVALID;
+		rc = PKCS11_CKR_MECHANISM_INVALID;
 
 	DMSG("PKCS11 session %"PRIu32": verify %s %s: %s", session->handle,
 	     id2str_proc(mecha_type), id2str_function(function),
-	     id2str_rc(rv));
+	     id2str_rc(rc));
 
-bail:
-	if (rv != PKCS11_CKR_BUFFER_TOO_SMALL)
+out:
+	if (rc != PKCS11_CKR_BUFFER_TOO_SMALL)
 		release_active_processing(session);
 
-	return rv;
+	return rc;
 }
 
 uint32_t entry_derive_key(struct pkcs11_client *client,

@@ -542,7 +542,7 @@ bool pkcs2tee_load_attr(TEE_Attribute *tee_ref, uint32_t tee_id,
 		break;
 	case TEE_ATTR_ECC_CURVE:
 		if (get_attribute_ptr(obj->attributes, PKCS11_CKA_EC_PARAMS,
-				      &a_ptr, &a_size)) {
+				      &a_ptr, &a_size) || !a_ptr) {
 			EMSG("Missing EC_PARAMS attribute");
 			return false;
 		}

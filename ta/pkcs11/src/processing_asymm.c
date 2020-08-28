@@ -630,6 +630,10 @@ uint32_t do_asymm_derivation(struct pkcs11_session *session,
 
 	TEE_MemFill(tee_attrs, 0, sizeof(tee_attrs));
 
+	/* Remove default attribute set at template sanitization */
+	if (remove_empty_attribute(head, PKCS11_CKA_VALUE))
+		return PKCS11_CKR_FUNCTION_FAILED;
+
 	rv = get_u32_attribute(*head, PKCS11_CKA_VALUE_LEN, &key_bit_size);
 	if (rv)
 		return rv;

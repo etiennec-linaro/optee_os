@@ -206,6 +206,7 @@ static enum pkcs11_rc set_mandatory_attributes(struct obj_attrs **out,
 		uint32_t size = 0;
 		void *value = NULL;
 
+		/* Check attribute exists eventually empty */
 		if (get_attribute_ptr(temp, bp[n], &value, &size)) {
 			DMSG("Missing attribute %s", id2str_attr(bp[n]));
 			return PKCS11_CKR_TEMPLATE_INCOMPLETE;
@@ -217,6 +218,24 @@ static enum pkcs11_rc set_mandatory_attributes(struct obj_attrs **out,
 	}
 
 	return rc;
+}
+
+static enum pkcs11_rc get_default_value(enum pkcs11_attr_id id, void **value,
+					uint32_t *size)
+{
+	/* should have been taken care of already */
+	assert(!pkcs11_attr_is_boolean(id));
+
+	if (id == PKCS11_CKA_PUBLIC_KEY_INFO) {
+		EMSG("Cannot provide default PUBLIC_KEY_INFO");
+		return PKCS11_CKR_TEMPLATE_INCONSISTENT;
+	}
+
+	/* All other attributes have an empty default value */
+	*value = NULL;
+	*size = 0;
+
+	return PKCS11_CKR_OK;
 }
 
 static enum pkcs11_rc set_optional_attributes(struct obj_attrs **out,
@@ -231,8 +250,11 @@ static enum pkcs11_rc set_optional_attributes(struct obj_attrs **out,
 		uint32_t size = 0;
 		void *value = NULL;
 
-		if (get_attribute_ptr(temp, bp[n], &value, &size))
-			continue;
+		rc = get_attribute_ptr(temp, bp[n], &value, &size);
+		if (rc == PKCS11_RV_NOT_FOUND)
+			rc = get_default_value(bp[n], &value, &size);
+		if (rc)
+			return rc;
 
 		rc = add_attribute(out, bp[n], value, size);
 		if (rc)
@@ -356,6 +378,7 @@ static const uint32_t pkcs11_ec_private_key_mandated[] = {
 
 static const uint32_t pkcs11_ec_private_key_optional[] = {
 	PKCS11_CKA_VALUE,
+	PKCS11_CKA_EC_POINT,
 	// temporarily until DER support
 	PKCS11_CKA_EC_POINT_X, PKCS11_CKA_EC_POINT_Y,
 };

@@ -290,6 +290,7 @@ uint32_t load_tee_rsa_key_attrs(TEE_Attribute **tee_attrs, size_t *tee_count,
 	TEE_Attribute *attrs = NULL;
 	size_t count = 0;
 	uint32_t rv = PKCS11_CKR_GENERAL_ERROR;
+	void *a_ptr = NULL;
 
 	assert(get_type(obj->attributes) == PKCS11_CKK_RSA);
 
@@ -337,8 +338,9 @@ uint32_t load_tee_rsa_key_attrs(TEE_Attribute **tee_attrs, size_t *tee_count,
 		if (count != 3)
 			break;
 
+		/* FIXME: check PRIME_2, EXPONENT_*, COEFFICIENT are found? */
 		if (get_attribute(obj->attributes, PKCS11_CKA_PRIME_1,
-					   NULL, NULL)) {
+					   NULL, NULL) || !a_ptr) {
 			rv = PKCS11_CKR_OK;
 			break;
 		}
@@ -391,14 +393,19 @@ static uint32_t tee2pkcs_rsa_attributes(struct obj_attrs **pub_head,
 					TEE_ObjectHandle tee_obj)
 {
 	uint32_t rv;
+	void *a_ptr = NULL;
 
 	rv = tee2pkcs_add_attribute(pub_head, PKCS11_CKA_MODULUS,
 				   tee_obj, TEE_ATTR_RSA_MODULUS);
 	if (rv)
 		goto bail;
 
-	if (get_attribute_ptr(*pub_head, PKCS11_CKA_PUBLIC_EXPONENT,
-			      NULL, NULL)) {
+	rv = get_attribute_ptr(*pub_head, PKCS11_CKA_PUBLIC_EXPONENT,
+			       &a_ptr, NULL);
+	if (rv != PKCS11_CKR_OK && rv != PKCS11_RV_NOT_FOUND)
+		goto bail;
+
+	if (rv == PKCS11_RV_NOT_FOUND || !a_ptr) {
 		rv = tee2pkcs_add_attribute(pub_head,
 					   PKCS11_CKA_PUBLIC_EXPONENT,
 					   tee_obj,
@@ -465,12 +472,9 @@ uint32_t generate_rsa_keys(struct pkcs11_attribute_head *proc_params,
 		return PKCS11_CKR_TEMPLATE_INCONSISTENT;
 	}
 
-	if (get_attribute_ptr(*pub_head, PKCS11_CKA_MODULUS_BITS,
-				&a_ptr, &a_size)) {
-		return PKCS11_CKR_TEMPLATE_INCONSISTENT;
-	}
-
-	if (a_size != sizeof(uint32_t)) {
+	rv = get_attribute_ptr(*pub_head, PKCS11_CKA_MODULUS_BITS,
+			       &a_ptr, &a_size);
+	if (rv != PKCS11_CKR_OK || a_size != sizeof(uint32_t)) {
 		return PKCS11_CKR_TEMPLATE_INCONSISTENT;
 	}
 
@@ -478,7 +482,10 @@ uint32_t generate_rsa_keys(struct pkcs11_attribute_head *proc_params,
 
 	rv = get_attribute_ptr(*pub_head, PKCS11_CKA_PUBLIC_EXPONENT,
 				&a_ptr, &a_size);
-	if (rv == PKCS11_CKR_OK) {
+	if (rv != PKCS11_CKR_OK && rv != PKCS11_RV_NOT_FOUND)
+		return rv;
+
+	if (rv == PKCS11_CKR_OK && a_ptr) {
 		TEE_InitRefAttribute(&tee_attrs[tee_count],
 				     TEE_ATTR_RSA_PUBLIC_EXPONENT,
 				     a_ptr, a_size);
@@ -486,17 +493,16 @@ uint32_t generate_rsa_keys(struct pkcs11_attribute_head *proc_params,
 		tee_count++;
 	}
 
-	if (!get_attribute(*pub_head, PKCS11_CKA_MODULUS, NULL, NULL) ||
-	    !get_attribute(*priv_head, PKCS11_CKA_MODULUS, NULL, NULL) ||
-	    !get_attribute(*priv_head, PKCS11_CKA_PUBLIC_EXPONENT,
-			   NULL, NULL) ||
-	    !get_attribute(*priv_head, PKCS11_CKA_PRIVATE_EXPONENT,
-			   NULL, NULL) ||
-	    !get_attribute(*priv_head, PKCS11_CKA_PRIME_1, NULL, NULL) ||
-	    !get_attribute(*priv_head, PKCS11_CKA_PRIME_2, NULL, NULL) ||
-	    !get_attribute(*priv_head, PKCS11_CKA_EXPONENT_1, NULL, NULL) ||
-	    !get_attribute(*priv_head, PKCS11_CKA_EXPONENT_2, NULL, NULL) ||
-	    !get_attribute(*priv_head, PKCS11_CKA_COEFFICIENT, NULL, NULL)) {
+	if (remove_empty_attribute(pub_head, PKCS11_CKA_MODULUS) ||
+	    remove_empty_attribute(pub_head, PKCS11_CKA_PUBLIC_EXPONENT) ||
+	    remove_empty_attribute(priv_head, PKCS11_CKA_MODULUS) ||
+	    remove_empty_attribute(priv_head, PKCS11_CKA_PUBLIC_EXPONENT) ||
+	    remove_empty_attribute(priv_head, PKCS11_CKA_PRIVATE_EXPONENT) ||
+	    remove_empty_attribute(priv_head, PKCS11_CKA_PRIME_1) ||
+	    remove_empty_attribute(priv_head, PKCS11_CKA_PRIME_2) ||
+	    remove_empty_attribute(priv_head, PKCS11_CKA_EXPONENT_1) ||
+	    remove_empty_attribute(priv_head, PKCS11_CKA_EXPONENT_2) ||
+	    remove_empty_attribute(priv_head, PKCS11_CKA_COEFFICIENT)) {
 		EMSG("Unexpected attribute(s) found");
 
 		return PKCS11_CKR_TEMPLATE_INCONSISTENT;

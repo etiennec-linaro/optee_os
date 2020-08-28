@@ -133,7 +133,7 @@ size_t get_object_key_bit_size(struct pkcs11_object *obj)
 
 	case PKCS11_CKK_EC:
 		if (get_attribute_ptr(attrs, PKCS11_CKA_EC_PARAMS,
-				      &a_ptr, &a_size))
+				      &a_ptr, &a_size) || !a_ptr)
 			return 0;
 
 		return ec_params2tee_keysize(a_ptr, a_size);
@@ -166,6 +166,11 @@ static uint32_t generate_random_key_value(struct obj_attrs **head)
 
 	if (get_type(*head) == PKCS11_CKK_GENERIC_SECRET)
 		value_len = (value_len + 7) / 8;
+
+	/* Remove the default empty value attribute if found */
+	rv = remove_empty_attribute(head, PKCS11_CKA_VALUE);
+	if (rv != PKCS11_CKR_OK && rv != PKCS11_RV_NOT_FOUND)
+		return PKCS11_CKR_GENERAL_ERROR;
 
 	value = TEE_Malloc(value_len, TEE_USER_MEM_HINT_NO_FILL_ZERO);
 	if (!value)

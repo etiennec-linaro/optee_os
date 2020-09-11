@@ -46,9 +46,9 @@ static int reset_set_state(fwk_id_t dev_id, enum mod_reset_domain_mode mode,
     if (!stm32mp_nsec_can_access_reset(ctx->reset_id))
         return FWK_E_ACCESS;
 
-    /* Supports only full reset with context loss */
+    /* Whatever the reset_state set, we consider a unique context loss mode */
     if (reset_state)
-        return FWK_E_PARAM;
+        DMSG("Override requested SCMI reset state %#"PRIx32, reset_state);
 
     switch (mode) {
     case MOD_RESET_DOMAIN_MODE_EXPLICIT_ASSERT:

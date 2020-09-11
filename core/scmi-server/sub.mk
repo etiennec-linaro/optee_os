@@ -38,6 +38,8 @@ global-incdirs-y += $(scmi-server-scp-path)/module/timer/include
 global-incdirs-y += $(scmi-server-scp-path)/module/css_clock/include
 global-incdirs-y += $(scmi-server-scp-path)/module/pik_clock/include
 
+global-incdirs-y += $(scmi-server-scp-path)/os/optee/include
+
 # Product is expected to provide a sub.mk at $(scmi-server-product-path)
 # and fill scmi-server-generic-modules, scmi-server-product-modules, eventually
 # some srcs-y, incdirs-y...
@@ -82,6 +84,7 @@ $(eval $(call define-if-enable,BUILD_HAS_MOD_TIMER,CFG_SCMI_SERVER_TIMER))
 srcs-y += scmi_server.c
 cflags-scmi_server.c-y = -Wno-aggregate-return
 
+subdirs-y += $(scmi-server-scp-path)/os/optee/src
 subdirs-y += $(scmi-server-scp-path)/framework/src
 subdirs-y += $(scmi-server-product-path)
 

@@ -9,6 +9,8 @@
  */
 
 #include <fwk_assert.h>
+//#include <assert.h>
+
 #include <fwk_dlist.h>
 #include <fwk_slist.h>
 
@@ -18,8 +20,8 @@ void __fwk_dlist_push_head(
     struct fwk_dlist *list,
     struct fwk_dlist_node *new)
 {
-    fwk_assert(list != NULL);
-    fwk_assert(new != NULL);
+    assert(list);
+    assert(new);
     fwk_check(new->prev == NULL);
 
     new->prev = (struct fwk_dlist_node *)list;

@@ -32,27 +32,27 @@
  * - Clocks for BKPSRAM
  */
 #define CLOCK_LIST \
-	CLOCK_CELL(CLOCK_DEV_IDX_HSE, CK_HSE, "ck_hse"), \
-	CLOCK_CELL(CLOCK_DEV_IDX_HSI, CK_HSI, "ck_hsi"), \
-	CLOCK_CELL(CLOCK_DEV_IDX_CSI, CK_CSI, "ck_csi"), \
-	CLOCK_CELL(CLOCK_DEV_IDX_LSE, CK_LSE, "ck_lse"), \
-	CLOCK_CELL(CLOCK_DEV_IDX_LSI, CK_LSI, "ck_lsi"), \
-	CLOCK_CELL(CLOCK_DEV_IDX_PLL2_Q, PLL2_Q, "pll2_q"), \
-	CLOCK_CELL(CLOCK_DEV_IDX_PLL2_R, PLL2_R, "pll2_r"), \
-	CLOCK_CELL(CLOCK_DEV_IDX_MPU, CK_MPU, "ck_mpu"), \
-	CLOCK_CELL(CLOCK_DEV_IDX_AXI, CK_AXI, "ck_axi"), \
-	CLOCK_CELL(CLOCK_DEV_IDX_BSEC, BSEC, "bsec"), \
-	CLOCK_CELL(CLOCK_DEV_IDX_CRYP1, CRYP1, "cryp1"), \
-	CLOCK_CELL(CLOCK_DEV_IDX_GPIOZ, GPIOZ, "gpioz"), \
-	CLOCK_CELL(CLOCK_DEV_IDX_HASH1, HASH1, "hash1"), \
-	CLOCK_CELL(CLOCK_DEV_IDX_I2C4, I2C4_K, "i2c4_k"), \
-	CLOCK_CELL(CLOCK_DEV_IDX_I2C6, I2C6_K, "i2c6_k"), \
-	CLOCK_CELL(CLOCK_DEV_IDX_IWDG1, IWDG1, "iwdg1"), \
-	CLOCK_CELL(CLOCK_DEV_IDX_RNG1, RNG1_K, "rng1"), \
-	CLOCK_CELL(CLOCK_DEV_IDX_RTC, RTC, "ck_rtc"), \
-	CLOCK_CELL(CLOCK_DEV_IDX_RTCAPB, RTCAPB, "rtcapb"), \
-	CLOCK_CELL(CLOCK_DEV_IDX_SPI6, SPI6_K, "spi6_k"), \
-	CLOCK_CELL(CLOCK_DEV_IDX_USART1, USART1_K, "usart1_k"), \
+	CLOCK_CELL(CLOCK_DEV_IDX_HSE, CK_HSE, "ck_hse", 1), \
+	CLOCK_CELL(CLOCK_DEV_IDX_HSI, CK_HSI, "ck_hsi", 1), \
+	CLOCK_CELL(CLOCK_DEV_IDX_CSI, CK_CSI, "ck_csi", 1), \
+	CLOCK_CELL(CLOCK_DEV_IDX_LSE, CK_LSE, "ck_lse", 1), \
+	CLOCK_CELL(CLOCK_DEV_IDX_LSI, CK_LSI, "ck_lsi", 1), \
+	CLOCK_CELL(CLOCK_DEV_IDX_PLL2_Q, PLL2_Q, "pll2_q", 1), \
+	CLOCK_CELL(CLOCK_DEV_IDX_PLL2_R, PLL2_R, "pll2_r", 1), \
+	CLOCK_CELL(CLOCK_DEV_IDX_MPU, CK_MPU, "ck_mpu", 1), \
+	CLOCK_CELL(CLOCK_DEV_IDX_AXI, CK_AXI, "ck_axi", 1), \
+	CLOCK_CELL(CLOCK_DEV_IDX_BSEC, BSEC, "bsec", 1), \
+	CLOCK_CELL(CLOCK_DEV_IDX_CRYP1, CRYP1, "cryp1", 0), \
+	CLOCK_CELL(CLOCK_DEV_IDX_GPIOZ, GPIOZ, "gpioz", 0), \
+	CLOCK_CELL(CLOCK_DEV_IDX_HASH1, HASH1, "hash1", 0), \
+	CLOCK_CELL(CLOCK_DEV_IDX_I2C4, I2C4_K, "i2c4_k", 0), \
+	CLOCK_CELL(CLOCK_DEV_IDX_I2C6, I2C6_K, "i2c6_k", 0), \
+	CLOCK_CELL(CLOCK_DEV_IDX_IWDG1, IWDG1, "iwdg1", 0), \
+	CLOCK_CELL(CLOCK_DEV_IDX_RNG1, RNG1_K, "rng1", 0), \
+	CLOCK_CELL(CLOCK_DEV_IDX_RTC, RTC, "ck_rtc", 1), \
+	CLOCK_CELL(CLOCK_DEV_IDX_RTCAPB, RTCAPB, "rtcapb", 1), \
+	CLOCK_CELL(CLOCK_DEV_IDX_SPI6, SPI6_K, "spi6_k", 0), \
+	CLOCK_CELL(CLOCK_DEV_IDX_USART1, USART1_K, "usart1_k", 0), \
 	/* End of CLOCK_LIST */
 
 /*
@@ -79,9 +79,11 @@
  * SCMI clock binds to clock module (FWK_MODULE_IDX_CLOCK).
  * Common permissions for exposed clocks. All have same permissions.
  */
-#define SCMI_CLOCK(_idx, _id)		[(_idx)] =  {			\
+#define SCMI_CLOCK(_idx, _id, _state)		[(_idx)] =  {			\
 		.element_id = FWK_ID_ELEMENT_INIT(FWK_MODULE_IDX_CLOCK,	\
 						  (_idx) /* same index */), \
+		.state = (_state) ? MOD_CLOCK_STATE_RUNNING : \
+			 MOD_CLOCK_STATE_STOPPED, \
 	}
 
 /*
@@ -110,13 +112,13 @@
  * FWK_ID_NONE type mandates being initialized at runtime.
  */
 #undef CLOCK_CELL
-#define CLOCK_CELL(a, b, c)	CLOCK(a, b)
+#define CLOCK_CELL(a, b, c, d)	CLOCK(a, b)
 static struct mod_clock_dev_config clock_cfg[] = {
 	CLOCK_LIST
 };
 
 #undef CLOCK_CELL
-#define CLOCK_CELL(a, b, c)	CLOCK_ELT(a, b, c)
+#define CLOCK_CELL(a, b, c, d)	CLOCK_ELT(a, b, c)
 static const struct fwk_element clock_elts[] = {
 	CLOCK_LIST
 	{ } /* Terminal tag */
@@ -140,13 +142,13 @@ const struct fwk_module_config config_clock = {
  * Elements for stm32_clock module: define elements from data table
  */
 #undef CLOCK_CELL
-#define CLOCK_CELL(a, b, c)	STM32_CLOCK(a, b)
-static const struct mod_stm32_clock_dev_config stm32_clock_cfg[] = {
+#define CLOCK_CELL(a, b, c, d)	STM32_CLOCK(a, b)
+static struct mod_stm32_clock_dev_config stm32_clock_cfg[] = {
 	CLOCK_LIST
 };
 
 #undef CLOCK_CELL
-#define CLOCK_CELL(a, b, c)	STM32_CLOCK_ELT(a, b, c)
+#define CLOCK_CELL(a, b, c, d)	STM32_CLOCK_ELT(a, b, c)
 static const struct fwk_element stm32_clock_elt[] = {
 	CLOCK_LIST
 	{ } /* Terminal tag */
@@ -165,13 +167,13 @@ const struct fwk_module_config config_stm32_clock = {
  * Elements for SCMI Clock module: define scmi_agent OSPM
  */
 #undef CLOCK_CELL
-#define CLOCK_CELL(a, b, c)	SCMI_CLOCK(a, b)
-static const struct mod_scmi_clock_device scmi_clock_cfg[] = {
+#define CLOCK_CELL(a, b, c, d)	SCMI_CLOCK(a, b, d)
+static struct mod_scmi_clock_device scmi_clock_cfg[] = {
 	CLOCK_LIST
 };
 
 #undef CLOCK_CELL
-#define CLOCK_CELL(a, b, c)	SCMI_CLOCK_ELT(a, b, c)
+#define CLOCK_CELL(a, b, c, d)	SCMI_CLOCK_ELT(a, b, c)
 static const struct fwk_element scmi_clock_elt[] = {
 	CLOCK_LIST
 	{ } /* Terminal tag */

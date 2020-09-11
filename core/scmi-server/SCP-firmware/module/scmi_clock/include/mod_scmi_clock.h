@@ -69,6 +69,14 @@ struct mod_scmi_clock_device {
      *      that is defined by the \c clock module.
      */
     fwk_id_t element_id;
+
+    /*!
+     * \brief Exposed state of the clock.
+     *
+     * \details This reflects the staet of the clock as exposed through to the
+     *      SCMI agent regardless of the backend clock/resources effective state.
+     */
+    enum mod_clock_state state;
 };
 
 /*!
@@ -80,7 +88,7 @@ struct mod_scmi_clock_device {
  */
 struct mod_scmi_clock_agent {
     /*! Pointer to a table of clock devices that are visible to the agent */
-    const struct mod_scmi_clock_device *device_table;
+    struct mod_scmi_clock_device *device_table;
 
     /*!
      * \brief The number of \c mod_scmi_clock_device structures in the table

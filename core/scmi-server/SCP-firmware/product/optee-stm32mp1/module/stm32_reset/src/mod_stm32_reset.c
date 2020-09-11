@@ -52,15 +52,18 @@ static int reset_set_state(fwk_id_t dev_id, enum mod_reset_domain_mode mode,
 
     switch (mode) {
     case MOD_RESET_DOMAIN_MODE_EXPLICIT_ASSERT:
-	IMSG("SCMI reset %u: assert", fwk_id_get_element_idx(dev_id));
+	IMSG("SCMI reset %u: assert(%#lx)",
+	     fwk_id_get_element_idx(dev_id), ctx->reset_id);
         (void)stm32_reset_assert(ctx->reset_id, 0);
         break;
     case MOD_RESET_DOMAIN_MODE_EXPLICIT_DEASSERT:
-	IMSG("SCMI reset %u: deassert", fwk_id_get_element_idx(dev_id));
-        (void)stm32_reset_assert(ctx->reset_id, 0);
+	IMSG("SCMI reset %u: deassert(%#lx)",
+	     fwk_id_get_element_idx(dev_id), ctx->reset_id);
+        (void)stm32_reset_deassert(ctx->reset_id, 0);
         break;
     case MOD_RESET_DOMAIN_AUTO_RESET:
-	IMSG("SCMI reset %u: cycle", fwk_id_get_element_idx(dev_id));
+	IMSG("SCMI reset %u: cycle(%#lx)",
+	     fwk_id_get_element_idx(dev_id), ctx->reset_id);
         if (stm32_reset_assert(ctx->reset_id, TIMEOUT_US_1MS)) {
             status = FWK_E_TIMEOUT;
 	}

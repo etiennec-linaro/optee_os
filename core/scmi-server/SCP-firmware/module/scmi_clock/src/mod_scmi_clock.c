@@ -1096,8 +1096,7 @@ static int scmi_clock_describe_rates_handler(fwk_id_t service_id,
 
         return_values.num_rates_flags =
             SCMI_CLOCK_DESCRIBE_RATES_NUM_RATES_FLAGS(
-                /* Only a single rate is returned */
-                1,
+                3,
                 SCMI_CLOCK_RATE_FORMAT_RANGE,
                 /* No further rates are available */
                 0
@@ -1121,6 +1120,9 @@ static int scmi_clock_describe_rates_handler(fwk_id_t service_id,
     return_values.status = SCMI_SUCCESS;
     status = scmi_clock_ctx.scmi_api->write_payload(service_id, 0,
         &return_values, sizeof(return_values));
+
+    if (status)
+        return_values.status = SCMI_GENERIC_ERROR;
 
 exit:
     scmi_clock_ctx.scmi_api->respond(service_id,

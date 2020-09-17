@@ -3,8 +3,10 @@
  * Copyright (c) 2015-2019, Arm Limited and Contributors. All rights reserved.
  * Copyright (c) 2019, Linaro Limited
  */
+#include <config.h>
 #include <drivers/scmi-msg.h>
 #include <drivers/scmi.h>
+#include <initcall.h>
 #include <trace.h>
 
 #include "common.h"
@@ -63,3 +65,25 @@ void scmi_process_message(struct scmi_msg *msg)
 
 	scmi_status_response(msg, SCMI_NOT_SUPPORTED);
 }
+
+static TEE_Result print_scmi_msg_info(void)
+{
+	if (IS_ENABLED(CFG_SCMI_MSG_CLOCK))
+	    DMSG("SCMI Clock (%#x)", SCMI_PROTOCOL_ID_CLOCK);
+	if (IS_ENABLED(CFG_SCMI_MSG_RESET_DOMAIN))
+	    DMSG("SCMI Reset Domain (%#x)", SCMI_PROTOCOL_ID_RESET_DOMAIN);
+	if (IS_ENABLED(CFG_SCMI_MSG_VOLTAGE_DOMAIN))
+	    DMSG("SCMI Voltage Domain (%#x)", SCMI_PROTOCOL_ID_VOLTAGE_DOMAIN);
+
+	if (IS_ENABLED(CFG_SCMI_MSG_SMT)) {
+		if (IS_ENABLED(CFG_SCMI_MSG_SMT_FASTCALL_ENTRY))
+		    DMSG("SCMI over SMT/fastcall transport");
+		if (IS_ENABLED(CFG_SCMI_MSG_SMT_INTERRUPT_ENTRY))
+		    DMSG("SCMI over SMT/interrupt transport");
+		if (IS_ENABLED(CFG_SCMI_MSG_SMT_THREAD_ENTRY))
+		    DMSG("SCMI over SMT/thread transport");
+	}
+
+	return TEE_SUCCESS;
+}
+driver_init_late(print_scmi_msg_info);

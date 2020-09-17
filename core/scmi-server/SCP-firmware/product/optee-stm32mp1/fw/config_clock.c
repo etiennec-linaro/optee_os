@@ -64,8 +64,8 @@
  * Config provides a default state and the single supported rate.
  */
 #define STM32_CLOCK(_idx, _id)		[(_idx)] = {			\
-                    .clock_id = (_id),					\
-		}
+		.clock_id = (_id),					\
+	}
 
 /* Module clock gets stm32_clock (FWK_MODULE_IDX_STM32_CLOCK) elements */
 #define CLOCK(_idx, _id)		[(_idx)] = {			\
@@ -79,11 +79,11 @@
  * SCMI clock binds to clock module (FWK_MODULE_IDX_CLOCK).
  * Common permissions for exposed clocks. All have same permissions.
  */
-#define SCMI_CLOCK(_idx, _id, _state)		[(_idx)] =  {			\
+#define SCMI_CLOCK(_idx, _id, _state)	[(_idx)] =  {			\
 		.element_id = FWK_ID_ELEMENT_INIT(FWK_MODULE_IDX_CLOCK,	\
 						  (_idx) /* same index */), \
-		.state = (_state) ? MOD_CLOCK_STATE_RUNNING : \
-			 MOD_CLOCK_STATE_STOPPED, \
+		.state = (_state) ? MOD_CLOCK_STATE_RUNNING :		\
+			 MOD_CLOCK_STATE_STOPPED,			\
 	}
 
 /*
@@ -93,17 +93,17 @@
  * - scmi_clock elements data configuration provided by scmi_clock_cfg[]
  */
 #define STM32_CLOCK_ELT(_idx, _id, _name)	[_idx] = {	\
-			.name = #_id,		\
+			.name = #_id,				\
 			.data = &stm32_clock_cfg[(_idx)],	\
 		}
 
 #define CLOCK_ELT(_idx, _id, _name)		[(_idx)] = {	\
-			.name = _name,		\
+			.name = _name,				\
 			.data = &clock_cfg[(_idx)],		\
 		}
 
 #define SCMI_CLOCK_ELT(_idx, _id, _name)	[(_idx)] = {	\
-			.name = #_id,		\
+			.name = #_id,				\
 			.data = &scmi_clock_cfg[(_idx)],	\
 		}
 
@@ -135,7 +135,7 @@ static const struct fwk_element *clock_config_desc_table(fwk_id_t module_id)
 }
 
 const struct fwk_module_config config_clock = {
-    .elements = FWK_MODULE_DYNAMIC_ELEMENTS(clock_config_desc_table),
+	.elements = FWK_MODULE_DYNAMIC_ELEMENTS(clock_config_desc_table),
 };
 
 /*
@@ -156,11 +156,11 @@ static const struct fwk_element stm32_clock_elt[] = {
 
 static const struct fwk_element *stm32_clock_desc_table(fwk_id_t module_id)
 {
-    return stm32_clock_elt;
+	return stm32_clock_elt;
 }
 
 const struct fwk_module_config config_stm32_clock = {
-    .elements = FWK_MODULE_DYNAMIC_ELEMENTS(stm32_clock_desc_table),
+	.elements = FWK_MODULE_DYNAMIC_ELEMENTS(stm32_clock_desc_table),
 };
 
 /*
@@ -180,16 +180,16 @@ static const struct fwk_element scmi_clock_elt[] = {
 };
 
 static const struct mod_scmi_clock_agent clock_agents[SCMI_AGENT_ID_COUNT] = {
-    [SCMI_AGENT_ID_NSEC] = {
-        .device_table = scmi_clock_cfg,
-        .device_count = FWK_ARRAY_SIZE(scmi_clock_cfg),
-    },
+	[SCMI_AGENT_ID_NSEC] = {
+		.device_table = scmi_clock_cfg,
+		.device_count = FWK_ARRAY_SIZE(scmi_clock_cfg),
+	},
 };
 
 static const struct mod_scmi_clock_config scmi_clock_agents = {
-        .max_pending_transactions = 0,
-        .agent_table = clock_agents,
-        .agent_count = FWK_ARRAY_SIZE(clock_agents),
+	.max_pending_transactions = 0,
+	.agent_table = clock_agents,
+	.agent_count = FWK_ARRAY_SIZE(clock_agents),
 };
 
 /* Exported in libscmi */

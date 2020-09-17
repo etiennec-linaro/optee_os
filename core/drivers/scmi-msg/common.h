@@ -115,6 +115,15 @@ scmi_msg_handler_t scmi_msg_get_clock_handler(struct scmi_msg *msg);
 scmi_msg_handler_t scmi_msg_get_rd_handler(struct scmi_msg *msg);
 #endif
 
+#ifdef CFG_SCMI_MSG_VOLTAGE_DOMAIN
+/*
+ * scmi_msg_get_voltd_handler - Return a handler for a voltage domain message
+ * @msg - message to process
+ * Return a function handler for the message or NULL
+ */
+scmi_msg_handler_t scmi_msg_get_voltd_handler(struct scmi_msg *msg);
+#endif
+
 /*
  * Process Read, process and write response for input SCMI message
  *

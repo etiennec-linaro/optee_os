@@ -44,6 +44,7 @@ $(call force,CFG_SCMI_MSG_CLOCK,y)
 $(call force,CFG_SCMI_MSG_RESET_DOMAIN,y)
 $(call force,CFG_SCMI_MSG_SMT,y)
 $(call force,CFG_SCMI_MSG_SMT_FASTCALL_ENTRY,y)
+$(call force,CFG_SCMI_MSG_VOLTAGE_DOMAIN,y)
 endif
 $(call force,CFG_SECONDARY_INIT_CNTFRQ,y)
 $(call force,CFG_SECURE_TIME_SOURCE_CNTPCT,y)

@@ -60,16 +60,12 @@
 				(_idx) /* same index */),	\
 	}
 
-#define SCMI_VOLTD_ELT(_idx, _id, _name)        [(_idx)] = {    \
-                        .name = #_id,                           \
-                        .data = &scmi_voltd_cfg[(_idx)],        \
-                }
-
 /*
  * Framwork expects 1 element per module per voltd:
  * - stm32_pwr_regu elements data configuration provided by stm32_voltd_cfg[]
  * - voltage domain elements data configuration provided by voltd_cfg[]
- * - SCMI voltage domain elements data configuration provided by scmi_voltd_cfg[]
+ * - SCMI voltage domain elements data configuration provided by
+ *   stm32_pwr_regu_cfg_scmi_voltd[] used as input data entry point.
  */
 #define STM32_VOLTD_ELT(_idx, _id, _name)	[_idx] = {	\
 			.name = _name,		\
@@ -93,13 +89,10 @@ static struct mod_voltd_dev_config voltd_cfg[] = {
 
 #undef VOLTD_CELL
 #define VOLTD_CELL(a, b, c)	VOLTD_ELT(a, b, c)
-static const struct fwk_element voltd_elts[] = {
+/* Exported to config_vold.c */
+const struct fwk_element stm32_pwr_regu_cfg_voltd_elts[] = {
 	VOLTD_LIST
 	{ } /* Terminal tag */
-};
-
-const struct fwk_module_config config_voltage_domain = {
-	.elements = FWK_MODULE_STATIC_ELEMENTS_PTR(voltd_elts),
 };
 
 /*
@@ -118,40 +111,21 @@ static const struct fwk_element stm32_voltd_elt[] = {
 	{ } /* Terminal tag */
 };
 
+/* Configuration data for module stm32_pwr_regu */
 const struct fwk_module_config config_stm32_pwr_regu = {
 	.elements = FWK_MODULE_STATIC_ELEMENTS_PTR(stm32_voltd_elt),
 };
 
 /*
- * Elements for SCMI Voltage Domain module
+ * Elements for SCMI Voltage Domain module assembled in config_voltd.c
  */
 #undef VOLTD_CELL
 #define VOLTD_CELL(a, b, c)	SCMI_VOLTD(a, b)
-static struct mod_scmi_voltd_device scmi_voltd_cfg[] = {
+/* Exported to config_vold.c */
+struct mod_scmi_voltd_device stm32_pwr_regu_cfg_scmi_voltd[] = {
 	VOLTD_LIST
 };
 
-#undef VOLTD_CELL
-#define VOLTD_CELL(a, b, c)	SCMI_VOLTD_ELT(a, b, c)
-static const struct fwk_element scmi_voltd_elt[] = {
-	VOLTD_LIST
-	{ } /* Terminal tag */
-};
-
-static const struct mod_scmi_voltd_agent voltd_agents[SCMI_AGENT_ID_COUNT] = {
-	[SCMI_AGENT_ID_NSEC0] = {
-		.device_table = scmi_voltd_cfg,
-		.device_count = FWK_ARRAY_SIZE(scmi_voltd_cfg),
-	},
-};
-
-static const struct mod_scmi_voltd_config scmi_voltd_agents = {
-	.agent_table = voltd_agents,
-	.agent_count = FWK_ARRAY_SIZE(voltd_agents),
-};
-
-/* Exported in libscmi */
-const struct fwk_module_config config_scmi_voltage_domain = {
-	/* Register module elements straight from data table */
-	.data = (void *)&scmi_voltd_agents,
-};
+static_assert(FWK_ARRAY_SIZE(stm32_pwr_regu_cfg_scmi_voltd) ==
+	      VOLTD_DEV_IDX_STM32_PWR_COUNT,
+	      "SCMI voltage domain config mismatch");

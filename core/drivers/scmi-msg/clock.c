@@ -29,6 +29,7 @@ const char __weak *plat_scmi_clock_get_name(unsigned int agent_id __unused,
 int32_t __weak plat_scmi_clock_rates_array(unsigned int agent_id __unused,
 					   unsigned int scmi_id __unused,
 					   unsigned long *rates __unused,
+					   size_t start_index __unused,
 					   size_t *nb_elts __unused)
 {
 	return SCMI_NOT_SUPPORTED;
@@ -239,8 +240,10 @@ static void scmi_clock_config_set(struct scmi_msg *msg)
 	scmi_status_response(msg, status);
 }
 
-#define RATES_ARRAY_SIZE_MAX	(SCMI_PLAYLOAD_MAX - \
+#define RATES_ARRAY_SIZE_MAX2	(SCMI_PLAYLOAD_MAX - \
 				 sizeof(struct scmi_clock_describe_rates_p2a))
+
+#define RATES_ARRAY_SIZE_MAX	48
 
 #define SCMI_RATES_BY_ARRAY(_nb_rates, _rem_rates) \
 	SCMI_CLOCK_DESCRIBE_RATES_NUM_RATES_FLAGS((_nb_rates), \
@@ -291,7 +294,7 @@ static void scmi_clock_describe_rates(struct scmi_msg *msg)
 				       plat_scmi_clock_count(msg->agent_id));
 
 	/* Platform may support array rate description */
-	status = plat_scmi_clock_rates_array(msg->agent_id, clock_id, NULL,
+	status = plat_scmi_clock_rates_array(msg->agent_id, clock_id, NULL, 0,
 					     &nb_rates);
 	if (status == SCMI_SUCCESS) {
 		/* Currently 12 cells mex, so it's affordable for the stack */
@@ -301,7 +304,9 @@ static void scmi_clock_describe_rates(struct scmi_msg *msg)
 		size_t rem_nb = nb_rates - in_args->rate_index - ret_nb;
 
 		status =  plat_scmi_clock_rates_array(msg->agent_id, clock_id,
-						      plat_rates, &ret_nb);
+						      plat_rates,
+						      in_args->rate_index,
+						      &ret_nb);
 		if (status == SCMI_SUCCESS) {
 			write_rate_desc_array_in_buffer(msg->out + sizeof(p2a),
 							plat_rates, ret_nb);

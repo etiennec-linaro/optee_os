@@ -10,18 +10,24 @@
 #define SCMI_AGENTS_H
 
 enum scmi_agent_id {
-    /* 0 is reserved for the platform */
-    SCMI_AGENT_ID_NSEC = 1,
-    SCMI_AGENT_ID_COUNT,
+    SCMI_AGENT_ID_RSV = 0,	/* 0 is reserved for the platform */
+    SCMI_AGENT_ID_NSEC0,
+    SCMI_AGENT_ID_NSEC1,
+    SCMI_AGENT_ID_NSEC2,
+    SCMI_AGENT_ID_COUNT
 };
 
 enum scmi_service_idx {
-    SCMI_SERVICE_IDX_NS_CHANNEL,
-    SCMI_SERVICE_IDX_COUNT,
+    SCMI_SERVICE_IDX_NS_CHANNEL0 = 0,
+    SCMI_SERVICE_IDX_NS_CHANNEL1,
+    SCMI_SERVICE_IDX_NS_CHANNEL2,
+    SCMI_SERVICE_IDX_COUNT
 };
 
 enum scmi_channel_device_idx {
-    SCMI_CHANNEL_DEVICE_IDX_NS,
+    SCMI_CHANNEL_DEVICE_IDX_NS0 = 0,
+    SCMI_CHANNEL_DEVICE_IDX_NS1,
+    SCMI_CHANNEL_DEVICE_IDX_NS2,
     SCMI_CHANNEL_DEVICE_IDX_COUNT
 };
 

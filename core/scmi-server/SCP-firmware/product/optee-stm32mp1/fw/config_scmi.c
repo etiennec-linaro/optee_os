@@ -16,14 +16,34 @@
 #include <scmi_agents.h>
 
 static const struct fwk_element service_table[] = {
-    [SCMI_SERVICE_IDX_NS_CHANNEL] = {
-        .name = "SERVICE1",
+    [SCMI_SERVICE_IDX_NS_CHANNEL0] = {
+        .name = "service-0",
         .data = &((struct mod_scmi_service_config) {
             .transport_id = FWK_ID_ELEMENT_INIT(FWK_MODULE_IDX_OPTEE_SMT,
-                                                SCMI_SERVICE_IDX_NS_CHANNEL),
+                                                SCMI_SERVICE_IDX_NS_CHANNEL0),
             .transport_api_id = FWK_ID_API_INIT(FWK_MODULE_IDX_OPTEE_SMT,
                                                 MOD_OPTEE_SMT_API_IDX_SCMI_TRANSPORT),
-            .scmi_agent_id = SCMI_AGENT_ID_NSEC,
+            .scmi_agent_id = SCMI_AGENT_ID_NSEC0,
+        }),
+    },
+    [SCMI_SERVICE_IDX_NS_CHANNEL1] = {
+        .name = "service-1",
+        .data = &((struct mod_scmi_service_config) {
+            .transport_id = FWK_ID_ELEMENT_INIT(FWK_MODULE_IDX_OPTEE_SMT,
+                                                SCMI_SERVICE_IDX_NS_CHANNEL1),
+            .transport_api_id = FWK_ID_API_INIT(FWK_MODULE_IDX_OPTEE_SMT,
+                                                MOD_OPTEE_SMT_API_IDX_SCMI_TRANSPORT),
+            .scmi_agent_id = SCMI_AGENT_ID_NSEC1,
+        }),
+    },
+    [SCMI_SERVICE_IDX_NS_CHANNEL2] = {
+        .name = "service-2",
+        .data = &((struct mod_scmi_service_config) {
+            .transport_id = FWK_ID_ELEMENT_INIT(FWK_MODULE_IDX_OPTEE_SMT,
+                                                SCMI_SERVICE_IDX_NS_CHANNEL2),
+            .transport_api_id = FWK_ID_API_INIT(FWK_MODULE_IDX_OPTEE_SMT,
+                                                MOD_OPTEE_SMT_API_IDX_SCMI_TRANSPORT),
+            .scmi_agent_id = SCMI_AGENT_ID_NSEC2,
         }),
     },
     [SCMI_SERVICE_IDX_COUNT] = { 0 }
@@ -35,9 +55,17 @@ static const struct fwk_element *get_scmi_service_table(fwk_id_t module_id)
 }
 
 static const struct mod_scmi_agent agent_table[] = {
-    [SCMI_AGENT_ID_NSEC] = {
+    [SCMI_AGENT_ID_NSEC0] = {
         .type = SCMI_AGENT_TYPE_OSPM,
-        .name = "OSPM",
+        .name = "OSPM0",
+    },
+    [SCMI_AGENT_ID_NSEC1] = {
+        .type = SCMI_AGENT_TYPE_OSPM,
+        .name = "OSPM1",
+    },
+    [SCMI_AGENT_ID_NSEC2] = {
+        .type = SCMI_AGENT_TYPE_OSPM,
+        .name = "OSPM2",
     },
 };
 

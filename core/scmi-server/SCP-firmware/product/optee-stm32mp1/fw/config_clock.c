@@ -180,7 +180,7 @@ static const struct fwk_element scmi_clock_elt[] = {
 };
 
 static const struct mod_scmi_clock_agent clock_agents[SCMI_AGENT_ID_COUNT] = {
-	[SCMI_AGENT_ID_NSEC] = {
+	[SCMI_AGENT_ID_NSEC0] = {
 		.device_table = scmi_clock_cfg,
 		.device_count = FWK_ARRAY_SIZE(scmi_clock_cfg),
 	},

@@ -139,7 +139,7 @@ static const struct fwk_element scmi_voltd_elt[] = {
 };
 
 static const struct mod_scmi_voltd_agent voltd_agents[SCMI_AGENT_ID_COUNT] = {
-	[SCMI_AGENT_ID_NSEC] = {
+	[SCMI_AGENT_ID_NSEC0] = {
 		.device_table = scmi_voltd_cfg,
 		.device_count = FWK_ARRAY_SIZE(scmi_voltd_cfg),
 	},

@@ -13,6 +13,7 @@
 #include <scmi_agents.h>
 #include <util.h>
 
+#include "config_pmic_regu.h"
 #include "config_pwr_regu.h"
 
 /*
@@ -21,13 +22,18 @@
  */
 static const struct fwk_element *get_voltd_elts(fwk_id_t module_id)
 {
-	const size_t count = VOLTD_DEV_IDX_STM32_PWR_COUNT + 1;
+	const size_t count = VOLTD_DEV_IDX_STM32_PWR_COUNT +
+                             VOLTD_DEV_IDX_STPMIC1_REGU_COUNT + 1;
 	struct fwk_element *elts = fwk_mm_alloc(count, sizeof(*elts));
 	size_t offset = 0;
 	size_t size = 0;
 
 	size = VOLTD_DEV_IDX_STM32_PWR_COUNT * sizeof(*elts);
 	memcpy(elts, stm32_pwr_regu_cfg_voltd_elts, size);
+
+	offset = size;
+	size = VOLTD_DEV_IDX_STPMIC1_REGU_COUNT * sizeof(*elts);
+	memcpy((char *)elts + offset, stpmic1_regu_cfg_voltd_elts, size);
 
 	offset += size;
 	memset((char *)elts + offset, 0, sizeof(*elts));
@@ -48,6 +54,12 @@ static const struct mod_scmi_voltd_agent scmi_voltd_agents[SCMI_AGENT_ID_COUNT] 
 		.device_table = stm32_pwr_regu_cfg_scmi_voltd,
 		.device_count = VOLTD_DEV_IDX_STM32_PWR_COUNT,
 	},
+#ifdef CFG_STPMIC1
+	[SCMI_AGENT_ID_NSEC2] = {
+		.device_table = stpmic1_regu_cfg_scmi_voltd,
+		.device_count = VOLTD_DEV_IDX_STPMIC1_REGU_COUNT,
+	},
+#endif
 };
 
 static const struct mod_scmi_voltd_config scmi_voltd_agents_config = {

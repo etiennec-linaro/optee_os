@@ -22,6 +22,7 @@ scmi-server-generic-modules-$(CFG_SCMI_SERVER_PERF) += scmi_perf
 scmi-server-generic-modules-$(CFG_SCMI_SERVER_POWER_DOMAIN) += power_domain scmi_power_domain
 scmi-server-generic-modules-$(CFG_SCMI_SERVER_RESET_DOMAIN) += reset_domain scmi_reset_domain
 scmi-server-generic-modules-$(CFG_SCMI_SERVER_TIMER) += timer
+scmi-server-generic-modules-$(CFG_SCMI_SERVER_VOLTAGE_DOMAIN) += voltage_domain scmi_voltage_domain
 
 # Some modules header files must be visible
 # (Alternate: use incdirs-lib$(libname)-$(sm) to list libs headers pathes)
@@ -33,6 +34,7 @@ global-incdirs-y += $(scmi-server-scp-path)/module/power_domain/include
 global-incdirs-y += $(scmi-server-scp-path)/module/psu/include
 global-incdirs-y += $(scmi-server-scp-path)/module/reset_domain/include
 global-incdirs-y += $(scmi-server-scp-path)/module/timer/include
+global-incdirs-y += $(scmi-server-scp-path)/module/voltage_domain/include
 
 # Needed by product/optee-fvp. TODO: define that from .../optee-fvp/
 global-incdirs-y += $(scmi-server-scp-path)/module/css_clock/include
@@ -80,6 +82,7 @@ $(eval $(call define-if-enable,BUILD_HAS_MOD_POWER_DOMAIN,CFG_SCMI_SERVER_POWER_
 $(eval $(call define-if-enable,BUILD_HAS_MOD_RESET_DOMAIN,CFG_SCMI_SERVER_RESET_DOMAIN))
 $(eval $(call define-if-enable,BUILD_HAS_MOD_SYSTEM_POWER,CFG_SCMI_SERVER_SYSTEM_POWER))
 $(eval $(call define-if-enable,BUILD_HAS_MOD_TIMER,CFG_SCMI_SERVER_TIMER))
+$(eval $(call define-if-enable,BUILD_HAS_MOD_VOLTAGE_DOMAIN,CFG_SCMI_SERVER_VOLTAGE_DOMAIN))
 
 srcs-y += scmi_server.c
 cflags-scmi_server.c-y = -Wno-aggregate-return

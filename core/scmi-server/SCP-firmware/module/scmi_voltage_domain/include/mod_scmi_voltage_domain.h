@@ -83,7 +83,7 @@ struct mod_scmi_voltd_device {
  */
 struct mod_scmi_voltd_agent {
     /*! Pointer to a table of clock devices that are visible to the agent */
-    struct mod_scmi_voltd_device *device_table;
+    const struct mod_scmi_voltd_device *device_table;
 
     /*!
      * \brief The number of \c mod_scmi_voltd_device structures in the table

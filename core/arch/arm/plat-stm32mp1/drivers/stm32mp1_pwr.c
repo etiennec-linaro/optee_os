@@ -79,7 +79,7 @@ void stm32mp1_pwr_regulator_set_state(enum pwr_regulator id, bool enable)
 	}
 }
 
-bool stm32mp1_pwr_regulator_get_state(enum pwr_regulator id)
+bool stm32mp1_pwr_regulator_is_enable(enum pwr_regulator id)
 {
 	assert(id < PWR_REGU_COUNT);
 

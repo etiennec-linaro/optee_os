@@ -606,7 +606,7 @@ static bool pwr_get_state(struct stm32_scmi_voltd *voltd)
 {
 	enum pwr_regulator regu_id = pwr_scmi_to_regu_id(voltd);
 
-	return stm32mp1_pwr_regulator_get_state(regu_id);
+	return stm32mp1_pwr_regulator_is_enable(regu_id);
 }
 
 static void pwr_set_state(struct stm32_scmi_voltd *voltd, bool enable)
@@ -614,7 +614,7 @@ static void pwr_set_state(struct stm32_scmi_voltd *voltd, bool enable)
 	enum pwr_regulator regu_id = pwr_scmi_to_regu_id(voltd);
 
 	DMSG("%sable PWR %s (was %s)", enable ? "En" : "Dis", voltd->name,
-	     stm32mp1_pwr_regulator_get_state(regu_id) ? "on" : "off");
+	     stm32mp1_pwr_regulator_is_enable(regu_id) ? "on" : "off");
 
 	stm32mp1_pwr_regulator_set_state(regu_id, enable);
 }

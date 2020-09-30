@@ -29,6 +29,6 @@ vaddr_t stm32_pwr_base(void);
 
 unsigned long stm32mp1_pwr_regulator_mv(enum pwr_regulator id);
 void stm32mp1_pwr_regulator_set_state(enum pwr_regulator id, bool enable);
-bool stm32mp1_pwr_regulator_get_state(enum pwr_regulator id);
+bool stm32mp1_pwr_regulator_is_enable(enum pwr_regulator id);
 
 #endif /*__STM32MP1_PWR_H*/

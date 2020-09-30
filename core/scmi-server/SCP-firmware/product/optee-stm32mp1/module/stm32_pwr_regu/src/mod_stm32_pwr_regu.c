@@ -55,13 +55,12 @@ static int pwr_regu_get_config(fwk_id_t dev_id, uint32_t *config)
     if (!nsec_can_access_pwr_regu(ctx->pwr_id))
         return FWK_E_ACCESS;
 
-    // FIXME: rename into stm32mp1_pwr_regulator_is_on(ctx->pwr_id))
-    if (stm32mp1_pwr_regulator_get_state(ctx->pwr_id))
+    if (stm32mp1_pwr_regulator_is_enable(ctx->pwr_id))
         *config = MOD_VOLTD_MODE_ON | MOD_VOLTD_MODE_TYPE_ARCH;
     else
         *config = MOD_VOLTD_MODE_OFF | MOD_VOLTD_MODE_TYPE_ARCH;
 
-    IMSG("SCMI voltd %u: get_config PWR#%u = %#"PRIx32,
+    DMSG("SCMI voltd %u: get_config PWR#%u = %#"PRIx32,
 	 fwk_id_get_element_idx(dev_id), ctx->pwr_id, *config);
 
     return FWK_SUCCESS;

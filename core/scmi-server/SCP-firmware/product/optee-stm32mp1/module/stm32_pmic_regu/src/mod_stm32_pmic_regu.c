@@ -114,7 +114,7 @@ static int pmic_regu_get_config(fwk_id_t dev_id, uint32_t *config)
     else
         *config = MOD_VOLTD_MODE_OFF | MOD_VOLTD_MODE_TYPE_ARCH;
 
-    IMSG("SCMI voltd %u: get config PMIC %s = %#"PRIx32,
+    DMSG("SCMI voltd %u: get config PMIC %s = %#"PRIx32,
 	 fwk_id_get_element_idx(dev_id), ctx->regu_id, *config);
 
     return FWK_SUCCESS;
@@ -136,7 +136,7 @@ static int pmic_regu_set_config(fwk_id_t dev_id, uint32_t config)
     if (set_regu_state(ctx->regu_id, config != 0))
         return FWK_E_DEVICE;
 
-    IMSG("SCMI voltd %u: set config PMIC %s to %#"PRIx32,
+    DMSG("SCMI voltd %u: set config PMIC %s to %#"PRIx32,
          fwk_id_get_element_idx(dev_id), ctx->regu_id, config);
 
     return FWK_SUCCESS;
@@ -156,7 +156,7 @@ static int pmic_regu_get_level(fwk_id_t dev_id, int *level_uv)
 
     *level_uv = get_regu_voltage(ctx->regu_id);
 
-    IMSG("SCMI voltd %u: get level PMIC %s = %d",
+    DMSG("SCMI voltd %u: get level PMIC %s = %d",
 	 fwk_id_get_element_idx(dev_id), ctx->regu_id, *level_uv);
 
     return FWK_SUCCESS;
@@ -174,7 +174,7 @@ static int pmic_regu_set_level(fwk_id_t dev_id, int level_uv)
     if (!nsec_can_access_pmic_regu(ctx->regu_id))
         return FWK_E_ACCESS;
 
-    IMSG("SCMI voltd %u: set level PMIC %s to %d",
+    DMSG("SCMI voltd %u: set level PMIC %s to %d",
 	 fwk_id_get_element_idx(dev_id), ctx->regu_id, level_uv);
 
     if (set_regu_voltage(ctx->regu_id, level_uv))
@@ -226,7 +226,7 @@ static int pmic_regu_get_info(fwk_id_t dev_id, struct mod_voltd_info *info)
     find_bound_uv(levels, full_count,
 		  &info->level_range.min_uv, &info->level_range.max_uv);
 
-    EMSG("SCMI voltd %u: get_info PMIC %s, range [%d %d]",
+    DMSG("SCMI voltd %u: get_info PMIC %s, range [%d %d]",
 	 fwk_id_get_element_idx(dev_id), ctx->regu_id,
 	 info->level_range.min_uv, info->level_range.max_uv);
 
@@ -254,7 +254,7 @@ static int pmic_regu_level_from_index(fwk_id_t dev_id, unsigned int index,
 
     *level_uv = (int32_t)levels[index] * 1000;
 
-    EMSG("SCMI voltd %u: get level PMIC %s = %d",
+    DMSG("SCMI voltd %u: get level PMIC %s = %d",
 	 fwk_id_get_element_idx(dev_id), ctx->regu_id, *level_uv);
 
     return FWK_SUCCESS;

@@ -12,40 +12,44 @@
 #include <mod_stm32_clock.h>
 #include <stm32_util.h>
 
-/* Device context */
+/* STM32 clock device context */
 struct stm32_clock_dev_ctx {
 	unsigned long clock_id;
 	bool enabled;
 };
 
-/* Module context */
-struct stm32_clock_ctx {
-    struct stm32_clock_dev_ctx *dev_ctx_table;
+/* STM32 clock module context */
+struct stm32_clock_module_ctx {
+    struct stm32_clock_dev_ctx *dev_ctx;
     unsigned int dev_count;
 };
 
-static struct stm32_clock_ctx module_ctx;
+static struct stm32_clock_module_ctx module_ctx;
+
+static struct stm32_clock_dev_ctx *elt_id_to_ctx(fwk_id_t dev_id)
+{
+    if (!fwk_module_is_valid_element_id(dev_id))
+        return NULL;
+
+    return module_ctx.dev_ctx + fwk_id_get_element_idx(dev_id);
+}
 
 /*
  * Clock driver API functions
  */
 static int get_rate(fwk_id_t dev_id, uint64_t *rate)
 {
-    struct stm32_clock_dev_ctx *ctx = NULL;
-    unsigned long clock_rate = 0;
-    int rc;
+    struct stm32_clock_dev_ctx *ctx = elt_id_to_ctx(dev_id);
 
-    if (!fwk_module_is_valid_element_id(dev_id) || (rate == NULL))
+    if ((ctx == NULL) || (rate == NULL))
         return FWK_E_PARAM;
-
-    ctx = module_ctx.dev_ctx_table + fwk_id_get_element_idx(dev_id);
 
     if (!stm32mp_nsec_can_access_clock(ctx->clock_id))
         return FWK_E_ACCESS;
 
     *rate = stm32_clock_get_rate(ctx->clock_id);
 
-    IMSG("SCMI clk %u: stm32_clock_get_rate(%lu) = %"PRIu64,
+    IMSG("SCMI clk (%u): stm32_clock_get_rate(%lu) = %"PRIu64,
 	 fwk_id_get_element_idx(dev_id), ctx->clock_id, *rate);
 
     return FWK_SUCCESS;
@@ -53,8 +57,10 @@ static int get_rate(fwk_id_t dev_id, uint64_t *rate)
 
 static int set_state(fwk_id_t dev_id, enum mod_clock_state state)
 {
-    struct stm32_clock_dev_ctx *ctx = NULL;
-    int rc = 0;
+    struct stm32_clock_dev_ctx *ctx = elt_id_to_ctx(dev_id);
+
+    if (ctx == NULL)
+        return FWK_E_PARAM;
 
     switch (state) {
     case MOD_CLOCK_STATE_STOPPED:
@@ -63,8 +69,6 @@ static int set_state(fwk_id_t dev_id, enum mod_clock_state state)
     default:
         return FWK_E_PARAM;
     }
-
-    ctx = module_ctx.dev_ctx_table + fwk_id_get_element_idx(dev_id);
 
     if (!stm32mp_nsec_can_access_clock(ctx->clock_id))
         return FWK_E_ACCESS;
@@ -90,16 +94,10 @@ static int set_state(fwk_id_t dev_id, enum mod_clock_state state)
 
 static int get_state(fwk_id_t dev_id, enum mod_clock_state *state)
 {
-    struct stm32_clock_dev_ctx *ctx;
-    int rc = 0;
-    bool enabled = false;
+    struct stm32_clock_dev_ctx *ctx = elt_id_to_ctx(dev_id);
 
-    if (!fwk_module_is_valid_element_id(dev_id))
+    if ((ctx == NULL) || (state == NULL))
         return FWK_E_PARAM;
-    if (state == NULL)
-        return FWK_E_PARAM;
-
-    ctx = module_ctx.dev_ctx_table + fwk_id_get_element_idx(dev_id);
 
     if (!stm32mp_nsec_can_access_clock(ctx->clock_id))
         return FWK_E_ACCESS;
@@ -118,14 +116,11 @@ static int get_state(fwk_id_t dev_id, enum mod_clock_state *state)
 
 static int get_range(fwk_id_t dev_id, struct mod_clock_range *range)
 {
-    struct stm32_clock_dev_ctx *ctx = NULL;
+    struct stm32_clock_dev_ctx *ctx = elt_id_to_ctx(dev_id);
     unsigned long rate = 0;
-    int rc = 0;
 
-    if (!fwk_module_is_valid_element_id(dev_id) || (range == NULL))
+    if ((ctx == NULL) || (range == NULL))
         return FWK_E_PARAM;
-
-    ctx = module_ctx.dev_ctx_table + fwk_id_get_element_idx(dev_id);
 
     if (!stm32mp_nsec_can_access_clock(ctx->clock_id))
         return FWK_E_ACCESS;
@@ -152,16 +147,10 @@ static int stub_set_rate(fwk_id_t dev_id, uint64_t rate,
 static int get_rate_from_index(fwk_id_t dev_id,
                                unsigned int rate_index, uint64_t *rate)
 {
-    struct stm32_clock_dev_ctx *ctx = NULL;
-    unsigned long clock_rate = 0;
-    int rc = 0;
+    struct stm32_clock_dev_ctx *ctx = elt_id_to_ctx(dev_id);
 
-    if (!fwk_module_is_valid_element_id(dev_id))
+    if ((ctx == NULL) || (rate_index > 0) || (rate == NULL))
         return FWK_E_PARAM;
-    if (rate == NULL || rate_index > 0)
-        return FWK_E_PARAM;
-
-    ctx = module_ctx.dev_ctx_table + fwk_id_get_element_idx(dev_id);
 
     if (!stm32mp_nsec_can_access_clock(ctx->clock_id))
         return FWK_E_ACCESS;
@@ -202,34 +191,30 @@ static const struct mod_clock_drv_api api_stm32_clock = {
  * Framework handler functions
  */
 
-static int stm32_clock_init(fwk_id_t module_id, unsigned int element_count,
-                            const void *data)
+static int stm32_clock_init(fwk_id_t module_id, unsigned int count,
+			    const void *data)
 {
-    module_ctx.dev_count = element_count;
-
-    if (element_count == 0)
+    if (count == 0)
         return FWK_SUCCESS;
 
-    module_ctx.dev_ctx_table = fwk_mm_calloc(element_count,
-                                             sizeof(struct stm32_clock_dev_ctx));
-    if (module_ctx.dev_ctx_table == NULL)
-        return FWK_E_NOMEM;
+    module_ctx.dev_count = count;
+    module_ctx.dev_ctx = fwk_mm_calloc(count, sizeof(*module_ctx.dev_ctx));
 
     return FWK_SUCCESS;
 }
 
-static int stm32_clock_element_init(fwk_id_t element_id, unsigned int unused,
-                                  const void *data)
+static int stm32_clock_element_init(fwk_id_t element_id, unsigned int dev_count,
+				    const void *data)
 {
-    struct stm32_clock_dev_ctx *ctx = NULL;
     const struct mod_stm32_clock_dev_config *dev_config = data;
+    struct stm32_clock_dev_ctx *ctx = elt_id_to_ctx(element_id);
 
-    if (!fwk_module_is_valid_element_id(element_id))
-        return FWK_E_PARAM;
+    ctx->clock_id = dev_config->rcc_clk_id;
+    ctx->enabled = dev_config->default_enabled;
 
-    ctx = module_ctx.dev_ctx_table + fwk_id_get_element_idx(element_id);
-
-    ctx->clock_id = dev_config->clock_id;
+    if (dev_config->default_enabled &&
+	stm32mp_nsec_can_access_clock(dev_config->rcc_clk_id))
+		stm32_clock_enable(dev_config->rcc_clk_id);
 
     return FWK_SUCCESS;
 }
@@ -251,21 +236,3 @@ const struct fwk_module module_stm32_clock = {
     .element_init = stm32_clock_element_init,
     .process_bind_request = stm32_clock_process_bind_request,
 };
-
-void stm32_scmi_clock_late_init(void)
-{
-    unsigned int i = 0;
-
-    for (i = 0; i < module_ctx.dev_count; i++) {
-        struct stm32_clock_dev_ctx *ctx = &module_ctx.dev_ctx_table[i];
-
-        if (stm32mp_nsec_can_access_clock(ctx->clock_id)) {
-            if (stm32_clock_is_enabled(ctx->clock_id)) {
-                ctx->enabled = true;
-                stm32_clock_enable(ctx->clock_id);
-            } else {
-                ctx->enabled = false;
-            }
-        }
-    }
-}

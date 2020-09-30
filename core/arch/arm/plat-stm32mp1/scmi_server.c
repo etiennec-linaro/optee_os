@@ -192,7 +192,7 @@ struct stm32_scmi_voltd scmi2_voltage_domain[] = {
 	VOLTD_CELL(VOLTD_SCMI2_LDO5, VOLTD_PMIC, "ldo5", "vdda"),
 	VOLTD_CELL(VOLTD_SCMI2_LDO6, VOLTD_PMIC, "ldo6", "v1v2_hdmi"),
 	VOLTD_CELL(VOLTD_SCMI2_VREFDDR, VOLTD_PMIC, "vref_ddr", "vref_ddr"),
-	VOLTD_CELL(VOLTD_SCMI2_BOOTST, VOLTD_PMIC, "boost", "bst_out"),
+	VOLTD_CELL(VOLTD_SCMI2_BOOST, VOLTD_PMIC, "boost", "bst_out"),
 	VOLTD_CELL(VOLTD_SCMI2_PWR_SW1, VOLTD_PMIC, "pwr_sw1", "vbus_otg"),
 	VOLTD_CELL(VOLTD_SCMI2_PWR_SW2, VOLTD_PMIC, "pwr_sw2", "vbus_sw"),
 };

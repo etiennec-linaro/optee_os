@@ -115,7 +115,7 @@ static int stm32_reset_element_init(fwk_id_t element_id,
     ctx = &module_ctx.dev_ctx_table[fwk_id_get_element_idx(element_id)];
     dev_config = (const struct mod_stm32_reset_dev_config *)data;
 
-    ctx->reset_id = dev_config->reset_id;
+    ctx->reset_id = dev_config->rcc_rst_id;
 
     return FWK_SUCCESS;
 }

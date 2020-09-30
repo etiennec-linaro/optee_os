@@ -36,7 +36,7 @@
 	VOLTD_CELL(VOLTD_SCMI2_LDO5, "ldo5", "vdda"), \
 	VOLTD_CELL(VOLTD_SCMI2_LDO6, "ldo6", "v1v2_hdmi"), \
 	VOLTD_CELL(VOLTD_SCMI2_VREFDDR, "vref_ddr", "vref_ddr"), \
-	VOLTD_CELL(VOLTD_SCMI2_BOOTST, "boost", "bst_out"), \
+	VOLTD_CELL(VOLTD_SCMI2_BOOST, "boost", "bst_out"), \
 	VOLTD_CELL(VOLTD_SCMI2_PWR_SW1, "pwr_sw1", "vbus_otg"), \
 	VOLTD_CELL(VOLTD_SCMI2_PWR_SW2, "pwr_sw2", "vbus_sw"), \
 	/* End of VOLTD_LIST */

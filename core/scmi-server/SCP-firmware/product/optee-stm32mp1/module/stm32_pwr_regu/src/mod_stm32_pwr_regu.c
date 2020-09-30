@@ -217,7 +217,7 @@ static int stm32_pwr_regu_element_init(fwk_id_t element_id,
     ctx = module_ctx.dev_ctx_table + fwk_id_get_element_idx(element_id);
 
     ctx->pwr_id = dev_config->pwr_id;
-    ctx->name = dev_config->name;
+    ctx->name = dev_config->regu_name;
 
     return FWK_SUCCESS;
 }

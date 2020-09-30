@@ -17,8 +17,7 @@
 
 /* Device context */
 struct stm32_pmic_regu_dev_ctx {
-	const char *regu_id;		/* ID internal to regulator */
-	const char *name;		/* Name exposed through SCMI */
+	const char *regu_id;		/* Both name and backend regu ID */
 };
 
 /* Module context */
@@ -29,64 +28,64 @@ struct stm32_pmic_regu_ctx {
 
 static struct stm32_pmic_regu_ctx module_ctx;
 
-static bool nsec_can_access_pmic_regu(const char *regu_name)
+static bool nsec_can_access_pmic_regu(const char *regu_id)
 {
 	/* Currently allow non-secure world to access all PMIC regulators */
 	return true;
 }
 
-static int32_t get_regu_voltage(const char *regu_name)
+static int32_t get_regu_voltage(const char *regu_id)
 {
 	unsigned long level_uv = 0;
 
 	stm32mp_get_pmic();
-	level_uv = stpmic1_regulator_voltage_get(regu_name) * 1000;
+	level_uv = stpmic1_regulator_voltage_get(regu_id) * 1000;
 	stm32mp_put_pmic();
 
 	return (int32_t)level_uv;
 }
 
-static int32_t set_regu_voltage(const char *regu_name, int32_t level_uv)
+static int32_t set_regu_voltage(const char *regu_id, int32_t level_uv)
 {
 	int rc = 0;
 	unsigned int level_mv = level_uv / 1000;
 
-	DMSG("Set STPMIC1 regulator %s level to %dmV", regu_name,
+	DMSG("Set STPMIC1 regulator %s level to %dmV", regu_id,
 	     level_uv / 1000);
 
 	fwk_assert(level_mv < UINT16_MAX);
 
 	stm32mp_get_pmic();
-	rc = stpmic1_regulator_voltage_set(regu_name, level_mv);
+	rc = stpmic1_regulator_voltage_set(regu_id, level_mv);
 	stm32mp_put_pmic();
 
 	return rc ? SCMI_GENERIC_ERROR : SCMI_SUCCESS;
 }
 
-static bool regu_is_enable(const char *regu_name)
+static bool regu_is_enable(const char *regu_id)
 {
 	bool rc = false;
 
 	stm32mp_get_pmic();
-	rc = stpmic1_is_regulator_enabled(regu_name);
+	rc = stpmic1_is_regulator_enabled(regu_id);
 	stm32mp_put_pmic();
 
 	return rc;
 }
 
-static int32_t set_regu_state(const char *regu_name, bool enable)
+static int32_t set_regu_state(const char *regu_id, bool enable)
 {
 	int rc = 0;
 
 	stm32mp_get_pmic();
 
-	DMSG("%sable STPMIC1 %s (was %s)", enable ? "En" : "Dis", regu_name,
-	     stpmic1_is_regulator_enabled(regu_name) ? "on" : "off");
+	DMSG("%sable STPMIC1 %s (was %s)", enable ? "En" : "Dis", regu_id,
+	     stpmic1_is_regulator_enabled(regu_id) ? "on" : "off");
 
 	if (enable)
-		rc = stpmic1_regulator_enable(regu_name);
+		rc = stpmic1_regulator_enable(regu_id);
 	else
-		rc = stpmic1_regulator_disable(regu_name);
+		rc = stpmic1_regulator_disable(regu_id);
 
 	stm32mp_put_pmic();
 
@@ -198,6 +197,10 @@ static void find_bound_uv(const uint16_t *levels, size_t count,
 		if (*max < levels[n])
 			*max = levels[n];
 	}
+
+	/* Convert from mV to uV */
+	*min *= 1000;
+	*max *= 1000;
 }
 
 static int pmic_regu_get_info(fwk_id_t dev_id, struct mod_voltd_info *info)
@@ -217,14 +220,15 @@ static int pmic_regu_get_info(fwk_id_t dev_id, struct mod_voltd_info *info)
     stpmic1_regulator_levels_mv(ctx->regu_id, &levels, &full_count);
 
     memset(info, 0, sizeof(*info));
-    info->name = ctx->name;
+    info->name = ctx->regu_id;
     info->level_range.level_type = MOD_VOLTD_VOLTAGE_LEVEL_DISCRETE;
     info->level_range.level_count = full_count;
     find_bound_uv(levels, full_count,
 		  &info->level_range.min_uv, &info->level_range.max_uv);
 
-    DMSG("SCMI voltd %u: get_info PMIC %s",
-	 fwk_id_get_element_idx(dev_id), ctx->regu_id);
+    EMSG("SCMI voltd %u: get_info PMIC %s, range [%d %d]",
+	 fwk_id_get_element_idx(dev_id), ctx->regu_id,
+	 info->level_range.min_uv, info->level_range.max_uv);
 
     return FWK_SUCCESS;
 }
@@ -250,7 +254,7 @@ static int pmic_regu_level_from_index(fwk_id_t dev_id, unsigned int index,
 
     *level_uv = (int32_t)levels[index] * 1000;
 
-    DMSG("SCMI voltd %u: get level PMIC %s = %d",
+    EMSG("SCMI voltd %u: get level PMIC %s = %d",
 	 fwk_id_get_element_idx(dev_id), ctx->regu_id, *level_uv);
 
     return FWK_SUCCESS;
@@ -298,8 +302,7 @@ MSG("%s", __func__);
 
     ctx = module_ctx.dev_ctx_table + fwk_id_get_element_idx(element_id);
 
-    ctx->regu_id = dev_config->internal_name;
-    ctx->name = dev_config->name;
+    ctx->regu_id = dev_config->regu_name;
 
     return FWK_SUCCESS;
 }

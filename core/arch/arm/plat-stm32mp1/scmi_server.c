@@ -208,7 +208,6 @@ struct scmi_agent_resources {
 	size_t perfs_count;
 	struct stm32_scmi_voltd *voltd;
 	size_t voltd_count;
-
 };
 
 const struct scmi_agent_resources agent_resources[] = {
@@ -219,7 +218,6 @@ const struct scmi_agent_resources agent_resources[] = {
 		.rd_count = ARRAY_SIZE(stm32_scmi0_reset_domain),
 		.voltd = scmi0_voltage_domain,
 		.voltd_count = ARRAY_SIZE(scmi0_voltage_domain),
-
 	},
 	[1] = {
 		.clock = stm32_scmi1_clock,
@@ -229,7 +227,6 @@ const struct scmi_agent_resources agent_resources[] = {
 		.voltd = scmi2_voltage_domain,
 		.voltd_count = ARRAY_SIZE(scmi2_voltage_domain),
 	},
-
 };
 
 static const struct scmi_agent_resources *find_resource(unsigned int agent_id)

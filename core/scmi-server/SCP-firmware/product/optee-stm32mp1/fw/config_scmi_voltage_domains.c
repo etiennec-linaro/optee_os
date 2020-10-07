@@ -90,13 +90,13 @@ enum voltd_elt_idx {
 		.element_id = FWK_ID_ELEMENT_INIT(FWK_MODULE_IDX_VOLTAGE_DOMAIN, (_idx)), \
 	}
 
-static const struct mod_scmi_voltd_device scmi0_voltd_device[] = {
+static struct mod_scmi_voltd_device scmi0_voltd_device[] = {
 	SCMI_VOLTD_ELT_ID(VOLTD_IDX_SCMI0_REG11),
 	SCMI_VOLTD_ELT_ID(VOLTD_IDX_SCMI0_REG18),
 	SCMI_VOLTD_ELT_ID(VOLTD_IDX_SCMI0_USB33),
 };
 
-static const struct mod_scmi_voltd_device __maybe_unused scmi2_voltd_device[] = {
+static struct mod_scmi_voltd_device __maybe_unused scmi2_voltd_device[] = {
 	SCMI_VOLTD_ELT_ID(VOLTD_IDX_SCMI2_BUCK1),
 	SCMI_VOLTD_ELT_ID(VOLTD_IDX_SCMI2_BUCK2),
 	SCMI_VOLTD_ELT_ID(VOLTD_IDX_SCMI2_BUCK3),

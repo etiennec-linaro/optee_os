@@ -5,11 +5,10 @@
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
-#include "voltage_domain.h"
-
 #include <mod_voltage_domain.h>
 
 #include <fwk_assert.h>
+#include <fwk_id.h>
 #include <fwk_mm.h>
 #include <fwk_module.h>
 #include <fwk_status.h>
@@ -114,10 +113,9 @@ static int voltd_get_info(fwk_id_t voltd_id, struct mod_voltd_info *info)
 
     fwk_assert(info);
 
-    // TODO: why not get_device() device->element_id ?
     status = ctx->api->get_info(ctx->config->driver_id, info);
 
-    if (!info->name)
+    if (status == FWK_SUCCESS && info->name == NULL)
         info->name = fwk_module_get_name(voltd_id);
 
     return status;
@@ -153,12 +151,9 @@ static const struct mod_voltd_api voltd_api = {
 static int voltd_init(fwk_id_t module_id, unsigned int element_count,
                       const void *data)
 {
-    //const struct mod_voltd_config *config = data;
-
     if (element_count == 0)
         return FWK_SUCCESS;
 
-    //module_ctx.config = config;
     module_ctx.dev_ctx_table = fwk_mm_calloc(element_count,
                                              sizeof(struct voltd_dev_ctx));
     return FWK_SUCCESS;
@@ -203,11 +198,12 @@ static int voltd_process_bind_request(fwk_id_t source_id, fwk_id_t target_id,
     switch (api_type) {
     case MOD_VOLTD_API_TYPE_HAL:
         *api = &voltd_api;
-
-        return FWK_SUCCESS;
+        break;
     default:
         return FWK_E_ACCESS;
     }
+
+    return FWK_SUCCESS;
 }
 
 const struct fwk_module module_voltage_domain = {

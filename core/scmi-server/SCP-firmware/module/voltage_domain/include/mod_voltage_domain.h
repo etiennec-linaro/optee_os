@@ -28,14 +28,19 @@
  * @{
  */
 
-/*!
- * \brief Voltage domain configurations.
- */
+/*! Mask for voltage domain mode type in domain configuration */
 #define MOD_VOLTD_MODE_TYPE_MASK        BIT(3)
+
+/*! Mask value for implementation mode type in domain configuration */
 #define MOD_VOLTD_MODE_TYPE_IMPL        BIT(3)
+
+/*! Mask value for architecture mode type in domain configuration */
 #define MOD_VOLTD_MODE_TYPE_ARCH        0
 
+/*! Enabled domain configuration mode */
 #define MOD_VOLTD_MODE_ON               7
+
+/*! Disabled domain configuration mode */
 #define MOD_VOLTD_MODE_OFF              0
 
 /*!
@@ -87,7 +92,7 @@ struct mod_voltd_range {
     /*!
      * The number of uV by which the level can be incremented at each step
      * throughout the domain's range. Valid only when level_type is equal to
-     * \ref mod_voltd_voltage_level_type.MOD_VOLD_VOLTAGE_LEVEL_CONTINUOUS.
+     * \ref mod_voltd_voltage_level_type.MOD_VOLTD_VOLTAGE_LEVEL_CONTINUOUS.
      */
     int step_uv;
 

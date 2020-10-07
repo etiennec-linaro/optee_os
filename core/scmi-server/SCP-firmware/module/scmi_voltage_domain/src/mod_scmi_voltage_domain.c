@@ -63,7 +63,7 @@ struct scmi_voltd_ctx {
     struct voltd_operations *voltd_ops;
 
 #ifdef BUILD_HAS_RESOURCE_PERMISSIONS
-    /* SCMI Resource Permissions API (TODO) */
+    /* SCMI Resource Permissions API */
     const struct mod_res_permissions_api *res_perms_api;
 #endif
 };
@@ -194,30 +194,25 @@ static int scmi_voltd_permissions_handler(
     unsigned int message_id)
 {
     enum mod_res_perms_permissions perms;
-    unsigned int agent_id, domain_id;
+    unsigned int agent_id;
     int status;
 
     status = scmi_voltd_ctx.scmi_api->get_agent_id(service_id, &agent_id);
     if (status != FWK_SUCCESS)
         return FWK_E_ACCESS;
 
-    if (message_id < 3) {
+    if (message_id < 3)
         perms = scmi_voltd_ctx.res_perms_api->agent_has_protocol_permission(
             agent_id, MOD_SCMI_PROTOCOL_ID_VOLTAGE_DOMAIN);
-        if (perms == MOD_RES_PERMS_ACCESS_ALLOWED)
-            return FWK_SUCCESS;
-        return FWK_E_ACCESS;
-    }
-
-    domain_id = get_domain_id(payload);
-
-    perms = scmi_voltd_ctx.res_perms_api->agent_has_resource_permission(
-        agent_id, MOD_SCMI_PROTOCOL_ID_VOLTAGE_DOMAIN, message_id, domain_id);
+    else
+        perms = scmi_voltd_ctx.res_perms_api->agent_has_resource_permission(
+            agent_id, MOD_SCMI_PROTOCOL_ID_VOLTAGE_DOMAIN, message_id,
+	    get_domain_id(payload));
 
     if (perms == MOD_RES_PERMS_ACCESS_ALLOWED)
         return FWK_SUCCESS;
-    else
-        return FWK_E_ACCESS;
+
+    return FWK_E_ACCESS;
 }
 #endif
 
@@ -307,7 +302,6 @@ static int scmi_voltd_domain_attributes_handler(fwk_id_t service_id,
     if (status != FWK_SUCCESS)
         goto exit;
 
-    // FIXME: who knows the name? scmi_voltd, voltd, platform regu driver?
     strncpy(outmsg.name, fwk_module_get_name(device->element_id),
             sizeof(outmsg.name));
 
@@ -550,10 +544,10 @@ static int scmi_voltd_describe_levels_handler(fwk_id_t service_id,
     } else {
         /* The voltage domain has a linear level stepping */
         int32_t voltd_range[3] = {
-		info.level_range.min_uv,
-		info.level_range.max_uv,
-		info.level_range.step_uv
-	};
+            info.level_range.min_uv,
+            info.level_range.max_uv,
+            info.level_range.step_uv
+        };
 
         /* Is the payload area large enough to return the complete triplet? */
         if (max_level_items < 3) {
@@ -619,7 +613,7 @@ static int scmi_voltd_message_handler(fwk_id_t protocol_id, fwk_id_t service_id,
 
 #ifdef BUILD_HAS_RESOURCE_PERMISSIONS
     if (scmi_voltd_permissions_handler(service_id, payload, payload_size,
-				       message_id) != FWK_SUCCESS) {
+                                       message_id) != FWK_SUCCESS) {
         outmsg = SCMI_DENIED;
         goto error;
     }
@@ -689,28 +683,9 @@ static int scmi_voltd_bind(fwk_id_t id, unsigned int round)
         return status;
 #endif
 
-    status = fwk_module_bind(FWK_ID_MODULE(FWK_MODULE_IDX_VOLTAGE_DOMAIN),
-                             FWK_ID_API(FWK_MODULE_IDX_VOLTAGE_DOMAIN, 0),
-                             &scmi_voltd_ctx.voltd_api);
-    if (status != FWK_SUCCESS)
-        return status;
-
-    for (agent_idx = 0; agent_idx < agent_count; agent_idx++) {
-        const struct mod_scmi_voltd_agent *agent = NULL;
-        unsigned int elt_idx = 0;
-
-        agent = scmi_voltd_ctx.agent_table + agent_idx;
-
-        for (elt_idx = 0; elt_idx < agent->device_count; elt_idx++) {
-            struct mod_scmi_voltd_device *dev = agent->device_table + elt_idx;
-            fwk_id_t elt_id = { };
-
-	    fwk_id_build_element_id(&elt_id,
-                FWK_ID_MODULE(FWK_MODULE_IDX_VOLTAGE_DOMAIN), elt_idx);
-        }
-    }
-
-    return status;
+    return fwk_module_bind(FWK_ID_MODULE(FWK_MODULE_IDX_VOLTAGE_DOMAIN),
+                           FWK_ID_API(FWK_MODULE_IDX_VOLTAGE_DOMAIN, 0),
+                           &scmi_voltd_ctx.voltd_api);
 }
 
 static int scmi_voltd_process_bind_request(fwk_id_t source_id,

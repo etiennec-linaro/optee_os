@@ -359,6 +359,7 @@ enum pkcs11_rc get_attribute(struct obj_attrs *head, uint32_t attribute,
 		goto found;
 	}
 #endif
+
 	rc = get_attribute_ptr(head, attribute, &attr_ptr, &size);
 	if (rc)
 		return rc;
@@ -558,7 +559,8 @@ static void __trace_attributes(char *prefix, void *src, void *end)
 		case PKCS11_CKA_UNWRAP_TEMPLATE:
 		case PKCS11_CKA_DERIVE_TEMPLATE:
 			if (pkcs11_ref.size)
-				trace_attributes(prefix2, cur + sizeof(pkcs11_ref));
+				trace_attributes(prefix2,
+						 cur + sizeof(pkcs11_ref));
 			break;
 		default:
 			break;

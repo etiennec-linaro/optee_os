@@ -1,20 +1,22 @@
 // SPDX-License-Identifier: BSD-2-Clause
 /*
  * Copyright (c) 2014, STMicroelectronics International N.V.
- * Copyright (c) 2015-2017 Linaro Limited
+ * Copyright (c) 2015-2020 Linaro Limited
  */
 
 #include <assert.h>
 #include <compiler.h>
 #include <crypto/crypto.h>
 #include <ctype.h>
-#include <elf_common.h>
 #include <initcall.h>
 #include <keep.h>
+#include <kernel/linker.h>
 #include <kernel/panic.h>
 #include <kernel/tee_misc.h>
 #include <kernel/tee_ta_manager.h>
 #include <kernel/thread.h>
+#include <kernel/user_access.h>
+#include <kernel/user_mode_ctx.h>
 #include <kernel/user_ta.h>
 #include <kernel/user_ta_store.h>
 #include <ldelf.h>
@@ -34,6 +36,7 @@
 #include <stdlib.h>
 #include <sys/queue.h>
 #include <ta_pub_key.h>
+#include <tee/arch_svc.h>
 #include <tee/tee_cryp_utl.h>
 #include <tee/tee_obj.h>
 #include <tee/tee_svc_cryp.h>
@@ -45,15 +48,6 @@
 #include <utee_defines.h>
 #include <util.h>
 
-struct load_seg {
-	uint32_t flags;
-	vaddr_t va;
-	size_t size;
-	struct mobj *mobj;
-	struct file *file;
-	SLIST_ENTRY(load_seg) link;
-};
-
 extern uint8_t ldelf_data[];
 extern const unsigned int ldelf_code_size;
 extern const unsigned int ldelf_data_size;
@@ -63,23 +57,6 @@ const bool is_arm32 = true;
 #else
 const bool is_arm32;
 #endif
-
-static void free_seg(struct load_seg *seg)
-{
-	mobj_free(seg->mobj);
-	file_put(seg->file);
-	free(seg);
-}
-
-static void free_segs(struct load_seg_head *segs)
-{
-	while (!SLIST_EMPTY(segs)) {
-		struct load_seg *s = SLIST_FIRST(segs);
-
-		SLIST_REMOVE_HEAD(segs, link);
-		free_seg(s);
-	}
-}
 
 static void init_utee_param(struct utee_params *up,
 			const struct tee_ta_param *p, void *va[TEE_NUM_PARAMS])
@@ -141,8 +118,30 @@ static void update_from_utee_param(struct tee_ta_param *p,
 static void clear_vfp_state(struct user_ta_ctx *utc __unused)
 {
 #ifdef CFG_WITH_VFP
-	thread_user_clear_vfp(&utc->vfp);
+	thread_user_clear_vfp(&utc->uctx.vfp);
 #endif
+}
+
+static bool inc_recursion(void)
+{
+	struct thread_specific_data *tsd = thread_get_tsd();
+
+	if (tsd->syscall_recursion >= CFG_CORE_MAX_SYSCALL_RECURSION) {
+		DMSG("Maximum allowed recursion depth reached (%u)",
+		     CFG_CORE_MAX_SYSCALL_RECURSION);
+		return false;
+	}
+
+	tsd->syscall_recursion++;
+	return true;
+}
+
+static void dec_recursion(void)
+{
+	struct thread_specific_data *tsd = thread_get_tsd();
+
+	assert(tsd->syscall_recursion);
+	tsd->syscall_recursion--;
 }
 
 static TEE_Result user_ta_enter(TEE_ErrorOrigin *err,
@@ -158,10 +157,16 @@ static TEE_Result user_ta_enter(TEE_ErrorOrigin *err,
 	struct tee_ta_session *s __maybe_unused = NULL;
 	void *param_va[TEE_NUM_PARAMS] = { NULL };
 
+	if (!inc_recursion()) {
+		/* Using this error code since we've run out of resources. */
+		res = TEE_ERROR_OUT_OF_MEMORY;
+		goto out_clr_cancel;
+	}
+
 	/* Map user space memory */
-	res = tee_mmu_map_param(utc, param, param_va);
+	res = tee_mmu_map_param(&utc->uctx, param, param_va);
 	if (res != TEE_SUCCESS)
-		goto cleanup_return;
+		goto out;
 
 	/* Switch to user ctx */
 	tee_ta_push_current_session(session);
@@ -172,10 +177,11 @@ static TEE_Result user_ta_enter(TEE_ErrorOrigin *err,
 	usr_params = (struct utee_params *)usr_stack;
 	init_utee_param(usr_params, param, param_va);
 
-	res = thread_enter_user_mode(func, tee_svc_kaddr_to_uref(session),
+	res = thread_enter_user_mode(func, kaddr_to_uref(session),
 				     (vaddr_t)usr_params, cmd, usr_stack,
 				     utc->entry_func, utc->is_32bit,
-				     &utc->ctx.panicked, &utc->ctx.panic_code);
+				     &utc->uctx.ctx.panicked,
+				     &utc->uctx.ctx.panic_code);
 
 	clear_vfp_state(utc);
 	/*
@@ -184,10 +190,10 @@ static TEE_Result user_ta_enter(TEE_ErrorOrigin *err,
 	 */
 	serr = TEE_ORIGIN_TRUSTED_APP;
 
-	if (utc->ctx.panicked) {
+	if (utc->uctx.ctx.panicked) {
 		abort_print_current_ta();
 		DMSG("tee_user_ta_enter: TA panicked with code 0x%x",
-		     utc->ctx.panic_code);
+		     utc->uctx.ctx.panic_code);
 		serr = TEE_ORIGIN_TEE;
 		res = TEE_ERROR_TARGET_DEAD;
 	}
@@ -199,12 +205,14 @@ static TEE_Result user_ta_enter(TEE_ErrorOrigin *err,
 	 * Clear out the parameter mappings added with tee_mmu_map_param()
 	 * above.
 	 */
-	tee_mmu_clean_param(utc);
+	tee_mmu_clean_param(&utc->uctx);
 
 	s = tee_ta_pop_current_session();
 	assert(s == session);
-cleanup_return:
 
+out:
+	dec_recursion();
+out_clr_cancel:
 	/*
 	 * Clear the cancel state now that the user TA has returned. The next
 	 * time the TA will be invoked will be with a new operation and should
@@ -221,31 +229,7 @@ cleanup_return:
 	return res;
 }
 
-static void clear_ldelf_mappings(struct user_ta_ctx *utc)
-{
-	TEE_Result res = TEE_SUCCESS;
-	struct load_seg *seg = NULL;
-
-	/*
-	 * This can be done more efficient, but quite few segments are
-	 * expected so a naive implementation may actually be preferable.
-	 */
-	while (true) {
-		SLIST_FOREACH(seg, &utc->segs, link)
-			if (seg->flags & TEE_MATTR_LDELF)
-				break;
-		if (!seg)
-			break;
-
-		SLIST_REMOVE(&utc->segs, seg, load_seg, link);
-		res = vm_unmap(utc, seg->va, seg->size);
-		if (res)
-			panic();
-		free_seg(seg);
-	}
-}
-
-static TEE_Result init_with_ldelf(struct tee_ta_session *sess,
+static TEE_Result init_with_ldelf(struct tee_ta_session *sess __maybe_unused,
 				  struct user_ta_ctx *utc)
 {
 	struct tee_ta_session *s __maybe_unused = NULL;
@@ -255,14 +239,11 @@ static TEE_Result init_with_ldelf(struct tee_ta_session *sess,
 	uint32_t panicked = 0;
 	uaddr_t usr_stack = 0;
 
-	/* Switch to user ctx */
-	tee_ta_push_current_session(sess);
-
 	usr_stack = utc->ldelf_stack_ptr;
 	usr_stack -= ROUNDUP(sizeof(*arg), STACK_ALIGNMENT);
 	arg = (struct ldelf_arg *)usr_stack;
 	memset(arg, 0, sizeof(*arg));
-	arg->uuid = utc->ctx.uuid;
+	arg->uuid = utc->uctx.ctx.uuid;
 
 	res = thread_enter_user_mode((vaddr_t)arg, 0, 0, 0,
 				     usr_stack, utc->entry_func,
@@ -271,61 +252,44 @@ static TEE_Result init_with_ldelf(struct tee_ta_session *sess,
 	clear_vfp_state(utc);
 	if (panicked) {
 		abort_print_current_ta();
-		res = TEE_ERROR_GENERIC;
 		EMSG("ldelf panicked");
-		goto out;
+		return TEE_ERROR_GENERIC;
 	}
 	if (res) {
 		EMSG("ldelf failed with res: %#"PRIx32, res);
-		goto out;
+		return res;
 	}
 
-	res = tee_mmu_check_access_rights(utc, TEE_MEMORY_ACCESS_READ |
+	res = tee_mmu_check_access_rights(&utc->uctx, TEE_MEMORY_ACCESS_READ |
 					  TEE_MEMORY_ACCESS_ANY_OWNER,
 					  (uaddr_t)arg, sizeof(*arg));
 	if (res)
-		goto out;
+		return res;
 
-	if (arg->flags & ~TA_FLAGS_MASK) {
-		/*
-		 * This is already checked by the elf loader, but since it
-		 * runs in user mode we're not trusting it entirely.
-		 */
-		res = TEE_ERROR_BAD_FORMAT;
-		goto out;
-	}
+	/*
+	 * This is already checked by the elf loader, but since it runs in
+	 * user mode we're not trusting it entirely.
+	 */
+	if (arg->flags & ~TA_FLAGS_MASK)
+		return TEE_ERROR_BAD_FORMAT;
 
 	utc->is_32bit = arg->is_32bit;
 	utc->entry_func = arg->entry_func;
 	utc->stack_ptr = arg->stack_ptr;
-	utc->ctx.flags = arg->flags;
+	utc->uctx.ctx.flags = arg->flags;
 	utc->dump_entry_func = arg->dump_entry;
-#ifdef CFG_TA_FTRACE_SUPPORT
+#ifdef CFG_FTRACE_SUPPORT
 	utc->ftrace_entry_func = arg->ftrace_entry;
+	sess->fbuf = arg->fbuf;
 #endif
+	utc->dl_entry_func = arg->dl_entry;
 
-out:
-	s = tee_ta_pop_current_session();
-	assert(s == sess);
-
-	return res;
+	return TEE_SUCCESS;
 }
 
 static TEE_Result user_ta_enter_open_session(struct tee_ta_session *s,
 			struct tee_ta_param *param, TEE_ErrorOrigin *eo)
 {
-	struct user_ta_ctx *utc = to_user_ta_ctx(s->ctx);
-
-	if (utc->is_initializing) {
-		TEE_Result res = init_with_ldelf(s, utc);
-
-		if (res) {
-			*eo = TEE_ORIGIN_TEE;
-			return res;
-		}
-		utc->is_initializing = false;
-	}
-
 	return user_ta_enter(eo, s, UTEE_ENTRY_FUNC_OPEN_SESSION, 0, param);
 }
 
@@ -349,23 +313,7 @@ static void user_ta_enter_close_session(struct tee_ta_session *s)
 
 static void dump_state_no_ldelf_dbg(struct user_ta_ctx *utc)
 {
-	struct vm_region *r;
-	char flags[7] = { '\0', };
-	size_t n = 0;
-
-	TAILQ_FOREACH(r, &utc->vm_info->regions, link) {
-		paddr_t pa = 0;
-
-		if (r->mobj)
-			mobj_get_pa(r->mobj, r->offset, 0, &pa);
-
-		mattr_perm_to_str(flags, sizeof(flags), r->attr);
-		EMSG_RAW(" region %2zu: va 0x%0*" PRIxVA " pa 0x%0*" PRIxPA
-			 " size 0x%06zx flags %s",
-			 n, PRIxVA_WIDTH, r->va, PRIxPA_WIDTH, pa, r->size,
-			 flags);
-		n++;
-	}
+	user_mode_ctx_print_mappings(&utc->uctx);
 }
 
 static TEE_Result dump_state_ldelf_dbg(struct user_ta_ctx *utc)
@@ -379,7 +327,7 @@ static TEE_Result dump_state_ldelf_dbg(struct user_ta_ctx *utc)
 	struct vm_region *r = NULL;
 	size_t n = 0;
 
-	TAILQ_FOREACH(r, &utc->vm_info->regions, link)
+	TAILQ_FOREACH(r, &utc->uctx.vm_info.regions, link)
 		if (r->attr & TEE_MATTR_URWX)
 			n++;
 
@@ -388,7 +336,7 @@ static TEE_Result dump_state_ldelf_dbg(struct user_ta_ctx *utc)
 			     STACK_ALIGNMENT);
 	arg = (struct dump_entry_arg *)usr_stack;
 
-	res = tee_mmu_check_access_rights(utc, TEE_MEMORY_ACCESS_READ |
+	res = tee_mmu_check_access_rights(&utc->uctx, TEE_MEMORY_ACCESS_READ |
 					  TEE_MEMORY_ACCESS_ANY_OWNER,
 					  (uaddr_t)arg, sizeof(*arg));
 	if (res) {
@@ -400,7 +348,7 @@ static TEE_Result dump_state_ldelf_dbg(struct user_ta_ctx *utc)
 
 	arg->num_maps = n;
 	n = 0;
-	TAILQ_FOREACH(r, &utc->vm_info->regions, link) {
+	TAILQ_FOREACH(r, &utc->uctx.vm_info.regions, link) {
 		if (r->attr & TEE_MATTR_URWX) {
 			if (r->mobj)
 				mobj_get_pa(r->mobj, r->offset, 0,
@@ -415,9 +363,9 @@ static TEE_Result dump_state_ldelf_dbg(struct user_ta_ctx *utc)
 				arg->maps[n].flags |= DUMP_MAP_EXEC;
 			if (r->attr & TEE_MATTR_SECURE)
 				arg->maps[n].flags |= DUMP_MAP_SECURE;
-			if (r->attr & TEE_MATTR_EPHEMERAL)
+			if (r->flags & VM_FLAG_EPHEMERAL)
 				arg->maps[n].flags |= DUMP_MAP_EPHEM;
-			if (r->attr & TEE_MATTR_LDELF)
+			if (r->flags & VM_FLAG_LDELF)
 				arg->maps[n].flags |= DUMP_MAP_LDELF;
 			n++;
 		}
@@ -503,7 +451,7 @@ static void user_ta_dump_state(struct tee_ta_ctx *ctx)
 	dump_state_no_ldelf_dbg(utc);
 }
 
-#ifdef CFG_TA_FTRACE_SUPPORT
+#ifdef CFG_FTRACE_SUPPORT
 static TEE_Result dump_ftrace(struct user_ta_ctx *utc, void *buf, size_t *blen)
 {
 	uaddr_t usr_stack = utc->ldelf_stack_ptr;
@@ -518,7 +466,7 @@ static TEE_Result dump_ftrace(struct user_ta_ctx *utc, void *buf, size_t *blen)
 	usr_stack -= ROUNDUP(sizeof(*arg), STACK_ALIGNMENT);
 	arg = (size_t *)usr_stack;
 
-	res = tee_mmu_check_access_rights(utc, TEE_MEMORY_ACCESS_READ |
+	res = tee_mmu_check_access_rights(&utc->uctx, TEE_MEMORY_ACCESS_READ |
 					  TEE_MEMORY_ACCESS_ANY_OWNER,
 					  (uaddr_t)arg, sizeof(*arg));
 	if (res) {
@@ -550,7 +498,7 @@ static TEE_Result dump_ftrace(struct user_ta_ctx *utc, void *buf, size_t *blen)
 
 static void user_ta_dump_ftrace(struct tee_ta_ctx *ctx)
 {
-	uint32_t prot = TEE_MATTR_URW | TEE_MATTR_EPHEMERAL;
+	uint32_t prot = TEE_MATTR_URW;
 	struct user_ta_ctx *utc = to_user_ta_ctx(ctx);
 	struct thread_param params[3] = { };
 	TEE_Result res = TEE_SUCCESS;
@@ -558,14 +506,16 @@ static void user_ta_dump_ftrace(struct tee_ta_ctx *ctx)
 	uint8_t *ubuf = NULL;
 	void *buf = NULL;
 	size_t pl_sz = 0;
-	size_t blen = 0;
+	size_t blen = 0, ld_addr_len = 0;
 	vaddr_t va = 0;
 
 	res = dump_ftrace(utc, NULL, &blen);
 	if (res != TEE_ERROR_SHORT_BUFFER)
 		return;
 
-	pl_sz = ROUNDUP(SMALL_PAGE_SIZE, blen + sizeof(TEE_UUID));
+#define LOAD_ADDR_DUMP_SIZE	64
+	pl_sz = ROUNDUP(blen + sizeof(TEE_UUID) + LOAD_ADDR_DUMP_SIZE,
+			SMALL_PAGE_SIZE);
 
 	mobj = thread_rpc_alloc_payload(pl_sz);
 	if (!mobj) {
@@ -577,13 +527,19 @@ static void user_ta_dump_ftrace(struct tee_ta_ctx *ctx)
 	if (!buf)
 		goto out_free_pl;
 
-	res = vm_map(utc, &va, mobj->size, prot, mobj, 0);
+	res = vm_map(&utc->uctx, &va, mobj->size, prot, VM_FLAG_EPHEMERAL,
+		     mobj, 0);
 	if (res)
 		goto out_free_pl;
 
 	ubuf = (uint8_t *)va + mobj_get_phys_offs(mobj, mobj->phys_granule);
 	memcpy(ubuf, &ctx->uuid, sizeof(TEE_UUID));
 	ubuf += sizeof(TEE_UUID);
+
+	ld_addr_len = snprintk((char *)ubuf, LOAD_ADDR_DUMP_SIZE,
+			       "TEE load address @ %#"PRIxVA"\n",
+			       VCORE_START_VA);
+	ubuf += ld_addr_len;
 
 	res = dump_ftrace(utc, ubuf, &blen);
 	if (res) {
@@ -593,23 +549,24 @@ static void user_ta_dump_ftrace(struct tee_ta_ctx *ctx)
 
 	params[0] = THREAD_PARAM_VALUE(INOUT, 0, 0, 0);
 	params[1] = THREAD_PARAM_MEMREF(IN, mobj, 0, sizeof(TEE_UUID));
-	params[2] = THREAD_PARAM_MEMREF(IN, mobj, sizeof(TEE_UUID), blen);
+	params[2] = THREAD_PARAM_MEMREF(IN, mobj, sizeof(TEE_UUID),
+					blen + ld_addr_len);
 
 	res = thread_rpc_cmd(OPTEE_RPC_CMD_FTRACE, 3, params);
 	if (res)
 		EMSG("Ftrace thread_rpc_cmd res: %#"PRIx32, res);
 
 out_unmap_pl:
-	res = vm_unmap(utc, va, mobj->size);
+	res = vm_unmap(&utc->uctx, va, mobj->size);
 	assert(!res);
 out_free_pl:
 	thread_rpc_free_payload(mobj);
 }
-#endif /*CFG_TA_FTRACE_SUPPORT*/
+#endif /*CFG_FTRACE_SUPPORT*/
 
 static void free_utc(struct user_ta_ctx *utc)
 {
-	tee_pager_rem_uta_areas(utc);
+	tee_pager_rem_um_areas(&utc->uctx);
 
 	/*
 	 * Close sessions opened by this TA
@@ -621,8 +578,7 @@ static void free_utc(struct user_ta_ctx *utc)
 				     &utc->open_sessions, KERN_IDENTITY);
 	}
 
-	vm_info_final(utc);
-	free_segs(&utc->segs);
+	vm_info_final(&utc->uctx);
 
 	/* Free cryp states created by this TA */
 	tee_svc_cryp_free_states(utc);
@@ -640,7 +596,7 @@ static void user_ta_ctx_destroy(struct tee_ta_ctx *ctx)
 
 static uint32_t user_ta_get_instance_id(struct tee_ta_ctx *ctx)
 {
-	return to_user_ta_ctx(ctx)->vm_info->asid;
+	return to_user_ta_ctx(ctx)->uctx.vm_info.asid;
 }
 
 static const struct tee_ta_ops user_ta_ops __rodata_unpaged = {
@@ -648,11 +604,12 @@ static const struct tee_ta_ops user_ta_ops __rodata_unpaged = {
 	.enter_invoke_cmd = user_ta_enter_invoke_cmd,
 	.enter_close_session = user_ta_enter_close_session,
 	.dump_state = user_ta_dump_state,
-#ifdef CFG_TA_FTRACE_SUPPORT
+#ifdef CFG_FTRACE_SUPPORT
 	.dump_ftrace = user_ta_dump_ftrace,
 #endif
 	.destroy = user_ta_ctx_destroy,
 	.get_instance_id = user_ta_get_instance_id,
+	.handle_svc = user_ta_handle_svc,
 };
 
 /*
@@ -690,239 +647,145 @@ static TEE_Result check_ta_store(void)
 }
 service_init(check_ta_store);
 
+static TEE_Result alloc_and_map_ldelf_fobj(struct user_ta_ctx *utc, size_t sz,
+					   uint32_t prot, vaddr_t *va)
+{
+	size_t num_pgs = ROUNDUP(sz, SMALL_PAGE_SIZE) / SMALL_PAGE_SIZE;
+	struct fobj *fobj = fobj_ta_mem_alloc(num_pgs);
+	struct mobj *mobj = mobj_with_fobj_alloc(fobj, NULL);
+	TEE_Result res = TEE_SUCCESS;
+
+	fobj_put(fobj);
+	if (!mobj)
+		return TEE_ERROR_OUT_OF_MEMORY;
+	res = vm_map(&utc->uctx, va, num_pgs * SMALL_PAGE_SIZE,
+		     prot, VM_FLAG_LDELF, mobj, 0);
+	mobj_put(mobj);
+
+	return res;
+}
+
+/*
+ * This function may leave a few mappings behind on error, but that's taken
+ * care of by tee_ta_init_user_ta_session() since the entire context is
+ * removed then.
+ */
 static TEE_Result load_ldelf(struct user_ta_ctx *utc)
 {
 	TEE_Result res = TEE_SUCCESS;
-	struct fobj *fobj = NULL;
 	vaddr_t stack_addr = 0;
 	vaddr_t code_addr = 0;
 	vaddr_t rw_addr = 0;
-	size_t num_pgs = 0;
 
 	utc->is_32bit = is_arm32;
 
-	num_pgs = ROUNDUP(LDELF_STACK_SIZE, SMALL_PAGE_SIZE) / SMALL_PAGE_SIZE;
-	fobj = fobj_ta_mem_alloc(num_pgs);
-	res = user_ta_map(utc, &stack_addr, fobj,
-			  TEE_MATTR_URW | TEE_MATTR_PRW | TEE_MATTR_LDELF,
-			  NULL, 0, 0);
-	fobj_put(fobj);
+	res = alloc_and_map_ldelf_fobj(utc, LDELF_STACK_SIZE,
+				       TEE_MATTR_URW | TEE_MATTR_PRW,
+				       &stack_addr);
 	if (res)
 		return res;
 	utc->ldelf_stack_ptr = stack_addr + LDELF_STACK_SIZE;
 
-	num_pgs = ROUNDUP(ldelf_code_size, SMALL_PAGE_SIZE) / SMALL_PAGE_SIZE;
-	fobj = fobj_ta_mem_alloc(num_pgs);
-	res = user_ta_map(utc, &code_addr, fobj,
-			  TEE_MATTR_PRW | TEE_MATTR_LDELF, NULL, 0, 0);
-	fobj_put(fobj);
+	res = alloc_and_map_ldelf_fobj(utc, ldelf_code_size, TEE_MATTR_PRW,
+				       &code_addr);
 	if (res)
-		goto err;
+		return res;
 	utc->entry_func = code_addr + ldelf_entry;
 
-	num_pgs = ROUNDUP(ldelf_data_size, SMALL_PAGE_SIZE) / SMALL_PAGE_SIZE;
 	rw_addr = ROUNDUP(code_addr + ldelf_code_size, SMALL_PAGE_SIZE);
-	fobj = fobj_ta_mem_alloc(num_pgs);
-	res = user_ta_map(utc, &rw_addr, fobj,
-			  TEE_MATTR_URW | TEE_MATTR_PRW | TEE_MATTR_LDELF,
-			  NULL, 0, 0);
-	fobj_put(fobj);
+	res = alloc_and_map_ldelf_fobj(utc, ldelf_data_size,
+				       TEE_MATTR_URW | TEE_MATTR_PRW, &rw_addr);
 	if (res)
-		goto err;
+		return res;
 
-	tee_mmu_set_ctx(&utc->ctx);
+	tee_mmu_set_ctx(&utc->uctx.ctx);
 
 	memcpy((void *)code_addr, ldelf_data, ldelf_code_size);
 	memcpy((void *)rw_addr, ldelf_data + ldelf_code_size, ldelf_data_size);
 
-	res = vm_set_prot(utc, code_addr,
+	res = vm_set_prot(&utc->uctx, code_addr,
 			  ROUNDUP(ldelf_code_size, SMALL_PAGE_SIZE),
 			  TEE_MATTR_URX);
 	if (res)
-		goto err;
+		return res;
 
 	DMSG("ldelf load address %#"PRIxVA, code_addr);
 
 	return TEE_SUCCESS;
-
-err:
-	clear_ldelf_mappings(utc);
-	return res;
 }
 
 TEE_Result tee_ta_init_user_ta_session(const TEE_UUID *uuid,
 				       struct tee_ta_session *s)
 {
-	TEE_Result res;
+	TEE_Result res = TEE_SUCCESS;
 	struct user_ta_ctx *utc = NULL;
 
-	/* Register context */
 	utc = calloc(1, sizeof(struct user_ta_ctx));
 	if (!utc)
 		return TEE_ERROR_OUT_OF_MEMORY;
 
-	utc->ctx.initializing = true;
+	utc->uctx.ctx.initializing = true;
 	utc->is_initializing = true;
 	TAILQ_INIT(&utc->open_sessions);
 	TAILQ_INIT(&utc->cryp_states);
 	TAILQ_INIT(&utc->objects);
 	TAILQ_INIT(&utc->storage_enums);
+	condvar_init(&utc->uctx.ctx.busy_cv);
+	utc->uctx.ctx.ref_count = 1;
 
 	/*
 	 * Set context TA operation structure. It is required by generic
 	 * implementation to identify userland TA versus pseudo TA contexts.
 	 */
-	set_ta_ctx_ops(&utc->ctx);
+	set_ta_ctx_ops(&utc->uctx.ctx);
 
-	utc->ctx.uuid = *uuid;
-	res = vm_info_init(utc);
+	utc->uctx.ctx.uuid = *uuid;
+	res = vm_info_init(&utc->uctx);
 	if (res)
-		goto err;
+		goto out;
 
-	s->ctx = &utc->ctx;
-	tee_ta_push_current_session(s);
-	res = load_ldelf(utc);
-	tee_ta_pop_current_session();
-	if (res)
-		goto err;
-
-	utc->ctx.ref_count = 1;
-	condvar_init(&utc->ctx.busy_cv);
-	TAILQ_INSERT_TAIL(&tee_ctxes, &utc->ctx, link);
-
-	tee_mmu_set_ctx(NULL);
-	return TEE_SUCCESS;
-
-err:
-	s->ctx = NULL;
-	tee_mmu_set_ctx(NULL);
-	pgt_flush_ctx(&utc->ctx);
-	free_utc(utc);
-	return res;
-}
-
-TEE_Result user_ta_map(struct user_ta_ctx *utc, vaddr_t *va, struct fobj *f,
-		       uint32_t prot, struct file *file, size_t pad_begin,
-		       size_t pad_end)
-{
-	TEE_Result res = TEE_ERROR_GENERIC;
-	struct load_seg *seg = calloc(1, sizeof(*seg));
-
-	if (!seg)
-		return TEE_ERROR_OUT_OF_MEMORY;
-
-	seg->flags = prot;
-	seg->mobj = mobj_with_fobj_alloc(f);
-	if (!seg->mobj) {
-		res = TEE_ERROR_OUT_OF_MEMORY;
-		goto err;
-	}
-	seg->size = f->num_pages * SMALL_PAGE_SIZE;
-
-	res = vm_map_pad(utc, va, seg->size, prot, seg->mobj, 0, pad_begin,
-			 pad_end);
-	if (res)
-		goto err;
-
-	seg->va = *va;
-	seg->file = file_get(file);
-	SLIST_INSERT_HEAD(&utc->segs, seg, link);
-
-	return TEE_SUCCESS;
-
-err:
-	mobj_free(seg->mobj);
-	free(seg);
-
-	return res;
-}
-
-static struct load_seg *find_exact_seg(struct load_seg_head *segs, vaddr_t va,
-				       size_t len)
-{
-	struct load_seg *seg = NULL;
-
-	SLIST_FOREACH(seg, segs, link)
-		if (seg->va == va && seg->size == len)
-			return seg;
-
-	return NULL;
-}
-
-TEE_Result user_ta_unmap(struct user_ta_ctx *utc, vaddr_t va, size_t len)
-{
-	TEE_Result res = TEE_ERROR_GENERIC;
-	struct load_seg *seg = find_exact_seg(&utc->segs, va, len);
-
-	if (!seg)
-		return TEE_ERROR_ITEM_NOT_FOUND;
-
-	res = vm_unmap(utc, va, len);
-	if (res)
-		return res;
-
-	SLIST_REMOVE(&utc->segs, seg, load_seg, link);
-	free_seg(seg);
-
-	return TEE_SUCCESS;
-}
-
-TEE_Result user_ta_set_prot(struct user_ta_ctx *utc, vaddr_t va, size_t len,
-			    uint32_t prot)
-{
-	TEE_Result res = TEE_ERROR_GENERIC;
-	struct load_seg *seg = find_exact_seg(&utc->segs, va, len);
-
-	if (!seg)
-		return TEE_ERROR_ITEM_NOT_FOUND;
+	mutex_lock(&tee_ta_mutex);
+	s->ctx = &utc->uctx.ctx;
+	/*
+	 * Another thread trying to load this same TA may need to wait
+	 * until this context is fully initialized. This is needed to
+	 * handle single instance TAs.
+	 */
+	TAILQ_INSERT_TAIL(&tee_ctxes, &utc->uctx.ctx, link);
+	mutex_unlock(&tee_ta_mutex);
 
 	/*
-	 * If the segment is a mapping of a part of a file (seg->file !=
-	 * NULL) it cannot be made writeable as all mapped files are mapped
-	 * read-only.
+	 * We must not hold tee_ta_mutex while allocating page tables as
+	 * that may otherwise lead to a deadlock.
 	 */
-	if (seg->file && (prot & (TEE_MATTR_UW | TEE_MATTR_PW)))
-		return TEE_ERROR_ACCESS_DENIED;
+	tee_ta_push_current_session(s);
 
-	res = vm_set_prot(utc, va, len, prot);
-	if (res)
-		return res;
+	res = load_ldelf(utc);
+	if (!res)
+		res = init_with_ldelf(s, utc);
 
-	seg->flags &= ~TEE_MATTR_PROT_MASK;
-	seg->flags |= prot & TEE_MATTR_PROT_MASK;
+	tee_ta_pop_current_session();
 
-	return TEE_SUCCESS;
-}
+	mutex_lock(&tee_ta_mutex);
 
-TEE_Result user_ta_remap(struct user_ta_ctx *utc, vaddr_t *new_va,
-			 vaddr_t old_va, size_t len, size_t pad_begin,
-			 size_t pad_end)
-{
-	TEE_Result r2 = TEE_SUCCESS;
-	TEE_Result res = TEE_ERROR_GENERIC;
-	struct load_seg *seg = find_exact_seg(&utc->segs, old_va, len);
-	vaddr_t va = *new_va;
+	if (!res) {
+		utc->is_initializing = false;
+	} else {
+		s->ctx = NULL;
+		TAILQ_REMOVE(&tee_ctxes, &utc->uctx.ctx, link);
+	}
 
-	if (!seg)
-		return TEE_ERROR_ITEM_NOT_FOUND;
+	/* The state has changed for the context, notify eventual waiters. */
+	condvar_broadcast(&tee_ta_init_cv);
 
-	res = vm_unmap(utc, seg->va, seg->size);
-	if (res)
-		return res;
+	mutex_unlock(&tee_ta_mutex);
 
-	res = vm_map_pad(utc, &va, seg->size, seg->flags, seg->mobj, 0,
-			 pad_begin, pad_end);
-	if (res)
-		goto err;
+out:
+	if (res) {
+		condvar_destroy(&utc->uctx.ctx.busy_cv);
+		pgt_flush_ctx(&utc->uctx.ctx);
+		free_utc(utc);
+	}
 
-	seg->va = va;
-	*new_va = va;
-	return TEE_SUCCESS;
-err:
-	va = seg->va;
-	r2 = vm_map_pad(utc, &va, seg->size, seg->flags, seg->mobj, 0,
-			0, 0);
-	if (r2)
-		panic("Cannot restore mapping");
 	return res;
 }

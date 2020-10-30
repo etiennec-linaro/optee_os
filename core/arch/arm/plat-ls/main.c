@@ -38,41 +38,15 @@
 #include <drivers/ns16550.h>
 #endif
 #include <io.h>
-#include <kernel/generic_boot.h>
+#include <kernel/boot.h>
 #include <kernel/misc.h>
 #include <kernel/panic.h>
-#include <kernel/pm_stubs.h>
 #include <kernel/thread.h>
 #include <kernel/tz_ssvce_def.h>
 #include <mm/core_memprot.h>
 #include <sm/optee_smc.h>
-#include <tee/entry_fast.h>
-#include <tee/entry_std.h>
 #include <kernel/tee_common_otp.h>
 #include <mm/core_mmu.h>
-
-static void main_fiq(void);
-
-static const struct thread_handlers handlers = {
-	.std_smc = tee_entry_std,
-	.fast_smc = tee_entry_fast,
-	.nintr = main_fiq,
-#if defined(CFG_WITH_ARM_TRUSTED_FW)
-	.cpu_on = cpu_on_handler,
-	.cpu_off = pm_do_nothing,
-	.cpu_suspend = pm_do_nothing,
-	.cpu_resume = pm_do_nothing,
-	.system_off = pm_do_nothing,
-	.system_reset = pm_do_nothing,
-#else
-	.cpu_on = pm_panic,
-	.cpu_off = pm_panic,
-	.cpu_suspend = pm_panic,
-	.cpu_resume = pm_panic,
-	.system_off = pm_panic,
-	.system_reset = pm_panic,
-#endif
-};
 
 static struct gic_data gic_data;
 #ifdef CFG_PL011
@@ -85,55 +59,43 @@ register_phys_mem_pgdir(MEM_AREA_IO_NSEC, CONSOLE_UART_BASE,
 			CORE_MMU_PGDIR_SIZE);
 register_phys_mem_pgdir(MEM_AREA_IO_SEC, GIC_BASE, CORE_MMU_PGDIR_SIZE);
 
-const struct thread_handlers *generic_boot_get_handlers(void)
-{
-	return &handlers;
-}
-
-static void main_fiq(void)
-{
-	panic();
-}
-
 #ifdef CFG_ARM32_core
-void plat_cpu_reset_late(void)
+void plat_primary_init_early(void)
 {
 	vaddr_t addr;
 
-	if (!get_core_pos()) {
 #if defined(CFG_BOOT_SECONDARY_REQUEST)
-		/* set secondary entry address */
-		io_write32(DCFG_BASE + DCFG_SCRATCHRW1,
-			   __compiler_bswap32(TEE_LOAD_ADDR));
+	/* set secondary entry address */
+	io_write32(DCFG_BASE + DCFG_SCRATCHRW1,
+		   __compiler_bswap32(TEE_LOAD_ADDR));
 
-		/* release secondary cores */
-		io_write32(DCFG_BASE + DCFG_CCSR_BRR /* cpu1 */,
-			   __compiler_bswap32(0x1 << 1));
-		dsb();
-		sev();
+	/* release secondary cores */
+	io_write32(DCFG_BASE + DCFG_CCSR_BRR /* cpu1 */,
+		   __compiler_bswap32(0x1 << 1));
+	dsb();
+	sev();
 #endif
 
-		/* configure CSU */
+	/* configure CSU */
 
-		/* first grant all peripherals */
-		for (addr = CSU_BASE + CSU_CSL_START;
-			 addr != CSU_BASE + CSU_CSL_END;
-			 addr += 4)
-			io_write32(addr, __compiler_bswap32(CSU_ACCESS_ALL));
+	/* first grant all peripherals */
+	for (addr = CSU_BASE + CSU_CSL_START;
+		 addr != CSU_BASE + CSU_CSL_END;
+		 addr += 4)
+		io_write32(addr, __compiler_bswap32(CSU_ACCESS_ALL));
 
-		/* restrict key preipherals from NS */
-		io_write32(CSU_BASE + CSU_CSL30,
-			   __compiler_bswap32(CSU_ACCESS_SEC_ONLY));
-		io_write32(CSU_BASE + CSU_CSL37,
-			   __compiler_bswap32(CSU_ACCESS_SEC_ONLY));
+	/* restrict key preipherals from NS */
+	io_write32(CSU_BASE + CSU_CSL30,
+		   __compiler_bswap32(CSU_ACCESS_SEC_ONLY));
+	io_write32(CSU_BASE + CSU_CSL37,
+		   __compiler_bswap32(CSU_ACCESS_SEC_ONLY));
 
-		/* lock the settings */
-		for (addr = CSU_BASE + CSU_CSL_START;
-		     addr != CSU_BASE + CSU_CSL_END;
-		     addr += 4)
-			io_setbits32(addr,
-				     __compiler_bswap32(CSU_SETTING_LOCK));
-	}
+	/* lock the settings */
+	for (addr = CSU_BASE + CSU_CSL_START;
+	     addr != CSU_BASE + CSU_CSL_END;
+	     addr += 4)
+		io_setbits32(addr,
+			     __compiler_bswap32(CSU_SETTING_LOCK));
 }
 #endif
 
@@ -143,7 +105,7 @@ void console_init(void)
 	pl011_init(&console_data, CONSOLE_UART_BASE, CONSOLE_UART_CLK_IN_HZ,
 		   CONSOLE_BAUDRATE);
 #else
-	ns16550_init(&console_data, CONSOLE_UART_BASE);
+	ns16550_init(&console_data, CONSOLE_UART_BASE, IO_WIDTH_U8, 0);
 #endif
 	register_serial_console(&console_data.chip);
 }

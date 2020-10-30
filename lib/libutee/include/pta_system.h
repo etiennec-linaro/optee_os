@@ -160,4 +160,33 @@
  */
 #define PTA_SYSTEM_REMAP		9
 
+/*
+ * Load a shared library
+ *
+ * [in]     memref[0]: the UUID of the shared library (@filename)
+ * [in]     value[1].a: @flags, must be (RTLD_NOW | RTLD_GLOBAL | RTLD_NODELETE)
+ *
+ * Used by: (libdl) dlopen(const char *filename, int flags)
+ */
+#define PTA_SYSTEM_DLOPEN               10
+
+/*
+ * Resolve a symbol in a previously loaded shared library or in the whole TA
+ *
+ * [in]     memref[0]: the UUID of the shared library, or the nil UUID to
+ *                     search the whole TA
+ * [in]     memref[1]: symbol name (@symbol)
+ * [out]    value[2]: address of the symbol or NULL
+ *
+ * Used by: (libdl) dlsym(void *handle, const char *symbol)
+ */
+#define PTA_SYSTEM_DLSYM                11
+
+/*
+ * Retrieves a copy of the TPM Event log held in secure memory.
+ *
+ * [out]    memref[0]: Pointer to the buffer where to store the event log.
+ */
+#define PTA_SYSTEM_GET_TPM_EVENT_LOG	12
+
 #endif /* __PTA_SYSTEM_H */

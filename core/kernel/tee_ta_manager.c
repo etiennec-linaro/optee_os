@@ -3,42 +3,46 @@
  * Copyright (c) 2014, STMicroelectronics International N.V.
  */
 
-#include <types_ext.h>
-#include <stdbool.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 #include <arm.h>
 #include <assert.h>
 #include <kernel/mutex.h>
 #include <kernel/panic.h>
 #include <kernel/pseudo_ta.h>
+#include <kernel/secure_partition.h>
 #include <kernel/tee_common.h>
 #include <kernel/tee_misc.h>
 #include <kernel/tee_ta_manager.h>
 #include <kernel/tee_time.h>
 #include <kernel/thread.h>
+#include <kernel/user_mode_ctx.h>
 #include <kernel/user_ta.h>
-#include <mm/core_mmu.h>
 #include <mm/core_memprot.h>
+#include <mm/core_mmu.h>
 #include <mm/mobj.h>
 #include <mm/tee_mmu.h>
-#include <tee/entry_std.h>
-#include <tee/tee_svc_cryp.h>
-#include <tee/tee_obj.h>
-#include <tee/tee_svc_storage.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <tee_api_types.h>
+#include <tee/entry_std.h>
+#include <tee/tee_obj.h>
+#include <tee/tee_svc_cryp.h>
+#include <tee/tee_svc_storage.h>
 #include <trace.h>
+#include <types_ext.h>
+#include <user_ta_header.h>
 #include <utee_types.h>
 #include <util.h>
 
 /* This mutex protects the critical section in tee_ta_init_session */
 struct mutex tee_ta_mutex = MUTEX_INITIALIZER;
+/* This condvar is used when waiting for a TA context to become initialized */
+struct condvar tee_ta_init_cv = CONDVAR_INITIALIZER;
 struct tee_ta_ctx_head tee_ctxes = TAILQ_HEAD_INITIALIZER(tee_ctxes);
 
 #ifndef CFG_CONCURRENT_SINGLE_INSTANCE_TA
 static struct condvar tee_ta_cv = CONDVAR_INITIALIZER;
-static int tee_ta_single_instance_thread = THREAD_ID_INVALID;
+static short int tee_ta_single_instance_thread = THREAD_ID_INVALID;
 static size_t tee_ta_single_instance_count;
 #endif
 
@@ -99,15 +103,6 @@ static bool tee_ta_try_set_busy(struct tee_ta_ctx *ctx)
 		return true;
 
 	mutex_lock(&tee_ta_mutex);
-
-	if (ctx->initializing) {
-		/*
-		 * Context is still initializing and flags cannot be relied
-		 * on for user TAs. Wait here until it's initialized.
-		 */
-		while (ctx->busy)
-			condvar_wait(&ctx->busy_cv, &tee_ta_mutex);
-	}
 
 	if (ctx->flags & TA_FLAG_SINGLE_INSTANCE)
 		lock_single_instance();
@@ -276,9 +271,10 @@ static void tee_ta_unlink_session(struct tee_ta_session *s,
 static void destroy_session(struct tee_ta_session *s,
 			    struct tee_ta_session_head *open_sessions)
 {
-#if defined(CFG_TA_FTRACE_SUPPORT)
+#if defined(CFG_FTRACE_SUPPORT)
 	if (s->ctx && s->ctx->ops->dump_ftrace) {
 		tee_ta_push_current_session(s);
+		s->fbuf = NULL;
 		s->ctx->ops->dump_ftrace(s->ctx);
 		tee_ta_pop_current_session();
 	}
@@ -493,7 +489,8 @@ TEE_Result tee_ta_close_session(struct tee_ta_session *csess,
 	struct tee_ta_ctx *ctx;
 	bool keep_alive;
 
-	DMSG("csess 0x%" PRIxVA " id %u", (vaddr_t)csess, csess->id);
+	DMSG("csess 0x%" PRIxVA " id %u",
+	     (vaddr_t)csess, csess ? csess->id : UINT_MAX);
 
 	if (!csess)
 		return TEE_ERROR_ITEM_NOT_FOUND;
@@ -548,9 +545,28 @@ TEE_Result tee_ta_close_session(struct tee_ta_session *csess,
 	return TEE_SUCCESS;
 }
 
-static TEE_Result tee_ta_init_session_with_context(struct tee_ta_ctx *ctx,
-			struct tee_ta_session *s)
+static TEE_Result tee_ta_init_session_with_context(struct tee_ta_session *s,
+						   const TEE_UUID *uuid)
 {
+	struct tee_ta_ctx *ctx = NULL;
+
+	while (true) {
+		ctx = tee_ta_context_find(uuid);
+		if (!ctx)
+			return TEE_ERROR_ITEM_NOT_FOUND;
+
+		if (!is_user_ta_ctx(ctx) ||
+		    !to_user_ta_ctx(ctx)->is_initializing)
+			break;
+		/*
+		 * Context is still initializing, wait here until it's
+		 * fully initialized. Note that we're searching for the
+		 * context again since it may have been removed while we
+		 * where sleeping.
+		 */
+		condvar_wait(&tee_ta_init_cv, &tee_ta_mutex);
+	}
+
 	/*
 	 * If TA isn't single instance it should be loaded as new
 	 * instance instead of doing anything with this instance.
@@ -606,7 +622,6 @@ static TEE_Result tee_ta_init_session(TEE_ErrorOrigin *err,
 				struct tee_ta_session **sess)
 {
 	TEE_Result res;
-	struct tee_ta_ctx *ctx;
 	struct tee_ta_session *s = calloc(1, sizeof(struct tee_ta_session));
 
 	*err = TEE_ORIGIN_TEE;
@@ -619,29 +634,25 @@ static TEE_Result tee_ta_init_session(TEE_ErrorOrigin *err,
 	s->lock_thread = THREAD_ID_INVALID;
 	s->ref_count = 1;
 
-
-	/*
-	 * We take the global TA mutex here and hold it while doing
-	 * RPC to load the TA. This big critical section should be broken
-	 * down into smaller pieces.
-	 */
-
-
 	mutex_lock(&tee_ta_mutex);
 	s->id = new_session_id(open_sessions);
 	if (!s->id) {
 		res = TEE_ERROR_OVERFLOW;
-		goto out;
+		goto err_mutex_unlock;
 	}
+
 	TAILQ_INSERT_TAIL(open_sessions, s, link);
 
 	/* Look for already loaded TA */
-	ctx = tee_ta_context_find(uuid);
-	if (ctx) {
-		res = tee_ta_init_session_with_context(ctx, s);
-		if (res == TEE_SUCCESS || res != TEE_ERROR_ITEM_NOT_FOUND)
-			goto out;
-	}
+	res = tee_ta_init_session_with_context(s, uuid);
+	mutex_unlock(&tee_ta_mutex);
+	if (res == TEE_SUCCESS || res != TEE_ERROR_ITEM_NOT_FOUND)
+		goto out;
+
+	/* Look for secure partition */
+	res = sec_part_init_session(uuid, s);
+	if (res == TEE_SUCCESS || res != TEE_ERROR_ITEM_NOT_FOUND)
+		goto out;
 
 	/* Look for pseudo TA */
 	res = tee_ta_init_pseudo_ta_session(uuid, s);
@@ -652,13 +663,16 @@ static TEE_Result tee_ta_init_session(TEE_ErrorOrigin *err,
 	res = tee_ta_init_user_ta_session(uuid, s);
 
 out:
-	if (res == TEE_SUCCESS) {
+	if (!res) {
 		*sess = s;
-	} else {
-		TAILQ_REMOVE(open_sessions, s, link);
-		free(s);
+		return TEE_SUCCESS;
 	}
+
+	mutex_lock(&tee_ta_mutex);
+	TAILQ_REMOVE(open_sessions, s, link);
+err_mutex_unlock:
 	mutex_unlock(&tee_ta_mutex);
+	free(s);
 	return res;
 }
 
@@ -828,12 +842,9 @@ static void update_current_ctx(struct thread_specific_data *tsd)
 	if (tsd->ctx != ctx)
 		tee_mmu_set_ctx(ctx);
 	/*
-	 * If ctx->mmu == NULL we must not have user mapping active,
-	 * if ctx->mmu != NULL we must have user mapping active.
+	 * If current context is of user mode, then it has to be active too.
 	 */
-	if (((is_user_ta_ctx(ctx) ?
-			to_user_ta_ctx(ctx)->vm_info : NULL) == NULL) ==
-					core_mmu_user_mapping_is_active())
+	if (is_user_mode_ctx(ctx) != core_mmu_user_mapping_is_active())
 		panic("unexpected active mapping");
 }
 
@@ -879,9 +890,11 @@ struct tee_ta_session *tee_ta_get_calling_session(void)
 #if defined(CFG_TA_GPROF_SUPPORT)
 void tee_ta_gprof_sample_pc(vaddr_t pc)
 {
-	struct tee_ta_session *s;
-	struct sample_buf *sbuf;
-	size_t idx;
+	struct tee_ta_session *s = NULL;
+	struct user_ta_ctx *utc = NULL;
+	struct sample_buf *sbuf = NULL;
+	TEE_Result res = 0;
+	size_t idx = 0;
 
 	if (tee_ta_get_current_session(&s) != TEE_SUCCESS)
 		return;
@@ -890,28 +903,30 @@ void tee_ta_gprof_sample_pc(vaddr_t pc)
 		return; /* PC sampling is not enabled */
 
 	idx = (((uint64_t)pc - sbuf->offset)/2 * sbuf->scale)/65536;
-	if (idx < sbuf->nsamples)
+	if (idx < sbuf->nsamples) {
+		utc = to_user_ta_ctx(s->ctx);
+		res = tee_mmu_check_access_rights(&utc->uctx,
+						  TEE_MEMORY_ACCESS_READ |
+						  TEE_MEMORY_ACCESS_WRITE |
+						  TEE_MEMORY_ACCESS_ANY_OWNER,
+						  (uaddr_t)&sbuf->samples[idx],
+						  sizeof(*sbuf->samples));
+		if (res != TEE_SUCCESS)
+			return;
 		sbuf->samples[idx]++;
+	}
 	sbuf->count++;
 }
 
-/*
- * Update user-mode CPU time for the current session
- * @suspend: true if session is being suspended (leaving user mode), false if
- * it is resumed (entering user mode)
- */
-static void tee_ta_update_session_utime(bool suspend)
+static void gprof_update_session_utime(bool suspend, struct tee_ta_session *s,
+				       uint64_t now)
 {
-	struct tee_ta_session *s;
-	struct sample_buf *sbuf;
-	uint64_t now;
+	struct sample_buf *sbuf = NULL;
 
-	if (tee_ta_get_current_session(&s) != TEE_SUCCESS)
-		return;
 	sbuf = s->sbuf;
 	if (!sbuf)
 		return;
-	now = read_cntpct();
+
 	if (suspend) {
 		assert(sbuf->usr_entered);
 		sbuf->usr += now - sbuf->usr_entered;
@@ -924,6 +939,24 @@ static void tee_ta_update_session_utime(bool suspend)
 	}
 }
 
+/*
+ * Update user-mode CPU time for the current session
+ * @suspend: true if session is being suspended (leaving user mode), false if
+ * it is resumed (entering user mode)
+ */
+static void tee_ta_update_session_utime(bool suspend)
+{
+	struct tee_ta_session *s = NULL;
+	uint64_t now = 0;
+
+	if (tee_ta_get_current_session(&s) != TEE_SUCCESS)
+		return;
+
+	now = read_cntpct();
+
+	gprof_update_session_utime(suspend, s, now);
+}
+
 void tee_ta_update_session_utime_suspend(void)
 {
 	tee_ta_update_session_utime(true);
@@ -932,5 +965,41 @@ void tee_ta_update_session_utime_suspend(void)
 void tee_ta_update_session_utime_resume(void)
 {
 	tee_ta_update_session_utime(false);
+}
+#endif
+
+#if defined(CFG_FTRACE_SUPPORT)
+static void ftrace_update_times(bool suspend)
+{
+	struct tee_ta_session *s = NULL;
+	struct ftrace_buf *fbuf = NULL;
+	uint64_t now = 0;
+	uint32_t i = 0;
+
+	if (tee_ta_get_current_session(&s) != TEE_SUCCESS)
+		return;
+
+	now = read_cntpct();
+
+	fbuf = s->fbuf;
+	if (!fbuf)
+		return;
+
+	if (suspend) {
+		fbuf->suspend_time = now;
+	} else {
+		for (i = 0; i <= fbuf->ret_idx; i++)
+			fbuf->begin_time[i] += now - fbuf->suspend_time;
+	}
+}
+
+void tee_ta_ftrace_update_times_suspend(void)
+{
+	ftrace_update_times(true);
+}
+
+void tee_ta_ftrace_update_times_resume(void)
+{
+	ftrace_update_times(false);
 }
 #endif

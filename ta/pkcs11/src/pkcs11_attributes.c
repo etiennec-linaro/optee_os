@@ -219,11 +219,8 @@ static enum pkcs11_rc set_mandatory_attributes(struct obj_attrs **out,
 		uint32_t size = 0;
 		void *value = NULL;
 
-		/* Check attribute exists eventually empty */
-		if (get_attribute_ptr(temp, bp[n], &value, &size)) {
-			DMSG("Missing attribute %s", id2str_attr(bp[n]));
+		if (get_attribute_ptr(temp, bp[n], &value, &size))
 			return PKCS11_CKR_TEMPLATE_INCOMPLETE;
-		}
 
 		rc = add_attribute(out, bp[n], value, size);
 		if (rc)
@@ -1247,6 +1244,8 @@ static bool parent_key_complies_allowed_processings(uint32_t proc_id,
 	default:
 		TEE_Panic(0);
 	}
+
+	// This is hacky!!!! A null list means NO ALLOWED MECHANISMS!!!
 	if (!attr)
 		return true;
 

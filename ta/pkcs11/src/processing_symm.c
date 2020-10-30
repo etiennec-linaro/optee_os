@@ -587,6 +587,7 @@ enum pkcs11_rc step_symm_operation(struct pkcs11_session *session,
 			break;
 		}
 		break;
+
 	default:
 		TEE_Panic(proc->mecha_type);
 		break;

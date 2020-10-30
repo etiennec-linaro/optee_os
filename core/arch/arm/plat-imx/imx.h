@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: BSD-2-Clause */
 /*
- * Copyright 2017 NXP
+ * Copyright 2017-2019 NXP
  *
  * Peng Fan <peng.fan@nxp.com>
  */
@@ -19,24 +19,28 @@
 #define SOC_MX6SLL	0x67
 #define SOC_MX6D	0x6A
 #define SOC_MX7D	0x72
+#define SOC_MX7ULP	0xE1
+#define SOC_MX8QX	0xE2
+#define SOC_MX8QM	0xE3
 
+#ifndef __ASSEMBLER__
 uint32_t imx_get_src_gpr(int cpu);
 void imx_set_src_gpr(int cpu, uint32_t val);
-
+bool soc_is_imx6(void);
+bool soc_is_imx6sx(void);
+bool soc_is_imx6sl(void);
+bool soc_is_imx6sll(void);
 bool soc_is_imx6ul(void);
 bool soc_is_imx6ull(void);
 bool soc_is_imx6sdl(void);
 bool soc_is_imx6dq(void);
 bool soc_is_imx6dqp(void);
 bool soc_is_imx7ds(void);
-uint32_t imx_soc_type(void);
+bool soc_is_imx7ulp(void);
+uint16_t soc_revision(void);
 void imx_gpcv2_set_core1_pdn_by_software(void);
 void imx_gpcv2_set_core1_pup_by_software(void);
 void imx_gpcv2_set_core_pgc(bool enable, uint32_t offset);
 
-#ifdef CFG_TZC380
-void imx_configure_tzasc(void);
-#else
-static inline void imx_configure_tzasc(void) {}
-#endif /* CFG_TZC380 */
+#endif /* __ASSEMBLER__ */
 #endif

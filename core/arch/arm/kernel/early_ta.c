@@ -5,7 +5,6 @@
 #include <crypto/crypto.h>
 #include <initcall.h>
 #include <kernel/early_ta.h>
-#include <kernel/linker.h>
 #include <kernel/user_ta.h>
 #include <kernel/user_ta_store.h>
 #include <stdio.h>
@@ -20,12 +19,6 @@ struct user_ta_store_handle {
 	size_t offs;
 	z_stream strm;
 };
-
-#define for_each_early_ta(_ta) \
-	for (_ta = &__rodata_early_ta_start; _ta < &__rodata_early_ta_end; \
-	     _ta = (const struct early_ta *)				   \
-		   ROUNDUP((vaddr_t)_ta + sizeof(*_ta) + _ta->size,	   \
-			   __alignof__(struct early_ta)))
 
 static const struct early_ta *find_early_ta(const TEE_UUID *uuid)
 {
@@ -123,16 +116,15 @@ static TEE_Result early_ta_get_tag(const struct user_ta_store_handle *h,
 	res = crypto_hash_alloc_ctx(&ctx, TEE_ALG_SHA256);
 	if (res)
 		return res;
-	res = crypto_hash_init(ctx, TEE_ALG_SHA256);
+	res = crypto_hash_init(ctx);
 	if (res)
 		goto out;
-	res = crypto_hash_update(ctx, TEE_ALG_SHA256, h->early_ta->ta + h->offs,
-				 h->early_ta->size);
+	res = crypto_hash_update(ctx, h->early_ta->ta, h->early_ta->size);
 	if (res)
 		goto out;
-	res = crypto_hash_final(ctx, TEE_ALG_SHA256, tag, h->early_ta->size);
+	res = crypto_hash_final(ctx, tag, *tag_len);
 out:
-	crypto_hash_free_ctx(ctx, TEE_ALG_SHA256);
+	crypto_hash_free_ctx(ctx);
 	return res;
 }
 
@@ -140,12 +132,14 @@ static TEE_Result read_uncompressed(struct user_ta_store_handle *h, void *data,
 				    size_t len)
 {
 	uint8_t *src = (uint8_t *)h->early_ta->ta + h->offs;
+	size_t next_offs = 0;
 
-	if (h->offs + len > h->early_ta->size)
+	if (ADD_OVERFLOW(h->offs, len, &next_offs) ||
+	    next_offs > h->early_ta->size)
 		return TEE_ERROR_BAD_PARAMETERS;
 	if (data)
 		memcpy(data, src, len);
-	h->offs += len;
+	h->offs = next_offs;
 
 	return TEE_SUCCESS;
 }

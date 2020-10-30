@@ -7,6 +7,7 @@
 #define TA_ELF_H
 
 #include <ldelf.h>
+#include <stdarg.h>
 #include <sys/queue.h>
 #include <tee_api_types.h>
 #include <types_ext.h>
@@ -58,12 +59,29 @@ struct ta_elf {
 	/* DT_HASH hash table for faster resolution of external symbols */
 	void *hashtab;
 
+	/* DT_SONAME */
+	char *soname;
+
 	struct segment_head segs;
 
 	vaddr_t exidx_start;
 	size_t exidx_size;
 
+	/* Thread Local Storage */
+
+	size_t tls_mod_id;
+	/* PT_TLS segment */
+	vaddr_t tls_start;
+	size_t tls_filesz; /* Covers the .tdata section */
+	size_t tls_memsz; /* Covers the .tdata and .tbss sections */
+#ifdef ARM64
+	/* Offset of the copy of the TLS block in the TLS area of the TCB */
+	size_t tls_tcb_offs;
+#endif
+
 	uint32_t handle;
+
+	struct ta_head *head;
 
 	TEE_UUID uuid;
 	TAILQ_ENTRY(ta_elf) link;
@@ -75,9 +93,11 @@ typedef void (*print_func_t)(void *pctx, const char *fmt, va_list ap)
 	__printf(2, 0);
 
 extern struct ta_elf_queue main_elf_queue;
+struct ta_elf *ta_elf_find_elf(const TEE_UUID *uuid);
 
-void ta_elf_load_main(const TEE_UUID *uuid, uint32_t *is_32bit,
-		      uint64_t *entry, uint64_t *sp, uint32_t *ta_flags);
+void ta_elf_load_main(const TEE_UUID *uuid, uint32_t *is_32bit, uint64_t *sp,
+		      uint32_t *ta_flags);
+void ta_elf_finalize_load_main(uint64_t *entry);
 void ta_elf_load_dependency(struct ta_elf *elf, bool is_32bit);
 void ta_elf_relocate(struct ta_elf *elf);
 void ta_elf_finalize_mappings(struct ta_elf *elf);
@@ -96,6 +116,10 @@ static inline void ta_elf_stack_trace_a64(uint64_t fp __unused,
 					  uint64_t pc __unused) { }
 #endif /*CFG_UNWIND*/
 
-TEE_Result ta_elf_resolve_sym(const char *name, vaddr_t *val);
+TEE_Result ta_elf_resolve_sym(const char *name, vaddr_t *val,
+			      struct ta_elf **found_elf, struct ta_elf *elf);
+TEE_Result ta_elf_add_library(const TEE_UUID *uuid);
+TEE_Result ta_elf_set_init_fini_info_compat(bool is_32bit);
+TEE_Result ta_elf_set_elf_phdr_info(bool is_32bit);
 
 #endif /*TA_ELF_H*/

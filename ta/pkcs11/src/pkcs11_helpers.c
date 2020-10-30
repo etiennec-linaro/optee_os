@@ -88,6 +88,7 @@ static const struct attr_size attr_ids[] = {
 	PKCS11_ID_SZ(PKCS11_CKA_WRAP_WITH_TRUSTED, 1),
 	/* Specific PKCS11 TA internal attribute ID */
 	PKCS11_ID_SZ(PKCS11_CKA_UNDEFINED_ID, 0),
+	// Hacked until supporting EC points in DER format (see Sylvano SKS)
 	PKCS11_ID_SZ(PKCS11_CKA_EC_POINT_X, 0),
 	PKCS11_ID_SZ(PKCS11_CKA_EC_POINT_Y, 0),
 };

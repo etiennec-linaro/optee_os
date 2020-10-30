@@ -23,9 +23,16 @@
 	 * (pseudo-TAs only).
 	 */
 #define TA_FLAG_CONCURRENT		(1 << 8)
-#define TA_FLAG_DEVICE_ENUM		(1 << 9) /* device enumeration */
+	/*
+	 * Device enumeration is done in two stages by the normal world, first
+	 * before the tee-supplicant has started and then once more when the
+	 * tee-supplicant is started. The flags below control if the TA should
+	 * be reported in the first or second or case.
+	 */
+#define TA_FLAG_DEVICE_ENUM		(1 << 9)  /* without tee-supplicant */
+#define TA_FLAG_DEVICE_ENUM_SUPP	(1 << 10) /* with tee-supplicant */
 
-#define TA_FLAGS_MASK			GENMASK_32(9, 0)
+#define TA_FLAGS_MASK			GENMASK_32(10, 0)
 
 struct ta_head {
 	TEE_UUID uuid;
@@ -34,7 +41,7 @@ struct ta_head {
 	uint64_t depr_entry;
 };
 
-#if defined(CFG_TA_FTRACE_SUPPORT)
+#if defined(CFG_FTRACE_SUPPORT)
 #define FTRACE_RETFUNC_DEPTH		50
 union compat_ptr {
 	uint64_t ptr64;
@@ -55,10 +62,14 @@ struct ftrace_buf {
 	uint64_t ret_stack[FTRACE_RETFUNC_DEPTH]; /* Return stack */
 	uint32_t ret_idx;	/* Return stack index */
 	uint32_t lr_idx;	/* lr index used for stack unwinding */
+	uint64_t begin_time[FTRACE_RETFUNC_DEPTH]; /* Timestamp */
+	uint64_t suspend_time;	/* Suspend timestamp */
 	uint32_t curr_size;	/* Size of ftrace buffer */
 	uint32_t max_size;	/* Max allowed size of ftrace buffer */
 	uint32_t head_off;	/* Ftrace buffer header offset */
 	uint32_t buf_off;	/* Ftrace buffer offset */
+	bool syscall_trace_enabled; /* Some syscalls are never traced */
+	bool syscall_trace_suspended; /* By foreign interrupt or RPC */
 };
 
 /* Defined by the linker script */
@@ -68,6 +79,34 @@ extern uint8_t __ftrace_buf_end[];
 unsigned long ftrace_return(void);
 void __ftrace_return(void);
 #endif
+
+void __utee_call_elf_init_fn(void);
+void __utee_call_elf_fini_fn(void);
+
+void __utee_tcb_init(void);
+
+/*
+ * Information about the ELF objects loaded by the application
+ */
+
+struct __elf_phdr_info {
+	uint32_t reserved;
+	uint16_t count;
+	uint8_t reserved2;
+	char zero;
+	struct dl_phdr_info *dlpi; /* @count entries */
+};
+
+/* 32-bit variant for a 64-bit ldelf to access a 32-bit TA */
+struct __elf_phdr_info32 {
+	uint32_t reserved;
+	uint16_t count;
+	uint8_t reserved2;
+	char zero;
+	uint32_t dlpi;
+};
+
+extern struct __elf_phdr_info __elf_phdr_info;
 
 #define TA_PROP_STR_SINGLE_INSTANCE	"gpd.ta.singleInstance"
 #define TA_PROP_STR_MULTI_SESSION	"gpd.ta.multiSession"

@@ -5,17 +5,16 @@
 
 #include <arm.h>
 #include <kernel/abort.h>
-#include <kernel/linker.h>
 #include <kernel/misc.h>
 #include <kernel/panic.h>
 #include <kernel/tee_ta_manager.h>
-#include <kernel/unwind.h>
-#include <kernel/user_ta.h>
+#include <kernel/user_mode_ctx.h>
 #include <mm/core_mmu.h>
 #include <mm/mobj.h>
 #include <mm/tee_pager.h>
 #include <tee/tee_svc.h>
 #include <trace.h>
+#include <unw/unwind.h>
 
 #include "thread_private.h"
 
@@ -35,8 +34,6 @@ enum fault_type {
 static void __print_stack_unwind(struct abort_info *ai)
 {
 	struct unwind_state_arm32 state = { };
-	vaddr_t exidx = (vaddr_t)__exidx_start;
-	size_t exidx_sz = (vaddr_t)__exidx_end - (vaddr_t)__exidx_start;
 	uint32_t mode = ai->regs->spsr & CPSR_MODE_MASK;
 	uint32_t sp = 0;
 	uint32_t lr = 0;
@@ -68,8 +65,7 @@ static void __print_stack_unwind(struct abort_info *ai)
 	state.registers[14] = lr;
 	state.registers[15] = ai->pc;
 
-	print_stack_arm32(TRACE_ERROR, &state, exidx, exidx_sz,
-			  thread_stack_start(), thread_stack_size());
+	print_stack_arm32(&state, thread_stack_start(), thread_stack_size());
 }
 #endif /* ARM32 */
 
@@ -82,8 +78,7 @@ static void __print_stack_unwind(struct abort_info *ai)
 		.fp = ai->regs->x29,
 	};
 
-	print_stack_arm64(TRACE_ERROR, &state, thread_stack_start(),
-			  thread_stack_size());
+	print_stack_arm64(&state, thread_stack_start(), thread_stack_size());
 }
 #endif /*ARM64*/
 
@@ -257,8 +252,12 @@ void abort_print_current_ta(void)
 
 	s->ctx->ops->dump_state(s->ctx);
 
-	if (s->ctx->ops->dump_ftrace)
+#if defined(CFG_FTRACE_SUPPORT)
+	if (s->ctx->ops->dump_ftrace) {
+		s->fbuf = NULL;
 		s->ctx->ops->dump_ftrace(s->ctx);
+	}
+#endif
 }
 
 static void save_abort_info_in_tsd(struct abort_info *ai)
@@ -373,7 +372,7 @@ static void handle_user_ta_vfp(void)
 	if (tee_ta_get_current_session(&s) != TEE_SUCCESS)
 		panic();
 
-	thread_user_enable_vfp(&to_user_ta_ctx(s->ctx)->vfp);
+	thread_user_enable_vfp(&to_user_mode_ctx(s->ctx)->vfp);
 }
 #endif /*CFG_WITH_VFP*/
 

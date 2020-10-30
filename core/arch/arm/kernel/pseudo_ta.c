@@ -10,7 +10,6 @@
 #include <kernel/tee_ta_manager.h>
 #include <mm/core_memprot.h>
 #include <mm/mobj.h>
-#include <sm/tee_mon.h>
 #include <stdlib.h>
 #include <string.h>
 #include <trace.h>
@@ -75,17 +74,21 @@ static TEE_Result copy_in_param(struct tee_ta_session *s __maybe_unused,
 			mem = &param->u[n].mem;
 			if (!validate_in_param(s, mem->mobj))
 				return TEE_ERROR_BAD_PARAMETERS;
-			va = mobj_get_va(mem->mobj, mem->offs);
-			if (!va && mem->size) {
-				TEE_Result res;
+			if (mem->size) {
+				TEE_Result res = mobj_inc_map(mem->mobj);
 
-				res = mobj_reg_shm_inc_map(mem->mobj);
 				if (res)
 					return res;
 				did_map[n] = true;
 				va = mobj_get_va(mem->mobj, mem->offs);
 				if (!va)
 					return TEE_ERROR_BAD_PARAMETERS;
+				if (mem->size &&
+				    !mobj_get_va(mem->mobj,
+						 mem->offs + mem->size - 1))
+					return TEE_ERROR_BAD_PARAMETERS;
+			} else {
+				va = NULL;
 			}
 
 			tee_param[n].memref.buffer = va;
@@ -131,7 +134,7 @@ static void unmap_mapped_param(struct tee_ta_param *param,
 		if (did_map[n]) {
 			TEE_Result res __maybe_unused;
 
-			res = mobj_reg_shm_dec_map(param->u[n].mem.mobj);
+			res = mobj_dec_map(param->u[n].mem.mobj);
 			assert(!res);
 		}
 	}
@@ -297,12 +300,15 @@ TEE_Result tee_ta_init_pseudo_ta_session(const TEE_UUID *uuid,
 	ctx = &stc->ctx;
 
 	ctx->ref_count = 1;
-	s->ctx = ctx;
 	ctx->flags = ta->flags;
 	stc->pseudo_ta = ta;
 	ctx->uuid = ta->uuid;
 	ctx->ops = &pseudo_ta_ops;
+
+	mutex_lock(&tee_ta_mutex);
+	s->ctx = ctx;
 	TAILQ_INSERT_TAIL(&tee_ctxes, ctx, link);
+	mutex_unlock(&tee_ta_mutex);
 
 	DMSG("%s : %pUl", stc->pseudo_ta->name, (void *)&ctx->uuid);
 

@@ -92,6 +92,7 @@
 #include <kernel/asan.h>
 #include <kernel/thread.h>
 #include <kernel/spinlock.h>
+#include <kernel/unwind.h>
 
 static void tag_asan_free(void *buf, size_t len)
 {
@@ -108,6 +109,12 @@ static void *memset_unchecked(void *s, int c, size_t n)
 	return asan_memset_unchecked(s, c, n);
 }
 
+static __maybe_unused void *memcpy_unchecked(void *dst, const void *src,
+					     size_t n)
+{
+	return asan_memcpy_unchecked(dst, src, n);
+}
+
 #else /*__KERNEL__*/
 /* Compiling for TA */
 
@@ -122,6 +129,12 @@ static void tag_asan_alloced(void *buf __unused, size_t len __unused)
 static void *memset_unchecked(void *s, int c, size_t n)
 {
 	return memset(s, c, n);
+}
+
+static __maybe_unused void *memcpy_unchecked(void *dst, const void *src,
+					     size_t n)
+{
+	return memcpy(dst, src, n);
 }
 
 #endif /*__KERNEL__*/
@@ -186,7 +199,7 @@ static void print_oom(size_t req_size __maybe_unused, void *ctx __maybe_unused)
 {
 #if defined(__KERNEL__) && defined(CFG_CORE_DUMP_OOM)
 	EMSG("Memory allocation failed: size %zu context %p", req_size, ctx);
-	EPRINT_STACK();
+	print_kernel_stack();
 #endif
 }
 
@@ -230,7 +243,7 @@ static void gen_malloc_get_stats(struct malloc_ctx *ctx,
 {
 	uint32_t exceptions = malloc_lock(ctx);
 
-	memcpy(stats, &ctx->mstats, sizeof(*stats));
+	memcpy_unchecked(stats, &ctx->mstats, sizeof(*stats));
 	stats->allocated = ctx->poolset.totalloc;
 	malloc_unlock(ctx, exceptions);
 }

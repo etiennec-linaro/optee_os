@@ -10,6 +10,9 @@ ta-target := $(strip $(if $(CFG_USER_TA_TARGET_$(sm)), \
 ta-dev-kit-dir$(sm) := $(out-dir)/export-$(ta-target)
 link-out-dir$(sm) := $(out-dir)/$(patsubst %/,%, $(dir $(ta-mk-file)))
 
+# Default if ta-mk-file defines none
+user-ta-version := 0
+
 include $(ta-mk-file)
 ifeq ($(user-ta-uuid),)
 $(error user-ta-uuid missing in $(ta-mk-file))
@@ -31,9 +34,6 @@ endif
 
 libdirs  = $(ta-dev-kit-dir$(sm))/lib
 libnames = utils utee
-ifneq ($(CFG_TA_MBEDTLS_MPI),y)
-libnames += mpa
-endif
 ifeq ($(CFG_TA_MBEDTLS),y)
 libnames += mbedtls
 endif
@@ -44,7 +44,13 @@ include mk/subdir.mk
 
 spec-out-dir := $(link-out-dir$(sm))
 spec-srcs += $(ta-dev-kit-dir$(sm))/src/user_ta_header.c
+ifeq ($(ta-target),ta_arm32)
+spec-srcs += $(ta-dev-kit-dir$(sm))/src/ta_entry_a32.S
+endif
 
-additional-compile-deps := $(ta_dev_kit-files) # TA dev kit should be built before in-tree TAs
+# Install TA headers before in-tree TAs can be compiled
+additional-compile-deps := $(ta_dev_kit-files-include)
 include mk/compile.mk
+# Install TA libraries before in-tree TAs can be linked
+additional-link-deps := $(ta_dev_kit-files-lib)
 include  ta/arch/$(ARCH)/link.mk

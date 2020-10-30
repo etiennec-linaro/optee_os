@@ -6,7 +6,6 @@
 #ifndef PKCS11_TA_H
 #define PKCS11_TA_H
 
-#include <sys/types.h>
 #include <stdbool.h>
 #include <stdint.h>
 

@@ -19,7 +19,7 @@ void tee_obj_add(struct user_ta_ctx *utc, struct tee_obj *o)
 	TAILQ_INSERT_TAIL(&utc->objects, o, link);
 }
 
-TEE_Result tee_obj_get(struct user_ta_ctx *utc, uint32_t obj_id,
+TEE_Result tee_obj_get(struct user_ta_ctx *utc, vaddr_t obj_id,
 		       struct tee_obj **obj)
 {
 	struct tee_obj *o;
@@ -30,7 +30,7 @@ TEE_Result tee_obj_get(struct user_ta_ctx *utc, uint32_t obj_id,
 			return TEE_SUCCESS;
 		}
 	}
-	return TEE_ERROR_BAD_PARAMETERS;
+	return TEE_ERROR_BAD_STATE;
 }
 
 void tee_obj_close(struct user_ta_ctx *utc, struct tee_obj *o)

@@ -37,12 +37,19 @@
 
 #define RPMB_FS_MAGIC                   0x52504D42
 #define FS_VERSION                      2
-#define N_ENTRIES                       8
 
 #define FILE_IS_ACTIVE                  (1u << 0)
 #define FILE_IS_LAST_ENTRY              (1u << 1)
 
 #define TEE_RPMB_FS_FILENAME_LENGTH 224
+
+/**
+ * Utilized when caching is enabled, i.e., when CFG_RPMB_FS_CACHE_ENTRIES > 0.
+ * Cache size + the number of entries that are repeatedly read in and buffered
+ * once the cache is full.
+ */
+#define RPMB_BUF_MAX_ENTRIES (CFG_RPMB_FS_CACHE_ENTRIES + \
+			      CFG_RPMB_FS_RD_ENTRIES)
 
 /**
  * FS parameters: Information often used by internal functions.
@@ -64,6 +71,28 @@ struct rpmb_fat_entry {
 	uint32_t write_counter;
 	uint8_t fek[TEE_FS_KM_FEK_SIZE];
 	char filename[TEE_RPMB_FS_FILENAME_LENGTH];
+};
+
+/**
+ * Structure that describes buffered/cached FAT FS entries in RPMB storage.
+ * This structure is used in functions traversing the FAT FS.
+ */
+struct rpmb_fat_entry_dir {
+	/*
+	 * Buffer storing the FAT FS entries read in from RPMB storage. It
+	 * includes the optional cache entries (CFG_RPMB_FS_CACHE_ENTRIES)
+	 * and entries temporary read for current FAT FS traversal
+	 * (CFG_RPMB_FS_RD_ENTRIES) when not found from cached entries.
+	 */
+	struct rpmb_fat_entry *rpmb_fat_entry_buf;
+	/* Current index of FAT FS entry to read from buffer. */
+	uint32_t idx_curr;
+	/* Total number of FAT FS entries in buffer. */
+	uint32_t num_buffered;
+	/* Total number of FAT FS entries read during traversal. */
+	uint32_t num_total_read;
+	/* Indicates that last FAT FS entry was read. */
+	bool last_reached;
 };
 
 /**
@@ -111,6 +140,7 @@ struct tee_fs_dir {
 };
 
 static struct rpmb_fs_parameters *fs_par;
+static struct rpmb_fat_entry_dir *fat_entry_dir;
 
 /*
  * Lower interface to RPMB device
@@ -322,6 +352,11 @@ static void bytes_to_u16(uint8_t *bytes, uint16_t *u16)
 	*u16 = (uint16_t) ((*bytes << 8) + *(bytes + 1));
 }
 
+static void get_op_result_bits(uint8_t *bytes, uint8_t *res)
+{
+	*res = *(bytes + 1) & RPMB_RESULT_MASK;
+}
+
 static TEE_Result tee_rpmb_mac_calc(uint8_t *mac, uint32_t macsize,
 				    uint8_t *key, uint32_t keysize,
 				    struct rpmb_data_frame *datafrms,
@@ -338,26 +373,25 @@ static TEE_Result tee_rpmb_mac_calc(uint8_t *mac, uint32_t macsize,
 	if (res)
 		return res;
 
-	res = crypto_mac_init(ctx, TEE_ALG_HMAC_SHA256, key, keysize);
+	res = crypto_mac_init(ctx, key, keysize);
 	if (res != TEE_SUCCESS)
 		goto func_exit;
 
 	for (i = 0; i < blkcnt; i++) {
-		res = crypto_mac_update(ctx, TEE_ALG_HMAC_SHA256,
-					datafrms[i].data,
+		res = crypto_mac_update(ctx, datafrms[i].data,
 					RPMB_MAC_PROTECT_DATA_SIZE);
 		if (res != TEE_SUCCESS)
 			goto func_exit;
 	}
 
-	res = crypto_mac_final(ctx, TEE_ALG_HMAC_SHA256, mac, macsize);
+	res = crypto_mac_final(ctx, mac, macsize);
 	if (res != TEE_SUCCESS)
 		goto func_exit;
 
 	res = TEE_SUCCESS;
 
 func_exit:
-	crypto_mac_free_ctx(ctx, TEE_ALG_HMAC_SHA256);
+	crypto_mac_free_ctx(ctx);
 	return res;
 }
 
@@ -537,7 +571,7 @@ static TEE_Result tee_rpmb_req_pack(struct rpmb_req *req,
 
 		if (rawdata->blk_idx) {
 			/* Check the block index is within range. */
-			if ((*rawdata->blk_idx + nbr_frms) >
+			if ((*rawdata->blk_idx + nbr_frms - 1) >
 			    rpmb_ctx->max_blk_idx) {
 				res = TEE_ERROR_GENERIC;
 				goto func_exit;
@@ -554,14 +588,19 @@ static TEE_Result tee_rpmb_req_pack(struct rpmb_req *req,
 			       RPMB_NONCE_SIZE);
 
 		if (rawdata->data) {
-			if (fek)
-				encrypt_block(datafrm[i].data,
-					rawdata->data + (i * RPMB_DATA_SIZE),
-					*rawdata->blk_idx + i, fek, uuid);
-			else
+			if (fek) {
+				res = encrypt_block(datafrm[i].data,
+						    rawdata->data +
+						    (i * RPMB_DATA_SIZE),
+						    *rawdata->blk_idx + i,
+						    fek, uuid);
+				if (res != TEE_SUCCESS)
+					goto func_exit;
+			} else {
 				memcpy(datafrm[i].data,
 				       rawdata->data + (i * RPMB_DATA_SIZE),
 				       RPMB_DATA_SIZE);
+			}
 		}
 	}
 
@@ -650,8 +689,7 @@ static TEE_Result tee_rpmb_data_cpy_mac_calc(struct rpmb_data_frame *datafrm,
 	if (res)
 		goto func_exit;
 
-	res = crypto_mac_init(ctx, TEE_ALG_HMAC_SHA256, rpmb_ctx->key,
-			      RPMB_KEY_MAC_SIZE);
+	res = crypto_mac_init(ctx, rpmb_ctx->key, RPMB_KEY_MAC_SIZE);
 	if (res != TEE_SUCCESS)
 		goto func_exit;
 
@@ -671,7 +709,7 @@ static TEE_Result tee_rpmb_data_cpy_mac_calc(struct rpmb_data_frame *datafrm,
 		 */
 		memcpy(&localfrm, &datafrm[i], RPMB_DATA_FRAME_SIZE);
 
-		res = crypto_mac_update(ctx, TEE_ALG_HMAC_SHA256, localfrm.data,
+		res = crypto_mac_update(ctx, localfrm.data,
 					RPMB_MAC_PROTECT_DATA_SIZE);
 		if (res != TEE_SUCCESS)
 			goto func_exit;
@@ -704,20 +742,18 @@ static TEE_Result tee_rpmb_data_cpy_mac_calc(struct rpmb_data_frame *datafrm,
 		goto func_exit;
 
 	/* Update MAC against the last block */
-	res = crypto_mac_update(ctx, TEE_ALG_HMAC_SHA256, lastfrm->data,
-				RPMB_MAC_PROTECT_DATA_SIZE);
+	res = crypto_mac_update(ctx, lastfrm->data, RPMB_MAC_PROTECT_DATA_SIZE);
 	if (res != TEE_SUCCESS)
 		goto func_exit;
 
-	res = crypto_mac_final(ctx, TEE_ALG_HMAC_SHA256, rawdata->key_mac,
-			       RPMB_KEY_MAC_SIZE);
+	res = crypto_mac_final(ctx, rawdata->key_mac, RPMB_KEY_MAC_SIZE);
 	if (res != TEE_SUCCESS)
 		goto func_exit;
 
 	res = TEE_SUCCESS;
 
 func_exit:
-	crypto_mac_free_ctx(ctx, TEE_ALG_HMAC_SHA256);
+	crypto_mac_free_ctx(ctx);
 	return res;
 }
 
@@ -731,7 +767,7 @@ static TEE_Result tee_rpmb_resp_unpack_verify(struct rpmb_data_frame *datafrm,
 	uint16_t msg_type;
 	uint32_t wr_cnt;
 	uint16_t blk_idx;
-	uint16_t op_result;
+	uint8_t op_result;
 	struct rpmb_data_frame lastfrm;
 
 	if (!datafrm || !rawdata || !nbr_frms)
@@ -749,9 +785,9 @@ static TEE_Result tee_rpmb_resp_unpack_verify(struct rpmb_data_frame *datafrm,
 	memcpy(&lastfrm, &datafrm[nbr_frms - 1], RPMB_DATA_FRAME_SIZE);
 
 	/* Handle operation result and translate to TEEC error code. */
-	bytes_to_u16(lastfrm.op_result, &op_result);
-	if (rawdata->op_result)
-		*rawdata->op_result = op_result;
+	get_op_result_bits(lastfrm.op_result, &op_result);
+	if (op_result == RPMB_RESULT_AUTH_KEY_NOT_PROGRAMMED)
+		return TEE_ERROR_ITEM_NOT_FOUND;
 	if (op_result != RPMB_RESULT_OK)
 		return TEE_ERROR_GENERIC;
 
@@ -962,9 +998,8 @@ static TEE_Result tee_rpmb_verify_key_sync_counter(uint16_t dev_id)
 	if (res == TEE_SUCCESS) {
 		rpmb_ctx->key_verified = true;
 		rpmb_ctx->wr_cnt_synced = true;
-	}
-
-	DMSG("Verify key returning 0x%x", res);
+	} else
+		EMSG("Verify key returning 0x%x", res);
 	return res;
 }
 
@@ -1021,7 +1056,14 @@ static TEE_Result tee_rpmb_write_and_verify_key(uint16_t dev_id)
 {
 	TEE_Result res;
 
-	DMSG("RPMB INIT: Writing Key");
+	if (!plat_rpmb_key_is_ready()) {
+		DMSG("RPMB INIT: platform indicates RPMB key is not ready");
+		return TEE_ERROR_BAD_STATE;
+	}
+
+	DMSG("RPMB INIT: Writing Key value:");
+	DHEXDUMP(rpmb_ctx->key, RPMB_KEY_MAC_SIZE);
+
 	res = tee_rpmb_write_key(dev_id);
 	if (res == TEE_SUCCESS) {
 		DMSG("RPMB INIT: Verifying Key");
@@ -1032,6 +1074,7 @@ static TEE_Result tee_rpmb_write_and_verify_key(uint16_t dev_id)
 #else
 static TEE_Result tee_rpmb_write_and_verify_key(uint16_t dev_id __unused)
 {
+	DMSG("RPMB INIT: CFG_RPMB_WRITE_KEY is not set");
 	return TEE_ERROR_BAD_STATE;
 }
 #endif
@@ -1094,8 +1137,11 @@ static TEE_Result tee_rpmb_init(uint16_t dev_id)
 
 		res = tee_rpmb_key_gen(dev_id, rpmb_ctx->key,
 				       RPMB_KEY_MAC_SIZE);
-		if (res != TEE_SUCCESS)
+		if (res != TEE_SUCCESS) {
+			EMSG("RPMB INIT: Deriving key failed with error 0x%x",
+				res);
 			goto func_exit;
+		}
 
 		rpmb_ctx->key_derived = true;
 	}
@@ -1105,11 +1151,16 @@ static TEE_Result tee_rpmb_init(uint16_t dev_id)
 		DMSG("RPMB INIT: Verifying Key");
 
 		res = tee_rpmb_verify_key_sync_counter(dev_id);
-		if (res != TEE_SUCCESS && !rpmb_ctx->key_verified) {
+		if (res == TEE_ERROR_ITEM_NOT_FOUND &&
+			!rpmb_ctx->key_verified) {
 			/*
 			 * Need to write the key here and verify it.
 			 */
+			DMSG("RPMB INIT: Auth key not yet written");
 			res = tee_rpmb_write_and_verify_key(dev_id);
+		} else if (res != TEE_SUCCESS) {
+			EMSG("Verify key failed!");
+			EMSG("Make sure key here matches device key");
 		}
 	}
 
@@ -1457,54 +1508,333 @@ func_exit:
  */
 
 static TEE_Result get_fat_start_address(uint32_t *addr);
+static TEE_Result rpmb_fs_setup(void);
 
-static void dump_fat(void)
+/**
+ * fat_entry_dir_free: Free the FAT entry dir.
+ */
+static void fat_entry_dir_free(void)
+{
+	if (fat_entry_dir) {
+		free(fat_entry_dir->rpmb_fat_entry_buf);
+		free(fat_entry_dir);
+		fat_entry_dir = NULL;
+	}
+}
+
+/**
+ * fat_entry_dir_init: Initialize the FAT FS entry buffer/cache
+ * This function must be called before reading FAT FS entries using the
+ * function fat_entry_dir_get_next. This initializes the buffer/cache with the
+ * first FAT FS entries.
+ */
+static TEE_Result fat_entry_dir_init(void)
 {
 	TEE_Result res = TEE_ERROR_GENERIC;
-	struct rpmb_fat_entry *fat_entries = NULL;
-	uint32_t fat_address;
-	size_t size;
-	int i;
-	bool last_entry_found = false;
+	struct rpmb_fat_entry *fe = NULL;
+	uint32_t fat_address = 0;
+	uint32_t num_elems_read = 0;
+
+	if (fat_entry_dir)
+		return TEE_SUCCESS;
+
+	res = rpmb_fs_setup();
+	if (res)
+		return res;
 
 	res = get_fat_start_address(&fat_address);
-	if (res != TEE_SUCCESS)
-		goto out;
+	if (res)
+		return res;
 
-	size = N_ENTRIES * sizeof(struct rpmb_fat_entry);
-	fat_entries = malloc(size);
-	if (!fat_entries) {
+	fat_entry_dir = calloc(1, sizeof(struct rpmb_fat_entry_dir));
+	if (!fat_entry_dir)
+		return TEE_ERROR_OUT_OF_MEMORY;
+
+	/*
+	 * If caching is enabled, read in up to the maximum cache size, but
+	 * never more than the single read in size. Otherwise, read in as many
+	 * entries fit into the temporary buffer.
+	 */
+	if (CFG_RPMB_FS_CACHE_ENTRIES)
+		num_elems_read = MIN(CFG_RPMB_FS_CACHE_ENTRIES,
+				     CFG_RPMB_FS_RD_ENTRIES);
+	else
+		num_elems_read = CFG_RPMB_FS_RD_ENTRIES;
+
+	/*
+	 * Allocate memory for the FAT FS entries to read in.
+	 */
+	fe = calloc(num_elems_read, sizeof(struct rpmb_fat_entry));
+	if (!fe) {
 		res = TEE_ERROR_OUT_OF_MEMORY;
 		goto out;
 	}
 
-	while (!last_entry_found) {
-		res = tee_rpmb_read(CFG_RPMB_FS_DEV_ID, fat_address,
-				    (uint8_t *)fat_entries, size, NULL, NULL);
-		if (res != TEE_SUCCESS)
-			goto out;
+	res = tee_rpmb_read(CFG_RPMB_FS_DEV_ID, fat_address, (uint8_t *)fe,
+			    num_elems_read * sizeof(*fe), NULL, NULL);
+	if (res)
+		goto out;
 
-		for (i = 0; i < N_ENTRIES; i++) {
+	fat_entry_dir->rpmb_fat_entry_buf = fe;
 
-			FMSG("flags 0x%x, size %d, address 0x%x, filename '%s'",
-				fat_entries[i].flags,
-				fat_entries[i].data_size,
-				fat_entries[i].start_address,
-				fat_entries[i].filename);
+	/*
+	 * We use this variable when getting next entries from the buffer/cache
+	 * to see whether we have to read in more entries from storage.
+	 */
+	fat_entry_dir->num_buffered = num_elems_read;
 
-			if ((fat_entries[i].flags & FILE_IS_LAST_ENTRY) != 0) {
-				last_entry_found = true;
-				break;
-			}
+	return TEE_SUCCESS;
+out:
+	fat_entry_dir_free();
+	free(fe);
+	return res;
+}
 
-			/* Move to next fat_entry. */
-			fat_address += sizeof(struct rpmb_fat_entry);
+/**
+ * fat_entry_dir_deinit: If caching is enabled, free the temporary buffer for
+ * FAT FS entries in case the cache was too small. Keep the elements in the
+ * cache. Reset the counter variables to start the next traversal from fresh
+ * from the first cached entry. If caching is disabled, just free the
+ * temporary buffer by calling fat_entry_dir_free and return.
+ */
+static void fat_entry_dir_deinit(void)
+{
+	struct rpmb_fat_entry *fe = NULL;
+
+	if (!fat_entry_dir)
+		return;
+
+	if (!CFG_RPMB_FS_CACHE_ENTRIES) {
+		fat_entry_dir_free();
+		return;
+	}
+
+	fe = fat_entry_dir->rpmb_fat_entry_buf;
+	fat_entry_dir->idx_curr = 0;
+	fat_entry_dir->num_total_read = 0;
+	fat_entry_dir->last_reached = false;
+
+	if (fat_entry_dir->num_buffered > CFG_RPMB_FS_CACHE_ENTRIES) {
+		fat_entry_dir->num_buffered = CFG_RPMB_FS_CACHE_ENTRIES;
+
+		fe = realloc(fe, fat_entry_dir->num_buffered * sizeof(*fe));
+
+		/*
+		 * In case realloc fails, we are on the safe side if we destroy
+		 * the whole structure. Upon the next init, the cache has to be
+		 * re-established, but this case should not happen in practice.
+		 */
+		if (!fe)
+			fat_entry_dir_free();
+		else
+			fat_entry_dir->rpmb_fat_entry_buf = fe;
+	}
+}
+
+/**
+ * fat_entry_dir_update: Updates a persisted FAT FS entry in the cache.
+ * This function updates the FAT entry fat_entry that was written to address
+ * fat_address onto RPMB storage in the cache.
+ */
+static TEE_Result __maybe_unused fat_entry_dir_update
+					(struct rpmb_fat_entry *fat_entry,
+					 uint32_t fat_address)
+{
+	uint32_t fat_entry_buf_idx = 0;
+	/* Use a temp var to avoid compiler warning if caching disabled. */
+	uint32_t max_cache_entries = CFG_RPMB_FS_CACHE_ENTRIES;
+
+	assert(!((fat_address - RPMB_FS_FAT_START_ADDRESS) %
+	       sizeof(struct rpmb_fat_entry)));
+
+	/* Nothing to update if the cache is not initialized. */
+	if (!fat_entry_dir)
+		return TEE_SUCCESS;
+
+	fat_entry_buf_idx = (fat_address - RPMB_FS_FAT_START_ADDRESS) /
+			     sizeof(struct rpmb_fat_entry);
+
+	/* Only need to write if index points to an entry in cache. */
+	if (fat_entry_buf_idx < fat_entry_dir->num_buffered &&
+	    fat_entry_buf_idx < max_cache_entries) {
+		memcpy(fat_entry_dir->rpmb_fat_entry_buf + fat_entry_buf_idx,
+		       fat_entry, sizeof(struct rpmb_fat_entry));
+	}
+
+	return TEE_SUCCESS;
+}
+
+/**
+ * fat_entry_dir_get_next: Get next FAT FS entry.
+ * Read either from cache/buffer, or by reading from RPMB storage if the
+ * elements in the buffer/cache are fully read. When reading in from RPMB
+ * storage, the buffer is overwritten in case caching is disabled.
+ * In case caching is enabled, the cache is either further filled, or a
+ * temporary buffer populated if the cache is already full.
+ * The FAT FS entry is written to fat_entry. The respective address in RPMB
+ * storage is written to fat_address, if not NULL. When the last FAT FS entry
+ * was previously read, the function indicates this case by writing a NULL
+ * pointer to fat_entry.
+ * Returns a value different TEE_SUCCESS if the next FAT FS entry could not be
+ * retrieved.
+ */
+static TEE_Result fat_entry_dir_get_next(struct rpmb_fat_entry **fat_entry,
+					 uint32_t *fat_address)
+{
+	TEE_Result res = TEE_ERROR_GENERIC;
+	struct rpmb_fat_entry *fe = NULL;
+	uint32_t num_elems_read = 0;
+	uint32_t fat_address_local = 0;
+
+	assert(fat_entry_dir && fat_entry);
+
+	/* Don't read further if we previously read the last FAT FS entry. */
+	if (fat_entry_dir->last_reached) {
+		*fat_entry = NULL;
+		return TEE_SUCCESS;
+	}
+
+	fe = fat_entry_dir->rpmb_fat_entry_buf;
+
+	/* Determine address of FAT FS entry in RPMB storage. */
+	fat_address_local = RPMB_FS_FAT_START_ADDRESS +
+			(fat_entry_dir->num_total_read *
+			sizeof(struct rpmb_fat_entry));
+
+	/*
+	 * We've read all so-far buffered elements, so we need to
+	 * read in more entries from RPMB storage.
+	 */
+	if (fat_entry_dir->idx_curr >= fat_entry_dir->num_buffered) {
+		/*
+		 * This is the case where we do not cache entries, so just read
+		 * in next set of FAT FS entries into the buffer.
+		 * Goto the end of the when statement if that is done.
+		 */
+		if (!CFG_RPMB_FS_CACHE_ENTRIES) {
+			num_elems_read = CFG_RPMB_FS_RD_ENTRIES;
+			fat_entry_dir->idx_curr = 0;
+
+			res = tee_rpmb_read(CFG_RPMB_FS_DEV_ID,
+					    fat_address_local, (uint8_t *)fe,
+					    num_elems_read * sizeof(*fe), NULL,
+					    NULL);
+			if (res)
+				return res;
+			goto post_read_in;
+		}
+
+		/*
+		 * We cache FAT FS entries, and the buffer is not completely
+		 * filled. Further keep on extending the buffer up to its max
+		 * size by reading in from RPMB.
+		 */
+		if (fat_entry_dir->num_total_read < RPMB_BUF_MAX_ENTRIES) {
+			/*
+			 * Read at most as many elements as fit in the buffer
+			 * and no more than the defined number of entries to
+			 * read in at once.
+			 */
+			num_elems_read = MIN(RPMB_BUF_MAX_ENTRIES -
+					     fat_entry_dir->num_total_read,
+					     (uint32_t)CFG_RPMB_FS_RD_ENTRIES);
+
+			/*
+			 * Expand the buffer to fit in the additional entries.
+			 */
+			fe = realloc(fe,
+				     (fat_entry_dir->num_buffered +
+				      num_elems_read) * sizeof(*fe));
+			if (!fe)
+				return TEE_ERROR_OUT_OF_MEMORY;
+
+			fat_entry_dir->rpmb_fat_entry_buf = fe;
+
+			/* Read in to the next free slot in the buffer/cache. */
+			res = tee_rpmb_read(CFG_RPMB_FS_DEV_ID,
+					    fat_address_local,
+					    (uint8_t *)(fe +
+					    fat_entry_dir->num_total_read),
+					    num_elems_read * sizeof(*fe),
+					    NULL, NULL);
+			if (res)
+				return res;
+
+			fat_entry_dir->num_buffered += num_elems_read;
+		} else {
+			/*
+			 * This happens when we have read as many elements as
+			 * can possibly fit into the buffer.
+			 * As the first part of the buffer serves as our cache,
+			 * we only overwrite the last part that serves as our
+			 * temporary buffer used to iteratively read in entries
+			 * when the cache is full. Read in the temporary buffer
+			 * maximum size.
+			 */
+			num_elems_read = CFG_RPMB_FS_RD_ENTRIES;
+			/* Reset index to beginning of the temporary buffer. */
+			fat_entry_dir->idx_curr = CFG_RPMB_FS_CACHE_ENTRIES;
+
+			/* Read in elements after the end of the cache. */
+			res = tee_rpmb_read(CFG_RPMB_FS_DEV_ID,
+					    fat_address_local,
+					    (uint8_t *)(fe +
+					    fat_entry_dir->idx_curr),
+					    num_elems_read * sizeof(*fe),
+					    NULL, NULL);
+			if (res)
+				return res;
 		}
 	}
 
-out:
-	free(fat_entries);
+post_read_in:
+	if (fat_address)
+		*fat_address = fat_address_local;
+
+	*fat_entry = fe + fat_entry_dir->idx_curr;
+
+	fat_entry_dir->idx_curr++;
+	fat_entry_dir->num_total_read++;
+
+	/*
+	 * Indicate last entry was read.
+	 * Ensures we return a zero value for fat_entry on next invocation.
+	 */
+	if ((*fat_entry)->flags & FILE_IS_LAST_ENTRY)
+		fat_entry_dir->last_reached = true;
+
+	return TEE_SUCCESS;
 }
+
+#if (TRACE_LEVEL >= TRACE_FLOW)
+static void dump_fat(void)
+{
+	TEE_Result res = TEE_ERROR_SECURITY;
+	struct rpmb_fat_entry *fe = NULL;
+
+	if (!fs_par)
+		return;
+
+	if (fat_entry_dir_init())
+		return;
+
+	while (true) {
+		res = fat_entry_dir_get_next(&fe, NULL);
+		if (res || !fe)
+			break;
+
+		FMSG("flags %#"PRIx32", size %"PRIu32", address %#"PRIx32
+		     ", filename '%s'",
+		     fe->flags, fe->data_size, fe->start_address, fe->filename);
+	}
+
+	fat_entry_dir_deinit();
+}
+#else
+static void dump_fat(void)
+{
+}
+#endif
 
 #if (TRACE_LEVEL >= TRACE_DEBUG)
 static void dump_fh(struct rpmb_file_handle *fh)
@@ -1559,7 +1889,7 @@ static TEE_Result write_fat_entry(struct rpmb_file_handle *fh,
 	if (update_write_counter) {
 		res = tee_rpmb_get_write_counter(CFG_RPMB_FS_DEV_ID,
 						 &fh->fat_entry.write_counter);
-		if (res != TEE_SUCCESS)
+		if (res)
 			goto out;
 	}
 
@@ -1569,12 +1899,17 @@ static TEE_Result write_fat_entry(struct rpmb_file_handle *fh,
 
 	dump_fat();
 
+	/* If caching enabled, update a successfully written entry in cache. */
+	if (CFG_RPMB_FS_CACHE_ENTRIES && !res)
+		res = fat_entry_dir_update(&fh->fat_entry,
+					   fh->rpmb_fat_address);
+
 out:
 	return res;
 }
 
 /**
- * rpmb_fs_setup: Setup rpmb fs.
+ * rpmb_fs_setup: Setup RPMB FS.
  * Set initial partition and FS values and write to RPMB.
  * Store frequently used data in RAM.
  */
@@ -1612,7 +1947,7 @@ static TEE_Result rpmb_fs_setup(void)
 			res = TEE_SUCCESS;
 			goto store_fs_par;
 		} else {
-			/* Wrong software is in use. */
+			EMSG("Wrong software is in use.");
 			res = TEE_ERROR_ACCESS_DENIED;
 			goto out;
 		}
@@ -1695,31 +2030,17 @@ static TEE_Result read_fat(struct rpmb_file_handle *fh, tee_mm_pool_t *p)
 {
 	TEE_Result res = TEE_ERROR_GENERIC;
 	tee_mm_entry_t *mm = NULL;
-	struct rpmb_fat_entry *fat_entries = NULL;
+	struct rpmb_fat_entry *fe = NULL;
 	uint32_t fat_address;
-	size_t size;
-	int i;
 	bool entry_found = false;
-	bool last_entry_found = false;
 	bool expand_fat = false;
 	struct rpmb_file_handle last_fh;
 
 	DMSG("fat_address %d", fh->rpmb_fat_address);
 
-	res = rpmb_fs_setup();
-	if (res != TEE_SUCCESS)
+	res = fat_entry_dir_init();
+	if (res)
 		goto out;
-
-	res = get_fat_start_address(&fat_address);
-	if (res != TEE_SUCCESS)
-		goto out;
-
-	size = N_ENTRIES * sizeof(struct rpmb_fat_entry);
-	fat_entries = malloc(size);
-	if (!fat_entries) {
-		res = TEE_ERROR_OUT_OF_MEMORY;
-		goto out;
-	}
 
 	/*
 	 * The pool is used to represent the current RPMB layout. To find
@@ -1727,56 +2048,46 @@ static TEE_Result read_fat(struct rpmb_file_handle *fh, tee_mm_pool_t *p)
 	 * if it is not NULL the entire FAT must be traversed to fill in
 	 * the pool.
 	 */
-	while (!last_entry_found && (!entry_found || p)) {
-		res = tee_rpmb_read(CFG_RPMB_FS_DEV_ID, fat_address,
-				    (uint8_t *)fat_entries, size, NULL, NULL);
-		if (res != TEE_SUCCESS)
-			goto out;
+	while (true) {
+		res = fat_entry_dir_get_next(&fe, &fat_address);
+		if (res || !fe)
+			break;
 
-		for (i = 0; i < N_ENTRIES; i++) {
-			/*
-			 * Look for an entry, matching filenames. (read, rm,
-			 * rename and stat.). Only store first filename match.
-			 */
-			if (fh->filename &&
-			    (strcmp(fh->filename,
-				    fat_entries[i].filename) == 0) &&
-			    (fat_entries[i].flags & FILE_IS_ACTIVE) &&
-			    (!entry_found)) {
-				entry_found = true;
+		/*
+		 * Look for an entry, matching filenames. (read, rm,
+		 * rename and stat.). Only store first filename match.
+		 */
+		if ((!strcmp(fh->filename, fe->filename)) &&
+		    (fe->flags & FILE_IS_ACTIVE) && !entry_found) {
+			entry_found = true;
+			fh->rpmb_fat_address = fat_address;
+			memcpy(&fh->fat_entry, fe, sizeof(*fe));
+			if (!p)
+				break;
+		}
+
+		/* Add existing files to memory pool. (write) */
+		if (p) {
+			if ((fe->flags & FILE_IS_ACTIVE) && fe->data_size > 0) {
+
+				mm = tee_mm_alloc2(p, fe->start_address,
+						   fe->data_size);
+				if (!mm) {
+					res = TEE_ERROR_OUT_OF_MEMORY;
+					goto out;
+				}
+			}
+
+			/* Unused FAT entries can be reused (write) */
+			if (((fe->flags & FILE_IS_ACTIVE) == 0) &&
+			    fh->rpmb_fat_address == 0) {
 				fh->rpmb_fat_address = fat_address;
-				memcpy(&fh->fat_entry, &fat_entries[i],
+				memcpy(&fh->fat_entry, fe,
 				       sizeof(struct rpmb_fat_entry));
-				if (!p)
-					break;
 			}
 
-			/* Add existing files to memory pool. (write) */
-			if (p) {
-				if ((fat_entries[i].flags & FILE_IS_ACTIVE) &&
-				    (fat_entries[i].data_size > 0)) {
-
-					mm = tee_mm_alloc2
-						(p,
-						 fat_entries[i].start_address,
-						 fat_entries[i].data_size);
-					if (!mm) {
-						res = TEE_ERROR_OUT_OF_MEMORY;
-						goto out;
-					}
-				}
-
-				/* Unused FAT entries can be reused (write) */
-				if (((fat_entries[i].flags & FILE_IS_ACTIVE) ==
-				     0) && (fh->rpmb_fat_address == 0)) {
-					fh->rpmb_fat_address = fat_address;
-					memcpy(&fh->fat_entry, &fat_entries[i],
-					       sizeof(struct rpmb_fat_entry));
-				}
-			}
-
-			if ((fat_entries[i].flags & FILE_IS_LAST_ENTRY) != 0) {
-				last_entry_found = true;
+			if (((fe->flags & FILE_IS_LAST_ENTRY) != 0) &&
+			    fh->rpmb_fat_address == fat_address) {
 
 				/*
 				 * If the last entry was reached and was chosen
@@ -1787,16 +2098,13 @@ static TEE_Result read_fat(struct rpmb_file_handle *fh, tee_mm_pool_t *p)
 				 * is the current FAT entry address being
 				 * compared.
 				 */
-				if (p && fh->rpmb_fat_address == fat_address)
-					expand_fat = true;
-				break;
+				expand_fat = true;
 			}
-
-			/* Move to next fat_entry. */
-			fat_address += sizeof(struct rpmb_fat_entry);
 		}
 	}
 
+	if (res)
+		goto out;
 	/*
 	 * Represent the FAT table in the pool.
 	 */
@@ -1832,11 +2140,11 @@ static TEE_Result read_fat(struct rpmb_file_handle *fh, tee_mm_pool_t *p)
 		}
 	}
 
-	if (fh->filename && !fh->rpmb_fat_address)
+	if (!fh->rpmb_fat_address)
 		res = TEE_ERROR_ITEM_NOT_FOUND;
 
 out:
-	free(fat_entries);
+	fat_entry_dir_deinit();
 	return res;
 }
 
@@ -2294,90 +2602,68 @@ static TEE_Result rpmb_fs_dir_populate(const char *path,
 				       struct tee_fs_dir *dir)
 {
 	struct tee_rpmb_fs_dirent *current = NULL;
-	struct rpmb_fat_entry *fat_entries = NULL;
+	struct rpmb_fat_entry *fe = NULL;
 	uint32_t fat_address;
 	uint32_t filelen;
 	char *filename;
-	int i;
-	bool last_entry_found = false;
 	bool matched;
 	struct tee_rpmb_fs_dirent *next = NULL;
 	uint32_t pathlen;
 	TEE_Result res = TEE_ERROR_GENERIC;
-	uint32_t size;
 	char temp;
 
 	mutex_lock(&rpmb_mutex);
 
-	res = rpmb_fs_setup();
-	if (res != TEE_SUCCESS)
+	res = fat_entry_dir_init();
+	if (res)
 		goto out;
-
-	res = get_fat_start_address(&fat_address);
-	if (res != TEE_SUCCESS)
-		goto out;
-
-	size = N_ENTRIES * sizeof(struct rpmb_fat_entry);
-	fat_entries = malloc(size);
-	if (!fat_entries) {
-		res = TEE_ERROR_OUT_OF_MEMORY;
-		goto out;
-	}
 
 	pathlen = strlen(path);
-	while (!last_entry_found) {
-		res = tee_rpmb_read(CFG_RPMB_FS_DEV_ID, fat_address,
-				    (uint8_t *)fat_entries, size, NULL, NULL);
-		if (res != TEE_SUCCESS)
-			goto out;
 
-		for (i = 0; i < N_ENTRIES; i++) {
-			filename = fat_entries[i].filename;
-			if (fat_entries[i].flags & FILE_IS_ACTIVE) {
-				matched = false;
-				filelen = strlen(filename);
-				if (filelen > pathlen) {
-					temp = filename[pathlen];
-					filename[pathlen] = '\0';
-					if (strcmp(filename, path) == 0)
-						matched = true;
+	while (true) {
+		res = fat_entry_dir_get_next(&fe, &fat_address);
+		if (res || !fe)
+			break;
 
-					filename[pathlen] = temp;
+		filename = fe->filename;
+		if (fe->flags & FILE_IS_ACTIVE) {
+			matched = false;
+			filelen = strlen(filename);
+			if (filelen > pathlen) {
+				temp = filename[pathlen];
+				filename[pathlen] = '\0';
+				if (strcmp(filename, path) == 0)
+					matched = true;
+
+				filename[pathlen] = temp;
+			}
+
+			if (matched) {
+				next = malloc(sizeof(*next));
+				if (!next) {
+					res = TEE_ERROR_OUT_OF_MEMORY;
+					goto out;
 				}
 
-				if (matched) {
-					next = malloc(sizeof(*next));
-					if (!next) {
-						res = TEE_ERROR_OUT_OF_MEMORY;
-						goto out;
-					}
-
-					next->entry.oidlen = tee_hs2b(
-						(uint8_t *)&filename[pathlen],
+				next->entry.oidlen = tee_hs2b((uint8_t *)
+						&filename[pathlen],
 						next->entry.oid,
 						filelen - pathlen,
 						sizeof(next->entry.oid));
-					if (next->entry.oidlen) {
-						SIMPLEQ_INSERT_TAIL(&dir->next,
-								    next, link);
-						current = next;
-					} else {
-						free(next);
-						next = NULL;
-					}
-
+				if (next->entry.oidlen) {
+					SIMPLEQ_INSERT_TAIL(&dir->next,
+							    next, link);
+					current = next;
+				} else {
+					free(next);
+					next = NULL;
 				}
 			}
-
-			if (fat_entries[i].flags & FILE_IS_LAST_ENTRY) {
-				last_entry_found = true;
-				break;
-			}
-
-			/* Move to next fat_entry. */
-			fat_address += sizeof(struct rpmb_fat_entry);
 		}
 	}
+
+	if (res)
+		goto out;
 
 	if (current)
 		res = TEE_SUCCESS;
@@ -2386,10 +2672,9 @@ static TEE_Result rpmb_fs_dir_populate(const char *path,
 
 out:
 	mutex_unlock(&rpmb_mutex);
-	if (res != TEE_SUCCESS)
+	fat_entry_dir_deinit();
+	if (res)
 		rpmb_fs_dir_free(dir);
-	if (fat_entries)
-		free(fat_entries);
 
 	return res;
 }
@@ -2598,4 +2883,9 @@ TEE_Result tee_rpmb_fs_raw_open(const char *fname, bool create,
 	}
 
 	return res;
+}
+
+bool __weak plat_rpmb_key_is_ready(void)
+{
+	return true;
 }

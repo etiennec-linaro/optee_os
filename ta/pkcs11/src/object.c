@@ -387,7 +387,7 @@ enum pkcs11_rc entry_destroy_object(struct pkcs11_client *client,
 	if (rc)
 		return rc;
 
-	rc = serialargs_get(&ctrlargs, &object_handle, sizeof(object_handle));
+	rc = serialargs_get_u32(&ctrlargs, &object_handle);
 	if (rc)
 		return rc;
 
@@ -994,4 +994,3 @@ uint32_t entry_get_object_size(struct pkcs11_client *client,
 
 	return PKCS11_CKR_OK;
 }
-

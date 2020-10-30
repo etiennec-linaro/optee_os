@@ -8,7 +8,6 @@
 #include <sys/queue.h>
 #include <types_ext.h>
 #include <util.h>
-#include <user_ta_header.h>
 
 #include "ftrace.h"
 #include "ta_elf.h"
@@ -16,18 +15,18 @@
 #define MIN_FTRACE_BUF_SIZE	1024
 #define MAX_HEADER_STRLEN	128
 
-static struct __ftrace_info *finfo;
 static struct ftrace_buf *fbuf;
 
-bool ftrace_init(void)
+bool ftrace_init(struct ftrace_buf **fbuf_ptr)
 {
+	struct __ftrace_info *finfo = NULL;
 	struct ta_elf *elf = TAILQ_FIRST(&main_elf_queue);
 	TEE_Result res = TEE_SUCCESS;
 	vaddr_t val = 0;
 	int count = 0;
 	size_t fbuf_size = 0;
 
-	res = ta_elf_resolve_sym("__ftrace_info", &val);
+	res = ta_elf_resolve_sym("__ftrace_info", &val, NULL, NULL);
 	if (res)
 		return false;
 
@@ -44,7 +43,7 @@ bool ftrace_init(void)
 		return false;
 	}
 
-	fbuf = (struct ftrace_buf *)finfo->buf_start.ptr64;
+	fbuf = (struct ftrace_buf *)(vaddr_t)finfo->buf_start.ptr64;
 	fbuf->head_off = sizeof(struct ftrace_buf);
 	count = snprintk((char *)fbuf + fbuf->head_off, MAX_HEADER_STRLEN,
 			 "Function graph for TA: %pUl @ %lx\n",
@@ -54,9 +53,14 @@ bool ftrace_init(void)
 	fbuf->ret_func_ptr = finfo->ret_ptr.ptr64;
 	fbuf->ret_idx = 0;
 	fbuf->lr_idx = 0;
+	fbuf->suspend_time = 0;
 	fbuf->buf_off = fbuf->head_off + count;
 	fbuf->curr_size = 0;
 	fbuf->max_size = fbuf_size - sizeof(struct ftrace_buf) - count;
+	fbuf->syscall_trace_enabled = false;
+	fbuf->syscall_trace_suspended = false;
+
+	*fbuf_ptr = fbuf;
 
 	return true;
 }

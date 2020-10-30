@@ -190,6 +190,19 @@ void crypto_acipher_free_rsa_public_key(struct rsa_public_key *s)
 	crypto_bignum_free(s->e);
 }
 
+void crypto_acipher_free_rsa_keypair(struct rsa_keypair *s)
+{
+	if (!s)
+		return;
+	crypto_bignum_free(s->e);
+	crypto_bignum_free(s->d);
+	crypto_bignum_free(s->n);
+	crypto_bignum_free(s->p);
+	crypto_bignum_free(s->q);
+	crypto_bignum_free(s->qp);
+	crypto_bignum_free(s->dp);
+}
+
 TEE_Result crypto_acipher_gen_rsa_key(struct rsa_keypair *key, size_t key_size)
 {
 	TEE_Result res = TEE_SUCCESS;
@@ -535,8 +548,8 @@ TEE_Result crypto_acipher_rsassa_sign(uint32_t algo, struct rsa_keypair *key,
 		goto err;
 	}
 
-	res = tee_hash_get_digest_size(TEE_DIGEST_HASH_TO_ALGO(algo),
-				       &hash_size);
+	res = tee_alg_get_digest_size(TEE_DIGEST_HASH_TO_ALGO(algo),
+				      &hash_size);
 	if (res != TEE_SUCCESS)
 		goto err;
 
@@ -606,8 +619,8 @@ TEE_Result crypto_acipher_rsassa_verify(uint32_t algo,
 	rsa.E = *(mbedtls_mpi *)key->e;
 	rsa.N = *(mbedtls_mpi *)key->n;
 
-	res = tee_hash_get_digest_size(TEE_DIGEST_HASH_TO_ALGO(algo),
-				       &hash_size);
+	res = tee_alg_get_digest_size(TEE_DIGEST_HASH_TO_ALGO(algo),
+				      &hash_size);
 	if (res != TEE_SUCCESS)
 		goto err;
 

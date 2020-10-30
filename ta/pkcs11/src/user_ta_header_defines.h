@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: BSD-2-Clause */
 /*
- * Copyright (c) 2017-2020, Linaro Limited
+ * Copyright (c) 2018-2019, Linaro Limited
  */
 
 #ifndef USER_TA_HEADER_DEFINES_H

@@ -667,8 +667,6 @@ static void close_ck_session(struct pkcs11_session *session)
 	handle_put(&session->client->session_handle_db, session->handle);
 	handle_db_destroy(&session->object_handle_db);
 
-	// If no more session, next opened one will simply be Public login
-
 	session->token->session_count--;
 	if (pkcs11_session_is_read_write(session))
 		session->token->rw_session_count--;
@@ -1339,6 +1337,8 @@ enum pkcs11_rc entry_ck_login(struct pkcs11_client *client,
 		break;
 
 	case PKCS11_CKU_CONTEXT_SPECIFIC:
+		return PKCS11_CKR_OPERATION_NOT_INITIALIZED;
+#if 0 // Remove that, non sense
 		if (!session_is_active(session) ||
 		    !session->processing->always_authen)
 			return PKCS11_CKR_OPERATION_NOT_INITIALIZED;
@@ -1360,6 +1360,7 @@ enum pkcs11_rc entry_ck_login(struct pkcs11_client *client,
 			session_logout(session);
 
 		break;
+#endif
 
 	default:
 		return PKCS11_CKR_USER_TYPE_INVALID;

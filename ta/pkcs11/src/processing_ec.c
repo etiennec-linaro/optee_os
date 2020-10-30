@@ -859,8 +859,6 @@ struct supported_ecc_curve {
 #define TEE_ECC_CURVE_BSI_P320t1	0x00000205 /* 320 bits */
 #define TEE_ECC_CURVE_BSI_P384t1	0x00000206 /* 384 bits */
 #define TEE_ECC_CURVE_BSI_P512t1	0x00000207 /* 512 bits */
-#define TEE_ECC_CURVE_25519		0x00000300 /* 256 bits */
-#define TEE_ECC_CURVE_SM2		0x00000400 /* 256 bits */
 #endif
 
 static const struct supported_ecc_curve ec_curve_param[] = {

@@ -789,12 +789,17 @@ create_attributes_from_template(struct obj_attrs **out_attrs, void *template,
 		goto out;
 
 	if (get_attribute(attrs, PKCS11_CKA_LOCAL, NULL, NULL) !=
-	    PKCS11_RV_NOT_FOUND)
+	    PKCS11_RV_NOT_FOUND) {
+		rc = PKCS11_CKR_TEMPLATE_INCONSISTENT;
 		goto out;
+	}
 
+	/* If object  */
 	if (get_attribute(attrs, PKCS11_CKA_KEY_GEN_MECHANISM, NULL, NULL) !=
-	    PKCS11_RV_NOT_FOUND)
+	    PKCS11_RV_NOT_FOUND) {
+		rc = PKCS11_CKR_TEMPLATE_INCONSISTENT;
 		goto out;
+	}
 
 	switch (function) {
 	case PKCS11_FUNCTION_GENERATE:

@@ -123,10 +123,10 @@ create_attributes_from_template(struct obj_attrs **out, void *template,
 				enum pkcs11_mechanism_id proc_mecha);
 
 /*
- * The various checks to be performed before a processing:
- * - create a new object in the current token state
- * - use a parent object in the processing
- * - use a mechanism with provided configuration
+ * The various checks to be performed before:
+ * - adding a new object in the current token state
+ * - using a parent object for adding an object
+ * - using a mechanism with provided configuration
  */
 enum pkcs11_rc check_created_attrs_against_token(struct pkcs11_session *session,
 						 struct obj_attrs *head);

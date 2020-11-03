@@ -139,29 +139,35 @@ static uint8_t *pkcs11_object_default_boolprop(uint32_t attribute)
 	static const uint8_t bool_false;
 
 	switch (attribute) {
-	/* As per PKCS#11 default value */
+	/* As per PKCS#11 explicit default true value */
 	case PKCS11_CKA_MODIFIABLE:
 	case PKCS11_CKA_COPYABLE:
 	case PKCS11_CKA_DESTROYABLE:
 		return (uint8_t *)&bool_true;
+	/* As per PKCS#11 explicit default false value */
 	case PKCS11_CKA_TOKEN:
 	case PKCS11_CKA_PRIVATE:
 	case PKCS11_CKA_WRAP_WITH_TRUSTED:
 	case PKCS11_CKA_ALWAYS_AUTHENTICATE:
+		return (uint8_t *)&bool_false;
+	/* Private key is token specific, symkey is false so default to false */
 	case PKCS11_CKA_SENSITIVE:
 		return (uint8_t *)&bool_false;
-	/* Token specific default value */
+	/* PKCS#11 says only SO can set true so default to false */
+	case PKCS11_CKA_TRUSTED:
+		return (uint8_t *)&bool_false;
+	/* PKCS#11 says its token specific, allow class to guess default */
 	case PKCS11_CKA_SIGN:
 	case PKCS11_CKA_VERIFY:
 	case PKCS11_CKA_DERIVE:
 	case PKCS11_CKA_ENCRYPT:
 	case PKCS11_CKA_DECRYPT:
+	/* Remaining token specific default to false */
 	case PKCS11_CKA_SIGN_RECOVER:
 	case PKCS11_CKA_VERIFY_RECOVER:
 	case PKCS11_CKA_WRAP:
 	case PKCS11_CKA_UNWRAP:
 	case PKCS11_CKA_EXTRACTABLE:
-	case PKCS11_CKA_TRUSTED:
 		return (uint8_t *)&bool_false;
 	default:
 		DMSG("No default for boolprop attribute %#"PRIx32, attribute);

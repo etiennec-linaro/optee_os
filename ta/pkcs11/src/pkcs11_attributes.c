@@ -687,7 +687,7 @@ static enum pkcs11_rc create_priv_key_attributes(struct obj_attrs **out,
  * - LOCAL is the parent LOCAL
  */
 enum pkcs11_rc
-create_attributes_from_template(struct obj_attrs **out, void *template,
+create_attributes_from_template(struct obj_attrs **out_attrs, void *template,
 				size_t template_size,
 				struct obj_attrs *parent __unused,
 				enum processing_func function,
@@ -876,7 +876,7 @@ create_attributes_from_template(struct obj_attrs **out, void *template,
 		break;
 	}
 
-	*out = attrs;
+	*out_attrs = attrs;
 
 #ifdef DEBUG
 	trace_attributes("object", attrs);

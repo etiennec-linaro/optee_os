@@ -1,6 +1,6 @@
 /*
  * Arm SCP/MCP Software
- * Copyright (c) 2015-2019, Arm Limited and Contributors. All rights reserved.
+ * Copyright (c) 2015-2020, Arm Limited and Contributors. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  *
@@ -11,10 +11,15 @@
 #ifndef MOD_SCMI_H
 #define MOD_SCMI_H
 
+#include <internal/scmi.h>
+#include <mod_scmi_std.h>
+
+#include <fwk_id.h>
+#include <fwk_module_idx.h>
+
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-#include <internal/scmi.h>
 
 /*!
  * \addtogroup GroupModules Modules
@@ -32,6 +37,9 @@
 enum mod_scmi_api_idx {
     MOD_SCMI_API_IDX_PROTOCOL,
     MOD_SCMI_API_IDX_TRANSPORT,
+#ifdef BUILD_HAS_SCMI_NOTIFICATIONS
+    MOD_SCMI_API_IDX_NOTIFICATION,
+#endif
     MOD_SCMI_API_IDX_COUNT,
 };
 
@@ -135,6 +143,15 @@ struct mod_scmi_service_config {
      *        module configuration data.
      */
     unsigned int scmi_agent_id;
+
+    /*!
+     *  \brief Identifier of SCMI P2A service asssociated with this A2P service.
+     *
+     *  \details If a request for notifications is received on this service
+     *        channel the notifications will be sent on the channel identified
+     *        here.
+     */
+    fwk_id_t scmi_p2a_id;
 };
 
 /*!
@@ -238,12 +255,47 @@ struct mod_scmi_to_transport_api {
      * errors.
      */
     int (*respond)(fwk_id_t channel_id, const void *payload, size_t size);
+
+    /*!
+     * \brief Send a message on a channel.
+     *
+     * \param channel_id Channel identifier.
+     * \param message_header Message ID.
+     * \param payload Payload data to write.
+     * \param size Size of the payload source.
+     *
+     * \retval FWK_SUCCESS The operation succeeded.
+     * \retval FWK_E_PARAM The channel_id parameter is invalid.
+     * \retval FWK_E_PARAM The size parameter is less than the size of one
+     * payload entry.
+     * \return One of the standard error codes for implementation-defined
+     * errors.
+     */
+    int (*transmit)(fwk_id_t channel_id, uint32_t message_header,
+        const void *payload, size_t size);
 };
 
 /*!
  * \brief Transport entity API to SCMI module API.
  */
 struct mod_scmi_from_transport_api {
+    /*!
+     * \brief Signal to a SCMI service that a incoming message for it has
+     * incorrect length and payload size and so the incoming message has been
+     * dropped.
+     *
+     * \note Subscribed SCMI service should call the respond API to free the
+     *       channel.
+     *
+     * \param service_id service identifier.
+     *
+     * \retval FWK_SUCCESS The operation succeeded.
+     * \retval FWK_E_PARAM The service_id parameter is invalid.
+     * \return One of the standard error codes for implementation-defined
+     * errors.
+     */
+    int (*signal_error)(fwk_id_t service_id);
+
     /*!
      * \brief Signal to a service that a message is incoming.
      *
@@ -308,10 +360,106 @@ struct mod_scmi_to_protocol_api {
     mod_scmi_message_handler_t *message_handler;
 };
 
+#ifdef BUILD_HAS_SCMI_NOTIFICATIONS
+/*!
+ * \brief SCMI protocol SCMI module SCMI notification API.
+ */
+struct mod_scmi_notification_api {
+    /*!
+     * \brief Initialize notification context for a protocol.
+     *
+     * \param protocol_id Identifier of the protocol.
+     * \param agent_count Number of agents supported by the protocol.
+     * \param element_count Number of elements that support notification.
+     * \param operation_count Number of notification SCMI messages supported.
+     *
+     * \retval FWK_SUCCESS Initialization successful.
+     * \retval One of the standard error codes for implementation-defined
+     * errors.
+     */
+    int (*scmi_notification_init)(
+        unsigned int protocol_id,
+        unsigned int agent_count,
+        unsigned int element_count,
+        unsigned int operation_count);
+
+    /*!
+     * \brief Add an agent to subscriber list that requested a notification.
+     *
+     * \param protocol_id Identifier of the protocol.
+     * \param element_idx Index of the element within specified protocol
+     *     context.
+     * \param operation_id Identifier of the operation.
+     * \param service_id  Identifier of the agent's SCMI service context.
+     *
+     * \retval FWK_SUCCESS Adding of subscriber agent to the list is successful.
+     * \retval One of the standard error codes for implementation-defined
+     * errors.
+     */
+    int (*scmi_notification_add_subscriber)(
+        unsigned int protocol_id,
+        unsigned int element_idx,
+        unsigned int operation_id,
+        fwk_id_t service_id);
+
+    /*!
+     * \brief Remove an agent from subscriber list.
+     *
+     * \param protocol_id Identifier of the protocol.
+     * \param agent_idx Index of the agent within specified protocol context.
+     * \param element_idx Index of the element within specified protocol
+     *     context.
+     * \param operation_id Identifier of the operation.
+     *
+     * \retval FWK_SUCCESS Removing of subscriber agent from the list is
+     *     successful.
+     * \retval One of the standard error codes for implementation-defined
+     * errors.
+     */
+    int (*scmi_notification_remove_subscriber)(
+        unsigned int protocol_id,
+        unsigned int agent_idx,
+        unsigned int element_idx,
+        unsigned int operation_id);
+
+    /*!
+     * \brief Notifiy all agents which requested a specific notification.
+     *
+     * \param protocol_id Identifier of the protocol.
+     * \param operation_id Identifier of the operation.
+     * \param scmi_response_message_id SCMI message identifier that is sent as
+     *     as a part of the notification.
+     * \param payload_p2a Notification message payload from platform to
+     *     agent.
+     * \param payload_size Size of the message.
+     *
+     * \retval FWK_SUCCESS Notification to agents is successful.
+     * \retval One of the standard error codes for implementation-defined
+     * errors.
+     */
+    int (*scmi_notification_notify)(
+        unsigned int protocol_id,
+        unsigned int operation_id,
+        unsigned int scmi_response_message_id,
+        void *payload_p2a,
+        size_t payload_size);
+};
+#endif
+
 /*!
  * \brief SCMI protocol module to SCMI module API.
  */
 struct mod_scmi_from_protocol_api {
+    /*!
+     * \brief Get the number of active agents.
+     *
+     * \param[out] agent_count Number of active agents.
+     *
+     * \retval FWK_SUCCESS The agent count was returned.
+     * \retval FWK_E_PARAM The parameter `agent_count` is equal to `NULL`.
+     */
+     int (*get_agent_count)(int *agent_count);
+
     /*!
      * \brief Get the identifier of the agent associated with a service
      *
@@ -386,6 +534,19 @@ struct mod_scmi_from_protocol_api {
      * \param size Size of the payload.
      */
     void (*respond)(fwk_id_t service_id, const void *payload, size_t size);
+
+    /*!
+     * \brief Send a notification to the agent on behalf on an SCMI service.
+     *
+     * \param service_id Service identifier.
+     * \param protocol_id Protocol identifier.
+     * \param message_id Message identifier.
+     * \param payload Payload data to write, or NULL if a payload has already
+     *         been written.
+     * \param size Size of the payload in bytes.
+     */
+    void (*notify)(fwk_id_t service_id, int protocol_id, int message_id,
+        const void *payload, size_t size);
 };
 
 

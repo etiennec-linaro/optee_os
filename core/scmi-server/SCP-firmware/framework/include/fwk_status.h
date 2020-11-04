@@ -1,6 +1,6 @@
 /*
  * Arm SCP/MCP Software
- * Copyright (c) 2015-2019, Arm Limited and Contributors. All rights reserved.
+ * Copyright (c) 2015-2020, Arm Limited and Contributors. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  *
@@ -80,6 +80,15 @@
 
 /*! Unrecoverable error */
 #define FWK_E_PANIC         -18
+
+/*!
+ * \brief Return a human readable string representation of a status code.
+ *
+ * \param status Status code value.
+ *
+ * \return String representation of \p status
+ */
+const char *fwk_status_str(int status);
 
 /*!
  * @}

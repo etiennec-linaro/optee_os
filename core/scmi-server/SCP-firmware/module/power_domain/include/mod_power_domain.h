@@ -1,6 +1,6 @@
 /*
  * Arm SCP/MCP Software
- * Copyright (c) 2015-2019, Arm Limited and Contributors. All rights reserved.
+ * Copyright (c) 2015-2020, Arm Limited and Contributors. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  *
@@ -11,12 +11,14 @@
 #ifndef MOD_POWER_DOMAIN_H
 #define MOD_POWER_DOMAIN_H
 
-#include <limits.h>
-#include <stdbool.h>
-#include <stdint.h>
 #include <fwk_element.h>
 #include <fwk_id.h>
 #include <fwk_module_idx.h>
+
+#include <limits.h>
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
 
 /*!
  * \addtogroup GroupModules Modules
@@ -90,58 +92,6 @@ enum mod_pd_level {
 };
 
 /*!
- * \brief Number of bits used for each level within a power domain tree
- *      position.
- */
-#define MOD_PD_TREE_POS_BITS_PER_LEVEL 8
-
-/*!
- * \brief Shifts for the power level fields within a power domain tree position.
- */
-enum {
-    /*! Number of bits to shift for the power level 0 field. */
-    MOD_PD_TREE_POS_LEVEL_0_SHIFT =
-        MOD_PD_LEVEL_0 * MOD_PD_TREE_POS_BITS_PER_LEVEL,
-    /*! Number of bits to shift for the power level 1 field. */
-    MOD_PD_TREE_POS_LEVEL_1_SHIFT =
-        MOD_PD_LEVEL_1 * MOD_PD_TREE_POS_BITS_PER_LEVEL,
-    /*! Number of bits to shift for the power level 2 field. */
-    MOD_PD_TREE_POS_LEVEL_2_SHIFT =
-        MOD_PD_LEVEL_2 * MOD_PD_TREE_POS_BITS_PER_LEVEL,
-    /*! Number of bits to shift for the power level 3 field. */
-    MOD_PD_TREE_POS_LEVEL_3_SHIFT =
-        MOD_PD_LEVEL_3 * MOD_PD_TREE_POS_BITS_PER_LEVEL,
-    MOD_PD_TREE_POS_LEVEL_SHIFT =
-        MOD_PD_LEVEL_COUNT * MOD_PD_TREE_POS_BITS_PER_LEVEL,
-};
-
-/*!
- * \brief Mask for the power level fields within a power domain tree position.
- */
-#define MOD_PD_TREE_POS_LEVEL_MASK  UINT64_C(0xFF)
-
-/*!
- * \brief Build the power domain tree position of a power domain.
- */
-#define MOD_PD_TREE_POS(LEVEL, LEVEL_3, LEVEL_2, LEVEL_1, LEVEL_0) \
-         ((((uint64_t)((LEVEL)   & MOD_PD_TREE_POS_LEVEL_MASK)) << \
-                                              MOD_PD_TREE_POS_LEVEL_SHIFT)   | \
-          (((uint64_t)((LEVEL_3) & MOD_PD_TREE_POS_LEVEL_MASK)) << \
-                                              MOD_PD_TREE_POS_LEVEL_3_SHIFT) | \
-          (((uint64_t)((LEVEL_2) & MOD_PD_TREE_POS_LEVEL_MASK)) << \
-                                              MOD_PD_TREE_POS_LEVEL_2_SHIFT) | \
-          (((uint64_t)((LEVEL_1) & MOD_PD_TREE_POS_LEVEL_MASK)) << \
-                                              MOD_PD_TREE_POS_LEVEL_1_SHIFT) | \
-          (((uint64_t)((LEVEL_0) & MOD_PD_TREE_POS_LEVEL_MASK)) << \
-                                              MOD_PD_TREE_POS_LEVEL_0_SHIFT))
-
-/*!
- * \brief Representation of the invalid tree position. Used when checking that
- *      power domains are declared in increasing order of their tree position.
- */
-#define MOD_PD_INVALID_TREE_POS MOD_PD_TREE_POS(MOD_PD_LEVEL_COUNT, 0, 0, 0, 0)
-
-/*!
  * \brief Power domain module configuration.
  */
 struct mod_power_domain_config {
@@ -174,37 +124,9 @@ struct mod_power_domain_config {
  */
 struct mod_power_domain_element_config {
     /*!
-     * \brief Defines the position of the power domain within the power domain
-     *      tree.
-     *
-     * \details Each child of a power domain is assigned a number ranging from 0
-     *      to 255. Compute the position of a power domain from the position of
-     *      its parent 'parent_pos' (the number assigned to the power domain as
-     *      a child of its parent is 'child_pos') as follows:
-     *
-     *      tree_pos = (parent_pos - (1 << MOD_PD_TREE_POS_LEVEL_SHIFT)) +
-     *                 (child_pos << (8*pd_level))
-     *
-     *      The position of the top-level domain is defined as:
-     *      (level of the top-level domain) << MOD_PD_TREE_POS_LEVEL_SHIFT
-     *
-     *      If the power domain hierarchy maps to the core hierarchy (based on
-     *      MPIDR levels of affinity), derive the position of the core power
-     *      domains from the Aff0, Aff1, Aff2 and Aff3 fields of the MPIDR
-     *      registers of the cores as follows:
-     *
-     *      core power domain position = (Aff3 << MOD_PD_TREE_LEVEL_3_SHIFT) +
-     *                                   (Aff2 << MOD_PD_TREE_LEVEL_2_SHIFT) +
-     *                                   (Aff1 << MOD_PD_TREE_LEVEL_1_SHIFT) +
-     *                                   (Aff0 << MOD_PD_TREE_LEVEL_0_SHIFT)
-     *
-     *      In the module configuration data, the power domains have to be in
-     *      increasing order of their power domain position. Thus, the power
-     *      domains with the lowest power level have to be first and the system
-     *      power domain has to be last. This table must contain at least one
-     *      element, the system power domain.
+     * brief Power domain parent index
      */
-    uint64_t tree_pos;
+    uint32_t parent_idx;
 
     /*!
      *  Identifier of the module or element providing the driver for the power
@@ -236,11 +158,25 @@ struct mod_power_domain_element_config {
      */
     const char **state_name_table;
 
+    /*! Composite state number of levels mask */
+    const uint32_t composite_state_levels_mask;
+
+    /*!
+     * Composite state mask table. This table provides the mask for each level
+     */
+    const uint32_t *composite_state_mask_table;
+
+    /*! Size of the composite state mask table */
+    size_t composite_state_mask_table_size;
+
     /*! Size of the table of allowed state masks */
     size_t allowed_state_mask_table_size;
 
     /*! Size of the table of allowed state masks */
     size_t state_name_table_size;
+
+    /*! Disable power domain transition notifications */
+    bool disable_state_transition_notifications;
 };
 
 /*!
@@ -319,9 +255,6 @@ enum {
         MOD_PD_LEVEL_3 * MOD_PD_CS_STATE_BITS_PER_LEVEL,
     MOD_PD_CS_LEVEL_SHIFT =
         MOD_PD_LEVEL_COUNT * MOD_PD_CS_STATE_BITS_PER_LEVEL,
-
-    MOD_PD_CS_VALID_BITS = (1 <<
-        (MOD_PD_CS_LEVEL_SHIFT + MOD_PD_CS_STATE_BITS_PER_LEVEL)) - 1
 };
 
 /*!
@@ -455,6 +388,8 @@ struct mod_pd_driver_api {
      * \param system_shutdown Type of system shutdown.
      *
      * \retval FWK_SUCCESS The operation succeeded.
+     * \retval FWK_PENDING The operation was acknowledged. Please note that at
+     *      present there is no dedicated driver input api for this case.
      * \retval FWK_E_ACCESS Invalid access, the framework has rejected the
      *      call to the API.
      */
@@ -547,43 +482,6 @@ struct mod_pd_restricted_api {
     int (*get_domain_parent_id)(fwk_id_t pd_id, fwk_id_t *parent_pd_id);
 
     /*!
-     * \brief Set the state of a power domain.
-     *
-     * \note The function sets the state of the power domain identified by
-     *      'pd_id' synchronously from the point of view of the caller.
-     *
-     * \param pd_id Identifier of the power domain whose state has to be set.
-     * \param state State of the power domain.
-     *
-     * \retval FWK_SUCCESS The power state was set.
-     * \retval FWK_E_ACCESS Invalid access, the framework has rejected the
-     *      call to the API.
-     * \retval FWK_E_PARAM The power domain identifier is unknown.
-     * \retval FWK_E_PARAM The 'state' is not valid.
-     */
-    int (*set_state)(fwk_id_t pd_id, unsigned int state);
-
-    /*!
-     * \brief Request an asynchronous power state transition.
-     *
-     * \warning Successful completion of this function does not indicate
-     *      completion of a transition, but instead that a request has been
-     *      submitted.
-     *
-     * \param pd_id Identifier of the power domain whose state has to be set.
-     * \param resp_requested True if the caller wants to be notified with an
-     *      event response at the end of the request processing.
-     * \param state State of the power domain.
-     *
-     * \retval FWK_SUCCESS The power state transition request was submitted.
-     * \retval FWK_E_ACCESS Invalid access, the framework has rejected the
-     *      call to the API.
-     * \retval FWK_E_PARAM One or more parameters were invalid.
-     */
-    int (*set_state_async)(fwk_id_t pd_id, bool resp_requested,
-                           unsigned int state);
-
-    /*!
      * \brief Set the state of a power domain and possibly of one or several of
      *        its ancestors.
      *
@@ -593,22 +491,22 @@ struct mod_pd_restricted_api {
      *
      * \param pd_id Identifier of the power domain whose state has to be set.
      *
-     * \param composite_state State the power domain has to be put into and
+     * \param state State the power domain has to be put into and
      *      possibly the state(s) its ancestor(s) has(have) to be put into. The
      *      module will ensure that, for each power state transition, the parent
      *      and the children of the power domain involved are in a state where
      *      the transition can be completed.
      *
-     * \retval FWK_SUCCESS The composite power state transition was completed.
+     * \retval FWK_SUCCESS The power state transition was completed.
      * \retval FWK_E_ACCESS Invalid access, the framework has rejected the
      *      call to the API.
      * \retval FWK_E_HANDLER The function is not called from a thread.
      * \retval FWK_E_PARAM One or more parameters were invalid.
      */
-    int (*set_composite_state)(fwk_id_t pd_id, uint32_t composite_state);
+    int (*set_state)(fwk_id_t pd_id, uint32_t state);
 
     /*!
-     * \brief Request an asynchronous composite power state transition.
+     * \brief Request an asynchronous power state transition.
      *
      * \warning Successful completion of this function does not indicate
      *      completion of a transition, but instead that a request has been
@@ -619,19 +517,18 @@ struct mod_pd_restricted_api {
      * \param resp_requested True if the caller wants to be notified with an
      *      event response at the end of the request processing.
      *
-     * \param composite_state State the power domain has to be put into and
+     * \param composite State the power domain has to be put into and
      *      possibly the state(s) its ancestor(s) has(have) to be put into. The
      *      module will ensure that, for each power state transition, the parent
      *      and the children of the power domain involved are in a state where
      *      the transition can be completed.
      *
-     * \retval FWK_SUCCESS The composite power state transition was submitted.
+     * \retval FWK_SUCCESS The power state transition was submitted.
      * \retval FWK_E_ACCESS Invalid access, the framework has rejected the
      *      call to the API.
      * \retval FWK_E_PARAM One or more parameters were invalid.
      */
-    int (*set_composite_state_async)(fwk_id_t pd_id, bool resp_requested,
-                                     uint32_t composite_state);
+    int (*set_state_async)(fwk_id_t pd_id, bool resp_requested, uint32_t state);
 
     /*!
      * \brief Get the state of a given power domain.
@@ -648,27 +545,6 @@ struct mod_pd_restricted_api {
      * \retval FWK_E_PARAM The pointer 'state' is equal to NULL.
      */
     int (*get_state)(fwk_id_t pd_id, unsigned int *state);
-
-    /*!
-     * \brief Get the composite state of a power domain and its ancestors (if
-     *        any) in the power domain tree.
-     *
-     * \note The function gets the composite state of the power domain
-     *      identified by 'pd_id' and its ancestors (if any) synchronously from
-     *      the point of view of the calling thread.
-     *
-     * \param pd_id Identifier of the power domain whose composite state has to
-     *      be retrieved.
-     * \param[out] composite_state The power domain composite state.
-     *
-     * \retval FWK_SUCCESS The composite state was returned.
-     * \retval FWK_E_ACCESS Invalid access, the framework has rejected the
-     *      call to the API.
-     * \retval FWK_E_HANDLER The function is not called from a thread.
-     * \retval FWK_E_PARAM The power domain identifier is unknown.
-     * \retval FWK_E_PARAM The pointer 'composite state' is equal to NULL.
-     */
-    int (*get_composite_state)(fwk_id_t pd_id, unsigned int *composite_state);
 
     /*!
      * \brief Reset of a power domain.
@@ -718,6 +594,8 @@ struct mod_pd_restricted_api {
      *
      * \retval FWK_E_ACCESS Invalid access, the framework has rejected the
      *      call to the API.
+     * \retval FWK_PENDING Request aknowledged. A response event will not be
+     *      sent to the caller.
      * \retval FWK_E_HANDLER The function is not called from a thread.
      * \retval FWK_E_NOMEM Failed to allocate a request descriptor.
      */
@@ -732,26 +610,6 @@ struct mod_pd_restricted_api {
  *      transitions following the occurrence of interrupts.
  */
 struct mod_pd_driver_input_api {
-    /*!
-     * \brief Request an asynchronous power state transition.
-     *
-     * \warning Successful completion of this function does not indicate
-     *      completion of a transition, but instead that a request has been
-     *      submitted.
-     *
-     * \param pd_id Identifier of the power domain whose state has to be set.
-     * \param resp_requested True if the caller wants to be notified with an
-     *      event response at the end of the request processing.
-     * \param state State of the power domain.
-     *
-     * \retval FWK_SUCCESS The power state transition request was submitted.
-     * \retval FWK_E_ACCESS Invalid access, the framework has rejected the
-     *      call to the API.
-     * \retval FWK_E_PARAM One or more parameters were invalid.
-     */
-    int (*set_state_async)(fwk_id_t pd_id, bool resp_requested,
-                           unsigned int state);
-
     /*!
      * \brief Request an asynchronous composite power state transition.
      *
@@ -775,8 +633,10 @@ struct mod_pd_driver_input_api {
      *      call to the API.
      * \retval FWK_E_PARAM One or more parameters were invalid.
      */
-    int (*set_composite_state_async)(fwk_id_t pd_id, bool resp_requested,
-                                     uint32_t composite_state);
+    int (*set_state_async)(
+        fwk_id_t pd_id,
+        bool resp_requested,
+        uint32_t composite_state);
 
     /*!
      * \brief Request for a power domain to be reset.
@@ -816,6 +676,28 @@ struct mod_pd_driver_input_api {
      * \retval FWK_E_PARAM The power domain identifier is unknown.
      */
     int (*report_power_state_transition)(fwk_id_t pd_id, unsigned int state);
+
+    /*!
+     * \brief Get the power domain identifier of the last core online before or
+     *      during system suspend.
+     *
+     * \details When an agent calls for system suspend, the power domain module
+     *      ensures that all cores are turned off except for one, which is the
+     *      calling entity. Because any core can call system suspend, it may be
+     *      necessary for a driver to know which core called system suspend.
+     *      With this information the driver can, for example, safely resume the
+     *      system from the same core which was turned off lastly.
+     *
+     * \note The power domain module does not perform any checks to ensure that
+     *      this function is called during a system suspend sequence.
+     *
+     * \param[out] last_core_pd_id Identifier of the last core.
+     *
+     * \retval FWK_E_PARAM The pointer to the identifier is not valid.
+     * \retval FWK_SUCCESS The request was successful.
+     * \return One of the standard framework error codes.
+     */
+    int (*get_last_core_pd_id)(fwk_id_t *last_core_pd_id);
 };
 
 /*!
@@ -849,6 +731,22 @@ struct mod_pd_power_state_transition_notification_params {
 };
 
 /*!
+ * \brief Parameters of a pre-shutdown transition notification.
+ */
+struct mod_pd_pre_shutdown_notif_params {
+    /*! System shutdown type the system is transitioning to */
+    enum mod_pd_system_shutdown system_shutdown;
+};
+
+/*!
+ * \brief Parameters of the response to a pre-shutdown transition notification.
+ */
+struct mod_pd_pre_shutdown_notif_resp_params {
+    /*! Status of the operation from the entity being notified */
+    int status;
+};
+
+/*!
  * \defgroup GroupPowerDomainIds Identifiers
  * \{
  */
@@ -863,7 +761,7 @@ enum mod_pd_api_idx {
     MOD_PD_API_IDX_COUNT,
 };
 
-#if BUILD_HAS_MOD_POWER_DOMAIN
+#ifdef BUILD_HAS_MOD_POWER_DOMAIN
 /*! Public API identifier */
 static const fwk_id_t mod_pd_api_id_public =
     FWK_ID_API_INIT(FWK_MODULE_IDX_POWER_DOMAIN, MOD_PD_API_IDX_PUBLIC);
@@ -877,6 +775,7 @@ static const fwk_id_t mod_pd_api_id_driver_input =
     FWK_ID_API_INIT(FWK_MODULE_IDX_POWER_DOMAIN, MOD_PD_API_IDX_DRIVER_INPUT);
 #endif
 
+#ifdef BUILD_HAS_NOTIFICATION
 /*!
  * \brief Notification indices.
  */
@@ -887,6 +786,9 @@ enum mod_pd_notification_idx {
     /*! Power state pre-transition */
     MOD_PD_NOTIFICATION_IDX_POWER_STATE_PRE_TRANSITION,
 
+    /*! Broadcast notification before shutdown starts */
+    MOD_PD_NOTIFICATION_IDX_PRE_SHUTDOWN,
+
     /*! Number of notifications defined by the power domain module */
     MOD_PD_NOTIFICATION_COUNT,
 };
@@ -894,7 +796,7 @@ enum mod_pd_notification_idx {
 /*!
  * \brief Notification identifiers.
  */
-#if BUILD_HAS_MOD_POWER_DOMAIN
+#ifdef BUILD_HAS_MOD_POWER_DOMAIN
 /*! Identifier of the power state transition notification */
 static const fwk_id_t mod_pd_notification_id_power_state_transition =
     FWK_ID_NOTIFICATION_INIT(FWK_MODULE_IDX_POWER_DOMAIN,
@@ -904,7 +806,82 @@ static const fwk_id_t mod_pd_notification_id_power_state_transition =
 static const fwk_id_t mod_pd_notification_id_power_state_pre_transition =
     FWK_ID_NOTIFICATION_INIT(FWK_MODULE_IDX_POWER_DOMAIN,
         MOD_PD_NOTIFICATION_IDX_POWER_STATE_PRE_TRANSITION);
+
+/*!
+ * Identifier of the pre-shutdown notification.
+ *
+ * \note This notification will be broadcast with module identifier only.
+ */
+static const fwk_id_t mod_pd_notification_id_pre_shutdown =
+    FWK_ID_NOTIFICATION_INIT(FWK_MODULE_IDX_POWER_DOMAIN,
+        MOD_PD_NOTIFICATION_IDX_PRE_SHUTDOWN);
+
 #endif
+
+/*!
+ * \brief Power Domain public events indices
+ */
+enum mod_pd_public_event_idx {
+    /*! Set state request event */
+    MOD_PD_PUBLIC_EVENT_IDX_SET_STATE,
+
+    /*! Get state request event */
+    MOD_PD_PUBLIC_EVENT_IDX_GET_STATE,
+
+    /*! Number of public Power Domain events */
+    MOD_PD_PUBLIC_EVENT_IDX_COUNT,
+};
+
+/*!
+ * \brief Parameters of the set state response event
+ */
+struct pd_set_state_response {
+    /*! Status of the set state request event processing */
+    int status;
+
+    /*!
+     * \brief Copy of the "composite_state" request parameter
+     *
+     * \details The composite state that defines the power state that the power
+     * domain, target of the request, had to be put into and possibly the power
+     * states the ancestors of the power domain had to be put into.
+     */
+    uint32_t composite_state;
+};
+
+/*! Parameters of the get state response event */
+struct pd_get_state_response {
+    /*! Status of the get state request event processing */
+    int status;
+
+    /*! Copy of the "composite" request parameter */
+    bool composite;
+
+    /*!
+     * \brief Copy of the "state" request parameter
+     *
+     * \details The power state of the power domain target of the request or
+     * the composite state of the power domain and its ancestors depending on
+     * the value of the "composite" request parameter.
+     */
+    uint32_t state;
+};
+
+/*!
+ * \brief Public Events identifiers.
+ */
+#ifdef BUILD_HAS_MOD_POWER_DOMAIN
+/*! Identifier of the public event set_state identifier */
+static const fwk_id_t mod_pd_public_event_id_set_state =
+    FWK_ID_EVENT_INIT(FWK_MODULE_IDX_POWER_DOMAIN,
+                      MOD_PD_PUBLIC_EVENT_IDX_SET_STATE);
+
+/*! Identifier of the public event get_state identifier */
+static const fwk_id_t mod_pd_public_event_id_get_state =
+    FWK_ID_EVENT_INIT(FWK_MODULE_IDX_POWER_DOMAIN,
+                      MOD_PD_PUBLIC_EVENT_IDX_GET_STATE);
+#endif
+#endif /* BUILD_HAS_NOTIFICATION */
 
 /*!
  * \}

@@ -1,6 +1,6 @@
 /*
  * Arm SCP/MCP Software
- * Copyright (c) 2015-2019, Arm Limited and Contributors. All rights reserved.
+ * Copyright (c) 2015-2020, Arm Limited and Contributors. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  *
@@ -181,39 +181,12 @@ struct fwk_arch_interrupt_driver {
 };
 
 /*!
- * \brief Memory management data descriptor.
- */
-struct fwk_arch_mm_data {
-    /*! Base address of the memory area used for dynamic memory allocation */
-    uintptr_t start;
-
-    /*! Size of the memory area used for dynamic memory allocation */
-    size_t size;
-};
-
-/*!
  * \brief Initialization driver interface.
  *
  * \details The initialization driver interface allows the framework to request
  *      low-level (architecture-specific) initialization.
  */
 struct fwk_arch_init_driver {
-    /*!
-     * \brief Memory management initialization.
-     *
-     * \details This handler is used by the framework to request memory used
-     *      for dynamic allocation.
-     *
-     * \param data Pointer to the memory management descriptor the handler must
-     *      fill in.
-     *
-     * \retval FWK_SUCCESS Operation succeeded.
-     * \retval FWK_E_PARAM One or more parameters were invalid.
-     * \retval FWK_E_NOMEM Insufficient memory available.
-     * \retval FWK_E_PANIC Unrecoverable initialization error.
-     */
-    int (*mm)(struct fwk_arch_mm_data *data);
-
     /*!
      * \brief Interrupt driver initialization.
      *
@@ -226,7 +199,7 @@ struct fwk_arch_init_driver {
      * \retval FWK_E_PARAM The parameter received by the handler is invalid.
      * \retval FWK_E_PANIC Unrecoverable initialization error.
      */
-    int (*interrupt)(struct fwk_arch_interrupt_driver **driver);
+    int (*interrupt)(const struct fwk_arch_interrupt_driver **driver);
 };
 
 /*!

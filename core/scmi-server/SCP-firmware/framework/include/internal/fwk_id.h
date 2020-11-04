@@ -1,12 +1,14 @@
 /*
  * Arm SCP/MCP Software
- * Copyright (c) 2015-2019, Arm Limited and Contributors. All rights reserved.
+ * Copyright (c) 2015-2020, Arm Limited and Contributors. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
 #ifndef FWK_INTERNAL_ID_H
 #define FWK_INTERNAL_ID_H
+
+#include <stdint.h>
 
 /* Identifier type */
 enum __fwk_id_type {

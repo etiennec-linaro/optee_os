@@ -1,6 +1,6 @@
 /*
  * Arm SCP/MCP Software
- * Copyright (c) 2017-2019, Arm Limited and Contributors. All rights reserved.
+ * Copyright (c) 2017-2020, Arm Limited and Contributors. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -8,9 +8,11 @@
 #ifndef MOD_CLOCK_H
 #define MOD_CLOCK_H
 
-#include <stdint.h>
 #include <fwk_element.h>
+#include <fwk_id.h>
 #include <fwk_module_idx.h>
+
+#include <stdint.h>
 
 /*!
  * \addtogroup GroupModules Modules
@@ -30,7 +32,7 @@
  */
 enum mod_clock_state {
     /*! The clock is stopped */
-    MOD_CLOCK_STATE_STOPPED,
+    MOD_CLOCK_STATE_STOPPED = 0,
 
     /*! The clock is running */
     MOD_CLOCK_STATE_RUNNING,
@@ -53,7 +55,7 @@ enum mod_clock_notification_idx {
     MOD_CLOCK_NOTIFICATION_IDX_COUNT
 };
 
-#if BUILD_HAS_MOD_CLOCK
+#ifdef BUILD_HAS_MOD_CLOCK
 /*!
  * \brief Identifier for the \ref MOD_CLOCK_NOTIFICATION_IDX_STATE_CHANGED
  *     notification.
@@ -398,6 +400,8 @@ struct mod_clock_api {
      *      achieve the given rate.
      *
      * \retval FWK_SUCCESS The operation succeeded.
+     * \retval FWK_PENDING The request is pending. The result for this operation
+     *      will be provided via a response event.
      * \retval FWK_E_PARAM The clock identifier was invalid.
      * \retval FWK_E_SUPPORT Deferred handling of asynchronous drivers is not
      *      supported.
@@ -414,6 +418,8 @@ struct mod_clock_api {
      * \param[out] rate The current clock rate in Hertz.
      *
      * \retval FWK_SUCCESS The operation succeeded.
+     * \retval FWK_PENDING The request is pending. The requested rate will be
+     *      provided via a response event.
      * \retval FWK_E_PARAM The clock identifier was invalid.
      * \retval FWK_E_PARAM The rate pointer was NULL.
      * \retval FWK_E_SUPPORT Deferred handling of asynchronous drivers is not
@@ -447,6 +453,8 @@ struct mod_clock_api {
      * \param state One of the valid clock states.
      *
      * \retval FWK_SUCCESS The operation succeeded.
+     * \retval FWK_PENDING The request is pending. The result for this operation
+     *      will be provided via a response event.
      * \retval FWK_E_PARAM The clock identifier was invalid.
      * \retval FWK_E_SUPPORT Deferred handling of asynchronous drivers is not
      *      supported.
@@ -462,6 +470,8 @@ struct mod_clock_api {
      * \param[out] state The current clock state.
      *
      * \retval FWK_SUCCESS The operation succeeded.
+     * \retval FWK_PENDING The request is pending. The requested state will be
+     *      provided via a response event.
      * \retval FWK_E_PARAM The clock identifier was invalid.
      * \retval FWK_E_PARAM The state pointer was NULL.
      * \retval FWK_E_SUPPORT Deferred handling of asynchronous drivers is not
@@ -536,19 +546,39 @@ struct mod_clock_resp_params {
 };
 
 /*!
- * \brief Define the first exposed event handled by this module. Other internal
- *      events take indices after this.
+ * \brief Define the event identifiers for deferred responses.
  */
-#define MOD_CLOCK_EVENT_IDX_REQUEST     0
+enum mod_clock_event_idx {
+    MOD_CLOCK_EVENT_IDX_SET_RATE_REQUEST,
+    MOD_CLOCK_EVENT_IDX_GET_RATE_REQUEST,
+
+    MOD_CLOCK_EVENT_IDX_SET_STATE_REQUEST,
+    MOD_CLOCK_EVENT_IDX_GET_STATE_REQUEST,
+
+    MOD_CLOCK_EVENT_IDX_COUNT
+};
 
  /*!
- * \brief Request event identifier.
+ * \brief Request event identifiers.
  *
- * \details This identifier is used by the clients that expect to receive a
- *      response event from this module.
+ * \details These identifiers are used by the clients that expect to receive a
+ *      response event from this module when a request is deferred.
  */
-static const fwk_id_t mod_clock_event_id_request =
-    FWK_ID_EVENT_INIT(FWK_MODULE_IDX_CLOCK, MOD_CLOCK_EVENT_IDX_REQUEST);
+static const fwk_id_t mod_clock_event_id_set_rate_request =
+    FWK_ID_EVENT_INIT(FWK_MODULE_IDX_CLOCK,
+                      MOD_CLOCK_EVENT_IDX_SET_RATE_REQUEST);
+
+static const fwk_id_t mod_clock_event_id_get_rate_request =
+    FWK_ID_EVENT_INIT(FWK_MODULE_IDX_CLOCK,
+                      MOD_CLOCK_EVENT_IDX_GET_RATE_REQUEST);
+
+static const fwk_id_t mod_clock_event_id_set_state_request =
+    FWK_ID_EVENT_INIT(FWK_MODULE_IDX_CLOCK,
+                      MOD_CLOCK_EVENT_IDX_SET_STATE_REQUEST);
+
+static const fwk_id_t mod_clock_event_id_get_state_request =
+    FWK_ID_EVENT_INIT(FWK_MODULE_IDX_CLOCK,
+                      MOD_CLOCK_EVENT_IDX_GET_STATE_REQUEST);
 
 /*!
  * @}

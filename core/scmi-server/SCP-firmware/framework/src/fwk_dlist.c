@@ -1,6 +1,6 @@
 /*
  * Arm SCP/MCP Software
- * Copyright (c) 2015-2019, Arm Limited and Contributors. All rights reserved.
+ * Copyright (c) 2015-2020, Arm Limited and Contributors. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  *
@@ -8,17 +8,21 @@
  *     Intrusive circular doubly-linked list.
  */
 
-#include <stddef.h>
 #include <fwk_assert.h>
-#include <fwk_list.h>
+//#include <assert.h>
+
+#include <fwk_dlist.h>
+#include <fwk_slist.h>
+
+#include <stddef.h>
 
 void __fwk_dlist_push_head(
     struct fwk_dlist *list,
     struct fwk_dlist_node *new)
 {
-    assert(list != NULL);
-    assert(new != NULL);
-    fwk_expect(new->prev == NULL);
+    assert(list);
+    assert(new);
+    fwk_check(new->prev == NULL);
 
     new->prev = (struct fwk_dlist_node *)list;
     list->head->prev = new;
@@ -32,9 +36,9 @@ void __fwk_dlist_push_tail(
     struct fwk_dlist *list,
     struct fwk_dlist_node *new)
 {
-    assert(list != NULL);
-    assert(new != NULL);
-    fwk_expect(new->prev == NULL);
+    fwk_assert(list != NULL);
+    fwk_assert(new != NULL);
+    fwk_check(new->prev == NULL);
 
     new->prev = list->tail;
 
@@ -47,7 +51,7 @@ struct fwk_dlist_node *__fwk_dlist_pop_head(struct fwk_dlist *list)
 {
     struct fwk_dlist_node *popped;
 
-    assert(list != NULL);
+    fwk_assert(list != NULL);
 
     popped = (struct fwk_dlist_node *)__fwk_slist_pop_head(
         (struct fwk_slist *)list);
@@ -64,11 +68,11 @@ void __fwk_dlist_remove(
     struct fwk_dlist *list,
     struct fwk_dlist_node *node)
 {
-    assert(list != NULL);
-    assert(node != NULL);
-    assert(node != (struct fwk_dlist_node *)list);
-    assert(node->prev != NULL);
-    assert(node->next != NULL);
+    fwk_assert(list != NULL);
+    fwk_assert(node != NULL);
+    fwk_assert(node != (struct fwk_dlist_node *)list);
+    fwk_assert(node->prev != NULL);
+    fwk_assert(node->next != NULL);
 
     assert(__fwk_slist_contains(
         (struct fwk_slist *)list,
@@ -86,11 +90,11 @@ void __fwk_dlist_insert(
     struct fwk_dlist_node *restrict new,
     struct fwk_dlist_node *restrict node)
 {
-    assert(list != NULL);
-    assert(new != NULL);
-    assert(new != node);
-    fwk_expect(new->next == NULL);
-    fwk_expect(new->prev == NULL);
+    fwk_assert(list != NULL);
+    fwk_assert(new != NULL);
+    fwk_assert(new != node);
+    fwk_check(new->next == NULL);
+    fwk_check(new->prev == NULL);
 
     if (node == NULL) {
         __fwk_dlist_push_tail(list, new);
@@ -98,8 +102,8 @@ void __fwk_dlist_insert(
         return;
     }
 
-    assert(node->prev != NULL);
-    assert(node->next != NULL);
+    fwk_assert(node->prev != NULL);
+    fwk_assert(node->next != NULL);
 
     assert(__fwk_slist_contains(
         (struct fwk_slist *)list,

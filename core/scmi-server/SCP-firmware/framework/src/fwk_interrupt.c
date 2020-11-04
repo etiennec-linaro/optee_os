@@ -1,6 +1,6 @@
 /*
  * Arm SCP/MCP Software
- * Copyright (c) 2015-2019, Arm Limited and Contributors. All rights reserved.
+ * Copyright (c) 2015-2020, Arm Limited and Contributors. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  *
@@ -8,13 +8,14 @@
  *     Interrupt management.
  */
 
-#include <limits.h>
-#include <stdbool.h>
+#include <internal/fwk_interrupt.h>
+
 #include <fwk_arch.h>
 #include <fwk_interrupt.h>
-#include <fwk_mm.h>
 #include <fwk_status.h>
-#include <internal/fwk_interrupt.h>
+
+#include <stdbool.h>
+#include <stddef.h>
 
 static bool initialized;
 static const struct fwk_arch_interrupt_driver *driver;

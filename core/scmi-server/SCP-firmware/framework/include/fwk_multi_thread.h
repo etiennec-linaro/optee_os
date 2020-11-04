@@ -1,6 +1,6 @@
 /*
  * Arm SCP/MCP Software
- * Copyright (c) 2015-2019, Arm Limited and Contributors. All rights reserved.
+ * Copyright (c) 2015-2020, Arm Limited and Contributors. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -8,6 +8,7 @@
 #ifndef FWK_MULTI_THREAD_H
 #define FWK_MULTI_THREAD_H
 
+#include <fwk_attributes.h>
 #include <fwk_event.h>
 #include <fwk_id.h>
 #include <fwk_thread.h>
@@ -66,6 +67,10 @@ int fwk_thread_create(fwk_id_t id);
  *      The event identifier and target identifier are validated and must
  *      belong to the same module.
  *
+ *      Warning: As this API could have serious adverse effects on system
+ *               performance and throughput, this API has been deprecated
+ *               and should not be used in single-threaded mode.
+ *
  * \param event Event to put into the queue for processing. Must not be \c NULL.
  * \param[out] resp_event The response event. Must not be \c NULL.
  *
@@ -77,8 +82,16 @@ int fwk_thread_create(fwk_id_t id);
  * \retval FWK_E_ACCESS The API is called from an ISR, called from the common
  *      thread, or the event targets the calling thread.
  */
+#ifdef BUILD_HAS_MULTITHREADING
 int fwk_thread_put_event_and_wait(struct fwk_event *event,
-                                  struct fwk_event *resp_event);
+    struct fwk_event *resp_event);
+
+#else
+int fwk_thread_put_event_and_wait(
+    struct fwk_event *event,
+    struct fwk_event *resp_event) FWK_DEPRECATED;
+
+#endif
 
 /*!
  * @}

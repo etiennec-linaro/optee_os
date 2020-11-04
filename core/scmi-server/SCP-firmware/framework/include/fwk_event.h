@@ -1,6 +1,6 @@
 /*
  * Arm SCP/MCP Software
- * Copyright (c) 2015-2019, Arm Limited and Contributors. All rights reserved.
+ * Copyright (c) 2015-2020, Arm Limited and Contributors. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  *
@@ -11,12 +11,13 @@
 #ifndef FWK_EVENT_H
 #define FWK_EVENT_H
 
-#include <stdbool.h>
-#include <stddef.h>
-#include <stdint.h>
 #include <fwk_align.h>
 #include <fwk_id.h>
 #include <fwk_list.h>
+
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
 
 /*!
  * \addtogroup GroupLibFramework Framework
@@ -75,12 +76,14 @@ struct fwk_event {
      */
     bool is_delayed_response;
 
+#ifdef BUILD_HAS_MULTITHREADING
     /*!
      * \internal
      * \brief Flag indicating whether the event is a response event that a
      *      thread is waiting for to resume execution.
      */
     bool is_thread_wakeup_event;
+#endif
 
     /*!
      * \brief Event identifier.

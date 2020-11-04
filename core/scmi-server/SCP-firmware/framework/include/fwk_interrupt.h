@@ -1,6 +1,6 @@
 /*
  * Arm SCP/MCP Software
- * Copyright (c) 2015-2019, Arm Limited and Contributors. All rights reserved.
+ * Copyright (c) 2015-2020, Arm Limited and Contributors. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  *
@@ -12,9 +12,10 @@
 #define FWK_INTERRUPT_H
 
 #include <fwk_arch.h>
+
+#include <limits.h>
 #include <stdbool.h>
 #include <stdint.h>
-#include <limits.h>
 
 /*!
  * \addtogroup GroupLibFramework Framework

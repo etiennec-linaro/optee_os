@@ -9,13 +9,14 @@
 #include <string.h>
 #include <fwk_assert.h>
 #include <fwk_interrupt.h>
+#include <fwk_log.h>
 #include <fwk_mm.h>
 #include <fwk_macros.h>
 #include <fwk_module.h>
 #include <fwk_module_idx.h>
 #include <fwk_notification.h>
 #include <fwk_status.h>
-#include <mod_log.h>
+#include <mod_power_domain.h>
 #include <mod_scmi.h>
 #include <mod_optee_smt.h>
 #include <internal/optee_smt.h>
@@ -47,12 +48,12 @@ struct smt_channel_ctx {
 
     /* SCMI service API */
     struct mod_scmi_from_transport_api *scmi_api;
+
+    /* Flag indicating the mailbox is ready */
+    bool optee_smt_mailbox_ready;
 };
 
 struct smt_ctx {
-    /* Log module API */
-    struct mod_log_api *log_api;
-
     /* Table of channel contexts */
     struct smt_channel_ctx *channel_ctx_table;
 
@@ -67,14 +68,7 @@ static struct smt_ctx smt_ctx;
  */
 static int smt_get_secure(fwk_id_t channel_id, bool *secure)
 {
-    int status;
     struct smt_channel_ctx *channel_ctx;
-
-    status = fwk_module_check_call(channel_id);
-    if (status != FWK_SUCCESS) {
-        assert(false);
-        return status;
-    }
 
     if (secure == NULL) {
         assert(false);
@@ -91,14 +85,7 @@ static int smt_get_secure(fwk_id_t channel_id, bool *secure)
 
 static int smt_get_max_payload_size(fwk_id_t channel_id, size_t *size)
 {
-    int status;
     struct smt_channel_ctx *channel_ctx;
-
-    status = fwk_module_check_call(channel_id);
-    if (status != FWK_SUCCESS) {
-        assert(false);
-        return status;
-    }
 
     if (size == NULL) {
         assert(false);
@@ -115,14 +102,7 @@ static int smt_get_max_payload_size(fwk_id_t channel_id, size_t *size)
 
 static int smt_get_message_header(fwk_id_t channel_id, uint32_t *header)
 {
-    int status;
     struct smt_channel_ctx *channel_ctx;
-
-    status = fwk_module_check_call(channel_id);
-    if (status != FWK_SUCCESS) {
-        assert(false);
-        return status;
-    }
 
     if (header == NULL) {
         assert(false);
@@ -144,14 +124,7 @@ static int smt_get_payload(fwk_id_t channel_id,
                            const void **payload,
                            size_t *size)
 {
-    int status;
     struct smt_channel_ctx *channel_ctx;
-
-    status = fwk_module_check_call(channel_id);
-    if (status != FWK_SUCCESS) {
-        assert(false);
-        return status;
-    }
 
     if (payload == NULL) {
         assert(false);
@@ -179,14 +152,7 @@ static int smt_write_payload(fwk_id_t channel_id,
                              const void *payload,
                              size_t size)
 {
-    int status;
     struct smt_channel_ctx *channel_ctx;
-
-    status = fwk_module_check_call(channel_id);
-    if (status != FWK_SUCCESS) {
-        assert(false);
-        return status;
-    }
 
     channel_ctx =
         &smt_ctx.channel_ctx_table[fwk_id_get_element_idx(channel_id)];
@@ -212,13 +178,6 @@ static int smt_respond(fwk_id_t channel_id, const void *payload, size_t size)
 {
     struct smt_channel_ctx *channel_ctx;
     struct mod_optee_smt_memory *memory;
-    int status;
-
-    status = fwk_module_check_call(channel_id);
-    if (status != FWK_SUCCESS) {
-        assert(false);
-        return status;
-    }
 
     channel_ctx =
         &smt_ctx.channel_ctx_table[fwk_id_get_element_idx(channel_id)];
@@ -266,9 +225,15 @@ static const struct mod_scmi_to_transport_api smt_mod_scmi_to_transport_api = {
 /*
  * Driver handler API
  */
-static int smt_slave_handler(struct smt_channel_ctx *channel_ctx)
+static struct mod_optee_smt_memory *channel_smt_mem(struct smt_channel_ctx *ctx)
 {
-    struct mod_optee_smt_memory *memory, *in, *out;
+    return (struct mod_optee_smt_memory *)ctx->config->mailbox_address;
+}
+
+static int smt_slave_handler(struct smt_channel_ctx *channel_ctx,
+                             struct mod_optee_smt_memory *memory)
+{
+    struct mod_optee_smt_memory *in, *out;
     size_t payload_size;
     int status;
 
@@ -276,15 +241,18 @@ static int smt_slave_handler(struct smt_channel_ctx *channel_ctx)
     if (channel_ctx->locked)
         return FWK_E_STATE;
 
-    memory = (struct mod_optee_smt_memory *)channel_ctx->config->mailbox_address;
+    if (memory)
+        channel_ctx->config->mailbox_address = (uintptr_t)memory;
+    else
+        memory = channel_smt_mem(channel_ctx);
+
     in = channel_ctx->in;
     out = channel_ctx->out;
 
     /* Check we have ownership of the mailbox */
     if (memory->status & MOD_OPTEE_SMT_MAILBOX_STATUS_FREE_MASK) {
-        smt_ctx.log_api->log(
-            MOD_LOG_GROUP_ERROR,
-            "[SMT] Mailbox ownership error on channel %u\n",
+        FWK_LOG_ERR(
+	    "[SMT] Mailbox ownership error on channel %u\n",
             fwk_id_get_element_idx(channel_ctx->id));
 
         return FWK_E_STATE;
@@ -314,7 +282,7 @@ static int smt_slave_handler(struct smt_channel_ctx *channel_ctx)
 
         out->status |= MOD_OPTEE_SMT_MAILBOX_STATUS_ERROR_MASK;
         return smt_respond(channel_ctx->id,
-			   &(int32_t){ SCMI_PROTOCOL_ERROR },
+                           &(int32_t){ SCMI_PROTOCOL_ERROR },
                            sizeof(int32_t));
     }
 
@@ -331,17 +299,19 @@ static int smt_slave_handler(struct smt_channel_ctx *channel_ctx)
     return FWK_SUCCESS;
 }
 
-static int smt_signal_message(fwk_id_t channel_id)
+static int smt_signal_message(fwk_id_t channel_id, void *memory)
 {
-    int status;
     struct smt_channel_ctx *channel_ctx;
-
-    status = fwk_module_check_call(channel_id);
-    if (status != FWK_SUCCESS)
-        return status;
 
     channel_ctx =
         &smt_ctx.channel_ctx_table[fwk_id_get_element_idx(channel_id)];
+
+    if (!channel_ctx->optee_smt_mailbox_ready) {
+        /* Discard any message in the mailbox when not ready */
+        FWK_LOG_ERR("[OPTEE_SMT] Message not valid\n");
+
+        return FWK_SUCCESS;
+    }
 
     switch (channel_ctx->config->type) {
     case MOD_OPTEE_SMT_CHANNEL_TYPE_MASTER:
@@ -349,7 +319,7 @@ static int smt_signal_message(fwk_id_t channel_id)
         assert(false);
         break;
     case MOD_OPTEE_SMT_CHANNEL_TYPE_SLAVE:
-        return smt_slave_handler(channel_ctx);
+        return smt_slave_handler(channel_ctx, memory);
     default:
         /* Invalid config */
         assert(false);
@@ -359,8 +329,17 @@ static int smt_signal_message(fwk_id_t channel_id)
     return FWK_SUCCESS;
 }
 
+static struct mod_optee_smt_memory *smt_get_mailbox(fwk_id_t channel_id)
+{
+    size_t elt_idx = fwk_id_get_element_idx(channel_id);
+    struct smt_channel_ctx *channel_ctx = &smt_ctx.channel_ctx_table[elt_idx];
+
+    return channel_smt_mem(channel_ctx);
+}
+
 static const struct mod_optee_smt_driver_input_api driver_input_api = {
     .signal_message = smt_signal_message,
+    .get_memory = smt_get_mailbox,
 };
 
 /*
@@ -369,8 +348,9 @@ static const struct mod_optee_smt_driver_input_api driver_input_api = {
 static int mailbox_init(fwk_id_t module_id, unsigned int element_count,
                         const void *data)
 {
-    smt_ctx.channel_ctx_table = fwk_mm_calloc(element_count,
-					      sizeof(smt_ctx.channel_ctx_table[0]));
+    size_t sz = sizeof(*smt_ctx.channel_ctx_table);
+
+    smt_ctx.channel_ctx_table = fwk_mm_calloc(element_count, sz);
     if (smt_ctx.channel_ctx_table == NULL) {
         assert(false);
         return FWK_E_NOMEM;
@@ -383,11 +363,10 @@ static int mailbox_init(fwk_id_t module_id, unsigned int element_count,
 static int mailbox_channel_init(fwk_id_t channel_id, unsigned int slot_count,
                             const void *data)
 {
-    struct smt_channel_ctx *channel_ctx;
-    struct mod_optee_smt_memory *shmem;
+    size_t elt_idx = fwk_id_get_element_idx(channel_id);
+    struct smt_channel_ctx *channel_ctx = &smt_ctx.channel_ctx_table[elt_idx];
+    struct mod_optee_smt_memory *shmem = NULL;
 
-    channel_ctx =
-        &smt_ctx.channel_ctx_table[fwk_id_get_element_idx(channel_id)];
     channel_ctx->config = (struct mod_optee_smt_channel_config*)data;
 
     /* Validate channel config */
@@ -408,9 +387,18 @@ static int mailbox_channel_init(fwk_id_t channel_id, unsigned int slot_count,
     channel_ctx->max_payload_size = channel_ctx->config->mailbox_size -
         sizeof(struct mod_optee_smt_memory);
 
-    shmem = (void *)channel_ctx->config->mailbox_address;
-    memset(shmem, 0, sizeof(*shmem));
-    shmem->status = MOD_OPTEE_SMT_MAILBOX_STATUS_FREE_MASK;
+    /* Check memory allocations */
+    if ((channel_ctx->in == NULL) || (channel_ctx->out == NULL)) {
+        assert(false);
+        return FWK_E_NOMEM;
+    }
+
+    shmem = channel_smt_mem(channel_ctx);
+    *shmem = (struct mod_optee_smt_memory){
+        .status = MOD_OPTEE_SMT_MAILBOX_STATUS_FREE_MASK,
+    };
+
+    channel_ctx->optee_smt_mailbox_ready = true;
 
     return FWK_SUCCESS;
 }
@@ -422,9 +410,7 @@ static int optee_smt_bind(fwk_id_t id, unsigned int round)
 
     if (round == 0) {
         if (fwk_id_is_type(id, FWK_ID_TYPE_MODULE)) {
-            return fwk_module_bind(fwk_module_id_log,
-                                   FWK_ID_API(FWK_MODULE_IDX_LOG, 0),
-                                   &smt_ctx.log_api);
+            return FWK_SUCCESS;
         }
 
         channel_ctx = &smt_ctx.channel_ctx_table[fwk_id_get_element_idx(id)];
@@ -453,7 +439,8 @@ static int optee_smt_process_bind_request(fwk_id_t source_id,
                                           fwk_id_t api_id,
                                           const void **api)
 {
-    struct smt_channel_ctx *channel_ctx;
+    struct smt_channel_ctx *channel_ctx = NULL;
+    size_t elt_idx = 0;
 
     /* Only bind to a channel (not the whole module) */
     if (!fwk_id_is_type(target_id, FWK_ID_TYPE_ELEMENT)) {
@@ -462,8 +449,8 @@ static int optee_smt_process_bind_request(fwk_id_t source_id,
         return FWK_E_PARAM;
     }
 
-    channel_ctx =
-        &smt_ctx.channel_ctx_table[fwk_id_get_element_idx(target_id)];
+    elt_idx = fwk_id_get_element_idx(target_id);
+    channel_ctx = &smt_ctx.channel_ctx_table[elt_idx];
 
     switch (fwk_id_get_api_idx(api_id)) {
     case MOD_OPTEE_SMT_API_IDX_DRIVER_INPUT:
@@ -509,16 +496,86 @@ static int optee_smt_process_bind_request(fwk_id_t source_id,
 
 static int mailbox_start(fwk_id_t id)
 {
+#ifdef BUILD_HAS_NOTIFICATION
+    struct smt_channel_ctx *ctx;
+
+    if (!fwk_id_is_type(id, FWK_ID_TYPE_ELEMENT))
+        return FWK_SUCCESS;
+
+    ctx = &smt_ctx.channel_ctx_table[fwk_id_get_element_idx(id)];
+
+    /* Register for power domain state transition notifications */
+    return fwk_notification_subscribe(
+        mod_pd_notification_id_power_state_transition,
+        ctx->config->pd_source_id,
+        id);
+#endif /* BUILD_HAS_NOTIFICATION */
     return FWK_SUCCESS;
 }
 
+#ifdef BUILD_HAS_NOTIFICATION
+static int smt_process_notification(
+    const struct fwk_event *event,
+    struct fwk_event *resp_event)
+{
+    struct mod_pd_power_state_transition_notification_params *params;
+    struct smt_channel_ctx *channel_ctx;
+    unsigned int notifications_sent;
+    int status;
+
+    assert(fwk_id_is_equal(event->id,
+        mod_pd_notification_id_power_state_transition));
+    assert(fwk_id_is_type(event->target_id, FWK_ID_TYPE_ELEMENT));
+
+    params = (struct mod_pd_power_state_transition_notification_params *)
+        event->params;
+
+    channel_ctx =
+        &smt_ctx.channel_ctx_table[fwk_id_get_element_idx(event->target_id)];
+
+    if (params->state != MOD_PD_STATE_ON) {
+        if (params->state == MOD_PD_STATE_OFF)
+            channel_ctx->smt_mailbox_ready = false;
+
+        return FWK_SUCCESS;
+    }
+
+    if (channel_ctx->config->policies & MOD_OPTEE_SMT_POLICY_INIT_MAILBOX) {
+        /* Initialize mailbox */
+        *((struct mod_optee_smt_memory *)channel_ctx->config->mailbox_address) =
+            (struct mod_optee_smt_memory) {
+            .status = (1 << MOD_OPTEE_SMT_MAILBOX_STATUS_FREE_POS)
+        };
+
+        /* Notify that this mailbox is initialized */
+        struct fwk_event smt_channels_initialized_notification = {
+            .id = mod_optee_smt_notification_id_initialized,
+            .source_id = FWK_ID_NONE
+        };
+
+        channel_ctx->smt_mailbox_ready = true;
+
+        status = fwk_notification_notify(&smt_channels_initialized_notification,
+            &notifications_sent);
+        if (status != FWK_SUCCESS)
+            return status;
+    }
+
+    return FWK_SUCCESS;
+}
+#endif /* BUILD_HAS_NOTIFICATION */
+
 const struct fwk_module module_optee_smt = {
-    .name = "host mailbox",
+    .name = "OPTEE SMT",
     .type = FWK_MODULE_TYPE_SERVICE,
     .api_count = MOD_OPTEE_SMT_API_IDX_COUNT,
-    .init = mailbox_init,
+     .init = mailbox_init,
     .element_init = mailbox_channel_init,
     .bind = optee_smt_bind,
     .start = mailbox_start,
     .process_bind_request = optee_smt_process_bind_request,
+#ifdef BUILD_HAS_NOTIFICATION
+    .notification_count = MOD_OPTEE_SMT_NOTIFICATION_IDX_COUNT,
+    .process_notification = smt_process_notification,
+#endif /* BUILD_HAS_NOTIFICATION */
 };

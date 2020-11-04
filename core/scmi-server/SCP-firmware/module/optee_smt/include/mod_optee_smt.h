@@ -3,9 +3,6 @@
  * Copyright (c) 2015-2019, Arm Limited and Contributors. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
- *
- * Description:
- *     OP-TEE mailbox buffer layer
  */
 
 #ifndef MOD_OPTEE_SMT_H
@@ -43,9 +40,6 @@
  * \details Defines the role of an entity in a channel
  */
 enum mod_optee_smt_channel_type {
-    /*! Invalid reserve null value */
- //   MOD_OPTEE_SMT_CHANNEL_TYPE_RESERVED = 0,
-
     /*! Master channel */
     MOD_OPTEE_SMT_CHANNEL_TYPE_MASTER,
 
@@ -114,7 +108,7 @@ struct mod_optee_smt_driver_input_api {
      * \return One of the standard error codes for implementation-defined
      * errors.
      */
-    int (*signal_message)(fwk_id_t channel_id);
+    int (*signal_message)(fwk_id_t channel_id, void *memory);
 
 
     /*!
@@ -136,4 +130,26 @@ enum mod_optee_smt_api_idx {
     MOD_OPTEE_SMT_API_IDX_COUNT,
 };
 
+/*!
+ * \brief OPTEE_SMT notification indices.
+ */
+enum mod_smt_notification_idx {
+#ifdef BUILD_HAS_NOTIFICATION
+    /*! The SMT channel has been initialized */
+    MOD_OPTEE_SMT_NOTIFICATION_IDX_INITIALIZED,
+#endif /* BUILD_HAS_NOTIFICATION */
+    /*! Number of defined notifications */
+    MOD_OPTEE_SMT_NOTIFICATION_IDX_COUNT
+};
+
+#ifdef BUILD_HAS_NOTIFICATION
+/*!
+ * \brief Identifier for the MOD_SMT_NOTIFICATION_IDX_INITIALIZED
+ *     notification.
+ */
+static const fwk_id_t mod_smt_notification_id_initialized =
+    FWK_ID_NOTIFICATION_INIT(
+        FWK_MODULE_IDX_OPTEE_SMT,
+        MOD_OPTEE_SMT_NOTIFICATION_IDX_INITIALIZED);
+#endif /* BUILD_HAS_NOTIFICATION */
 #endif /* MOD_OPTEE_SMT_H */

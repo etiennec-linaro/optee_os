@@ -118,6 +118,10 @@ ifneq ($(CFG_WITH_ARM_TRUSTED_FW),y)
 core-platform-subdirs += $(arch-dir)/sm
 endif
 
+ifeq ($(CFG_SCMI_SERVER),y)
+core-platform-subdirs += $(arch-dir)/scmi
+endif
+
 arm64-platform-cppflags += -DARM64=1 -D__LP64__=1
 arm32-platform-cppflags += -DARM32=1 -D__ILP32__=1
 

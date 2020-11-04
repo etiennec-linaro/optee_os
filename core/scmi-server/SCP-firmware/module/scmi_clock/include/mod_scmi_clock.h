@@ -1,6 +1,6 @@
 /*
  * Arm SCP/MCP Software
- * Copyright (c) 2015-2019, Arm Limited and Contributors. All rights reserved.
+ * Copyright (c) 2015-2020, Arm Limited and Contributors. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  *
@@ -11,6 +11,11 @@
 #ifndef MOD_SCMI_CLOCK_H
 #define MOD_SCMI_CLOCK_H
 
+#include <fwk_id.h>
+
+#include <mod_clock.h>
+
+#include <stddef.h>
 #include <stdint.h>
 
 /*!
@@ -65,8 +70,13 @@ struct mod_scmi_clock_device {
      */
     fwk_id_t element_id;
 
-    /*! Mask of permission flags defined by \ref mod_scmi_clock_permissions */
-    uint8_t permissions;
+    /*!
+     * \brief Exposed state of the clock.
+     *
+     * \details This reflects the staet of the clock as exposed through to the
+     *      SCMI agent regardless of the backend clock/resources effective state.
+     */
+    enum mod_clock_state state;
 };
 
 /*!
@@ -78,7 +88,7 @@ struct mod_scmi_clock_device {
  */
 struct mod_scmi_clock_agent {
     /*! Pointer to a table of clock devices that are visible to the agent */
-    const struct mod_scmi_clock_device *device_table;
+    struct mod_scmi_clock_device *device_table;
 
     /*!
      * \brief The number of \c mod_scmi_clock_device structures in the table
@@ -103,6 +113,104 @@ struct mod_scmi_clock_config {
     /*! Number of agents in \ref agent_table */
     size_t agent_count;
 };
+
+/*!
+ * \defgroup GroupScmiClockPolicyHandlers Policy Handlers
+ *
+ * \brief SCMI Clock Policy Handlers.
+ *
+ * \details The SCMI policy handlers are weak definitions to allow a platform
+ *      to implement a policy appropriate to that platform. The SCMI
+ *      clock policy functions may be overridden in the
+ * `product/<platform>/src` directory.
+ *
+ * \note The `rate`/`round_mode`/`state` values may be changed by the policy
+ *      handlers.
+ * \note See `product/juno/src/juno_scmi_clock.c` for an example policy
+ *      handler.
+ *
+ * \{
+ */
+
+/*!
+ * \brief Policy handler policies.
+ *
+ * \details These values are returned to the message handler by the policy
+ *      handlers to determine whether the message handler should continue
+ *      processing the message, or whether the request has been rejected.
+ */
+enum mod_scmi_clock_policy_status {
+    /*! Do not execute the message handler */
+    MOD_SCMI_CLOCK_SKIP_MESSAGE_HANDLER,
+
+    /*! Execute the message handler */
+    MOD_SCMI_CLOCK_EXECUTE_MESSAGE_HANDLER,
+};
+
+/*!
+ * \brief SCMI Clock Set Rate command policy.
+ *
+ * \details This function determines whether the SCMI message handler should
+ *      allow or reject a given SCMI Clock Set Rate command.
+ *
+ *      The SCMI policy handler is executed before the message handler is
+ *      called. The SCMI protocol message handler will only continue if the
+ *      policy handler both returns ::FWK_SUCCESS and sets the policy status to
+ *      ::MOD_SCMI_CLOCK_EXECUTE_MESSAGE_HANDLER.
+ *
+ *      The SCMI policy handlers have default weak implementations that allow a
+ *      platform to implement a policy appropriate for that platform.
+ *
+ * \note See `product/juno/src/juno_scmi_clock.c` for an example policy
+ *      handler.
+ *
+ * \param[out] policy_status Whether the command should be accepted or not.
+ * \param[in, out] round_mode Rounding operation to perform, if required, to
+ *      achieve the given rate.
+ * \param[in, out] rate Desired frequency in hertz.
+ * \param[in] service_id Identifier of the agent making the request.
+ * \param[in] clock_dev_id SCMI clock device identifier.
+ *
+ * \retval ::FWK_SUCCESS The operation succeeded.
+ *
+ * \return Status code representing the result of the operation.
+ */
+int mod_scmi_clock_rate_set_policy(
+    enum mod_scmi_clock_policy_status *policy_status,
+    enum mod_clock_round_mode *round_mode,
+    uint64_t *rate,
+    fwk_id_t service_id,
+    uint32_t clock_dev_id);
+
+/*!
+ * \brief SCMI Clock Set Config command policy.
+ *
+ * \details This function determines whether the SCMI message handler should
+ *      allow or reject a given SCMI Clock Set Config command.
+ *
+ *      The SCMI policy handler is executed before the message handler is
+ *      called. The SCMI protocol message handler will only continue if the
+ *      policy handler both returns ::FWK_SUCCESS and sets the policy status to
+ *      ::MOD_SCMI_CLOCK_EXECUTE_MESSAGE_HANDLER.
+ *
+ * \param[out] policy_status Whether the command should be accepted or not.
+ * \param[in, out] state Pointer to one of the valid clock states.
+ * \param[in] service_id Identifier of the agent making the request.
+ * \param[in] clock_dev_id Identifier of the clock.
+ *
+ * \retval ::FWK_SUCCESS The operation succeeded.
+ *
+ * \return Status code representing the result of the operation.
+ */
+int mod_scmi_clock_config_set_policy(
+    enum mod_scmi_clock_policy_status *policy_status,
+    enum mod_clock_state *state,
+    fwk_id_t service_id,
+    uint32_t clock_dev_id);
+
+/*!
+ * \}
+ */
 
 /*!
  * \}

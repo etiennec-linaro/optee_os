@@ -1,6 +1,6 @@
 /*
  * Arm SCP/MCP Software
- * Copyright (c) 2015-2019, Arm Limited and Contributors. All rights reserved.
+ * Copyright (c) 2015-2020, Arm Limited and Contributors. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -8,10 +8,11 @@
 #ifndef FWK_INTERNAL_THREAD_H
 #define FWK_INTERNAL_THREAD_H
 
-#include <stddef.h>
 #include <fwk_event.h>
 #include <fwk_noreturn.h>
 #include <fwk_thread.h>
+
+#include <stddef.h>
 
 /*
  * \brief Initialize the thread framework component.
@@ -21,7 +22,12 @@
  * \retval FWK_SUCCESS The thread framework component was initialized.
  * \retval FWK_E_NOMEM Insufficient memory available for event queues.
  */
+#ifdef BUILD_OPTEE
+/* Hack: thread as per context: add the device ID as argument */
+int __fwk_thread_init(size_t event_count, fwk_id_t id);
+#else
 int __fwk_thread_init(size_t event_count);
+#endif
 
 /*
  * \brief Begin waiting for and processing events raised by modules and
@@ -31,12 +37,15 @@ int __fwk_thread_init(size_t event_count);
  */
 noreturn void __fwk_thread_run(void);
 
+#ifdef BUILD_OPTEE
+/* Hack: Added by OP-TEE to process messages but not endlessly */
 /*
  * \brief Processing events already raised by modules and interrupt handlers.
  *
  * \return The function does not return.
  */
 void __fwk_run_event(void);
+#endif
 
 /*
  * \brief Get the event being currently processed.

@@ -31,20 +31,32 @@ endif
 
 include core/arch/arm/cpu/cortex-a7.mk
 
+# Default enable SCMI for test purpose and 48kB of heap for xtest
+CFG_SCMI_SERVER ?= y
+
 $(call force,CFG_BOOT_SECONDARY_REQUEST,y)
 $(call force,CFG_GIC,y)
 $(call force,CFG_INIT_CNTVOFF,y)
 $(call force,CFG_PSCI_ARM32,y)
+ifneq ($(CFG_SCMI_SERVER),y)
 $(call force,CFG_SCMI_MSG_DRIVERS,y)
 $(call force,CFG_SCMI_MSG_CLOCK,y)
 $(call force,CFG_SCMI_MSG_RESET_DOMAIN,y)
 $(call force,CFG_SCMI_MSG_SMT,y)
 $(call force,CFG_SCMI_MSG_SMT_FASTCALL_ENTRY,y)
 $(call force,CFG_SCMI_MSG_VOLTAGE_DOMAIN,y)
+endif
 $(call force,CFG_SECONDARY_INIT_CNTFRQ,y)
 $(call force,CFG_SECURE_TIME_SOURCE_CNTPCT,y)
 $(call force,CFG_SM_PLATFORM_HANDLER,y)
 $(call force,CFG_WITH_SOFTWARE_PRNG,y)
+
+ifeq ($(CFG_SCMI_SERVER),y)
+CFG_SCMI_SERVER_PRODUCT=stm32mp1
+CFG_SCMI_SERVER_CLOCK ?= y
+CFG_SCMI_SERVER_RESET_DOMAIN ?= y
+CFG_SCMI_SERVER_VOLTAGE_DOMAIN ?= y
+endif #CFG_SCMI_SERVER
 
 ifneq ($(filter $(CFG_EMBED_DTB_SOURCE_FILE),$(flavorlist-512M)),)
 CFG_TZDRAM_START ?= 0xde000000
@@ -65,7 +77,7 @@ CFG_DRAM_SIZE    ?= 0x40000000
 CFG_TEE_CORE_NB_CORE ?= 2
 CFG_WITH_PAGER ?= y
 CFG_WITH_LPAE ?= y
-CFG_MMAP_REGIONS ?= 23
+CFG_MMAP_REGIONS ?= 25
 
 ifeq ($(CFG_EMBED_DTB_SOURCE_FILE),)
 # Some drivers mandate DT support

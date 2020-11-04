@@ -1,6 +1,6 @@
 /*
  * Arm SCP/MCP Software
- * Copyright (c) 2018-2019, Arm Limited and Contributors. All rights reserved.
+ * Copyright (c) 2018-2020, Arm Limited and Contributors. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  *
@@ -8,22 +8,27 @@
  *     Notification facilities.
  */
 
-#include <fwk_assert.h>
-#include <fwk_host.h>
-#include <fwk_interrupt.h>
-#include <fwk_list.h>
-#include <fwk_mm.h>
 #include <internal/fwk_module.h>
 #include <internal/fwk_notification.h>
 #include <internal/fwk_thread.h>
 
-struct notification_ctx {
-    /*
-     * Flag indicating whether the notification framework component is
-     * initialized.
-     */
-    bool initialized;
+#include <fwk_assert.h>
+#include <fwk_attributes.h>
+#include <fwk_dlist.h>
+#include <fwk_event.h>
+#include <fwk_id.h>
+#include <fwk_interrupt.h>
+#include <fwk_list.h>
+#include <fwk_log.h>
+#include <fwk_mm.h>
+#include <fwk_module.h>
+#include <fwk_notification.h>
+#include <fwk_status.h>
 
+#include <stdbool.h>
+#include <stddef.h>
+
+struct notification_ctx {
     /*
      * Queue of notification subscription structures that are free.
      */
@@ -32,9 +37,7 @@ struct notification_ctx {
 
 static struct notification_ctx ctx;
 
-#ifdef BUILD_HOST
-static const char err_msg_func[] = "[NOT] Error %d in %s\n";
-#endif
+static const char err_msg_func[] = "[NOT] Error %d in %s";
 
 /*
  * Static functions
@@ -57,10 +60,10 @@ static struct fwk_dlist *get_subscription_dlist(
 
     if (fwk_id_is_type(source_id, FWK_ID_TYPE_MODULE)) {
         subscription_dlist_table =
-            __fwk_module_get_ctx(source_id)->subscription_dlist_table;
+            fwk_module_get_ctx(source_id)->subscription_dlist_table;
     } else {
         subscription_dlist_table =
-            __fwk_module_get_element_ctx(source_id)->subscription_dlist_table;
+            fwk_module_get_element_ctx(source_id)->subscription_dlist_table;
     }
 
     return &subscription_dlist_table[
@@ -144,35 +147,25 @@ static void send_notifications(struct fwk_event *notification_event,
  * Private interface functions
  */
 
-int __fwk_notification_init(size_t notification_count)
+static FWK_CONSTRUCTOR void fwk_notification_init(void)
 {
-    struct __fwk_notification_subscription *subscription_table,
-        *subscription_table_upper_limit, *subscription;
+    static struct __fwk_notification_subscription
+        subscriptions[FMW_NOTIFICATION_MAX];
 
-    subscription_table = fwk_mm_calloc(
-        notification_count, sizeof(struct __fwk_notification_subscription));
-    if (subscription_table == NULL) {
-        FWK_HOST_PRINT(err_msg_func, FWK_E_NOMEM, __func__);
-        return FWK_E_NOMEM;
-    }
+    unsigned int i;
 
-    /* All the subscription structures are free to be used. */
+    /* All the subscription structures are free to be used */
     fwk_list_init(&ctx.free_subscription_dlist);
-    for (subscription = subscription_table,
-         subscription_table_upper_limit = subscription + notification_count;
-         subscription < subscription_table_upper_limit;
-         subscription++)
-        fwk_list_push_tail(&ctx.free_subscription_dlist,
-                           &subscription->dlist_node);
 
-    ctx.initialized = true;
-
-    return FWK_SUCCESS;
+    for (i = 0; i < FMW_NOTIFICATION_MAX; i++) {
+        fwk_list_push_tail(
+            &ctx.free_subscription_dlist, &subscriptions[i].dlist_node);
+    }
 }
 
 void __fwk_notification_reset(void)
 {
-    ctx = (struct notification_ctx){ 0 };
+    fwk_notification_init();
 }
 
 /*
@@ -186,11 +179,6 @@ int fwk_notification_subscribe(fwk_id_t notification_id, fwk_id_t source_id,
     unsigned int interrupt;
     struct fwk_dlist *subscription_dlist;
     struct __fwk_notification_subscription *subscription;
-
-    if (!ctx.initialized) {
-        status = FWK_E_INIT;
-        goto error;
-    }
 
     if (fwk_interrupt_get_current(&interrupt) == FWK_SUCCESS) {
         status = FWK_E_HANDLER;
@@ -218,7 +206,7 @@ int fwk_notification_subscribe(fwk_id_t notification_id, fwk_id_t source_id,
 
     if (subscription == NULL) {
         status = FWK_E_NOMEM;
-        assert(false);
+        fwk_unexpected();
         goto error;
     }
 
@@ -232,7 +220,7 @@ int fwk_notification_subscribe(fwk_id_t notification_id, fwk_id_t source_id,
     return FWK_SUCCESS;
 
 error:
-    FWK_HOST_PRINT(err_msg_func, status, __func__);
+    FWK_LOG_CRIT(err_msg_func, status, __func__);
     return status;
 }
 
@@ -243,11 +231,6 @@ int fwk_notification_unsubscribe(fwk_id_t notification_id, fwk_id_t source_id,
     unsigned int interrupt;
     struct fwk_dlist *subscription_dlist;
     struct __fwk_notification_subscription *subscription;
-
-    if (!ctx.initialized) {
-        status = FWK_E_INIT;
-        goto error;
-    }
 
     if (fwk_interrupt_get_current(&interrupt) == FWK_SUCCESS) {
         status = FWK_E_HANDLER;
@@ -279,7 +262,7 @@ int fwk_notification_unsubscribe(fwk_id_t notification_id, fwk_id_t source_id,
     return FWK_SUCCESS;
 
 error:
-    FWK_HOST_PRINT(err_msg_func, status, __func__);
+    FWK_LOG_CRIT(err_msg_func, status, __func__);
     return status;
 }
 
@@ -289,11 +272,6 @@ int fwk_notification_notify(struct fwk_event *notification_event,
     int status;
     unsigned int interrupt;
     const struct fwk_event *current_event;
-
-    if (!ctx.initialized) {
-        status = FWK_E_INIT;
-        goto error;
-    }
 
     if ((notification_event == NULL) || (count == NULL))
         return FWK_E_PARAM;
@@ -305,8 +283,15 @@ int fwk_notification_notify(struct fwk_event *notification_event,
         }
     } else {
         current_event = __fwk_thread_get_current_event();
-        if (current_event != NULL)
+
+        if ((current_event != NULL) &&
+            (!fwk_module_is_valid_entity_id(notification_event->source_id))) {
+            /*
+             * The source_id provided is not valid, use the identifier of the
+             * target for the current event.
+             */
             notification_event->source_id = current_event->target_id;
+        }
     }
 
     if (!fwk_module_is_valid_notification_id(notification_event->id) ||
@@ -322,6 +307,6 @@ int fwk_notification_notify(struct fwk_event *notification_event,
     return FWK_SUCCESS;
 
 error:
-    FWK_HOST_PRINT(err_msg_func, status, __func__);
+    FWK_LOG_CRIT(err_msg_func, status, __func__);
     return status;
 }

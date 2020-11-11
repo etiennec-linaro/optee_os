@@ -261,6 +261,9 @@ static TEE_Result load_stmm(struct stmm_ctx *spc)
 	if (res)
 		return res;
 
+	IMSG("alloc/map ---RW- [%#"PRIxVA" %#"PRIxVA"]",
+	     sp_addr, sp_addr + sp_size);
+
 	res = alloc_and_map_sp_fobj(spc, stmm_ns_comm_buf_size,
 				    TEE_MATTR_URW | TEE_MATTR_PRW,
 				    &comm_buf_addr);
@@ -271,10 +274,16 @@ static TEE_Result load_stmm(struct stmm_ctx *spc)
 	if (res)
 		return res;
 
+	IMSG("alloc/map rw-RW- [%#"PRIxVA" %#"PRIxVA"]",
+	     comm_buf_addr, comm_buf_addr + stmm_ns_comm_buf_size);
+
 	res = alloc_and_map_io(spc, 0x09000000, 0x00001000, &uart_va);
 
 	if (res)
 		return res;
+
+	IMSG("mapIOuart rw-RW- [%#"PRIxVA" %#"PRIxVA"]",
+	     uart_va, uart_va + 0x1000);
 
 	// (when Platform/StMMRpmb/ builds with UART_ENABLE)
 	// uart_va assigned value shall be used to set
@@ -290,27 +299,39 @@ static TEE_Result load_stmm(struct stmm_ctx *spc)
 	uncompress_image((void *)image_addr, stmm_image_uncompressed_size,
 			 stmm_image, stmm_image_size);
 
+	IMSG("exec  r-xR-- [%#"PRIxVA" %#"PRIxVA"]",
+	     image_addr, image_addr + uncompressed_size_roundup);
+
 	res = vm_set_prot(&spc->uctx, image_addr, uncompressed_size_roundup,
 			  TEE_MATTR_URX | TEE_MATTR_PR);
 	if (res)
 		return res;
+
+	IMSG("heap  rw-RW- [%#"PRIxVA" %#"PRIxVA"]",
+	     heap_addr, heap_addr + stmm_heap_size);
 
 	res = vm_set_prot(&spc->uctx, heap_addr, stmm_heap_size,
 			  TEE_MATTR_URW | TEE_MATTR_PRW);
 	if (res)
 		return res;
 
+	IMSG("stack rw-RW- [%#"PRIxVA" %#"PRIxVA"]",
+	     stack_addr, stack_addr + stmm_stack_size);
+
 	res = vm_set_prot(&spc->uctx, stack_addr, stmm_stack_size,
 			  TEE_MATTR_URW | TEE_MATTR_PRW);
 	if (res)
 		return res;
+
+	IMSG("s-buf rw-RW- [%#"PRIxVA" %#"PRIxVA"]",
+	     sec_buf_addr, sec_buf_addr + stmm_sec_buf_size);
 
 	res = vm_set_prot(&spc->uctx, sec_buf_addr, stmm_sec_buf_size,
 			  TEE_MATTR_URW | TEE_MATTR_PRW);
 	if (res)
 		return res;
 
-	DMSG("stmm load address %#"PRIxVA, image_addr);
+	IMSG("stmm load address %#"PRIxVA, image_addr);
 
 	boot_info = (struct stmm_boot_info *)sec_buf_addr;
 	mp_info = (struct stmm_mp_info *)(boot_info + 1);
@@ -573,6 +594,11 @@ static int sp_svc_set_mem_attr(vaddr_t va, unsigned int nr_pages, uint32_t perm)
 	if ((perm & STMM_MEM_ATTR_EXEC_NEVER) == STMM_MEM_ATTR_EXEC)
 		prot |= TEE_MATTR_UX;
 
+	IMSG("[%"PRIxVA" %"PRIxVA" %c%c%c",
+	     va, va + sz, prot & TEE_MATTR_UR ? 'r' : '-',
+	     prot & TEE_MATTR_UW ? 'w' : '-',
+	     prot & TEE_MATTR_UX ? 'x' : '-');
+
 	res = vm_set_prot(&spc->uctx, va, sz, prot);
 	if (res)
 		return STMM_RET_DENIED;
@@ -826,13 +852,13 @@ static void stmm_handle_storage_service(struct thread_svc_regs *regs)
 
 	switch (action) {
 	case __FFA_SVC_RPMB_READ:
-		DMSG("RPMB read");
+		IMSG("RPMB read");
 		res = sec_storage_obj_read(TEE_STORAGE_PRIVATE_RPMB, obj_id,
 					   obj_id_len, va, len, offset, flags);
 		stmm_rc = tee2stmm_ret_val(res);
 		break;
 	case __FFA_SVC_RPMB_WRITE:
-		DMSG("RPMB write");
+		IMSG("RPMB write");
 		res = sec_storage_obj_write(TEE_STORAGE_PRIVATE_RPMB, obj_id,
 					    obj_id_len, va, len, offset, flags);
 		stmm_rc = tee2stmm_ret_val(res);
@@ -884,17 +910,17 @@ static bool spm_handle_svc(struct thread_svc_regs *regs)
 
 	switch (*a0) {
 	case FFA_VERSION:
-		DMSG("Received FFA version");
+		IMSG("Received FFA version");
 		*a0 = MAKE_FFA_VERSION(FFA_VERSION_MAJOR, FFA_VERSION_MINOR);
 		return_to_sp = true;
 		break;
 	case __FFA_MSG_SEND_DIRECT_RESP:
-		DMSG("Received FFA direct response");
+		IMSG("Received FFA direct response");
 		return_nsec_helper(false, 0, regs);
 		return_to_sp = false;
 		break;
 	case __FFA_MSG_SEND_DIRECT_REQ:
-		DMSG("Received FFA direct request");
+		IMSG("Received FFA direct request");
 		spm_handle_direct_req(regs);
 		return_to_sp = true;
 		break;

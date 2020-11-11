@@ -17,6 +17,7 @@
 #include <tee/tee_pobj.h>
 #include <tee/tee_svc.h>
 #include <tee/tee_svc_storage.h>
+#include <util.h>
 #include <zlib.h>
 
 #include "thread_private.h"
@@ -181,6 +182,28 @@ static TEE_Result alloc_and_map_sp_fobj(struct stmm_ctx *spc, size_t sz,
 	return TEE_SUCCESS;
 }
 
+static TEE_Result alloc_and_map_io(struct stmm_ctx *spc, paddr_t pa,
+				   size_t sz, vaddr_t *va)
+{
+	size_t num_pgs = ROUNDUP(sz, SMALL_PAGE_SIZE) / SMALL_PAGE_SIZE;
+	struct mobj *mobj = NULL;
+	TEE_Result res = TEE_SUCCESS;
+
+	assert(!(pa & SMALL_PAGE_MASK));
+
+	mobj = mobj_phys_alloc(pa, sz, TEE_MATTR_CACHE_NONCACHE,
+			       CORE_IO_USR_SEC);
+	if (!mobj)
+		return TEE_ERROR_OUT_OF_MEMORY;
+
+	res = vm_map(&spc->uctx, va, num_pgs * SMALL_PAGE_SIZE,
+		     TEE_MATTR_URW | TEE_MATTR_PRW, 0, mobj, 0);
+	if (res)
+		mobj_put(mobj);
+
+	return TEE_SUCCESS;
+}
+
 static void *zalloc(void *opaque __unused, unsigned int items,
 		    unsigned int size)
 {
@@ -227,6 +250,7 @@ static TEE_Result load_stmm(struct stmm_ctx *spc)
 	vaddr_t comm_buf_addr = 0;
 	unsigned int sp_size = 0;
 	unsigned int uncompressed_size_roundup = 0;
+	vaddr_t __maybe_unused uart_va = 0;
 
 	uncompressed_size_roundup = ROUNDUP(stmm_image_uncompressed_size,
 					    SMALL_PAGE_SIZE);
@@ -246,6 +270,16 @@ static TEE_Result load_stmm(struct stmm_ctx *spc)
 	 */
 	if (res)
 		return res;
+
+	res = alloc_and_map_io(spc, 0x09000000, 0x00001000, &uart_va);
+
+	if (res)
+		return res;
+
+	// (when Platform/StMMRpmb/ builds with UART_ENABLE)
+	// uart_va assigned value shall be used to set
+	// gEfiMdeModulePkgTokenSpaceGuid.PcdSerialRegisterBase
+	// (edk2-platforms/Platform/StMMRpmb/PlatformStandaloneMm.dsc)
 
 	image_addr = sp_addr;
 	heap_addr = image_addr + uncompressed_size_roundup;

@@ -28,6 +28,8 @@ static struct gic_data gic_data __nex_bss;
 static struct pl011_data console_data __nex_bss;
 
 register_phys_mem_pgdir(MEM_AREA_IO_SEC, CONSOLE_UART_BASE, PL011_REG_SIZE);
+register_phys_mem_pgdir(MEM_AREA_IO_SEC, UART0_BASE, PL011_REG_SIZE);
+register_phys_mem_pgdir(MEM_AREA_IO_SEC, UART1_BASE, PL011_REG_SIZE);
 #if defined(PLATFORM_FLAVOR_fvp)
 register_phys_mem(MEM_AREA_RAM_SEC, TZCDRAM_BASE, TZCDRAM_SIZE);
 #endif

@@ -94,13 +94,15 @@ static bool mobj_phys_matches(struct mobj *mobj, enum buf_is_attr attr)
 	switch (attr) {
 	case CORE_MEM_SEC:
 		return a == CORE_MEM_SEC || a == CORE_MEM_TEE_RAM ||
-		       a == CORE_MEM_TA_RAM || a == CORE_MEM_SDP_MEM;
+		       a == CORE_MEM_TA_RAM || a == CORE_MEM_SDP_MEM ||
+		       a == CORE_IO_USR_SEC;
 	case CORE_MEM_NON_SEC:
 		return a == CORE_MEM_NSEC_SHM;
 	case CORE_MEM_TEE_RAM:
 	case CORE_MEM_TA_RAM:
 	case CORE_MEM_NSEC_SHM:
 	case CORE_MEM_SDP_MEM:
+	case CORE_IO_USR_SEC:
 		return attr == a;
 	default:
 		return false;
@@ -154,6 +156,9 @@ struct mobj *mobj_phys_alloc(paddr_t pa, size_t size, uint32_t cattr,
 		break;
 	case CORE_MEM_SDP_MEM:
 		area_type = MEM_AREA_SDP_MEM;
+		break;
+	case CORE_IO_USR_SEC:
+		area_type = MEM_AREA_IO_SEC;
 		break;
 	default:
 		DMSG("can't allocate with specified attribute");

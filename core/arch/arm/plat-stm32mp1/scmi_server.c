@@ -73,8 +73,9 @@ struct stm32_scmi_voltd {
 #define SMT_BUFFER_BASE		CFG_STM32MP1_SCMI_SHM_BASE
 #define SMT_BUFFER0_BASE	SMT_BUFFER_BASE
 #define SMT_BUFFER1_BASE	(SMT_BUFFER_BASE + 0x200)
+#define SMT_BUFFER2_BASE	(SMT_BUFFER_BASE + 0x400)
 
-#if (SMT_BUFFER1_BASE + SMT_BUF_SLOT_SIZE > \
+#if (SMT_BUFFER2_BASE + SMT_BUF_SLOT_SIZE > \
 	CFG_STM32MP1_SCMI_SHM_BASE + CFG_STM32MP1_SCMI_SHM_SIZE)
 #error "SCMI shared memory mismatch"
 #endif
@@ -91,6 +92,11 @@ static struct scmi_msg_channel scmi_channel[] = {
 	[1] = {
 		.agent_name = "stm32mp1-agent-1",
 		.shm_addr = { .pa = SMT_BUFFER1_BASE, },
+		.shm_size = SMT_BUF_SLOT_SIZE,
+	},
+	[2] = {
+		.agent_name = "stm32mp1-agent-2",
+		.shm_addr =  { .pa = SMT_BUFFER2_BASE, },
 		.shm_size = SMT_BUF_SLOT_SIZE,
 	},
 };
@@ -177,6 +183,23 @@ struct stm32_scmi_voltd scmi0_voltage_domain[] = {
 	VOLTD_CELL(VOLTD_SCMI0_USB33, VOLTD_PWR, PWR_USB33_NAME_ID, "usb33"),
 };
 
+static struct stm32_scmi_voltd scmi2_voltage_domain[] = {
+	VOLTD_CELL(VOLTD_SCMI2_BUCK1, VOLTD_PMIC, "buck1", "vddcore"),
+	VOLTD_CELL(VOLTD_SCMI2_BUCK2, VOLTD_PMIC, "buck2", "vdd_ddr"),
+	VOLTD_CELL(VOLTD_SCMI2_BUCK3, VOLTD_PMIC, "buck3", "vdd"),
+	VOLTD_CELL(VOLTD_SCMI2_BUCK4, VOLTD_PMIC, "buck4", "v3v3"),
+	VOLTD_CELL(VOLTD_SCMI2_LDO1, VOLTD_PMIC, "ldo1", "v1v8_audio"),
+	VOLTD_CELL(VOLTD_SCMI2_LDO2, VOLTD_PMIC, "ldo2", "v3v3_hdmi"),
+	VOLTD_CELL(VOLTD_SCMI2_LDO3, VOLTD_PMIC, "ldo3", "vtt_ddr"),
+	VOLTD_CELL(VOLTD_SCMI2_LDO4, VOLTD_PMIC, "ldo4", "vdd_usb"),
+	VOLTD_CELL(VOLTD_SCMI2_LDO5, VOLTD_PMIC, "ldo5", "vdda"),
+	VOLTD_CELL(VOLTD_SCMI2_LDO6, VOLTD_PMIC, "ldo6", "v1v2_hdmi"),
+	VOLTD_CELL(VOLTD_SCMI2_VREFDDR, VOLTD_PMIC, "vref_ddr", "vref_ddr"),
+	VOLTD_CELL(VOLTD_SCMI2_BOOST, VOLTD_PMIC, "boost", "bst_out"),
+	VOLTD_CELL(VOLTD_SCMI2_PWR_SW1, VOLTD_PMIC, "pwr_sw1", "vbus_otg"),
+	VOLTD_CELL(VOLTD_SCMI2_PWR_SW2, VOLTD_PMIC, "pwr_sw2", "vbus_sw"),
+};
+
 struct scmi_agent_resources {
 	struct stm32_scmi_clk *clock;
 	size_t clock_count;
@@ -198,6 +221,10 @@ static const struct scmi_agent_resources agent_resources[] = {
 	[1] = {
 		.clock = stm32_scmi1_clock,
 		.clock_count = ARRAY_SIZE(stm32_scmi1_clock),
+	},
+	[2] = {
+		.voltd = scmi2_voltage_domain,
+		.voltd_count = ARRAY_SIZE(scmi2_voltage_domain),
 	},
 };
 

@@ -15,20 +15,20 @@
 
 /*!
  * \addtogroup GroupLibFramework Framework
- * @{
+ * \{
  */
 
 /*!
  * \addtogroup GroupLinkedList Linked Lists
- * @{
+ * \{
  */
 
 /*!
  * \brief Doubly-linked list.
  *
  * \internal
- * \note This structure can be safely used in the place of \ref fwk_slist,
- *      \ref fwk_slist_node, or \ref fwk_dlist_node.
+ * \note This structure can be safely used in the place of ::fwk_slist,
+ *      ::fwk_slist_node, or ::fwk_dlist_node.
  */
 struct fwk_dlist {
     /*! Pointer to the list head */
@@ -42,7 +42,7 @@ struct fwk_dlist {
  * \brief Doubly-linked list node.
  *
  * \internal
- * \note This structure can be safely used in the place of \ref fwk_slist_node.
+ * \note This structure can be safely used in the place of ::fwk_slist_node.
  */
 struct fwk_dlist_node {
     /*! Pointer to the next node in the list */
@@ -112,11 +112,11 @@ void __fwk_dlist_insert(
  */
 
 /*!
- * @}
+ * \}
  */
 
 /*!
- * @}
+ * \}
  */
 
 #endif /* FWK_DLIST_H */

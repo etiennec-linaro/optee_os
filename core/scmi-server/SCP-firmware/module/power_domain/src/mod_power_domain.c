@@ -94,7 +94,7 @@ struct pd_ctx {
     const struct mod_power_domain_element_config *config;
 
     /*
-     * Mask of the valid states. Bit \c n in \ref valid_states_mask is equal
+     * Mask of the valid states. Bit \c n in ::valid_states_mask is equal
      * to one if and only if the state \c n is a valid state for the power
      * domain. The number of bits of this field has to be greater or equal than
      * MOD_PD_STATE_COUNT_MAX.
@@ -169,6 +169,11 @@ struct system_suspend_ctx {
      * (false).
      */
     bool last_core_off_ongoing;
+
+    /*
+     * Flag indicating if the system is being suspended (true) or not (false).
+     */
+    bool suspend_ongoing;
 
     /* Last standing core context */
     struct pd_ctx *last_core_pd;
@@ -297,10 +302,12 @@ static const uint32_t core_composite_state_mask_table[] = {
 static struct mod_pd_ctx mod_pd_ctx;
 static const char driver_error_msg[] = "[PD] Driver error %s (%d) in %s @%d";
 
+#if FWK_LOG_LEVEL <= FWK_LOG_LEVEL_TRACE
 static const char * const default_state_name_table[] = {
     "OFF", "ON", "SLEEP", "3", "4", "5", "6", "7",
     "8", "9", "10", "11", "12", "13", "14", "15"
 };
+#endif
 
 /*
  * Utility functions
@@ -364,6 +371,7 @@ static bool is_allowed_by_children(const struct pd_ctx *pd, unsigned int state)
     return true;
 }
 
+#if FWK_LOG_LEVEL <= FWK_LOG_LEVEL_TRACE
 static const char *get_state_name(const struct pd_ctx *pd, unsigned int state)
 {
     static char const unknown_name[] = "Unknown";
@@ -375,6 +383,7 @@ static const char *get_state_name(const struct pd_ctx *pd, unsigned int state)
     else
         return unknown_name;
 }
+#endif
 
 static unsigned int number_of_bits_to_shift(uint32_t mask)
 {
@@ -622,7 +631,7 @@ static bool initiate_power_state_pre_transition_notification(struct pd_ctx *pd)
     struct mod_pd_power_state_pre_transition_notification_params *params;
 
     if (pd->config->disable_state_transition_notifications == true)
-        false;
+        return false;
 
     state = pd->requested_state;
     if (!check_power_state_pre_transition_notification(pd, state))
@@ -661,8 +670,8 @@ static bool initiate_power_state_pre_transition_notification(struct pd_ctx *pd)
  * \param pd Description of the power domain to initiate the state transition
  *      for.
  *
- * \retval FWK_SUCCESS The power state transition was initiated.
- * \retval FWK_E_DEVICE The power state transition was denied by the driver.
+ * \retval ::FWK_SUCCESS The power state transition was initiated.
+ * \retval ::FWK_E_DEVICE The power state transition was denied by the driver.
  * \return One of the other driver-defined error codes.
  */
 static int initiate_power_state_transition(struct pd_ctx *pd)
@@ -672,22 +681,29 @@ static int initiate_power_state_transition(struct pd_ctx *pd)
 
     if ((pd->driver_api->deny != NULL) &&
         pd->driver_api->deny(pd->driver_id, state)) {
+#if FWK_LOG_LEVEL <= FWK_LOG_LEVEL_TRACE
         FWK_LOG_TRACE(
             "[PD] Transition of %s to state <%s> denied by driver",
             fwk_module_get_name(pd->id),
             get_state_name(pd, state));
+#endif
         return FWK_E_DEVICE;
     }
 
     status = pd->driver_api->set_state(pd->driver_id, state);
 
+#if FWK_LOG_LEVEL <= FWK_LOG_LEVEL_TRACE
     if (status == FWK_SUCCESS) {
         FWK_LOG_TRACE(
             "[PD] Transition of %s from <%s> to <%s> succeeded",
             fwk_module_get_name(pd->id),
             get_state_name(pd, pd->state_requested_to_driver),
             get_state_name(pd, state));
-    } else {
+    }
+#endif
+
+#if FWK_LOG_LEVEL <= FWK_LOG_LEVEL_ERR
+    if (status != FWK_SUCCESS) {
         FWK_LOG_ERR(
             "[PD] Transition of %s from <%s> to <%s> failed: %s",
             fwk_module_get_name(pd->id),
@@ -695,6 +711,7 @@ static int initiate_power_state_transition(struct pd_ctx *pd)
             get_state_name(pd, state),
             fwk_status_str(status));
     }
+#endif
 
     pd->state_requested_to_driver = state;
 
@@ -928,6 +945,9 @@ static int complete_system_suspend(struct pd_ctx *target_pd)
 
     state_mask_table = pd->composite_state_mask_table;
     table_size = pd->composite_state_mask_table_size;
+
+    mod_pd_ctx.system_suspend.suspend_ongoing = true;
+
     /*
      * Traverse the PD tree bottom-up from current power domain to the top
      * to build the composite state with MOD_PD_STATE_OFF power state for all
@@ -1142,6 +1162,14 @@ static void process_power_state_transition_report(struct pd_ctx *pd,
         complete_system_suspend(pd);
 
         return;
+    }
+
+    if (pd->parent == NULL) {
+        /* this is the top pd (SYSTOP) */
+        if (mod_pd_ctx.system_suspend.state != MOD_PD_STATE_ON) {
+            /* has gone down, invalidate the system suspend ongoing */
+            mod_pd_ctx.system_suspend.suspend_ongoing = false;
+        }
     }
 
 #ifdef BUILD_HAS_NOTIFICATION
@@ -1639,8 +1667,12 @@ static int pd_report_power_state_transition(fwk_id_t pd_id, unsigned int state)
 
 static int pd_get_last_core_pd_id(fwk_id_t *last_core_pd_id)
 {
+    bool system_suspend_ongoing = mod_pd_ctx.system_suspend.suspend_ongoing;
     if (last_core_pd_id == NULL)
         return FWK_E_PARAM;
+
+    if (!system_suspend_ongoing)
+        return FWK_E_PWRSTATE;
 
     *last_core_pd_id = mod_pd_ctx.system_suspend.last_core_pd->id;
 

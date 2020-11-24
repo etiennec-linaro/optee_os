@@ -45,7 +45,6 @@ static int pwr_regu_get_config(fwk_id_t dev_id, uint32_t *config)
 {
     struct stm32_pwr_regu_dev_ctx *ctx;
     int rc = 0;
-    bool enabled = false;
 
     ctx = module_ctx.dev_ctx_table + fwk_id_get_element_idx(dev_id);
 

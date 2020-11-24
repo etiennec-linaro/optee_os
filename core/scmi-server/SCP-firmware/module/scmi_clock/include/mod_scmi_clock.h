@@ -110,7 +110,7 @@ struct mod_scmi_clock_config {
      */
     const struct mod_scmi_clock_agent *agent_table;
 
-    /*! Number of agents in \ref agent_table */
+    /*! Number of agents in ::mod_scmi_clock_config::agent_table */
     size_t agent_count;
 };
 
@@ -122,7 +122,7 @@ struct mod_scmi_clock_config {
  * \details The SCMI policy handlers are weak definitions to allow a platform
  *      to implement a policy appropriate to that platform. The SCMI
  *      clock policy functions may be overridden in the
- * `product/<platform>/src` directory.
+ *      `product/<platform>/src` directory.
  *
  * \note The `rate`/`round_mode`/`state` values may be changed by the policy
  *      handlers.

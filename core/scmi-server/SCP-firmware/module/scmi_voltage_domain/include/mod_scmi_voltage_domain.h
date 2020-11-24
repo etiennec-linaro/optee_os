@@ -5,7 +5,7 @@
  * SPDX-License-Identifier: BSD-3-Clause
  *
  * Description:
- *      SCMI Clock Management Protocol Support.
+ *      SCMI Voltage Domain Management Protocol Support.
  */
 
 #ifndef MOD_SCMI_VOLTAGE_DOMAIN_H
@@ -20,18 +20,18 @@
 
 /*!
  * \ingroup GroupModules Modules
- * \defgroup GroupSCMI_VOLTD SCMI Clock Management Protocol
+ * \defgroup GroupSCMI_VOLTD SCMI Voltage Domain Management Protocol
  * \{
  */
 
 #ifdef BUILD_HAS_RESOURCE_PERMISSIONS
 /*!
  * \brief Permission flags governing the ability to use certain SCMI commands to
- *      interact with a clock.
+ *      interact with a voltage domain.
  *
- * \details Setting a permission flag for a clock enables the corresponding
- *      functionality for any agent that has visibilty of the clock
- *      through its clock device table.
+ * \details Setting a permission flag for a voltage domain enables the
+ *      corresponding functionality for any agent that has visibilty of
+ *      the voltage domain through its voltage domain device table.
  */
 enum mod_scmi_voltd_permissions {
     /*! No permissions (at least one must be granted) */
@@ -49,20 +49,21 @@ enum mod_scmi_voltd_permissions {
 #endif
 
 /*!
- * \brief Clock device.
+ * \brief Voltage Domain device.
  *
- * \details Clock device structures are used in per-agent clock device tables.
- *      Each contains an identifier of an element that will be bound to in order
- *      to use the clock device. The permission flags for the clock are applied
- *      to any agent that uses the device configuration in its clock device
+ * \details Voltage Domain device structures are used in per-agent voltage
+ *      domain device tables. Each contains an identifier of an element that
+ *      will be bound to in order to use the voltage domain device. The
+ *      permission flags for the voltage domain are applied to any agent
+ *      that uses the device configuration in its voltage domain device
  *      table.
  */
 struct mod_scmi_voltd_device {
     /*!
-     * \brief Clock element identifier.
+     * \brief Voltage Domain element identifier.
      *
-     * \details The module that owns the element must implement the Clock API
-     *      that is defined by the \c clock module.
+     * \details The module that owns the element must implement the Voltage
+     *      Domain API that is defined by the \c voltage domain module.
      */
     fwk_id_t element_id;
 
@@ -78,11 +79,11 @@ struct mod_scmi_voltd_device {
  * \brief Agent descriptor.
  *
  * \details Describes an agent that uses the SCMI Voltage Domain Management
- *      protocol. Provides a pointer to the agent's clock device table and
- *      the number of devices within the table.
+ *      protocol. Provides a pointer to the agent's voltage domain device
+ *      table and the number of devices within the table.
  */
 struct mod_scmi_voltd_agent {
-    /*! Pointer to a table of clock devices that are visible to the agent */
+    /*! Pointer to a table of voltage domain devices visible to the agent */
     struct mod_scmi_voltd_device *device_table;
 
     /*!
@@ -98,7 +99,7 @@ struct mod_scmi_voltd_agent {
 struct mod_scmi_voltd_config {
     /*!
      * \brief Pointer to the table of agent descriptors, used to provide
-     *      per-agent views of clocks in the system.
+     *      per-agent views of voltage domain in the system.
      */
     const struct mod_scmi_voltd_agent *agent_table;
 

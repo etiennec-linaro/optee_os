@@ -113,9 +113,10 @@ static const struct fwk_element *smt_get_element_table(fwk_id_t module_id)
 		void *va = NULL;
 
 		cfg = (void *)smt_element_table[n].data;
-		va = phys_to_virt(cfg->mailbox_address, MEM_AREA_NSEC_SHM);
-
-		cfg->mailbox_address = (vaddr_t)va;
+		if (cfg->mailbox_address) {
+			va = phys_to_virt(cfg->mailbox_address, MEM_AREA_NSEC_SHM);
+			cfg->mailbox_address = (vaddr_t)va;
+		}
 	}
 
 	return (const struct fwk_element *)smt_element_table;

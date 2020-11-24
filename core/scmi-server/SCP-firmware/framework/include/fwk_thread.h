@@ -19,13 +19,13 @@
 
 /*!
  * \addtogroup GroupLibFramework Framework
- * @{
+ * \{
  */
 
 /*!
  * \defgroup GroupThread Threading
  *
- * @{
+ * \{
  */
 
 /*!
@@ -50,16 +50,16 @@
  *      must be set.
  *
  *      If multi-threading is enabled, and \p event is a delayed response, the
- *      \ref fwk_event.cookie field of \p event must match that of the event
+ *      ::fwk_event::cookie field of \p event must match that of the event
  *      it is responding to.
  *
  * \param[in] event Pointer to the event to queue. Must not be \c NULL.
  *
  * \retval ::FWK_SUCCESS The event was queued.
  * \retval ::FWK_E_INIT The thread framework component is not initialized.
- * \retval ::FWK_E_PARAM One or more parameters were invalid.
- * \retval ::FWK_E_PARAM One or more fields in the \p event parameter were
- *      invalid.
+ * \retval ::FWK_E_PARAM An invalid parameter was encountered:
+ *      - The `event` parameter was a null pointer value.
+ *      - One or more fields of the event were invalid.
  * \retval ::FWK_E_OS Operating system error.
  *
  * \return Status code representing the result of the operation.
@@ -138,16 +138,17 @@ int fwk_thread_is_delayed_response_list_empty(fwk_id_t id, bool *is_empty);
  * \return Status code representing the result of the operation.
  */
 int fwk_thread_get_first_delayed_response(fwk_id_t id, struct fwk_event *event);
-/*!
- * @}
- */
 
-/*!
- * @}
- */
 #ifdef BUILD_OPTEE
 /* Added: set a context for processing messages from device @id */
 void fwk_set_thread_ctx(fwk_id_t id);
 #endif
+/*!
+ * \}
+ */
+
+/*!
+ * \}
+ */
 
 #endif /* FWK_THREAD_H */

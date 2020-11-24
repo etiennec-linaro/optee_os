@@ -17,19 +17,19 @@
 
 /*!
  * \addtogroup GroupLibFramework Framework
- * @{
+ * \{
  */
 
 /*!
  * \addtogroup GroupLinkedList Linked Lists
- * @{
+ * \{
  */
 
 /*!
  * \brief Singly-linked list.
  *
  * \internal
- * \note This structure can be safely used in the place of \ref fwk_slist_node.
+ * \note This structure can be safely used in the place of ::fwk_slist_node.
  */
 struct fwk_slist {
     /*! Pointer to the list head */
@@ -144,11 +144,11 @@ bool __fwk_slist_contains(
  */
 
 /*!
- * @}
+ * \}
  */
 
 /*!
- * @}
+ * \}
  */
 
 #endif /* FWK_SLIST_H */

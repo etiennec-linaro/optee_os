@@ -19,12 +19,12 @@
 
 /*!
  * \addtogroup GroupLibFramework Framework
- * @{
+ * \{
  */
 
 /*!
  * \addtogroup GroupLinkedList Linked Lists
- * @{
+ * \{
  */
 
 /*!
@@ -154,7 +154,8 @@
  * \brief Remove a node from a linked list.
  *
  * \details In debug mode, the node being removed has its links set to \c NULL
- * to ensure the node no longer references the list it has been removed from.
+ *      to ensure the node no longer references the list it has been removed
+ *      from.
  *
  * \param list Pointer to the list to remove the node from. Must not be \c NULL.
  * \param node Pointer to the node to remove. Must not be \c NULL. The node must
@@ -219,11 +220,11 @@
         elem = FWK_LIST_GET(node, type, member))
 
 /*!
- * @}
+ * \}
  */
 
 /*!
- * @}
+ * \}
  */
 
 #endif /* FWK_LIST_H */

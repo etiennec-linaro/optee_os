@@ -54,10 +54,20 @@ $(error optee_product.mk not found, check CFG_SCMI_SERVER_PRODUCT)
 endif
 include $(libdir)/$(scmi-server-product-path)/optee_product.mk
 
+SCP_FIRMWARE_LOG_LEVEL_0=CRIT
+SCP_FIRMWARE_LOG_LEVEL_1=ERROR
+SCP_FIRMWARE_LOG_LEVEL_2=INFO
+SCP_FIRMWARE_LOG_LEVEL_3=TRACE
+SCP_FIRMWARE_LOG_LEVEL=$(SCP_FIRMWARE_LOG_LEVEL_$(CFG_TEE_CORE_LOG_LEVEL))
+
 # Internal build switches and directives
 cppflags-lib-y += -DBUILD_VERSION_MAJOR=$(SCMI_VERSION_MAJOR) \
 		  -DBUILD_VERSION_MINOR=$(SCMI_VERSION_MINOR) \
 		  -DBUILD_VERSION_PATCH=$(SCMI_VERSION_PATCH)
+
+cppflags-lib-y += -DFWK_LOG_LEVEL=FWK_LOG_LEVEL_$(SCP_FIRMWARE_LOG_LEVEL)
+
+
 
 cppflags-lib-y += -Wno-unused-parameter \
 		  -Wno-unused-variable \

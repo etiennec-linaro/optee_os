@@ -5,7 +5,7 @@
  * SPDX-License-Identifier: BSD-3-Clause
  *
  * Description:
- *      SCMI Clock Management Protocol Support
+ *      SCMI Voltage Domain Management Protocol Support
  */
 
 #ifndef INTERNAL_SCMI_VOLTAGE_DOMAIN_H

@@ -13,12 +13,12 @@
 
 /*!
  * \addtogroup GroupModules Modules
- * @{
+ * \{
  */
 
 /*!
  * \defgroup GroupSCMI System Control & Management Interface (SCMI)
- * @{
+ * \{
  */
 
 /*!
@@ -222,11 +222,11 @@ enum scmi_voltd_command_id {
 };
 
 /*!
- * @}
+ * \}
  */
 
 /*!
- * @}
+ * \}
  */
 
 #endif /* MOD_SCMI_STD_H */

@@ -207,7 +207,7 @@ static int scmi_voltd_permissions_handler(
     else
         perms = scmi_voltd_ctx.res_perms_api->agent_has_resource_permission(
             agent_id, MOD_SCMI_PROTOCOL_ID_VOLTAGE_DOMAIN, message_id,
-	    get_domain_id(payload));
+            get_domain_id(payload));
 
     if (perms == MOD_RES_PERMS_ACCESS_ALLOWED)
         return FWK_SUCCESS;
@@ -660,8 +660,6 @@ static int scmi_voltd_init(fwk_id_t module_id, unsigned int element_count,
 
 static int scmi_voltd_bind(fwk_id_t id, unsigned int round)
 {
-    const unsigned int agent_count = scmi_voltd_ctx.config->agent_count;
-    unsigned int agent_idx = 0;
     int status = 0;
 
     if (round == 1)

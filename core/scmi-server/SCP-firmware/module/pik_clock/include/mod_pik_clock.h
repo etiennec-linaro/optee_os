@@ -15,7 +15,7 @@
 
 /*!
  * \addtogroup GroupModules Modules
- * @{
+ * \{
  */
 
 /*!
@@ -23,7 +23,7 @@
  *
  * \details A driver for clock devices that are part of a PIK.
  *
- * @{
+ * \{
  */
 
 /*!
@@ -241,11 +241,10 @@ struct mod_pik_clock_dev_config {
      *     or operating as an independent clock (\c false).
      *
      * \details The value determines the API that the clock exposes during
-     *     binding. If the clock is part of a group then the \ref
-     *     mod_pik_clock_api_type.MOD_PIK_CLOCK_API_TYPE_CSS API is exposed for
-     *     direct control via the CSS Clock module, otherwise the \ref
-     *     mod_pik_clock_api_type.MOD_PIK_CLOCK_API_TYPE_CLOCK API, defined by
-     *     the Clock HAL, is exposed.
+     *      binding. If the clock is part of a group then the
+     *      ::MOD_PIK_CLOCK_API_TYPE_CSS API is exposed for direct control via
+     *      the CSS Clock module, otherwise the ::MOD_PIK_CLOCK_API_TYPE_CLOCK
+     *      API, defined by the Clock HAL, is exposed.
      */
     bool is_group_member;
 
@@ -280,11 +279,11 @@ struct mod_pik_clock_dev_config {
 };
 
 /*!
- * @}
+ * \}
  */
 
 /*!
- * @}
+ * \}
  */
 
 #endif /* MOD_PIK_CLOCK_H */

@@ -73,6 +73,7 @@ struct __fwk_thread_ctx {
  */
 struct __fwk_thread_ctx *__fwk_thread_get_ctx(void);
 
+// Added OP-TEE
 /*!
  * \brief Put an event in a module or element thread queue and wait for it to
  *      be processed.

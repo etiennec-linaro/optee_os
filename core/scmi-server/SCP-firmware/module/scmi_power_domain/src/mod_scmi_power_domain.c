@@ -214,6 +214,19 @@ static fwk_id_t ops_get_service(fwk_id_t pd_id)
     return scmi_pd_ctx.ops[pd_idx].service_id;
 }
 
+static void ops_set_agent_id(fwk_id_t pd_id, unsigned int agent_id)
+{
+    unsigned int pd_idx = fwk_id_get_element_idx(pd_id);
+    scmi_pd_ctx.ops[pd_idx].agent_id = agent_id;
+}
+
+static unsigned int ops_get_agent_id(fwk_id_t pd_id)
+{
+    unsigned int pd_idx = fwk_id_get_element_idx(pd_id);
+
+    return scmi_pd_ctx.ops[pd_idx].agent_id;
+}
+
 static void ops_set_idle(fwk_id_t pd_id)
 {
     unsigned int pd_idx = fwk_id_get_element_idx(pd_id);
@@ -416,6 +429,29 @@ static int scmi_power_scp_set_core_state(fwk_id_t pd_id,
     }
 
     return status;
+}
+
+static void scmi_pd_power_state_notify(
+    enum scmi_pd_command_id command_id,
+    enum scmi_pd_notification_id notification_message_id,
+    unsigned int domain_id,
+    unsigned int agent_id,
+    uint32_t power_state)
+{
+#ifdef BUILD_HAS_SCMI_NOTIFICATIONS
+    struct scmi_pd_power_state_notification_message_p2a message;
+
+    message.agent_id = agent_id;
+    message.domain_id = domain_id;
+    message.power_state = power_state;
+
+    scmi_pd_ctx.scmi_notification_api->scmi_notification_notify(
+        MOD_SCMI_PROTOCOL_ID_POWER_DOMAIN,
+        command_id,
+        notification_message_id,
+        &message,
+        sizeof(message));
+#endif
 }
 
 static int scmi_pd_power_state_set_handler(fwk_id_t service_id,

@@ -111,7 +111,6 @@ static int scmi_clock_describe_rates_handler(fwk_id_t service_id,
 /*
  * Internal variables.
  */
-// There can be inly 1 scmi clock module instance !!!!
 static struct scmi_clock_ctx scmi_clock_ctx;
 
 static int (*const handler_table[])(fwk_id_t, const uint32_t *) = {
@@ -1141,7 +1140,8 @@ static int scmi_clock_describe_rates_handler(fwk_id_t service_id,
 
         return_values.num_rates_flags =
             SCMI_CLOCK_DESCRIBE_RATES_NUM_RATES_FLAGS(
-                3,
+                /* Only a single rate is returned */
+                1,
                 SCMI_CLOCK_RATE_FORMAT_RANGE,
                 /* No further rates are available */
                 0
@@ -1165,9 +1165,6 @@ static int scmi_clock_describe_rates_handler(fwk_id_t service_id,
     return_values.status = SCMI_SUCCESS;
     status = scmi_clock_ctx.scmi_api->write_payload(service_id, 0,
         &return_values, sizeof(return_values));
-
-    if (status)
-        return_values.status = SCMI_GENERIC_ERROR;
 
 exit:
     scmi_clock_ctx.scmi_api->respond(service_id,

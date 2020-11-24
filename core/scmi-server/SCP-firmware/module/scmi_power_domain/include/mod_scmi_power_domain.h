@@ -53,7 +53,7 @@ struct mod_scmi_pd_config {
  * \details The SCMI policy handlers are weak definitions to allow a platform
  *      to implement a policy appropriate to that platform. The SCMI
  *      power domain policy functions may be overridden in the
- * `product/<platform>/src` directory.
+ *      `product/<platform>/src` directory.
  *
  * \note The `state` value may be changed by the policy handler.
  * \note See `product/juno/src/juno_scmi_clock.c` for an example policy
@@ -110,10 +110,6 @@ int scmi_pd_power_state_set_policy(
     uint32_t *state,
     unsigned int agent_id,
     fwk_id_t pd_id);
-
-/*!
- * \}
- */
 
 /*!
  * \}

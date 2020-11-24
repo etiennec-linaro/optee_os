@@ -147,8 +147,8 @@ static struct __fwk_thread_ctx *thread_get_ctx(fwk_id_t id)
  *
  * \param event Pointer to the ISR event to queue.
  *
- * \retval FWK_SUCCESS The event was put successfully.
- * \retval FWK_E_NOMEM The free event queue is empty.
+ * \retval ::FWK_SUCCESS The event was put successfully.
+ * \retval ::FWK_E_NOMEM The free event queue is empty.
  */
 static int put_isr_event(struct fwk_event *event)
 {
@@ -215,8 +215,8 @@ static bool is_thread_wakeup_event(struct __fwk_thread_ctx *thread_ctx,
  * \param thread_ctx Pointer to the context of the thread target of the event.
  * \param event Pointer to the event to queue.
  *
- * \retval FWK_SUCCESS The event was put successfully.
- * \retval FWK_E_PARAM The event source is not valid.
+ * \retval ::FWK_SUCCESS The event was put successfully.
+ * \retval ::FWK_E_PARAM The event source is not valid.
  */
 static int put_event(struct __fwk_thread_ctx *target_thread_ctx,
                      struct fwk_event *event)
@@ -269,14 +269,14 @@ static int put_event(struct __fwk_thread_ctx *target_thread_ctx,
             fwk_list_push_tail(&ctx.thread_ready_queue,
                                &target_thread_ctx->slist_node);
     }
-
+#if FWK_LOG_LEVEL <= FWK_LOG_LEVEL_TRACE
     FWK_LOG_TRACE(
         "[FWK] Sent %" PRIu32 ": %s @ %s -> %s",
         event->cookie,
         FWK_ID_STR(event->id),
         FWK_ID_STR(event->source_id),
         FWK_ID_STR(event->target_id));
-
+#endif
     return FWK_SUCCESS;
 
 error:
@@ -358,12 +358,14 @@ static void process_next_thread_event(struct __fwk_thread_ctx *thread_ctx)
                      struct fwk_event, slist_node);
     fwk_assert(event != NULL);
 
+#if FWK_LOG_LEVEL <= FWK_LOG_LEVEL_TRACE
     FWK_LOG_TRACE(
         "[FWK] Processing %" PRIu32 ": %s @ %s -> %s\n",
         event->cookie,
         FWK_ID_STR(event->id),
         FWK_ID_STR(event->source_id),
         FWK_ID_STR(event->target_id));
+#endif
 
     if (event->response_requested)
         process_event_requiring_response(event);
@@ -555,12 +557,13 @@ static void get_next_isr_event(void)
 
         fwk_assert(isr_event != NULL);
 
+#if FWK_LOG_LEVEL <= FWK_LOG_LEVEL_TRACE
         FWK_LOG_TRACE(
             "[FWK] Pulled ISR event (%s: %s -> %s)\n",
             FWK_ID_STR(isr_event->id),
             FWK_ID_STR(isr_event->source_id),
             FWK_ID_STR(isr_event->target_id));
-
+#endif
         target_thread_ctx = thread_get_ctx(isr_event->target_id);
 
         isr_event->is_thread_wakeup_event = is_thread_wakeup_event(

@@ -49,7 +49,7 @@ static int get_rate(fwk_id_t dev_id, uint64_t *rate)
 
     *rate = stm32_clock_get_rate(ctx->clock_id);
 
-    DMSG("SCMI clk (%u): stm32_clock_get_rate(%lu) = %"PRIu64,
+    IMSG("SCMI clk (%u): stm32_clock_get_rate(%lu) = %"PRIu64,
 	 fwk_id_get_element_idx(dev_id), ctx->clock_id, *rate);
 
     return FWK_SUCCESS;
@@ -85,7 +85,7 @@ static int set_state(fwk_id_t dev_id, enum mod_clock_state state)
 	}
     }
 
-    DMSG("SCMI clk %u: stm32_clock_set_state(%lu, %s)",
+    IMSG("SCMI clk %u: stm32_clock_set_state(%lu, %s)",
          fwk_id_get_element_idx(dev_id), ctx->clock_id,
 	 state == MOD_CLOCK_STATE_STOPPED ? "off" : "on");
 
@@ -107,7 +107,7 @@ static int get_state(fwk_id_t dev_id, enum mod_clock_state *state)
     else
         *state = MOD_CLOCK_STATE_STOPPED;
 
-    DMSG("SCMI clk %u: stm32_clock_get_state(%lu) => %s",
+    IMSG("SCMI clk %u: stm32_clock_get_state(%lu) => %s",
 	 fwk_id_get_element_idx(dev_id), ctx->clock_id,
          *state == MOD_CLOCK_STATE_STOPPED ? "off" : "on");
 
@@ -127,7 +127,7 @@ static int get_range(fwk_id_t dev_id, struct mod_clock_range *range)
 
     rate = stm32_clock_get_rate(ctx->clock_id);
 
-    DMSG("SCMI clk %u: stm32_clock_get_range(%lu) = %lu",
+    IMSG("SCMI clk %u: stm32_clock_get_range(%lu) = %lu",
          fwk_id_get_element_idx(dev_id), ctx->clock_id, rate);
 
     range->rate_type = MOD_CLOCK_RATE_TYPE_DISCRETE;
@@ -157,7 +157,7 @@ static int get_rate_from_index(fwk_id_t dev_id,
 
     *rate = stm32_clock_get_rate(ctx->clock_id);
 
-    DMSG("SCMI clk %u: stm32_clock_get_rate(%lu) = %"PRIu64,
+    IMSG("SCMI clk %u: stm32_clock_get_rate(%lu) = %"PRIu64,
 	 fwk_id_get_element_idx(dev_id), ctx->clock_id, *rate);
 
     return FWK_SUCCESS;

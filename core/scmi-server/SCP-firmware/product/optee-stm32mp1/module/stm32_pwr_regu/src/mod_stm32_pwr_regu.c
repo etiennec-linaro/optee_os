@@ -60,7 +60,7 @@ static int pwr_regu_get_config(fwk_id_t dev_id, uint32_t *config)
     else
         *config = MOD_VOLTD_MODE_OFF | MOD_VOLTD_MODE_TYPE_ARCH;
 
-    DMSG("SCMI voltd %u: get_config PWR#%u = %#"PRIx32,
+    IMSG("SCMI voltd %u: get_config PWR#%u = %#"PRIx32,
 	 fwk_id_get_element_idx(dev_id), ctx->pwr_id, *config);
 
     return FWK_SUCCESS;

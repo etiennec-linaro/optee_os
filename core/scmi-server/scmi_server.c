@@ -94,17 +94,17 @@ void scmi_server_process_thread(unsigned int id, void *memory)
 
 	device_id.value = id;
 
-	DMSG("+++++ [SRV] enter %08x", device_id.value);
+	FMSG("+++++ [SRV] enter %08x", device_id.value);
 
 	fwk_set_thread_ctx(device_id);
 
-	DMSG("[SRV] send message device %08x", device_id.value);
+	FMSG("[SRV] send message device %08x", device_id.value);
 	optee_mhu_signal_smt_message(device_id, memory);
 
-	DMSG("[SRV] process event %08x", device_id.value);
+	FMSG("[SRV] process event %08x", device_id.value);
 	__fwk_run_event();
 
-	DMSG("----- [SRV] leave %08x", device_id.value);
+	FMSG("----- [SRV] leave %08x", device_id.value);
 }
 
 static TEE_Result scmi_server_initialize(void)

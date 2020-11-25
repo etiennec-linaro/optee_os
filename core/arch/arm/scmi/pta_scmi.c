@@ -32,30 +32,40 @@ static TEE_Result cmd_get_channel(void *sess __unused,
 				  TEE_Param params[TEE_NUM_PARAMS])
 {
 	int channel_id = 0;
-	paddr_t mem = 0;
-	unsigned int size = 0;
-	uint32_t expect_types = TEE_PARAM_TYPES(TEE_PARAM_TYPE_VALUE_INOUT,
-						TEE_PARAM_TYPE_VALUE_INPUT,
-						TEE_PARAM_TYPE_VALUE_INPUT,
-						TEE_PARAM_TYPE_NONE);
-	if (param_types != expect_types)
-		return TEE_ERROR_BAD_PARAMETERS;
+	const uint32_t exp_ptypes = TEE_PARAM_TYPES(TEE_PARAM_TYPE_VALUE_INOUT,
+						    TEE_PARAM_TYPE_NONE,
+						    TEE_PARAM_TYPE_NONE,
+						    TEE_PARAM_TYPE_NONE);
+	const uint32_t old_ptypes = TEE_PARAM_TYPES(TEE_PARAM_TYPE_VALUE_INOUT,
+						    TEE_PARAM_TYPE_VALUE_INPUT,
+						    TEE_PARAM_TYPE_VALUE_INPUT,
+						    TEE_PARAM_TYPE_NONE);
 
 	channel_id = (int)params[0].value.a;
-	mem = (paddr_t)reg_pair_to_64(params[1].value.a, params[1].value.b);
-	size = params[2].value.a;
 
-	IMSG("SCMI pool: %zu@0x%"PRIxPA" (%p) (unchecked)",
-	     size, mem, phys_to_virt(mem, MEM_AREA_IO_NSEC));
+	/* Old deprecated ABI */
+	if (param_types == old_ptypes) {
+		paddr_t mem = (paddr_t)reg_pair_to_64(params[1].value.a,
+						      params[1].value.b);
+		unsigned int size = params[2].value.a;
+		void *shm = phys_to_virt(mem, MEM_AREA_IO_NSEC);
 
-	// Consider only non-secure SCMI shared memory for now
-	channel_id = scmi_server_get_channel(channel_id,
-					     phys_to_virt(mem, MEM_AREA_IO_NSEC),
-					     (unsigned int)size);
+		IMSG("Deprecated: GET_CHANNEL ABI shm: %zu@0x%"PRIxPA" (%p)",
+		     size, mem, shm);
 
-	if (channel_id < 0)
-		return TEE_ERROR_BAD_PARAMETERS;
-	IMSG("SCMI channel: %d", channel_id);
+		// Consider only non-secure SCMI shared memory for now
+		channel_id = scmi_server_get_channel(channel_id, shm, size);
+		if (channel_id < 0)
+			return TEE_ERROR_BAD_PARAMETERS;
+
+		IMSG("SCMI channel: %d", channel_id);
+
+		return TEE_SUCCESS;
+	}
+
+
+	if (param_types != exp_ptypes)
+			return TEE_ERROR_BAD_PARAMETERS;
 
 	params[0].value.a = (uint32_t)channel_id;
 

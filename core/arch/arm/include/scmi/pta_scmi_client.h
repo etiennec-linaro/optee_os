@@ -27,10 +27,13 @@
 /*
  * PTA_SCMI_CMD_GET_CHANNEL - Get channel identifer for a buffer pool
  *
- * param[0] (in value) - Message buffer physical start address
- * param[1] (in value) - Message buffer byte size
- * param[2] (out value) - value.a: Output channel identifier
- * param[3] unused
+ * SCMI shm information are 0 if agent expects to use OP-TEE regular SHM
+ *
+ * [in]         value[0].a - SCMI agent identifier
+ * [out]        value[0].a - SCMI channel identifier
+ * [in]         value[1].a - SCMI shm physical start address (32 MSBytes) or 0
+ * [in]         value[1].b - SCMI shm physical start address (32 LSBytes) or 0
+ * [in]         value[2].a - SCMI shm byte size or 0
  *
  * Result:
  * TEE_SUCCESS - Invoke command success
@@ -41,10 +44,8 @@
 /*
  * PTA_SCMI_CMD_PROCESS_CHANNEL - Process message in SCMI channel
  *
- * param[0] (in value) - value.a: SCMI channel identifier
- * param[1] unused
- * param[2] unused
- * param[3] unused
+ * [in]         value[0].a      SCMI channel identifier
+ * [in/out]     memref[1]       SCMI message
  *
  * Result:
  * TEE_SUCCESS - Invoke command success

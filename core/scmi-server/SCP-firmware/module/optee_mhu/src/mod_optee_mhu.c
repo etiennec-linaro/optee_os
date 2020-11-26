@@ -21,6 +21,7 @@
 #include <fwk_status.h>
 #include <mod_optee_mhu.h>
 #include <mod_optee_smt.h>
+#include <mod_scmi.h>
 
 #include <stdlib.h>
 #include <string.h>
@@ -28,6 +29,7 @@
 
 #if defined(BUILD_OPTEE)
 #include <mm/core_memprot.h>
+#include <trace.h>
 #endif
 
 struct mhu_smt_channel {
@@ -84,60 +86,118 @@ int optee_mhu_get_devices_count(void)
     return mhu_ctx.device_count;
 }
 
-fwk_id_t optee_mhu_get_device(unsigned int id, void* mem, unsigned int size)
+extern const struct fwk_module_config config_scmi;
+extern const struct fwk_module_config config_optee_smt;
+
+static
+const struct fwk_element *config2elts(const struct fwk_module_config *config,
+                                      unsigned int fwk_module_idx)
 {
-    int i;
-    void *mailbox;
-    unsigned int slot, device_index = 0;
-    struct mhu_device_ctx *device_ctx;
-    struct mhu_smt_channel *smt_channel;
-    const fwk_id_t device_id_none = FWK_ID_NONE_INIT;
-    fwk_id_t device_id = FWK_ID_NONE_INIT;
+    const struct fwk_element *elements = NULL;
+    const fwk_id_t device_id_none = FWK_ID_MODULE_INIT(fwk_module_idx);
 
-    FWK_LOG_TRACE("[MHU] optee_mhu_get_device id %x mbx %p size %u\n",
-		  id, mem, size);
+    if (config->elements.type == FWK_MODULE_ELEMENTS_TYPE_DYNAMIC)
+        return config->elements.generator(device_id_none);
 
-    for(device_index = 0; device_index < mhu_ctx.device_count; device_index++) {
-        device_ctx = &mhu_ctx.device_ctx_table[device_index];
+    return config->elements.table;
+}
 
-        /* There is 2 way to identify a channel:
-         * - provide @a and size of the mailbox memory. In this case id is set to NULL.
-         * - provide an agent identifier.
-         */
+static bool id_is_smt_module(fwk_id_t fwk_id)
+{
+        return fwk_id_get_module_idx(fwk_id) == FWK_MODULE_IDX_OPTEE_SMT;
+}
 
-        device_id = (fwk_id_t)FWK_ID_ELEMENT_INIT(FWK_MODULE_IDX_OPTEE_MHU,
-                              device_index);
+static bool id_is_mhu_module(fwk_id_t fwk_id)
+{
+        return fwk_id_get_module_idx(fwk_id) == FWK_MODULE_IDX_OPTEE_MHU;
+}
 
-        if (id == device_id.value) {
-            device_id = (fwk_id_t)FWK_ID_SUB_ELEMENT(FWK_MODULE_IDX_OPTEE_MHU,
-                                 device_index, 0);
-            return device_id;
+static void find_agent_mhu_device(fwk_id_t *device_id, unsigned int agent_id,
+                                  uintptr_t shm_base, unsigned int shm_size)
+{
+    const struct fwk_element *scmi_elts = config2elts(&config_scmi,
+                                                      FWK_MODULE_IDX_SCMI);
+    const struct fwk_element *smt_elts = config2elts(&config_optee_smt,
+                                                     FWK_MODULE_IDX_OPTEE_SMT);
+    unsigned int scmi_index = 0;
+    unsigned int found = 0;
+
+    while (1) {
+        const struct mod_scmi_service_config *scmi_cfg = NULL;
+        const struct mod_optee_smt_channel_config *smt_cfg = NULL;
+
+        scmi_cfg = scmi_elts[scmi_index].data;
+        smt_cfg = smt_elts[scmi_index].data;
+
+        /* Detect table's sentinel */
+        if (!scmi_cfg || !smt_cfg)
+               break;
+
+        /* We expect to find a single instance of a smt/mhu for that agent */
+        if (agent_id == scmi_cfg->scmi_agent_id &&
+            id_is_smt_module(scmi_cfg->transport_id) &&
+            id_is_mhu_module(smt_cfg->driver_id)) {
+            found++;
+
+            /* If shm base and size provided, it shall match */
+             if ((!shm_base || shm_base == smt_cfg->mailbox_address) &&
+                 (!shm_size || shm_size == smt_cfg->mailbox_size)) {
+                 *device_id = smt_cfg->driver_id;
+             }
         }
 
-        /* If id is set, don't try to find matching memory @ */
-        if (id != 0)
-            continue;
+        scmi_index++;
+    }
 
-        for (slot = 0; slot < device_ctx->slot_count; slot++) {
-            smt_channel = &device_ctx->smt_channel_table[slot];
-            mailbox = smt_channel->api->get_memory(smt_channel->id);
+    if (found != 1)
+        *device_id = (fwk_id_t)FWK_ID_NONE_INIT;
+}
 
-            FWK_LOG_TRACE("[MHU] device 0x%x channel %u mbx %p\n",
-			  device_index, slot, mailbox);
+fwk_id_t optee_mhu_get_device(unsigned int agent_id, void *shm_base,
+                              unsigned int shm_size)
+{
+    struct mhu_device_ctx *device_ctx;
+    const fwk_id_t device_id_none = FWK_ID_NONE_INIT;
+    fwk_id_t device_id = FWK_ID_NONE_INIT;
+    unsigned int slot_idx = 0;
+    unsigned int dev_idx = 0;
+    unsigned int count = 0;
 
-            if (mailbox == mem) {
-                device_id = (fwk_id_t)FWK_ID_SUB_ELEMENT_INIT(FWK_MODULE_IDX_OPTEE_MHU,
-                                                              device_index, slot);
+    FWK_LOG_TRACE("[MHU] optee_mhu_get_device id %x mbx %p size %u\n",
+                  agent_id, shm_base, shm_size);
 
-                FWK_LOG_TRACE("[MHU] found device %08x\n", device_id.value);
+    /*
+     * Support vince FVP setup where ID is the target 32bit device_id value
+     */
+    DMSG("MHU channel: test case where agent_id %#x is a fwk_id", agent_id);
 
-                return device_id;
+    for (count = 0; count < mhu_ctx.device_count; count++) {
+        fwk_id_t mhu_elt = FWK_ID_ELEMENT_INIT(FWK_MODULE_IDX_OPTEE_MHU, count);
+        fwk_id_t mhu_sub_elt = FWK_ID_SUB_ELEMENT_INIT(FWK_MODULE_IDX_OPTEE_MHU,
+                                                       count, 0);
+
+        if (agent_id == mhu_elt.value || agent_id == mhu_sub_elt.value) {
+            if (shm_base || shm_size) {
+                EMSG("Unexpected shm location provided");
+                return device_id_none;
             }
+            DMSG("MHU channel: agent_id %#x is the target fwk_id", agent_id);
+            return (fwk_id_t)agent_id;
         }
     }
 
-    return device_id_none;
+    /*
+     * If agent does not provide shared memory location,
+     * identify the MHU element based only on agent ID.
+     * Otherwise, find the MHU element ID from SHM.
+     */
+    DMSG("MHU channel: find mhu device related to agent_id %#x", agent_id);
+    find_agent_mhu_device(&device_id, agent_id,
+                          (uintptr_t)shm_base, shm_size);
+
+    return device_id;
 }
+
 /*
  * Mailbox module driver API
  */

@@ -65,7 +65,7 @@ static struct fwk_element smt_element_table[] = {
         .data = &((struct mod_optee_smt_channel_config) {
             .type = MOD_OPTEE_SMT_CHANNEL_TYPE_SLAVE,
             .policies = MOD_OPTEE_SMT_POLICY_INIT_MAILBOX,
-            .mailbox_address = (uintptr_t)NSEC_SCMI_SHMEM0,
+            .mailbox_pa = (uintptr_t)NSEC_SCMI_SHMEM0,
             .mailbox_size = SCMI_PAYLOAD_SIZE,
             .driver_id = FWK_ID_SUB_ELEMENT_INIT(FWK_MODULE_IDX_OPTEE_MHU,
                                                  SCMI_CHANNEL_DEVICE_IDX_NS0, 0),
@@ -77,7 +77,7 @@ static struct fwk_element smt_element_table[] = {
         .data = &((struct mod_optee_smt_channel_config) {
             .type = MOD_OPTEE_SMT_CHANNEL_TYPE_SLAVE,
             .policies = MOD_OPTEE_SMT_POLICY_INIT_MAILBOX,
-            .mailbox_address = (uintptr_t)NSEC_SCMI_SHMEM1,
+            .mailbox_pa = (uintptr_t)NSEC_SCMI_SHMEM1,
             .mailbox_size = SCMI_PAYLOAD_SIZE,
             .driver_id = FWK_ID_SUB_ELEMENT_INIT(FWK_MODULE_IDX_OPTEE_MHU,
                                                  SCMI_CHANNEL_DEVICE_IDX_NS1, 0),
@@ -89,7 +89,7 @@ static struct fwk_element smt_element_table[] = {
         .data = &((struct mod_optee_smt_channel_config) {
             .type = MOD_OPTEE_SMT_CHANNEL_TYPE_SLAVE,
             .policies = MOD_OPTEE_SMT_POLICY_INIT_MAILBOX,
-            .mailbox_address = (uintptr_t)NSEC_SCMI_SHMEM2,
+            .mailbox_pa = (uintptr_t)NSEC_SCMI_SHMEM2,
             .mailbox_size = SCMI_PAYLOAD_SIZE,
             .driver_id = FWK_ID_SUB_ELEMENT_INIT(FWK_MODULE_IDX_OPTEE_MHU,
                                                  SCMI_CHANNEL_DEVICE_IDX_NS2, 0),
@@ -107,16 +107,18 @@ static const struct fwk_element *smt_get_element_table(fwk_id_t module_id)
 		   FWK_MODULE_IDX_OPTEE_SMT);
 
 	for (n = 0; n < SCMI_SERVICE_IDX_COUNT; n++) {
-		struct mod_optee_smt_channel_config *cfg;
-		const void *data;
-		vaddr_t shm_base;
+		struct mod_optee_smt_channel_config *cfg = NULL;
+		const void *data = NULL;
+		vaddr_t shm_base = 0;
 
 		data = smt_element_table[n].data;
 		cfg = (struct mod_optee_smt_channel_config *)data;
-		shm_base = (vaddr_t)phys_to_virt(cfg->mailbox_address,
-						 MEM_AREA_IO_NSEC);
-		fwk_assert(shm_base);
-		cfg->mailbox_address = shm_base;
+		if (!cfg->mailbox_address){
+			shm_base = (vaddr_t)phys_to_virt(cfg->mailbox_pa,
+							 MEM_AREA_IO_NSEC);
+			fwk_assert(shm_base);
+			cfg->mailbox_address = shm_base;
+		}
 	}
 
 	return (const struct fwk_element *)smt_element_table;

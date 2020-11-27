@@ -66,7 +66,7 @@ static struct fwk_element smt_element_table[] = {
         .data = &((struct mod_optee_smt_channel_config) {
             .type = MOD_OPTEE_SMT_CHANNEL_TYPE_SLAVE,
             .policies = MOD_OPTEE_SMT_POLICY_INIT_MAILBOX,
-            .mailbox_address = PSCI_SHM_BASE,
+            .mailbox_pa = PSCI_SHM_BASE,
             .mailbox_size = SCMI_PAYLOAD_SIZE,
             .driver_id = FWK_ID_SUB_ELEMENT_INIT(FWK_MODULE_IDX_OPTEE_MHU,
                                                  SCMI_CHANNEL_DEVICE_IDX_PSCI,
@@ -79,7 +79,7 @@ static struct fwk_element smt_element_table[] = {
         .data = &((struct mod_optee_smt_channel_config) {
             .type = MOD_OPTEE_SMT_CHANNEL_TYPE_SLAVE,
             .policies = MOD_OPTEE_SMT_POLICY_INIT_MAILBOX,
-            .mailbox_address = OSPM_0_SHM_BASE,
+            .mailbox_pa = OSPM_0_SHM_BASE,
             .mailbox_size = SCMI_PAYLOAD_SIZE,
             .driver_id = FWK_ID_SUB_ELEMENT_INIT(FWK_MODULE_IDX_OPTEE_MHU,
                                                  SCMI_CHANNEL_DEVICE_IDX_OSPM_0,
@@ -92,7 +92,7 @@ static struct fwk_element smt_element_table[] = {
         .data = &((struct mod_optee_smt_channel_config) {
             .type = MOD_OPTEE_SMT_CHANNEL_TYPE_SLAVE,
             .policies = MOD_OPTEE_SMT_POLICY_INIT_MAILBOX,
-            .mailbox_address = OSPM_1_SHM_BASE,
+            .mailbox_pa = OSPM_1_SHM_BASE,
             .mailbox_size = SCMI_PAYLOAD_SIZE,
             .driver_id = FWK_ID_SUB_ELEMENT_INIT(FWK_MODULE_IDX_OPTEE_MHU,
                                                  SCMI_CHANNEL_DEVICE_IDX_OSPM_1,
@@ -113,8 +113,8 @@ static const struct fwk_element *smt_get_element_table(fwk_id_t module_id)
 		void *va = NULL;
 
 		cfg = (void *)smt_element_table[n].data;
-		if (cfg->mailbox_address) {
-			va = phys_to_virt(cfg->mailbox_address, MEM_AREA_NSEC_SHM);
+		if (cfg->mailbox_pa && !cfg->mailbox_address) {
+			va = phys_to_virt(cfg->mailbox_pa, MEM_AREA_NSEC_SHM);
 			cfg->mailbox_address = (vaddr_t)va;
 		}
 	}

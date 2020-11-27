@@ -60,6 +60,9 @@ struct mod_optee_smt_channel_config {
     /*! Channel policies */
     uint32_t policies;
 
+    /*! Shared mailbox physical address */
+    uintptr_t mailbox_pa;
+
     /*! Shared mailbox address */
     uintptr_t mailbox_address;
 

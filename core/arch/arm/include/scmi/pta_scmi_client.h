@@ -12,6 +12,7 @@
 
 /*
  * PTA_SCMI_CMD_CHANNEL_COUNT - Get number of channels supported
+ * TODO: deprecate
  *
  * param[0] (out value) - value.a: Number of communication channels
  * param[1] unused
@@ -26,6 +27,7 @@
 
 /*
  * PTA_SCMI_CMD_GET_CHANNEL - Get channel identifer for a buffer pool
+ * TODO: deprecate
  *
  * SCMI shm information are 0 if agent expects to use OP-TEE regular SHM
  *
@@ -43,6 +45,7 @@
 
 /*
  * PTA_SCMI_CMD_PROCESS_CHANNEL - Process message in SCMI channel
+ * TODO: deprecate
  *
  * [in]         value[0].a      SCMI channel identifier
  * [in/out]     memref[1]       SCMI message
@@ -52,5 +55,17 @@
  * TEE_ERROR_BAD_PARAMETERS - Incorrect input param
  */
 #define PTA_SCMI_CMD_PROCESS_CHANNEL		0x2
+
+/*
+ * PTA_SCMI_CMD_PROCESS_MESSAGE - Process message from an SCMI agent
+ *
+ * [in]         value[0].a      SCMI agent identifier
+ * [in/out]     memref[1]       SCMI message
+ *
+ * Result:
+ * TEE_SUCCESS - Invoke command success
+ * TEE_ERROR_BAD_PARAMETERS - Incorrect input param
+ */
+#define PTA_SCMI_CMD_PROCESS_MESSAGE		0x3
 
 #endif /*SCMI_PTA_SCMI_CLIENT_H*/

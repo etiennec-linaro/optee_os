@@ -20,6 +20,51 @@
  * SCMI (non-secure) agent using a index in known SCP-fmw channel
  * IDs.
  */
+struct scmi_agent_mhu {
+	unsigned int agent_id;
+	unsigned int fwk_id;
+};
+static unsigned int scmi_agent_cnt;
+static struct scmi_agent_mhu *scmi_agent_mhu;
+
+static TEE_Result mhu_id_from_agent_id(unsigned int *mhu_id,
+				       unsigned int agent_id)
+{
+	unsigned int fwk_id = 0;
+	unsigned int n = 0;
+
+	/* ID 0 is reserved to platform (server) as per SCMI spec */
+	if (!agent_id)
+		return TEE_ERROR_BAD_PARAMETERS;
+
+	for (n = 0; n < scmi_agent_cnt; n++) {
+		if (scmi_agent_mhu[n].agent_id == agent_id) {
+			*mhu_id = scmi_agent_mhu[n].fwk_id;
+			return TEE_SUCCESS;
+		}
+	}
+
+	/*
+	 * if (!scmi_server_agent_is_nsec_cpu(agent_id))
+	 *	return TEE_ERROR_BAD_PARAMETERS;
+	 */
+	fwk_id = scmi_server_get_channel(agent_id, NULL, 0);
+
+	for (n = 0; n < scmi_agent_cnt; n++) {
+		if (!scmi_agent_mhu[n].agent_id) {
+			scmi_agent_mhu[n].fwk_id = fwk_id;
+			scmi_agent_mhu[n].agent_id = agent_id;
+			*mhu_id = fwk_id;
+
+			return TEE_SUCCESS;
+		}
+	}
+
+	EMSG("Unexpectedly exhaust agent count");
+	return TEE_ERROR_GENERIC;
+}
+
+#if 1 // TODO: remove once moved to command PROCESS_MESSAGE
 static unsigned int scmi_channel_cnt;
 static uint32_t *scmi_channel_hdl;
 
@@ -69,6 +114,9 @@ static TEE_Result channel_id_to_agent(unsigned int *out, unsigned int in)
 	assert(0);
 	return TEE_ERROR_BAD_PARAMETERS;
 }
+#endif // to remove once PROCESS_CHANNEL deprecated vs PROCESS_MESSAGE
+
+// TODO: to remove: not needed by SCMI agent
 static TEE_Result cmd_channel_count(void *sess __unused,
 				    uint32_t param_types,
 				    TEE_Param params[TEE_NUM_PARAMS])
@@ -86,6 +134,7 @@ static TEE_Result cmd_channel_count(void *sess __unused,
 	return TEE_SUCCESS;
 }
 
+// TODO: remove: not needed when using PROCESS_MESSAGE
 static TEE_Result cmd_get_channel(void *sess __unused,
 				  uint32_t param_types,
 				  TEE_Param params[TEE_NUM_PARAMS])
@@ -175,9 +224,34 @@ static TEE_Result cmd_process_channel(void *sess __unused,
 	scmi_server_process_thread(server_id, msg_buf);
 
 	return TEE_SUCCESS;
+}
 
+static TEE_Result cmd_process_message(void *sess __unused,
+				      uint32_t param_types,
+				      TEE_Param params[TEE_NUM_PARAMS])
+{
+	const uint32_t exp_ptypes = TEE_PARAM_TYPES(TEE_PARAM_TYPE_VALUE_INPUT,
+						    TEE_PARAM_TYPE_MEMREF_INOUT,
+						    TEE_PARAM_TYPE_NONE,
+						    TEE_PARAM_TYPE_NONE);
+	TEE_Result res = TEE_ERROR_GENERIC;
+	unsigned int channel_id = 0;
+	unsigned int agent_id = 0;
+	void *msg_buf = NULL;
 
+	if (param_types != exp_ptypes)
+		return TEE_ERROR_BAD_PARAMETERS;
 
+	agent_id = params[0].value.a;
+	msg_buf = params[1].memref.buffer;
+
+	res = mhu_id_from_agent_id(&channel_id, agent_id);
+	if (res)
+		return res;
+
+	scmi_server_process_thread(channel_id, msg_buf);
+
+	return TEE_SUCCESS;
 }
 
 static TEE_Result invoke_command(void *sess, uint32_t cmd,
@@ -193,6 +267,8 @@ static TEE_Result invoke_command(void *sess, uint32_t cmd,
 		return cmd_get_channel(sess, param_types, params);
 	case PTA_SCMI_CMD_PROCESS_CHANNEL:
 		return cmd_process_channel(sess, param_types, params);
+	case PTA_SCMI_CMD_PROCESS_MESSAGE:
+		return cmd_process_message(sess, param_types, params);
 	default:
 		break;
 	}
@@ -203,12 +279,22 @@ static TEE_Result invoke_command(void *sess, uint32_t cmd,
 pseudo_ta_register(.uuid = PTA_SCMI_UUID, .name = PTA_SCMI_NAME,
 		   .flags = PTA_DEFAULT_FLAGS | TA_FLAG_CONCURRENT |
 			    TA_FLAG_DEVICE_ENUM,
+		   //TODO: restrict open_session to REE KERNEL clients
 		   .invoke_command_entry_point = invoke_command);
 
 static TEE_Result scmi_pta_init(void)
 {
 	unsigned int n = 0;
 
+	scmi_agent_cnt = scmi_server_get_channels_count();
+	if (!scmi_agent_cnt)
+		return TEE_SUCCESS;
+
+	scmi_agent_mhu = calloc(scmi_agent_cnt, sizeof(*scmi_agent_mhu));
+	if (!scmi_agent_mhu)
+		panic();
+
+	// Support deprecated GET_CHANNEL/PROCESS_CHANNEL commands
 	scmi_channel_cnt = scmi_server_get_channels_count();
 	if (!scmi_channel_cnt)
 		return TEE_SUCCESS;

@@ -253,7 +253,7 @@ const struct fwk_module_config config_stm32_pmic_regu = {
 };
 
 static_assert(FWK_ARRAY_SIZE(scmi2_voltd_device) ==
-	      FWK_ARRAY_SIZE(stm32_pmic_elt),
+	      FWK_ARRAY_SIZE(stm32_pmic_elt) - 1,
 	      "STM32 PMIC regulators and exposed SCMI2 VOLTAGE mismatch");
 #endif /*CFG_STPMIC1*/
 

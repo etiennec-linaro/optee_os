@@ -58,6 +58,7 @@ SCP_FIRMWARE_LOG_LEVEL_0=CRIT
 SCP_FIRMWARE_LOG_LEVEL_1=ERROR
 SCP_FIRMWARE_LOG_LEVEL_2=INFO
 SCP_FIRMWARE_LOG_LEVEL_3=TRACE
+SCP_FIRMWARE_LOG_LEVEL_4=TRACE
 SCP_FIRMWARE_LOG_LEVEL=$(SCP_FIRMWARE_LOG_LEVEL_$(CFG_TEE_CORE_LOG_LEVEL))
 
 # Internal build switches and directives
@@ -67,10 +68,9 @@ cppflags-lib-y += -DBUILD_VERSION_MAJOR=$(SCMI_VERSION_MAJOR) \
 
 cppflags-lib-y += -DFWK_LOG_LEVEL=FWK_LOG_LEVEL_$(SCP_FIRMWARE_LOG_LEVEL)
 
-
-
 cppflags-lib-y += -Wno-unused-parameter \
 		  -Wno-unused-variable \
+		  -Wno-unused-but-set-variable \
 		  -Wno-suggest-attribute=format
 
 cppflags-lib-y += -DBUILD_OPTEE

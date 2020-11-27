@@ -212,9 +212,18 @@ static inline bool __fwk_check(bool cond)
 #    define fwk_expect(condition) (fwk_check(condition), 1)
 #endif
 
-#ifdef BUILD_OPTEE
-#define static_assert(cond, str)	//COMPILE_TIME_ASSERT((cond)) // str
-#endif
+/*******************************************************************************
+ * Macro to flag a compile time assertion. It uses the preprocessor to generate
+ * an invalid C construct if 'cond' evaluates to false.
+ * The following compilation error is triggered if the assertion fails:
+ * "error: size of array 'msg' is negative"
+ * The 'unused' attribute ensures that the unused typedef does not emit a
+ * compiler warning.
+ ******************************************************************************/
+#define _static_assert(cond, msg, coutner) \
+	typedef char assert_ ##counter [(cond) ? 1 : -1] __unused
+
+#define static_assert(cond, msg) _static_assert(cond, msg, __COUNTER__)
 
 /*!
  * \}

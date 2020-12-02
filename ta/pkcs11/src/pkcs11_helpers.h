@@ -46,6 +46,9 @@ size_t pkcs11_attr_is_class(uint32_t attribute_id);
  */
 size_t pkcs11_attr_is_type(uint32_t attribute_id);
 
+/* Return true if the attribute has indirect attributes */
+bool pkcs11_attr_has_indirect_attributes(uint32_t attribute_id);
+
 /* Return true if the object class is related to a type-in-class */
 bool pkcs11_class_has_type(uint32_t class_id);
 

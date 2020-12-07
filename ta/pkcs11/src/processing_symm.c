@@ -564,7 +564,6 @@ enum pkcs11_rc step_symm_operation(struct pkcs11_session *session,
 
 	/*
 	 * Feed active operation with data
-	 * (PKCS11_FUNC_STEP_UPDATE/_ONESHOT)
 	 */
 	switch (proc->mecha_type) {
 	case PKCS11_CKM_AES_CMAC_GENERAL:
@@ -576,7 +575,8 @@ enum pkcs11_rc step_symm_operation(struct pkcs11_session *session,
 	case PKCS11_CKM_SHA384_HMAC:
 	case PKCS11_CKM_SHA512_HMAC:
 	case PKCS11_CKM_AES_XCBC_MAC:
-		if (step == PKCS11_FUNC_STEP_FINAL)
+		if (step == PKCS11_FUNC_STEP_FINAL ||
+		    step == PKCS11_FUNC_STEP_ONESHOT)
 			break;
 
 		if (!in_buf) {
@@ -683,13 +683,15 @@ enum pkcs11_rc step_symm_operation(struct pkcs11_session *session,
 		switch (function) {
 		case PKCS11_FUNCTION_SIGN:
 			res = TEE_MACComputeFinal(proc->tee_op_handle,
-						  NULL, 0, out_buf, &out_size);
+						  in_buf, in_size, out_buf,
+						  &out_size);
 			output_data = true;
 			rc = tee2pkcs_error(res);
 			break;
 		case PKCS11_FUNCTION_VERIFY:
 			res = TEE_MACCompareFinal(proc->tee_op_handle,
-						  NULL, 0, in2_buf, in2_size);
+						  in_buf, in_size, in2_buf,
+						  in2_size);
 			rc = tee2pkcs_error(res);
 			break;
 		default:

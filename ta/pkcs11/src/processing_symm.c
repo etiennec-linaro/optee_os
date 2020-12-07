@@ -142,6 +142,32 @@ static enum pkcs11_rc pkcsmech2tee_key_type(uint32_t *tee_type,
 	return PKCS11_RV_NOT_FOUND;
 }
 
+static enum pkcs11_rc hmac_to_tee_hash(uint32_t *algo,
+				       enum pkcs11_mechanism_id mech_id)
+{
+	static const struct {
+		enum pkcs11_mechanism_id mech;
+		uint32_t tee_id;
+	} hmac_hash[] = {
+		{ PKCS11_CKM_MD5_HMAC, TEE_ALG_MD5 },
+		{ PKCS11_CKM_SHA_1_HMAC, TEE_ALG_SHA1 },
+		{ PKCS11_CKM_SHA224_HMAC, TEE_ALG_SHA224 },
+		{ PKCS11_CKM_SHA256_HMAC, TEE_ALG_SHA256 },
+		{ PKCS11_CKM_SHA384_HMAC, TEE_ALG_SHA384 },
+		{ PKCS11_CKM_SHA512_HMAC, TEE_ALG_SHA512 },
+	};
+	size_t n = 0;
+
+	for (n = 0; n < ARRAY_SIZE(hmac_hash); n++) {
+		if (hmac_hash[n].mech == mech_id) {
+			*algo = hmac_hash[n].tee_id;
+			return PKCS11_CKR_OK;
+		}
+	}
+
+	return PKCS11_RV_NOT_FOUND;
+}
+
 static enum pkcs11_rc
 allocate_tee_operation(struct pkcs11_session *session,
 		       enum processing_func function,
@@ -175,6 +201,18 @@ allocate_tee_operation(struct pkcs11_session *session,
 		if (key_size < min_key_size)
 			return PKCS11_CKR_KEY_SIZE_RANGE;
 
+		/*
+		 * If size of generic key is greater than the size
+		 * supported by TEE API, this is not considered an
+		 * error. When loading TEE key, we will hash the key
+		 * to generate the appropriate key for HMAC operation.
+		 * This key size will not be greater than the
+		 * max_key_size. So we can use max_key_size for
+		 * TEE_AllocateOperation().
+		 */
+		if (key_size > max_key_size)
+			size = max_key_size * 8;
+
 		mode = TEE_MODE_MAC;
 		break;
 
@@ -200,6 +238,42 @@ allocate_tee_operation(struct pkcs11_session *session,
 	return tee2pkcs_error(res);
 }
 
+static enum pkcs11_rc hash_secret_helper(enum pkcs11_mechanism_id mech_id,
+					 struct pkcs11_object *obj,
+					 TEE_Attribute *tee_attr,
+					 void **ctx,
+					 size_t *object_size_bits)
+{
+	uint32_t algo = 0;
+	void *hash_ptr = NULL;
+	uint32_t hash_size = 0;
+	enum pkcs11_rc rc = PKCS11_CKR_OK;
+
+	rc = hmac_to_tee_hash(&algo, mech_id);
+	if (rc)
+		return rc;
+
+	hash_size = TEE_ALG_GET_DIGEST_SIZE(algo);
+	hash_ptr = TEE_Malloc(hash_size, 0);
+	if (!hash_ptr)
+		return PKCS11_CKR_DEVICE_MEMORY;
+
+	rc = pkcs2tee_load_hashed_attr(tee_attr, TEE_ATTR_SECRET_VALUE, obj,
+				       PKCS11_CKA_VALUE, algo, hash_ptr,
+				       &hash_size);
+	if (rc) {
+		EMSG("No secret/hash error");
+		TEE_Free(hash_ptr);
+		return rc;
+	}
+
+	*ctx = hash_ptr;
+
+	*object_size_bits = hash_size * 8;
+
+	return PKCS11_CKR_OK;
+}
+
 static enum pkcs11_rc load_tee_key(struct pkcs11_session *session,
 				   struct pkcs11_object *obj,
 				   struct pkcs11_attribute_head *proc_params)
@@ -210,16 +284,12 @@ static enum pkcs11_rc load_tee_key(struct pkcs11_session *session,
 	enum pkcs11_key_type key_type = 0;
 	enum pkcs11_rc rc = PKCS11_CKR_OK;
 	TEE_Result res = TEE_ERROR_GENERIC;
+	uint32_t max_key_size = 0;
+	uint32_t min_key_size = 0;
 
 	if (obj->key_handle != TEE_HANDLE_NULL) {
 		/* Key was already loaded and fits current need */
 		goto key_ready;
-	}
-
-	if (!pkcs2tee_load_attr(&tee_attr, TEE_ATTR_SECRET_VALUE,
-				obj, PKCS11_CKA_VALUE)) {
-		EMSG("No secret found");
-		return PKCS11_CKR_FUNCTION_FAILED;
 	}
 
 	object_size = get_object_key_bit_size(obj);
@@ -244,15 +314,43 @@ static enum pkcs11_rc load_tee_key(struct pkcs11_session *session,
 						   proc_params->id);
 		else
 			rc = pkcs2tee_key_type(&tee_key_type, obj);
+
+		if (rc)
+			return rc;
+
+		mechanism_supported_key_sizes(proc_params->id,
+					      &min_key_size,
+					      &max_key_size);
+
+		if ((object_size / 8) > max_key_size) {
+			rc = hash_secret_helper(proc_params->id, obj, &tee_attr,
+						&session->processing->extra_ctx,
+						&object_size);
+			if (rc)
+				return rc;
+		} else {
+			if (!pkcs2tee_load_attr(&tee_attr,
+						TEE_ATTR_SECRET_VALUE,
+						obj,
+						PKCS11_CKA_VALUE)) {
+				EMSG("No secret found");
+				return PKCS11_CKR_FUNCTION_FAILED;
+			}
+		}
 		break;
 
 	default:
 		rc = pkcs2tee_key_type(&tee_key_type, obj);
+		if (rc)
+			return rc;
+
+		if (!pkcs2tee_load_attr(&tee_attr, TEE_ATTR_SECRET_VALUE,
+					obj, PKCS11_CKA_VALUE)) {
+			EMSG("No secret found");
+			return PKCS11_CKR_FUNCTION_FAILED;
+		}
 		break;
 	}
-
-	if (rc)
-		return rc;
 
 	res = TEE_AllocateTransientObject(tee_key_type, object_size,
 					  &obj->key_handle);

@@ -499,6 +499,46 @@ static enum pkcs11_rc input_data_size_is_valid(struct active_processing *proc,
 	return PKCS11_CKR_OK;
 }
 
+/* Validate input buffer size as per PKCS#11 constraints */
+static enum pkcs11_rc input_sign_size_is_valid(struct active_processing *proc,
+					       size_t in_size)
+{
+	size_t sign_sz = 0;
+
+	switch (proc->mecha_type) {
+	case PKCS11_CKM_MD5_HMAC:
+		sign_sz = TEE_MD5_HASH_SIZE;
+		break;
+	case PKCS11_CKM_SHA_1_HMAC:
+		sign_sz = TEE_SHA1_HASH_SIZE;
+		break;
+	case PKCS11_CKM_SHA224_HMAC:
+		sign_sz = TEE_SHA224_HASH_SIZE;
+		break;
+	case PKCS11_CKM_SHA256_HMAC:
+		sign_sz = TEE_SHA256_HASH_SIZE;
+		break;
+	case PKCS11_CKM_SHA384_HMAC:
+		sign_sz = TEE_SHA384_HASH_SIZE;
+		break;
+	case PKCS11_CKM_SHA512_HMAC:
+		sign_sz = TEE_SHA512_HASH_SIZE;
+		break;
+	case PKCS11_CKM_AES_CMAC_GENERAL:
+	case PKCS11_CKM_AES_CMAC:
+	case PKCS11_CKM_AES_XCBC_MAC:
+		sign_sz = TEE_AES_BLOCK_SIZE;
+		break;
+	default:
+		return PKCS11_CKR_GENERAL_ERROR;
+	}
+
+	if (in_size < sign_sz)
+		return PKCS11_CKR_SIGNATURE_LEN_RANGE;
+
+	return PKCS11_CKR_OK;
+}
+
 /*
  * step_sym_cipher - processing symmetric (and related) cipher operation step
  *
@@ -689,6 +729,9 @@ enum pkcs11_rc step_symm_operation(struct pkcs11_session *session,
 			rc = tee2pkcs_error(res);
 			break;
 		case PKCS11_FUNCTION_VERIFY:
+			rc = input_sign_size_is_valid(proc, in2_size);
+			if (rc)
+				return rc;
 			res = TEE_MACCompareFinal(proc->tee_op_handle,
 						  in_buf, in_size, in2_buf,
 						  in2_size);

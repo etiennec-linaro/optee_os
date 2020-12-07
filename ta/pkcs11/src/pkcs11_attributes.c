@@ -350,12 +350,8 @@ static const uint32_t public_key_boolprops[] = {
 	PKCS11_CKA_TRUSTED,
 };
 
-static const uint32_t public_key_mandated[] = {
-	PKCS11_CKA_SUBJECT,
-};
-
 static const uint32_t public_key_opt_or_null[] = {
-	PKCS11_CKA_PUBLIC_KEY_INFO,
+	PKCS11_CKA_SUBJECT, PKCS11_CKA_PUBLIC_KEY_INFO,
 };
 
 static const uint32_t public_key_optional[] = {
@@ -370,12 +366,8 @@ static const uint32_t private_key_boolprops[] = {
 	PKCS11_CKA_WRAP_WITH_TRUSTED, PKCS11_CKA_ALWAYS_AUTHENTICATE,
 };
 
-static const uint32_t private_key_mandated[] = {
-	PKCS11_CKA_SUBJECT,
-};
-
 static const uint32_t private_key_opt_or_null[] = {
-	PKCS11_CKA_PUBLIC_KEY_INFO,
+	PKCS11_CKA_SUBJECT, PKCS11_CKA_PUBLIC_KEY_INFO,
 };
 
 static const uint32_t private_key_optional[] = {
@@ -567,11 +559,6 @@ static enum pkcs11_rc create_pub_key_attributes(struct obj_attrs **out,
 	if (rc)
 		return rc;
 
-	rc = set_mandatory_attributes(out, temp, public_key_mandated,
-				      ARRAY_SIZE(public_key_mandated));
-	if (rc)
-		return rc;
-
 	rc = set_attributes_opt_or_null(out, temp,
 					public_key_opt_or_null,
 					ARRAY_SIZE(public_key_opt_or_null));
@@ -629,11 +616,6 @@ static enum pkcs11_rc create_priv_key_attributes(struct obj_attrs **out,
 
 	rc = set_mandatory_boolprops(out, temp, private_key_boolprops,
 				     ARRAY_SIZE(private_key_boolprops));
-	if (rc)
-		return rc;
-
-	rc = set_mandatory_attributes(out, temp, private_key_mandated,
-				      ARRAY_SIZE(private_key_mandated));
 	if (rc)
 		return rc;
 

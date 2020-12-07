@@ -493,21 +493,6 @@ uint32_t generate_rsa_keys(struct pkcs11_attribute_head *proc_params,
 		tee_count++;
 	}
 
-	if (remove_empty_attribute(pub_head, PKCS11_CKA_MODULUS) ||
-	    remove_empty_attribute(pub_head, PKCS11_CKA_PUBLIC_EXPONENT) ||
-	    remove_empty_attribute(priv_head, PKCS11_CKA_MODULUS) ||
-	    remove_empty_attribute(priv_head, PKCS11_CKA_PUBLIC_EXPONENT) ||
-	    remove_empty_attribute(priv_head, PKCS11_CKA_PRIVATE_EXPONENT) ||
-	    remove_empty_attribute(priv_head, PKCS11_CKA_PRIME_1) ||
-	    remove_empty_attribute(priv_head, PKCS11_CKA_PRIME_2) ||
-	    remove_empty_attribute(priv_head, PKCS11_CKA_EXPONENT_1) ||
-	    remove_empty_attribute(priv_head, PKCS11_CKA_EXPONENT_2) ||
-	    remove_empty_attribute(priv_head, PKCS11_CKA_COEFFICIENT)) {
-		EMSG("Unexpected attribute(s) found");
-
-		return PKCS11_CKR_TEMPLATE_INCONSISTENT;
-	}
-
 	/* Create an ECDSA TEE key: will match PKCS11 ECDSA and ECDH */
 	res = TEE_AllocateTransientObject(TEE_TYPE_RSA_KEYPAIR,
 					  tee_size, &tee_obj);

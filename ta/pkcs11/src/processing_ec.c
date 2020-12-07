@@ -1184,20 +1184,6 @@ uint32_t generate_ec_keys(struct pkcs11_attribute_head *proc_params,
 	if (!proc_params || !*pub_head || !*priv_head)
 		return PKCS11_CKR_TEMPLATE_INCONSISTENT;
 
-	if (remove_empty_attribute(pub_head, PKCS11_CKA_EC_POINT) ||
-	    remove_empty_attribute(priv_head, PKCS11_CKA_VALUE) ||
-	    remove_empty_attribute(priv_head, PKCS11_CKA_EC_POINT) ||
-	    // temporarily until DER support
-	    remove_empty_attribute(pub_head, PKCS11_CKA_EC_POINT_X) ||
-	    remove_empty_attribute(pub_head, PKCS11_CKA_EC_POINT_Y) ||
-	    remove_empty_attribute(priv_head, PKCS11_CKA_EC_POINT_X) ||
-	    remove_empty_attribute(priv_head, PKCS11_CKA_EC_POINT_Y)) {
-		EMSG("Unexpected attribute(s) found");
-		trace_attributes("public-key", *pub_head);
-		trace_attributes("privat-key", *priv_head);
-		return PKCS11_CKR_TEMPLATE_INCONSISTENT;
-	}
-
 	if (get_attribute_ptr(*pub_head, PKCS11_CKA_EC_PARAMS,
 			      &a_ptr, &a_size) || !a_ptr) {
 		EMSG("No EC_PARAMS attribute found in public key");

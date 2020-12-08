@@ -105,10 +105,7 @@ check_mechanism_against_processing(struct pkcs11_session *session,
 		    !session->processing->relogged)
 			return PKCS11_CKR_USER_NOT_LOGGED_IN;
 
-		if (!session->processing->updated)
-			allowed = true;
-		else
-			allowed = !mechanism_is_one_shot_only(mechanism_type);
+		allowed = !mechanism_is_one_shot_only(mechanism_type);
 		break;
 
 	case PKCS11_FUNC_STEP_FINAL:

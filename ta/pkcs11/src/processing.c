@@ -824,32 +824,6 @@ enum pkcs11_rc entry_derive_key(struct pkcs11_client *client,
 	if (rc)
 		goto out;
 
-#if 0
-	/* Exaustive list */
-	switch (proc_params->id) {
-	case PKCS11_CKM_ECDH1_DERIVE:	<--------------------------- TODO
-	//case PKCS11_CKM_ECDH1_COFACTOR_DERIVE:
-	case PKCS11_CKM_DH_PKCS_DERIVE:	<--------------------------- TODO
-	case PKCS11_CKM_X9_42_DH_DERIVE:
-	case PKCS11_CKM_X9_42_DH_HYBRID_DERIVE:
-	case PKCS11_CKM_X9_42_MQV_DERIVE:
-	case PKCS11_CKM_AES_GMAC
-	case PKCS11_CKM_AES_ECB_ENCRYPT_DATA	<------------------- TODO
-	case PKCS11_CKM_AES_CBC_ENCRYPT_DATA	<------------------- TODO
-	case PKCS11_CKM_SHA1_KEY_DERIVATION
-	case PKCS11_CKM_SHA224_KEY_DERIVATION
-	case PKCS11_CKM_SHA256_KEY_DERIVATION
-	case PKCS11_CKM_SHA384_KEY_DERIVATION
-	case PKCS11_CKM_SHA512_KEY_DERIVATION
-	case PKCS11_CKM_SHA512_224_KEY_DERIVATION
-	case PKCS11_CKM_SHA512_256_KEY_DERIVATION
-	case PKCS11_CKM_SHA512_T_KEY_DERIVATION
-	// Exhaustive list is made of Camelia, Aria, Seed, KIP, GOSTR3410,
-	// DES, 3DES, SSL3, TLS12, TLS-KDF, WTLS and concatenate  mechanisms.
-	case PKCS11_CKM_ECMQV_DERIVE:
-	}
-#endif
-
 	mecha_id = proc_params->id;
 	TEE_Free(proc_params);
 	proc_params = NULL;

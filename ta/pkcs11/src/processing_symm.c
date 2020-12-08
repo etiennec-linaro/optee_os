@@ -391,13 +391,13 @@ init_tee_operation(struct pkcs11_session *session,
 	switch (proc_params->id) {
 	case PKCS11_CKM_AES_CMAC_GENERAL:
 	case PKCS11_CKM_AES_CMAC:
+	case PKCS11_CKM_AES_XCBC_MAC:
 	case PKCS11_CKM_MD5_HMAC:
 	case PKCS11_CKM_SHA_1_HMAC:
 	case PKCS11_CKM_SHA224_HMAC:
 	case PKCS11_CKM_SHA256_HMAC:
 	case PKCS11_CKM_SHA384_HMAC:
 	case PKCS11_CKM_SHA512_HMAC:
-	case PKCS11_CKM_AES_XCBC_MAC:
 		if (proc_params->size)
 			return PKCS11_CKR_MECHANISM_PARAM_INVALID;
 
@@ -608,13 +608,13 @@ enum pkcs11_rc step_symm_operation(struct pkcs11_session *session,
 	switch (proc->mecha_type) {
 	case PKCS11_CKM_AES_CMAC_GENERAL:
 	case PKCS11_CKM_AES_CMAC:
+	case PKCS11_CKM_AES_XCBC_MAC:
 	case PKCS11_CKM_MD5_HMAC:
 	case PKCS11_CKM_SHA_1_HMAC:
 	case PKCS11_CKM_SHA224_HMAC:
 	case PKCS11_CKM_SHA256_HMAC:
 	case PKCS11_CKM_SHA384_HMAC:
 	case PKCS11_CKM_SHA512_HMAC:
-	case PKCS11_CKM_AES_XCBC_MAC:
 		if (step == PKCS11_FUNC_STEP_FINAL ||
 		    step == PKCS11_FUNC_STEP_ONESHOT)
 			break;
@@ -713,13 +713,13 @@ enum pkcs11_rc step_symm_operation(struct pkcs11_session *session,
 	switch (session->processing->mecha_type) {
 	case PKCS11_CKM_AES_CMAC_GENERAL:
 	case PKCS11_CKM_AES_CMAC:
+	case PKCS11_CKM_AES_XCBC_MAC:
 	case PKCS11_CKM_MD5_HMAC:
 	case PKCS11_CKM_SHA_1_HMAC:
 	case PKCS11_CKM_SHA224_HMAC:
 	case PKCS11_CKM_SHA256_HMAC:
 	case PKCS11_CKM_SHA384_HMAC:
 	case PKCS11_CKM_SHA512_HMAC:
-	case PKCS11_CKM_AES_XCBC_MAC:
 		switch (function) {
 		case PKCS11_FUNCTION_SIGN:
 			res = TEE_MACComputeFinal(proc->tee_op_handle,
@@ -741,6 +741,7 @@ enum pkcs11_rc step_symm_operation(struct pkcs11_session *session,
 			TEE_Panic(function);
 			break;
 		}
+
 		break;
 
 	case PKCS11_CKM_AES_ECB:

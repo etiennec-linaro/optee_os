@@ -6,7 +6,6 @@
 #ifndef PKCS11_TA_ATTRIBUTES_H
 #define PKCS11_TA_ATTRIBUTES_H
 
-#include <assert.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>

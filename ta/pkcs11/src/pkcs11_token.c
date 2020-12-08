@@ -16,10 +16,10 @@
 
 #include "attributes.h"
 #include "handle.h"
-#include "pkcs11_attributes.h"
 #include "pkcs11_helpers.h"
 #include "pkcs11_token.h"
 #include "processing.h"
+#include "object.h"
 #include "serializer.h"
 #include "token_capabilities.h"
 
@@ -1338,29 +1338,6 @@ enum pkcs11_rc entry_ck_login(struct pkcs11_client *client,
 
 	case PKCS11_CKU_CONTEXT_SPECIFIC:
 		return PKCS11_CKR_OPERATION_NOT_INITIALIZED;
-#if 0 // Remove that, non sense
-		if (!session_is_active(session) ||
-		    !session->processing->always_authen)
-			return PKCS11_CKR_OPERATION_NOT_INITIALIZED;
-
-		if (pkcs11_session_is_public(session))
-			return PKCS11_CKR_FUNCTION_FAILED;
-
-		assert(pkcs11_session_is_user(session) ||
-			pkcs11_session_is_so(session));
-
-		if (pkcs11_session_is_so(session))
-			rc = check_so_pin(session, pin, pin_size);
-		else
-			rc = check_user_pin(session, pin, pin_size);
-
-		session->processing->relogged = (rc == PKCS11_CKR_OK);
-
-		if (rc == PKCS11_CKR_PIN_LOCKED)
-			session_logout(session);
-
-		break;
-#endif
 
 	default:
 		return PKCS11_CKR_USER_TYPE_INVALID;

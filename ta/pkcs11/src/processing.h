@@ -72,7 +72,6 @@ enum pkcs11_rc step_symm_operation(struct pkcs11_session *session,
 				   enum processing_step step,
 				   uint32_t ptypes, TEE_Param *params);
 
-void tee_release_ctr_operation(struct active_processing *processing);
 enum pkcs11_rc tee_init_ctr_operation(struct active_processing *processing,
 				      void *proc_params, size_t params_size);
 
@@ -152,8 +151,6 @@ enum pkcs11_rc load_tee_rsa_key_attrs(TEE_Attribute **tee_attrs,
 
 enum pkcs11_rc pkcs2tee_proc_params_rsa_pss(struct active_processing *proc,
 					    struct pkcs11_attribute_head *par);
-
-void tee_release_rsa_pss_operation(struct active_processing *processing);
 
 enum pkcs11_rc pkcs2tee_algo_rsa_pss(uint32_t *tee_id,
 				     struct pkcs11_attribute_head *params);

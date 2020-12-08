@@ -50,10 +50,6 @@ uint32_t pkcs2tee_proc_params_rsa_pss(struct active_processing *processing,
 	return PKCS11_CKR_OK;
 }
 
-void tee_release_rsa_pss_operation(struct active_processing *processing)
-{
-}
-
 uint32_t pkcs2tee_algo_rsa_pss(uint32_t *tee_id,
 				struct pkcs11_attribute_head *proc_params)
 {

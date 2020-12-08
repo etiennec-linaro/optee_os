@@ -76,21 +76,11 @@ void release_active_processing(struct pkcs11_session *session)
 		return;
 
 	switch (session->processing->mecha_type) {
-	case PKCS11_CKM_AES_CTR:
-		tee_release_ctr_operation(session->processing);
-		break;
 	case PKCS11_CKM_AES_GCM:
 		tee_release_gcm_operation(session->processing);
 		break;
 	case PKCS11_CKM_AES_CCM:
 		tee_release_ccm_operation(session->processing);
-		break;
-	case PKCS11_CKM_SHA1_RSA_PKCS_PSS:
-	case PKCS11_CKM_SHA256_RSA_PKCS_PSS:
-	case PKCS11_CKM_SHA384_RSA_PKCS_PSS:
-	case PKCS11_CKM_SHA512_RSA_PKCS_PSS:
-	case PKCS11_CKM_SHA224_RSA_PKCS_PSS:
-		tee_release_rsa_pss_operation(session->processing);
 		break;
 	default:
 		break;

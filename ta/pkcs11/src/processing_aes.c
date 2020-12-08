@@ -548,8 +548,6 @@ void tee_release_ccm_operation(struct active_processing *processing)
 	struct ae_aes_context *ctx = processing->extra_ctx;
 
 	release_ae_aes_context(ctx);
-	TEE_Free(processing->extra_ctx);
-	processing->extra_ctx = NULL;
 }
 
 /*
@@ -661,6 +659,4 @@ void tee_release_gcm_operation(struct active_processing *processing)
 	struct ae_aes_context *ctx = processing->extra_ctx;
 
 	release_ae_aes_context(ctx);
-	TEE_Free(processing->extra_ctx);
-	processing->extra_ctx = NULL;
 }

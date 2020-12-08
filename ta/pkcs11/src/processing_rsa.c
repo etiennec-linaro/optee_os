@@ -52,8 +52,6 @@ uint32_t pkcs2tee_proc_params_rsa_pss(struct active_processing *processing,
 
 void tee_release_rsa_pss_operation(struct active_processing *processing)
 {
-	TEE_Free(processing->extra_ctx);
-	processing->extra_ctx = NULL;
 }
 
 uint32_t pkcs2tee_algo_rsa_pss(uint32_t *tee_id,

@@ -4,8 +4,11 @@
  */
 
 #include <assert.h>
+#include <config.h>
 #include <crypto/crypto.h>
+#include <initcall.h>
 #include <kernel/huk_subkey.h>
+#include <kernel/spinlock.h>
 #include <kernel/misc.h>
 #include <kernel/msg_param.h>
 #include <kernel/mutex.h>
@@ -2369,6 +2372,92 @@ out:
 	return res;
 }
 
+struct temp_buf {
+	void *buf;
+	tee_mm_entry_t *mm;
+};
+
+#ifdef CFG_PAGED_USER_TA
+/* Pageable heap memory pool */
+static tee_mm_pool_t tee_rpmb_fs_mm_pool;
+static unsigned int pool_lock = SPINLOCK_UNLOCK;
+
+/*
+ * Register in pager a pageable read/write memory range
+ * used as a heap from Core when prefer pageable read/write
+ * buffers over the standard heap due to its constrainted size.
+ * 2 extra pages are added and not mapped as boundaries protection
+ * before and after the pageable memory pool.
+ */
+static TEE_Result tee_rpmb_fs_init_vpool(void)
+{
+	size_t size = ROUNDUP(CFG_CORE_HEAP_SIZE, SMALL_PAGE_SIZE);
+	void *pool = tee_pager_alloc(size, PAGER_AREA_TYPE_RW);
+	uintptr_t start = (uintptr_t)pool;
+	uintptr_t end = start + size;
+
+	if (!pool)
+		panic();
+
+	if (!tee_mm_init(&tee_rpmb_fs_mm_pool, start, end, SMALL_PAGE_SHIFT, 0))
+		panic();
+
+	IMSG("RPMB: Pageable pool heap: %zukB [%#"PRIxPTR" %#"PRIxPTR"]",
+	     size / 1024, start, end);
+
+	return TEE_SUCCESS;
+}
+
+service_init(tee_rpmb_fs_init_vpool);
+
+static tee_mm_entry_t *alloc_vpool(size_t size)
+{
+	uint32_t exceptions = cpu_spin_lock_xsave(&pool_lock);
+	tee_mm_entry_t *mm = tee_mm_alloc(&tee_rpmb_fs_mm_pool, size);
+
+	cpu_spin_unlock_xrestore(&pool_lock, exceptions);
+	return mm;
+}
+
+static void free_vpool(struct temp_buf *ref)
+{
+	uint32_t exceptions = cpu_spin_lock_xsave(&pool_lock);
+
+	tee_mm_free(ref->mm);
+	cpu_spin_unlock_xrestore(&pool_lock, exceptions);
+}
+#else
+static tee_mm_entry_t _maybe_unused *alloc_vpool(size_t size __unused)
+{
+	return NULL;
+}
+
+static void free_vpool(struct temp_buf *ref __unused)
+{
+}
+#endif
+
+static uint8_t *allocate_temp_buf(size_t size, struct temp_buf *ref)
+{
+	memset(ref, 0, sizeof(*ref));
+
+	if (IS_ENABLED(CFG_WITH_PAGER) && size >= SMALL_PAGE_SIZE) {
+		ref->mm = alloc_vpool(size);
+		if (ref->mm)
+			return (void *)tee_mm_get_smem(ref->mm);
+	}
+
+	ref->buf = malloc(size);
+
+	return ref->buf;
+}
+
+static void free_temp_buf(struct temp_buf *ref)
+{
+	free_vpool(ref);
+	free(ref->buf);
+}
+
 static TEE_Result rpmb_fs_write_primitive(struct rpmb_file_handle *fh,
 					  size_t pos, const void *buf,
 					  size_t size)
@@ -2380,6 +2469,7 @@ static TEE_Result rpmb_fs_write_primitive(struct rpmb_file_handle *fh,
 	size_t end;
 	size_t newsize;
 	uint8_t *newbuf = NULL;
+	struct temp_buf newbuf_ref = { };
 	uintptr_t newaddr;
 	uint32_t start_addr;
 
@@ -2437,7 +2527,7 @@ static TEE_Result rpmb_fs_write_primitive(struct rpmb_file_handle *fh,
 		DMSG("Need to re-allocate");
 		newsize = MAX(end, fh->fat_entry.data_size);
 		mm = tee_mm_alloc(&p, newsize);
-		newbuf = calloc(1, newsize);
+		newbuf = allocate_temp_buf(newsize, &newbuf_ref);
 		if (!mm || !newbuf) {
 			res = TEE_ERROR_OUT_OF_MEMORY;
 			goto out;
@@ -2470,8 +2560,8 @@ static TEE_Result rpmb_fs_write_primitive(struct rpmb_file_handle *fh,
 out:
 	if (pool_result)
 		tee_mm_final(&p);
-	if (newbuf)
-		free(newbuf);
+
+	free_temp_buf(&newbuf_ref);
 
 	return res;
 }

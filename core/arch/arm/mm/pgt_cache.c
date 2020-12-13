@@ -69,7 +69,7 @@ void pgt_init(void)
 	for (n = 0; n < PGT_CACHE_SIZE; n++) {
 		struct pgt *p = pgt_entries + n;
 
-		p->tbl = tee_pager_alloc(PGT_SIZE);
+		p->tbl = tee_pager_alloc(PGT_SIZE, PAGER_AREA_TYPE_LOCK);
 		SLIST_INSERT_HEAD(&pgt_free_list, p, link);
 	}
 }

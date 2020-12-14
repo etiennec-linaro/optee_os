@@ -1777,6 +1777,10 @@ void *tee_pager_alloc(size_t size, enum tee_pager_area_type area_type)
 		return NULL;
 	}
 
+	/* Claim eventual physical pages currently mapped by the pool */
+	tee_pager_add_pages(tee_mm_get_smem(mm), num_pages, true);
+
+	/* Register address range in pager virtual memory pool */
 	tee_pager_add_core_area((vaddr_t)smem, area_type, fobj);
 	fobj_put(fobj);
 

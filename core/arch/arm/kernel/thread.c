@@ -973,40 +973,18 @@ short int thread_get_id(void)
 }
 
 #ifdef CFG_WITH_PAGER
+/* Allocate virtual memory for thread stacks */
 static void init_thread_stacks(void)
 {
 	size_t n = 0;
+	void *pool = NULL;
 
-	/*
-	 * Allocate virtual memory for thread stacks.
-	 */
 	for (n = 0; n < CFG_NUM_THREADS; n++) {
-		tee_mm_entry_t *mm = NULL;
-		vaddr_t sp = 0;
-		size_t num_pages = 0;
-		struct fobj *fobj = NULL;
+		pool = tee_pager_alloc(STACK_THREAD_SIZE, PAGER_AREA_TYPE_LOCK);
+		if (!pool)
+			panic();
 
-		/* Find vmem for thread stack and its protection gap */
-		mm = tee_mm_alloc(&tee_mm_vcore,
-				  SMALL_PAGE_SIZE + STACK_THREAD_SIZE);
-		assert(mm);
-
-		/* Claim eventual physical page */
-		tee_pager_add_pages(tee_mm_get_smem(mm), tee_mm_get_size(mm),
-				    true);
-
-		num_pages = tee_mm_get_bytes(mm) / SMALL_PAGE_SIZE - 1;
-		fobj = fobj_locked_paged_alloc(num_pages);
-
-		/* Add the area to the pager */
-		tee_pager_add_core_area(tee_mm_get_smem(mm) + SMALL_PAGE_SIZE,
-					PAGER_AREA_TYPE_LOCK, fobj);
-		fobj_put(fobj);
-
-		/* init effective stack */
-		sp = tee_mm_get_smem(mm) + tee_mm_get_bytes(mm);
-		asan_tag_access((void *)tee_mm_get_smem(mm), (void *)sp);
-		if (!thread_init_stack(n, sp))
+		if (!thread_init_stack(n, (vaddr_t)pool + STACK_THREAD_SIZE))
 			panic("init stack failed");
 	}
 }

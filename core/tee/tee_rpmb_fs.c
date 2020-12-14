@@ -2427,7 +2427,7 @@ static void free_vpool(struct temp_buf *ref)
 	cpu_spin_unlock_xrestore(&pool_lock, exceptions);
 }
 #else
-static tee_mm_entry_t _maybe_unused *alloc_vpool(size_t size __unused)
+static tee_mm_entry_t *alloc_vpool(size_t size __unused)
 {
 	return NULL;
 }

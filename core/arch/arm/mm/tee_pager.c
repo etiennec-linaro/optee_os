@@ -1755,12 +1755,13 @@ void *tee_pager_alloc(size_t size, enum tee_pager_area_type area_type)
 	if (!size)
 		return NULL;
 
-	mm = tee_mm_alloc(&tee_mm_vcore, ROUNDUP(size, SMALL_PAGE_SIZE));
+	/* Alloc a extra unmapped mapped before as boundaries */
+	mm = tee_mm_alloc(&tee_mm_vcore, size + SMALL_PAGE_SIZE);
 	if (!mm)
 		return NULL;
 
-	smem = (uint8_t *)tee_mm_get_smem(mm);
-	num_pages = tee_mm_get_bytes(mm) / SMALL_PAGE_SIZE;
+	smem = (uint8_t *)tee_mm_get_smem(mm) + SMALL_PAGE_SIZE;
+	num_pages = size / SMALL_PAGE_SIZE;
 
 	switch (area_type) {
 	case PAGER_AREA_TYPE_LOCK:
@@ -1777,14 +1778,15 @@ void *tee_pager_alloc(size_t size, enum tee_pager_area_type area_type)
 		return NULL;
 	}
 
-	/* Claim eventual physical pages currently mapped by the pool */
-	tee_pager_add_pages(tee_mm_get_smem(mm), num_pages, true);
+	/* Claim eventual physical pages currently mapped by the area */
+	tee_pager_add_pages(tee_mm_get_smem(mm),
+			    tee_mm_get_smem_size(mm), true);
 
 	/* Register address range in pager virtual memory pool */
 	tee_pager_add_core_area((vaddr_t)smem, area_type, fobj);
 	fobj_put(fobj);
 
-	asan_tag_access(smem, smem + num_pages * SMALL_PAGE_SIZE);
+	asan_tag_access(smem, smem + size);
 
 	return smem;
 }

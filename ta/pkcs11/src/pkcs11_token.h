@@ -160,8 +160,8 @@ struct active_processing {
  *
  * @attributes - matching attributes list searched (null if no search)
  * @count - number of matching handle found
- * @handles - array of handle of matching objects (published handles)
- * @next - index of the next object handle to return to FindObject
+ * @handles - array of handle of matching objects
+ * @next - index of the next object handle to return to C_FindObject
  */
 struct pkcs11_find_objects {
 	void *attributes;

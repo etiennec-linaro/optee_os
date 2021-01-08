@@ -613,7 +613,8 @@ enum pkcs11_rc entry_find_objects_init(struct pkcs11_client *client,
 		if (rc)
 			continue;
 
-		if (!attributes_match_reference(obj->attributes, req_attrs))
+		if (req_attrs->attrs_count &&
+		    !attributes_match_reference(obj->attributes, req_attrs))
 			continue;
 
 		handles = TEE_Realloc(find_ctx->handles,

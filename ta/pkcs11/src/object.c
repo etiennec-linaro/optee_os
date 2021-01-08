@@ -520,6 +520,23 @@ static void release_find_obj_context(struct pkcs11_find_objects *find_ctx)
 	TEE_Free(find_ctx);
 }
 
+static enum pkcs11_rc find_ctx_add(struct pkcs11_find_objects *find_ctx,
+				   uint32_t handle)
+{
+	uint32_t *hdls = TEE_Realloc(find_ctx->handles,
+				     (find_ctx->count + 1) * sizeof(*hdls));
+
+	if (!hdls)
+		return PKCS11_CKR_DEVICE_MEMORY;
+
+	find_ctx->handles = hdls;
+
+	*(find_ctx->handles + find_ctx->count) = handle;
+	find_ctx->count++;
+
+	return PKCS11_CKR_OK;
+}
+
 enum pkcs11_rc entry_find_objects_init(struct pkcs11_client *client,
 				       uint32_t ptypes, TEE_Param *params)
 {
@@ -607,8 +624,6 @@ enum pkcs11_rc entry_find_objects_init(struct pkcs11_client *client,
 	 */
 
 	LIST_FOREACH(obj, &session->object_list, link) {
-		uint32_t *handles = NULL;
-
 		rc = check_access_attrs_against_token(session, obj->attributes);
 		if (rc)
 			continue;
@@ -617,22 +632,13 @@ enum pkcs11_rc entry_find_objects_init(struct pkcs11_client *client,
 		    !attributes_match_reference(obj->attributes, req_attrs))
 			continue;
 
-		handles = TEE_Realloc(find_ctx->handles,
-				      (find_ctx->count + 1) * sizeof(*handles));
-		if (!handles) {
-			rc = PKCS11_CKR_DEVICE_MEMORY;
+		rc = find_ctx_add(find_ctx, pkcs11_object2handle(obj, session));
+		if (rc)
 			goto out;
-		}
-		find_ctx->handles = handles;
-
-		*(find_ctx->handles + find_ctx->count) =
-			pkcs11_object2handle(obj, session);
-		find_ctx->count++;
 	}
 
 	LIST_FOREACH(obj, &session->token->object_list, link) {
-		uint32_t obj_handle = 0;
-		uint32_t *handles = NULL;
+		uint32_t handle = 0;
 
 		/*
 		 * If there are no attributes specified, we return
@@ -651,27 +657,18 @@ enum pkcs11_rc entry_find_objects_init(struct pkcs11_client *client,
 			continue;
 
 		/* Object may not yet be published in the session */
-		obj_handle = pkcs11_object2handle(obj, session);
-		if (!obj_handle) {
-			obj_handle = handle_get(&session->object_handle_db,
-						obj);
-			if (!obj_handle) {
+		handle = pkcs11_object2handle(obj, session);
+		if (!handle) {
+			handle = handle_get(&session->object_handle_db, obj);
+			if (!handle) {
 				rc = PKCS11_CKR_DEVICE_MEMORY;
 				goto out;
 			}
 		}
 
-		handles = TEE_Realloc(find_ctx->handles,
-				      (find_ctx->count + 1) * sizeof(*handles));
-		if (!handles) {
-			rc = PKCS11_CKR_DEVICE_MEMORY;
+		rc = find_ctx_add(find_ctx, handle);
+		if (rc)
 			goto out;
-		}
-
-		/* Store object handle for later publishing */
-		find_ctx->handles = handles;
-		*(handles + find_ctx->count) = obj_handle;
-		find_ctx->count++;
 	}
 
 	if (rc == PKCS11_RV_NOT_FOUND)

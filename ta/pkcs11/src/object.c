@@ -624,8 +624,7 @@ enum pkcs11_rc entry_find_objects_init(struct pkcs11_client *client,
 	 */
 
 	LIST_FOREACH(obj, &session->object_list, link) {
-		rc = check_access_attrs_against_token(session, obj->attributes);
-		if (rc)
+		if (check_access_attrs_against_token(session, obj->attributes))
 			continue;
 
 		if (req_attrs->attrs_count &&
@@ -640,6 +639,9 @@ enum pkcs11_rc entry_find_objects_init(struct pkcs11_client *client,
 	LIST_FOREACH(obj, &session->token->object_list, link) {
 		uint32_t handle = 0;
 
+		if (check_access_attrs_against_token(session, obj->attributes))
+			continue;
+
 		/*
 		 * If there are no attributes specified, we return
 		 * every object
@@ -651,10 +653,6 @@ enum pkcs11_rc entry_find_objects_init(struct pkcs11_client *client,
 			if (rc != PKCS11_CKR_OK)
 				goto out;
 		}
-
-		rc = check_access_attrs_against_token(session, obj->attributes);
-		if (rc)
-			continue;
 
 		/* Object may not yet be published in the session */
 		handle = pkcs11_object2handle(obj, session);

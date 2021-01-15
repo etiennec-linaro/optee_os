@@ -702,9 +702,9 @@ create_attributes_from_template(struct obj_attrs **out_attrs, void *template,
 	uint8_t local = 0;
 	uint8_t always_sensitive = 0;
 	uint8_t never_extract = 0;
-	uint32_t class = PKCS11_UNDEFINED_ID;
-	uint32_t type = PKCS11_UNDEFINED_ID;
-	uint32_t mechanism_id = PKCS11_CKM_UNDEFINED_ID;
+	enum pkcs11_class_id class = PKCS11_UNDEFINED_ID;
+	enum pkcs11_key_type type = PKCS11_UNDEFINED_ID;
+	enum pkcs11_mechanism_id mechanism_id = PKCS11_CKM_UNDEFINED_ID;
 
 #ifdef DEBUG	/* Sanity: check function argument */
 	trace_attributes_from_api_head("template", template, template_size);
@@ -731,7 +731,7 @@ create_attributes_from_template(struct obj_attrs **out_attrs, void *template,
 		type = PKCS11_CKK_AES;
 		break;
 	case PKCS11_CKM_EC_KEY_PAIR_GEN:
-		type = PKCS11_CKK_DH;
+		type = PKCS11_CKK_EC;
 		break;
 	case PKCS11_CKM_RSA_PKCS_KEY_PAIR_GEN:
 		type = PKCS11_CKK_RSA;
@@ -746,9 +746,9 @@ create_attributes_from_template(struct obj_attrs **out_attrs, void *template,
 		goto out;
 
 	class = get_class(temp);
-	type = get_type(temp);
+	type = get_key_type(temp);
 
-	if (class == PKCS11_CKA_UNDEFINED_ID) {
+	if (class == PKCS11_CKO_UNDEFINED_ID) {
 		rc = PKCS11_CKR_TEMPLATE_INCOMPLETE;
 		goto out;
 	}
@@ -1093,7 +1093,7 @@ enum pkcs11_rc check_created_attrs_against_processing(uint32_t proc_id,
 		assert(get_key_type(head) == PKCS11_CKK_AES);
 		break;
 	case PKCS11_CKM_EC_KEY_PAIR_GEN:
-		assert(get_key_type(head) == PKCS11_CKK_EC));
+		assert(get_key_type(head) == PKCS11_CKK_EC);
 		break;
 	case PKCS11_CKM_RSA_PKCS_KEY_PAIR_GEN:
 		assert(get_key_type(head) == PKCS11_CKK_RSA);
@@ -1488,17 +1488,6 @@ check_parent_attrs_against_processing(enum pkcs11_mechanism_id proc_id,
 	}
 
 	return PKCS11_CKR_OK;
-}
-
-bool object_is_private(struct obj_attrs *head)
-{
-	if (get_class(head) == PKCS11_CKO_PRIVATE_KEY)
-		return true;
-
-	if (get_bool(head, PKCS11_CKA_PRIVATE))
-		return true;
-
-	return false;
 }
 
 /*

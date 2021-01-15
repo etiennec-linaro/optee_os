@@ -1,9 +1,9 @@
 link-out-dir = $(out-dir)/core
 
-link-script-dummy = core/arch/arm/kernel/link_dummy.ld
+link-script-dummy = $(arch-dir)/kernel/link_dummy.ld
 link-script = $(if $(wildcard $(platform-dir)/kern.ld.S), \
 		$(platform-dir)/kern.ld.S, \
-		core/arch/arm/kernel/kern.ld.S)
+		$(arch-dir)/kernel/kern.ld.S)
 link-script-pp = $(link-out-dir)/kern.ld
 link-script-dep = $(link-out-dir)/.kern.ld.d
 
@@ -19,13 +19,14 @@ link-ldflags += --fatal-warnings
 link-ldflags += --gc-sections
 
 link-ldadd  = $(LDADD)
+link-ldadd += $(ldflags-external)
 link-ldadd += $(libdeps)
 link-objs := $(filter-out \
-	       $(out-dir)/core/arch/arm/kernel/link_dummies_paged.o \
-	       $(out-dir)/core/arch/arm/kernel/link_dummies_init.o, \
+	       $(out-dir)/$(arch-dir)/kernel/link_dummies_paged.o \
+	       $(out-dir)/$(arch-dir)/kernel/link_dummies_init.o, \
 	       $(objs))
 link-objs-init := $(filter-out \
-		    $(out-dir)/core/arch/arm/kernel/link_dummies_init.o, \
+		    $(out-dir)/$(arch-dir)/kernel/link_dummies_init.o, \
 		    $(objs))
 ldargs-tee.elf := $(link-ldflags) $(link-objs) $(link-out-dir)/version.o \
 		  $(link-ldadd) $(libgcccore)
@@ -223,3 +224,13 @@ $(link-out-dir)/tee.mem_usage: $(link-out-dir)/tee.elf
 	@$(cmd-echo-silent) '  GEN     $@'
 	$(q)$(PYTHON3) ./scripts/mem_usage.py $< > $@
 endif
+
+cleanfiles += $(link-out-dir)/tee-raw.bin
+$(link-out-dir)/tee-raw.bin: $(link-out-dir)/tee.elf scripts/gen_tee_bin.py
+	@$(cmd-echo-silent) '  GEN     $@'
+	$(q)scripts/gen_tee_bin.py --input $< --out_tee_raw_bin $@
+
+cleanfiles += $(link-out-dir)/tee.srec
+$(link-out-dir)/tee.srec: $(link-out-dir)/tee-raw.bin
+	@$(cmd-echo-silent) '  SREC    $@'
+	$(q)$(OBJCOPYcore) -I binary -O srec $< $@

@@ -1,12 +1,8 @@
 PLATFORM_FLAVOR ?= mt8173
 
-include core/arch/arm/cpu/cortex-armv8-0.mk
+CFG_ARM64_core ?= y
 
-$(call force,CFG_TEE_CORE_NB_CORE,4)
-CFG_TZDRAM_START ?= 0xbe000000
-CFG_TZDRAM_SIZE ?= 0x01e00000
-CFG_SHMEM_START ?= 0xbfe00000
-CFG_SHMEM_SIZE ?= 0x00200000
+include core/arch/arm/cpu/cortex-armv8-0.mk
 
 $(call force,CFG_8250_UART,y)
 $(call force,CFG_SECURE_TIME_SOURCE_CNTPCT,y)
@@ -20,5 +16,30 @@ endif
 
 ifeq ($(PLATFORM_FLAVOR),mt8173)
 # 2**1 = 2 cores per cluster
+$(call force,CFG_TEE_CORE_NB_CORE,4)
 $(call force,CFG_CORE_CLUSTER_SHIFT,1)
+CFG_TZDRAM_START ?= 0xbe000000
+CFG_TZDRAM_SIZE ?= 0x01e00000
+CFG_SHMEM_START ?= 0xbfe00000
+CFG_SHMEM_SIZE ?= 0x00200000
+endif
+
+ifeq ($(PLATFORM_FLAVOR),mt8516)
+$(call force,CFG_TEE_CORE_NB_CORE,4)
+$(call force,CFG_CORE_CLUSTER_SHIFT,2)
+CFG_TZDRAM_START ?= 0x4fd00000
+CFG_TZDRAM_SIZE ?=  0x00300000
+CFG_SHMEM_START ?= 0x5fd00000
+CFG_SHMEM_SIZE ?= 0x00200000
+endif
+
+ifeq ($(PLATFORM_FLAVOR),mt8183)
+$(call force,CFG_TEE_CORE_NB_CORE,8)
+$(call force,CFG_CORE_CLUSTER_SHIFT,2)
+$(call force,CFG_ARM_GICV3,y)
+$(call force,CFG_GIC,y)
+CFG_TZDRAM_START ?= 0x4fd00000
+CFG_TZDRAM_SIZE ?=  0x00300000
+CFG_SHMEM_START ?= 0x5fd00000
+CFG_SHMEM_SIZE ?= 0x00200000
 endif

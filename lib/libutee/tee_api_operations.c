@@ -718,6 +718,8 @@ void TEE_CopyOperation(TEE_OperationHandle dst_op, TEE_OperationHandle src_op)
 		TEE_Panic(0);
 	if (dst_op->info.algorithm != src_op->info.algorithm)
 		TEE_Panic(0);
+	if (dst_op->info.mode != src_op->info.mode)
+		TEE_Panic(0);
 	if (src_op->info.operationClass != TEE_OPERATION_DIGEST) {
 		TEE_ObjectHandle key1 = TEE_HANDLE_NULL;
 		TEE_ObjectHandle key2 = TEE_HANDLE_NULL;
@@ -736,6 +738,7 @@ void TEE_CopyOperation(TEE_OperationHandle dst_op, TEE_OperationHandle src_op)
 	}
 	dst_op->info.handleState = src_op->info.handleState;
 	dst_op->info.keySize = src_op->info.keySize;
+	dst_op->info.digestLength = src_op->info.digestLength;
 	dst_op->operationState = src_op->operationState;
 
 	if (dst_op->buffer_two_blocks != src_op->buffer_two_blocks ||

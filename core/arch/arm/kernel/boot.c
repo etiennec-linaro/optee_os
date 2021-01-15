@@ -26,7 +26,6 @@
 #include <mm/core_mmu.h>
 #include <mm/fobj.h>
 #include <mm/tee_mm.h>
-#include <mm/tee_mmu.h>
 #include <mm/tee_pager.h>
 #include <sm/psci.h>
 #include <stdio.h>
@@ -76,7 +75,9 @@ DECLARE_KEEP_PAGER(sem_cpu_sync);
 #ifdef CFG_DT
 struct dt_descriptor {
 	void *blob;
+#ifdef CFG_EXTERNAL_DTB_OVERLAY
 	int frag_id;
+#endif
 };
 
 static struct dt_descriptor external_dt __nex_bss;
@@ -426,7 +427,7 @@ static void init_runtime(unsigned long pageable_part)
 	 * Need tee_mm_sec_ddr initialized to be able to allocate secure
 	 * DDR below.
 	 */
-	teecore_init_ta_ram();
+	core_mmu_init_ta_ram();
 
 	carve_out_asan_mem(&tee_mm_sec_ddr);
 
@@ -608,6 +609,10 @@ static TEE_Result release_external_dt(void)
 		     virt_to_phys(external_dt.blob), ret);
 		panic();
 	}
+
+	if (core_mmu_remove_mapping(MEM_AREA_EXT_DT, external_dt.blob,
+				    CFG_DTB_MAX_SIZE))
+		panic("Failed to remove temporary Device Tree mapping");
 
 	/* External DTB no more reached, reset pointer to invalid */
 	external_dt.blob = NULL;
@@ -1172,7 +1177,7 @@ void init_tee_runtime(void)
 
 #ifndef CFG_WITH_PAGER
 	/* Pager initializes TA RAM early */
-	teecore_init_ta_ram();
+	core_mmu_init_ta_ram();
 #endif
 	call_initcalls();
 }

@@ -10,6 +10,7 @@
 #include <sys/queue.h>
 #include <tee_internal_api.h>
 
+struct ck_token;
 struct obj_attrs;
 struct pkcs11_client;
 struct pkcs11_session;

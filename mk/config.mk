@@ -190,8 +190,12 @@ CFG_RPMB_FS_CACHE_ENTRIES ?= 0
 # - RPMB key provisioning in a controlled environment (factory setup)
 CFG_RPMB_WRITE_KEY ?= n
 
-# Embed public part of this key in OP-TEE OS
+# Signing key for OP-TEE TA's
+# When performing external HSM signing for TA's TA_SIGN_KEY can be set to dummy
+# key and then set TA_PUBLIC_KEY to match public key from the HSM.
+# TA_PUBLIC_KEY's public key will be embedded into OP-TEE OS.
 TA_SIGN_KEY ?= keys/default_ta.pem
+TA_PUBLIC_KEY ?= $(TA_SIGN_KEY)
 
 # Include lib/libutils/isoc in the build? Most platforms need this, but some
 # may not because they obtain the isoc functions from elsewhere
@@ -304,10 +308,19 @@ $(eval $(call cfg-depends-all,CFG_REE_FS_TA_BUFFERED,CFG_REE_FS_TA))
 # for instance avb/023f8f1a-292a-432b-8fc4-de8471358067
 ifneq ($(EARLY_TA_PATHS)$(CFG_IN_TREE_EARLY_TAS),)
 $(call force,CFG_EARLY_TA,y)
+$(call force,CFG_EMBEDDED_TS,y)
 else
 CFG_EARLY_TA ?= n
 endif
-ifeq ($(CFG_EARLY_TA),y)
+
+ifneq ($(SP_PATHS),)
+$(call force,CFG_SECURE_PARTITION,y)
+$(call force,CFG_EMBEDDED_TS,y)
+else
+CFG_SECURE_PARTITION ?= n
+endif
+
+ifeq ($(CFG_EMBEDDED_TS),y)
 $(call force,CFG_ZLIB,y)
 endif
 
@@ -388,8 +401,15 @@ CFG_DTB_MAX_SIZE ?= 0x10000
 # DTB using the standard fdt_overlay_apply() method.
 CFG_EXTERNAL_DTB_OVERLAY ?= n
 
+# All embedded tests are supposed to be disabled by default, this flag
+# is used to control the default value of all other embedded tests
+CFG_ENABLE_EMBEDDED_TESTS ?= n
+
 # Enable core self tests and related pseudo TAs
-CFG_TEE_CORE_EMBED_INTERNAL_TESTS ?= y
+CFG_TEE_CORE_EMBED_INTERNAL_TESTS ?= $(CFG_ENABLE_EMBEDDED_TESTS)
+
+# Compiles bget_main_test() to be called from a test TA
+CFG_TA_BGET_TEST ?= $(CFG_ENABLE_EMBEDDED_TESTS)
 
 # This option enables OP-TEE to respond to SMP boot request: the Rich OS
 # issues this to request OP-TEE to release secondaries cores out of reset,
@@ -554,15 +574,12 @@ CFG_TA_MBEDTLS_SELF_TEST ?= y
 CFG_CRYPTOLIB_NAME ?= tomcrypt
 CFG_CRYPTOLIB_DIR ?= core/lib/libtomcrypt
 
-# Enable TEE_ALG_RSASSA_PKCS1_V1_5 algorithm for signing with PKCS#1 v1.5 EMSA
-# without ASN.1 around the hash.
-ifeq ($(CFG_CRYPTOLIB_NAME),tomcrypt)
-CFG_CRYPTO_RSASSA_NA1 ?= y
-endif
-
 # Not used since libmpa was removed. Force the value to catch build scripts
 # that would set = n.
 $(call force,CFG_CORE_MBEDTLS_MPI,y)
+
+# Enable PKCS#11 TA's TEE Identity based authentication support
+CFG_PKCS11_TA_AUTH_TEE_IDENTITY ?= y
 
 # Enable virtualization support. OP-TEE will not work without compatible
 # hypervisor if this option is enabled.
@@ -599,11 +616,11 @@ CFG_SCMI_MSG_RESET_DOMAIN ?= n
 CFG_SCMI_MSG_SMT ?= n
 
 ifneq ($(CFG_STMM_PATH),)
-$(call force,CFG_WITH_SECURE_PARTITION,y)
+$(call force,CFG_WITH_STMM_SP,y)
 else
-CFG_WITH_SECURE_PARTITION ?= n
+CFG_WITH_STMM_SP ?= n
 endif
-ifeq ($(CFG_WITH_SECURE_PARTITION),y)
+ifeq ($(CFG_WITH_STMM_SP),y)
 $(call force,CFG_ZLIB,y)
 endif
 

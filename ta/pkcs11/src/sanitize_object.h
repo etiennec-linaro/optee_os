@@ -37,8 +37,9 @@ bool sanitize_consistent_class_and_type(struct obj_attrs *attrs);
  * into a serializer container.
  */
 enum pkcs11_rc sanitize_client_object(struct obj_attrs **dst, void *head,
-				      size_t size, uint32_t class_hint,
-				      uint32_t type_hint);
+				      size_t size,
+				      enum pkcs11_class_id class_hint,
+				      enum pkcs11_key_type type_hint);
 
 /* Debug: dump attribute content as debug traces */
 void trace_attributes_from_api_head(const char *prefix, void *ref, size_t size);

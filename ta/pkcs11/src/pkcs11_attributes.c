@@ -693,7 +693,8 @@ create_attributes_from_template(struct obj_attrs **out_attrs, void *template,
 				size_t template_size,
 				struct obj_attrs *parent __unused,
 				enum processing_func function,
-				enum pkcs11_mechanism_id mecha)
+				enum pkcs11_mechanism_id mecha,
+				enum pkcs11_class_id template_class __unused)
 {
 	struct obj_attrs *temp = NULL;
 	struct obj_attrs *attrs = NULL;
@@ -720,45 +721,58 @@ create_attributes_from_template(struct obj_attrs **out_attrs, void *template,
 	}
 #endif
 
-	rc = sanitize_client_object(&temp, template, template_size);
+	switch (mecha) {
+	case PKCS11_CKM_GENERIC_SECRET_KEY_GEN:
+		class = PKCS11_CKO_SECRET_KEY;
+		type = PKCS11_CKK_GENERIC_SECRET;
+		break;
+	case PKCS11_CKM_AES_KEY_GEN:
+		class = PKCS11_CKO_SECRET_KEY;
+		type = PKCS11_CKK_AES;
+		break;
+	case PKCS11_CKM_EC_KEY_PAIR_GEN:
+		type = PKCS11_CKK_DH;
+		break;
+	case PKCS11_CKM_RSA_PKCS_KEY_PAIR_GEN:
+		type = PKCS11_CKK_RSA;
+		break;
+	default:
+		break;
+	}
+
+	rc = sanitize_client_object(&temp, template, template_size, class,
+				    type);
 	if (rc)
 		goto out;
 
-	/* If class/type not defined, match from mechanism */
-	if (get_class(temp) == PKCS11_UNDEFINED_ID &&
-	    get_key_type(temp) == PKCS11_UNDEFINED_ID) {
-		switch (mecha) {
-		case PKCS11_CKM_GENERIC_SECRET_KEY_GEN:
-			class = PKCS11_CKO_SECRET_KEY;
-			type = PKCS11_CKK_GENERIC_SECRET;
-			break;
-		case PKCS11_CKM_AES_KEY_GEN:
-			class = PKCS11_CKO_SECRET_KEY;
-			type = PKCS11_CKK_AES;
-			break;
-		case PKCS11_CKM_EC_KEY_PAIR_GEN:
-			type = PKCS11_CKK_DH;
-			break;
-		case PKCS11_CKM_RSA_PKCS_KEY_PAIR_GEN:
-			type = PKCS11_CKK_RSA;
-			break;
-		default:
-			EMSG("Unable to define class/type from mechanism");
-			rc = PKCS11_CKR_TEMPLATE_INCOMPLETE;
+	class = get_class(temp);
+	type = get_type(temp);
+
+	if (class == PKCS11_CKA_UNDEFINED_ID) {
+		rc = PKCS11_CKR_TEMPLATE_INCOMPLETE;
+		goto out;
+	}
+
+	switch (mecha) {
+	case PKCS11_CKM_GENERIC_SECRET_KEY_GEN:
+		assert(class == PKCS11_CKO_SECRET_KEY &&
+		       type == PKCS11_CKK_GENERIC_SECRET);
+		break;
+	case PKCS11_CKM_AES_KEY_GEN:
+		assert(class == PKCS11_CKO_SECRET_KEY &&
+		       type == PKCS11_CKK_AES);
+		break;
+	case PKCS11_CKM_EC_KEY_PAIR_GEN:
+	case PKCS11_CKM_RSA_PKCS_KEY_PAIR_GEN:
+		if (class != PKCS11_CKO_PRIVATE_KEY &&
+		    class != PKCS11_CKO_PUBLIC_KEY) {
+			rc = PKCS11_CKR_TEMPLATE_INCONSISTENT;
 			goto out;
+
 		}
-		if (class != PKCS11_UNDEFINED_ID) {
-			rc = add_attribute(&temp, PKCS11_CKA_CLASS,
-					   &class, sizeof(uint32_t));
-			if (rc)
-				goto out;
-		}
-		if (type != PKCS11_UNDEFINED_ID) {
-			rc = add_attribute(&temp, PKCS11_CKA_KEY_TYPE,
-					   &type, sizeof(uint32_t));
-			if (rc)
-				goto out;
-		}
+		break;
+	default:
+		break;
 	}
 
 	if (!sanitize_consistent_class_and_type(temp)) {
@@ -784,20 +798,19 @@ create_attributes_from_template(struct obj_attrs **out_attrs, void *template,
 		DMSG("Invalid object class %#"PRIx32"/%s",
 		     get_class(temp), id2str_class(get_class(temp)));
 
-		rc = PKCS11_CKR_TEMPLATE_INCONSISTENT;
+		rc = PKCS11_CKR_TEMPLATE_INCOMPLETE;
 		break;
 	}
 	if (rc)
 		goto out;
 
-	if (get_attribute(attrs, PKCS11_CKA_LOCAL, NULL, NULL) !=
+	if (get_attribute_ptr(temp, PKCS11_CKA_LOCAL, NULL, NULL) !=
 	    PKCS11_RV_NOT_FOUND) {
 		rc = PKCS11_CKR_TEMPLATE_INCONSISTENT;
 		goto out;
 	}
 
-	/* If object  */
-	if (get_attribute(attrs, PKCS11_CKA_KEY_GEN_MECHANISM, NULL, NULL) !=
+	if (get_attribute_ptr(temp, PKCS11_CKA_KEY_GEN_MECHANISM, NULL, NULL) !=
 	    PKCS11_RV_NOT_FOUND) {
 		rc = PKCS11_CKR_TEMPLATE_INCONSISTENT;
 		goto out;
@@ -920,6 +933,17 @@ static enum pkcs11_rc check_attrs_misc_integrity(struct obj_attrs *head)
 	return PKCS11_CKR_OK;
 }
 
+bool object_is_private(struct obj_attrs *head)
+{
+	if (get_class(head) == PKCS11_CKO_PRIVATE_KEY)
+		return true;
+
+	if (get_bool(head, PKCS11_CKA_PRIVATE))
+		return true;
+
+	return false;
+}
+
 /*
  * Check access to object against authentication to token
  */
@@ -940,10 +964,11 @@ enum pkcs11_rc check_access_attrs_against_token(struct pkcs11_session *session,
 		return PKCS11_CKR_KEY_FUNCTION_NOT_PERMITTED;
 	}
 
-	if (private && pkcs11_session_is_public(session)) {
-		DMSG("Private object access from a public session");
+	if (private && (pkcs11_session_is_public(session) ||
+			pkcs11_session_is_so(session))) {
+		DMSG("Private object access from a public or SO session");
 
-		return PKCS11_CKR_KEY_FUNCTION_NOT_PERMITTED;
+		return PKCS11_CKR_USER_NOT_LOGGED_IN;
 	}
 
 	/*
@@ -1062,26 +1087,21 @@ enum pkcs11_rc check_created_attrs_against_processing(uint32_t proc_id,
 
 	switch (proc_id) {
 	case PKCS11_CKM_GENERIC_SECRET_KEY_GEN:
-		if (get_key_type(head) != PKCS11_CKK_GENERIC_SECRET)
-			return PKCS11_CKR_TEMPLATE_INCONSISTENT;
+		assert(get_key_type(head) == PKCS11_CKK_GENERIC_SECRET);
 		break;
 	case PKCS11_CKM_AES_KEY_GEN:
-		if (get_key_type(head) != PKCS11_CKK_AES)
-			return PKCS11_CKR_TEMPLATE_INCONSISTENT;
+		assert(get_key_type(head) == PKCS11_CKK_AES);
 		break;
 	case PKCS11_CKM_EC_KEY_PAIR_GEN:
-		if (get_key_type(head) != PKCS11_CKK_EC)
-			return PKCS11_CKR_TEMPLATE_INCONSISTENT;
+		assert(get_key_type(head) == PKCS11_CKK_EC));
 		break;
 	case PKCS11_CKM_RSA_PKCS_KEY_PAIR_GEN:
-		if (get_key_type(head) != PKCS11_CKK_RSA)
-			return PKCS11_CKR_TEMPLATE_INCONSISTENT;
+		assert(get_key_type(head) == PKCS11_CKK_RSA);
 		break;
 	case PKCS11_CKM_ECDH1_DERIVE:
 	case PKCS11_CKM_ECDH1_COFACTOR_DERIVE:
 	case PKCS11_CKM_DH_PKCS_DERIVE:
-		if (get_class(head) != PKCS11_CKO_SECRET_KEY)
-			return PKCS11_CKR_TEMPLATE_INCONSISTENT;
+		assert(get_class(head) == PKCS11_CKO_SECRET_KEY);
 		break;
 	case PKCS11_PROCESSING_IMPORT:
 	default:
@@ -1101,6 +1121,9 @@ static void get_key_min_max_sizes(enum pkcs11_key_type key_type,
 	case PKCS11_CKK_GENERIC_SECRET:
 		mechanism = PKCS11_CKM_GENERIC_SECRET_KEY_GEN;
 		break;
+	case PKCS11_CKK_AES:
+		mechanism = PKCS11_CKM_AES_KEY_GEN;
+		break;
 	case PKCS11_CKK_MD5_HMAC:
 		mechanism = PKCS11_CKM_MD5_HMAC;
 		break;
@@ -1118,9 +1141,6 @@ static void get_key_min_max_sizes(enum pkcs11_key_type key_type,
 		break;
 	case PKCS11_CKK_SHA512_HMAC:
 		mechanism = PKCS11_CKM_SHA512_HMAC;
-		break;
-	case PKCS11_CKK_AES:
-		mechanism = PKCS11_CKM_AES_KEY_GEN;
 		break;
 	case PKCS11_CKK_EC:
 		mechanism = PKCS11_CKM_EC_KEY_PAIR_GEN;
@@ -1205,7 +1225,7 @@ enum pkcs11_rc check_created_attrs(struct obj_attrs *key1,
 		rc = get_u32_attribute(secret, PKCS11_CKA_VALUE_LEN,
 				       &key_length);
 		if (rc)
-			return PKCS11_CKR_TEMPLATE_INCONSISTENT;
+			return PKCS11_CKR_TEMPLATE_INCOMPLETE;
 	}
 	if (public) {
 		switch (get_key_type(public)) {
@@ -1551,6 +1571,11 @@ bool attribute_is_exportable(struct pkcs11_attribute_head *req_attr,
 	uint8_t boolval = 0;
 	uint32_t boolsize = 0;
 	enum pkcs11_rc rc = PKCS11_CKR_GENERAL_ERROR;
+	enum pkcs11_class_id key_class = get_class(obj->attributes);
+
+	if (key_class != PKCS11_CKO_SECRET_KEY &&
+	    key_class != PKCS11_CKO_PRIVATE_KEY)
+		return true;
 
 	switch (req_attr->id) {
 	case PKCS11_CKA_PRIVATE_EXPONENT:
@@ -1559,6 +1584,7 @@ bool attribute_is_exportable(struct pkcs11_attribute_head *req_attr,
 	case PKCS11_CKA_EXPONENT_1:
 	case PKCS11_CKA_EXPONENT_2:
 	case PKCS11_CKA_COEFFICIENT:
+	case PKCS11_CKA_VALUE:
 		boolsize = sizeof(boolval);
 		rc = get_attribute(obj->attributes, PKCS11_CKA_EXTRACTABLE,
 				   &boolval, &boolsize);

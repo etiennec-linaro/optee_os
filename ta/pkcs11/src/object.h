@@ -45,6 +45,9 @@ struct pkcs11_object *create_token_object(struct obj_attrs *head,
 enum pkcs11_rc create_object(void *session, struct obj_attrs *attributes,
 			     uint32_t *handle);
 
+void cleanup_persistent_object(struct pkcs11_object *obj,
+			       struct ck_token *token);
+
 void destroy_object(struct pkcs11_session *session,
 		    struct pkcs11_object *object, bool session_object_only);
 
@@ -73,4 +76,5 @@ enum pkcs11_rc entry_get_object_size(struct pkcs11_client *client,
 				     uint32_t ptypes, TEE_Param *params);
 
 void release_session_find_obj_context(struct pkcs11_session *session);
+
 #endif /*PKCS11_TA_OBJECT_H*/

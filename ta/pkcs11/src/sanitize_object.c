@@ -69,12 +69,14 @@ static enum pkcs11_rc read_attr_advance(void *buf, size_t blen, size_t *pos,
 
 /* Sanitize class/type in a client attribute list */
 static enum pkcs11_rc sanitize_class_and_type(struct obj_attrs **dst, void *src,
-					      size_t src_size)
+					      size_t src_size,
+					      uint32_t class_hint,
+					      uint32_t type_hint)
 {
-	uint32_t class_found = PKCS11_CKO_UNDEFINED_ID;
+	uint32_t class_found = class_hint;
 	size_t pos = sizeof(struct pkcs11_object_head);
 	struct pkcs11_attribute_head cli_ref = { };
-	uint32_t type_found = PKCS11_UNDEFINED_ID;
+	uint32_t type_found = type_hint;
 	enum pkcs11_rc rc = PKCS11_CKR_OK;
 	void *data = NULL;
 
@@ -214,9 +216,6 @@ static uint32_t sanitize_indirect_attr(struct obj_attrs **dst,
 	enum pkcs11_rc rc = PKCS11_CKR_OK;
 	enum pkcs11_class_id class = get_class(*dst);
 
-	if (class == PKCS11_CKO_UNDEFINED_ID)
-		return PKCS11_CKR_GENERAL_ERROR;
-
 	/*
 	 * Serialized attributes: current applicable only to the key
 	 * templates which are tables of attributes.
@@ -229,6 +228,12 @@ static uint32_t sanitize_indirect_attr(struct obj_attrs **dst,
 	default:
 		return PKCS11_RV_NOT_FOUND;
 	}
+
+	if (class == PKCS11_CKO_UNDEFINED_ID) {
+		DMSG("Template without CLASS not supported yet");
+		return PKCS11_CKR_TEMPLATE_INCOMPLETE;
+	}
+
 	/* Such attributes are expected only for keys (and vendor defined) */
 	if (pkcs11_attr_class_is_key(class))
 		return PKCS11_CKR_TEMPLATE_INCONSISTENT;
@@ -238,7 +243,9 @@ static uint32_t sanitize_indirect_attr(struct obj_attrs **dst,
 		return rc;
 
 	/* Build a new serial object while sanitizing the attributes list */
-	rc = sanitize_client_object(&obj2, data, cli_ref->size);
+	rc = sanitize_client_object(&obj2, data, cli_ref->size,
+				    PKCS11_CKO_UNDEFINED_ID,
+				    PKCS11_UNDEFINED_ID);
 	if (rc)
 		goto out;
 
@@ -250,7 +257,8 @@ out:
 }
 
 enum pkcs11_rc sanitize_client_object(struct obj_attrs **dst, void *src,
-				      size_t size)
+				      size_t size, uint32_t class_hint,
+				      uint32_t type_hint)
 {
 	struct pkcs11_attribute_head cli_ref = { };
 	struct pkcs11_object_head head = { };
@@ -272,7 +280,8 @@ enum pkcs11_rc sanitize_client_object(struct obj_attrs **dst, void *src,
 	if (rc)
 		return rc;
 
-	rc = sanitize_class_and_type(dst, src, sz_from_hdr);
+	rc = sanitize_class_and_type(dst, src, sz_from_hdr, class_hint,
+				     type_hint);
 	if (rc)
 		return rc;
 

@@ -120,13 +120,14 @@ enum pkcs11_rc
 create_attributes_from_template(struct obj_attrs **out, void *template,
 				size_t template_size, struct obj_attrs *parent,
 				enum processing_func func,
-				enum pkcs11_mechanism_id proc_mecha);
+				enum pkcs11_mechanism_id proc_mecha,
+				enum pkcs11_class_id template_class);
 
 /*
- * The various checks to be performed before:
- * - adding a new object in the current token state
- * - using a parent object for adding an object
- * - using a mechanism with provided configuration
+ * The various checks to be performed before a processing:
+ * - create a new object in the current token state
+ * - use a parent object in the processing
+ * - use a mechanism with provided configuration
  */
 enum pkcs11_rc check_created_attrs_against_token(struct pkcs11_session *session,
 						 struct obj_attrs *head);
@@ -163,10 +164,10 @@ check_mechanism_against_processing(struct pkcs11_session *session,
 				   enum processing_func function,
 				   enum processing_step step);
 
-bool object_is_private(struct obj_attrs *head);
-
 bool attribute_is_exportable(struct pkcs11_attribute_head *req_attr,
 			     struct pkcs11_object *obj);
+
+bool object_is_private(struct obj_attrs *head);
 
 enum pkcs11_rc add_missing_attribute_id(struct obj_attrs **attrs1,
 					struct obj_attrs **attrs2);

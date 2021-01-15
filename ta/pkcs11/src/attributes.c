@@ -134,7 +134,7 @@ static enum pkcs11_rc _remove_attribute(struct obj_attrs **head,
 	cur = (char *)h + sizeof(struct obj_attrs);
 	end = cur + h->attrs_size;
 	for (; cur < end; cur += next_off) {
-		struct pkcs11_attribute_head pkcs11_ref;
+		struct pkcs11_attribute_head pkcs11_ref = { };
 
 		TEE_MemMove(&pkcs11_ref, cur, sizeof(pkcs11_ref));
 		next_off = sizeof(pkcs11_ref) + pkcs11_ref.size;
@@ -424,39 +424,21 @@ bool attributes_match_reference(struct obj_attrs *candidate,
 	}
 
 #ifdef PKCS11_SHEAD_WITH_BOOLPROPS
-	/*
-	 * All boolprops attributes must be explicitly defined
-	 * as an attribute reference in the reference object.
-	 */
-	assert(!head_contains_boolprops(ref));
+#error attributes_match_reference() does not support BOOLPROPS
 #endif
 
 	for (count = 0; count < ref->attrs_count; count++) {
-		struct pkcs11_attribute_head pkcs11_ref;
-		void *found = NULL;
+		struct pkcs11_attribute_head pkcs11_ref = { };
+		void *value = NULL;
 		uint32_t size = 0;
-		int shift = 0;
 
 		TEE_MemMove(&pkcs11_ref, ref_attr, sizeof(pkcs11_ref));
 
-		shift = pkcs11_attr2boolprop_shift(pkcs11_ref.id);
-		if (shift >= 0) {
-			bool bb_ref = get_bool(ref, pkcs11_ref.id);
-			bool bb_candidate = get_bool(candidate, pkcs11_ref.id);
+		rc = get_attribute_ptr(candidate, pkcs11_ref.id, &value, &size);
 
-			if (bb_ref != bb_candidate) {
-				return false;
-			}
-		} else {
-			rc = get_attribute_ptr(candidate, pkcs11_ref.id,
-					       &found, &size);
-
-			if (rc || !found || size != pkcs11_ref.size ||
-			    TEE_MemCompare(ref_attr + sizeof(pkcs11_ref),
-					   found, size)) {
-				return false;
-			}
-		}
+		if (rc || !value || size != pkcs11_ref.size ||
+		    TEE_MemCompare(ref_attr + sizeof(pkcs11_ref), value, size))
+			return false;
 
 		ref_attr += sizeof(pkcs11_ref) + pkcs11_ref.size;
 	}

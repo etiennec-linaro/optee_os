@@ -66,8 +66,8 @@ static void cleanup_volatile_obj_ref(struct pkcs11_object *obj)
 }
 
 /* Release resources of a persistent object including volatile resources */
-static void cleanup_persistent_object(struct pkcs11_object *obj,
-				      struct ck_token *token)
+void cleanup_persistent_object(struct pkcs11_object *obj,
+			       struct ck_token *token)
 {
 	TEE_Result res = TEE_SUCCESS;
 
@@ -314,7 +314,8 @@ enum pkcs11_rc entry_create_object(struct pkcs11_client *client,
 	 */
 	rc = create_attributes_from_template(&head, template, template_size,
 					     NULL, PKCS11_FUNCTION_IMPORT,
-					     PKCS11_PROCESSING_IMPORT);
+					     PKCS11_PROCESSING_IMPORT,
+					     PKCS11_CKO_UNDEFINED_ID);
 	TEE_Free(template);
 	template = NULL;
 	if (rc)
@@ -330,6 +331,10 @@ enum pkcs11_rc entry_create_object(struct pkcs11_client *client,
 		goto out;
 
 	rc = check_created_attrs_against_token(session, head);
+	if (rc)
+		goto out;
+
+	rc = check_access_attrs_against_token(session, head);
 	if (rc)
 		goto out;
 
@@ -398,6 +403,24 @@ enum pkcs11_rc entry_destroy_object(struct pkcs11_client *client,
 	if (!object)
 		return PKCS11_CKR_OBJECT_HANDLE_INVALID;
 
+	/* Only session objects can be destroyed during a read-only session */
+	if (get_bool(object->attributes, PKCS11_CKA_TOKEN) &&
+	    !pkcs11_session_is_read_write(session)) {
+		DMSG("Can't destroy persistent object");
+		return PKCS11_CKR_SESSION_READ_ONLY;
+	}
+
+	/*
+	 * Only public objects can be destroyed unless normal user is logged in
+	 */
+	rc = check_access_attrs_against_token(session, object->attributes);
+	if (rc)
+		return PKCS11_CKR_USER_NOT_LOGGED_IN;
+
+	/* Objects with PKCS11_CKA_DESTROYABLE as false aren't destroyable */
+	if (!get_bool(object->attributes, PKCS11_CKA_DESTROYABLE))
+		return PKCS11_CKR_ACTION_PROHIBITED;
+
 	destroy_object(session, object, false);
 
 	DMSG("PKCS11 session %"PRIu32": destroy object %#"PRIx32,
@@ -460,6 +483,7 @@ static enum pkcs11_rc token_obj_matches_ref(struct obj_attrs *req_attrs,
 		     read_bytes, res);
 		goto out;
 	}
+
 	if (read_bytes != info.dataSize) {
 		EMSG("Read %"PRIu32" bytes, expected %"PRIu32,
 		     read_bytes, info.dataSize);
@@ -481,37 +505,43 @@ static enum pkcs11_rc token_obj_matches_ref(struct obj_attrs *req_attrs,
 
 out:
 	TEE_Free(attr);
-	if (obj->attribs_hdl == TEE_HANDLE_NULL && hdl != TEE_HANDLE_NULL)
+	if (obj->attribs_hdl == TEE_HANDLE_NULL)
 		TEE_CloseObject(hdl);
 
 	return rc;
 }
 
-static void release_find_obj_context(struct pkcs11_session *session,
-				     struct pkcs11_find_objects *find_ctx)
+static void release_find_obj_context(struct pkcs11_find_objects *find_ctx)
 {
-	size_t idx = 0;
-
 	if (!find_ctx)
 		return;
-
-	/* Release handles not yet published to client */
-	idx = find_ctx->next;
-	if (idx < find_ctx->temp_start)
-		idx = find_ctx->temp_start;
-
-	for (;idx < find_ctx->count; idx++)
-		handle_put(&session->object_handle_db, find_ctx->handles[idx]);
 
 	TEE_Free(find_ctx->attributes);
 	TEE_Free(find_ctx->handles);
 	TEE_Free(find_ctx);
 }
 
+static enum pkcs11_rc find_ctx_add(struct pkcs11_find_objects *find_ctx,
+				   uint32_t handle)
+{
+	uint32_t *hdls = TEE_Realloc(find_ctx->handles,
+				     (find_ctx->count + 1) * sizeof(*hdls));
+
+	if (!hdls)
+		return PKCS11_CKR_DEVICE_MEMORY;
+
+	find_ctx->handles = hdls;
+
+	*(find_ctx->handles + find_ctx->count) = handle;
+	find_ctx->count++;
+
+	return PKCS11_CKR_OK;
+}
+
 enum pkcs11_rc entry_find_objects_init(struct pkcs11_client *client,
 				       uint32_t ptypes, TEE_Param *params)
 {
-        const uint32_t exp_pt = TEE_PARAM_TYPES(TEE_PARAM_TYPE_MEMREF_INOUT,
+	const uint32_t exp_pt = TEE_PARAM_TYPES(TEE_PARAM_TYPE_MEMREF_INOUT,
 						TEE_PARAM_TYPE_NONE,
 						TEE_PARAM_TYPE_NONE,
 						TEE_PARAM_TYPE_NONE);
@@ -554,17 +584,18 @@ enum pkcs11_rc entry_find_objects_init(struct pkcs11_client *client,
 		goto out;
 	}
 
+	rc = sanitize_client_object(&req_attrs, template,
+				    sizeof(*template) + template->attrs_size,
+				    PKCS11_UNDEFINED_ID, PKCS11_UNDEFINED_ID);
+	if (rc)
+		goto out;
+
 	/* Must zero init the structure */
 	find_ctx = TEE_Malloc(sizeof(*find_ctx), TEE_MALLOC_FILL_ZERO);
 	if (!find_ctx) {
 		rc = PKCS11_CKR_DEVICE_MEMORY;
 		goto out;
 	}
-
-	rc = sanitize_client_object(&req_attrs, template,
-				    sizeof(*template) + template->attrs_size);
-	if (rc)
-		goto out;
 
 	TEE_Free(template);
 	template = NULL;
@@ -583,51 +614,33 @@ enum pkcs11_rc entry_find_objects_init(struct pkcs11_client *client,
 		     get_class(req_attrs));
 		rc = PKCS11_CKR_ARGUMENTS_BAD;
 		goto out;
-
 	}
 
 	/*
 	 * Scan all objects (sessions and persistent ones) and set a list of
-	 * candidates that match caller attributes. First scan all current
-	 * session objects (that are visible to the session). Then scan all
-	 * remaining persistent object for which no session object handle was
-	 * published to the client.
+	 * candidates that match caller attributes.
 	 */
 
 	LIST_FOREACH(obj, &session->object_list, link) {
-		uint32_t *handles = NULL;
+		if (check_access_attrs_against_token(session, obj->attributes))
+			continue;
 
-		rc = check_access_attrs_against_token(session, obj->attributes);
+		if (req_attrs->attrs_count &&
+		    !attributes_match_reference(obj->attributes, req_attrs))
+			continue;
+
+		rc = find_ctx_add(find_ctx, pkcs11_object2handle(obj, session));
 		if (rc)
-			continue;
-
-		if (!attributes_match_reference(obj->attributes, req_attrs))
-			continue;
-
-		handles = TEE_Realloc(find_ctx->handles,
-				      (find_ctx->count + 1) * sizeof(*handles));
-		if (!handles) {
-			rc = PKCS11_CKR_DEVICE_MEMORY;
 			goto out;
-		}
-		find_ctx->handles = handles;
-
-		*(find_ctx->handles + find_ctx->count) =
-			pkcs11_object2handle(obj, session);
-		find_ctx->count++;
 	}
 
-	/* Remaining handles are those not yet published by the session */
-	find_ctx->temp_start = find_ctx->count;
-
 	LIST_FOREACH(obj, &session->token->object_list, link) {
-		uint32_t obj_handle = 0;
-		uint32_t *handles = NULL;
+		uint32_t handle = 0;
 
-		/*
-		 * If there are no attributes specified, we return
-		 * every object
-		 */
+		// TODO: ensure obj->attributes is loaded!!!
+		if (check_access_attrs_against_token(session, obj->attributes))
+			continue;
+
 		if (req_attrs->attrs_count) {
 			rc = token_obj_matches_ref(req_attrs, obj);
 			if (rc == PKCS11_RV_NOT_FOUND)
@@ -636,38 +649,21 @@ enum pkcs11_rc entry_find_objects_init(struct pkcs11_client *client,
 				goto out;
 		}
 
-		rc = check_access_attrs_against_token(session, obj->attributes);
-		if (rc)
-			continue;
-
 		/* Object may not yet be published in the session */
-		obj_handle = pkcs11_object2handle(obj, session);
-		if (!obj_handle) {
-			obj_handle = handle_get(&session->object_handle_db,
-						obj);
-			if (!obj_handle) {
+		handle = pkcs11_object2handle(obj, session);
+		if (!handle) {
+			handle = handle_get(&session->object_handle_db, obj);
+			if (!handle) {
 				rc = PKCS11_CKR_DEVICE_MEMORY;
 				goto out;
 			}
 		}
 
-		handles = TEE_Realloc(find_ctx->handles,
-				      (find_ctx->count + 1) * sizeof(*handles));
-		if (!handles) {
-			rc = PKCS11_CKR_DEVICE_MEMORY;
+		rc = find_ctx_add(find_ctx, handle);
+		if (rc)
 			goto out;
-		}
-
-		/* Store object handle for later publishing */
-		find_ctx->handles = handles;
-		*(handles + find_ctx->count) = obj_handle;
-		find_ctx->count++;
 	}
 
-	if (rc == PKCS11_RV_NOT_FOUND)
-		rc = PKCS11_CKR_OK;
-
-	/* Save target attributes to search (if needed later) */
 	find_ctx->attributes = req_attrs;
 	req_attrs = NULL;
 	session->find_ctx = find_ctx;
@@ -677,7 +673,7 @@ enum pkcs11_rc entry_find_objects_init(struct pkcs11_client *client,
 out:
 	TEE_Free(req_attrs);
 	TEE_Free(template);
-	release_find_obj_context(session, find_ctx);
+	release_find_obj_context(find_ctx);
 
 	return rc;
 }
@@ -685,7 +681,7 @@ out:
 enum pkcs11_rc entry_find_objects(struct pkcs11_client *client,
 				  uint32_t ptypes, TEE_Param *params)
 {
-        const uint32_t exp_pt = TEE_PARAM_TYPES(TEE_PARAM_TYPE_MEMREF_INOUT,
+	const uint32_t exp_pt = TEE_PARAM_TYPES(TEE_PARAM_TYPE_MEMREF_INOUT,
 						TEE_PARAM_TYPE_NONE,
 						TEE_PARAM_TYPE_MEMREF_OUTPUT,
 						TEE_PARAM_TYPE_NONE);
@@ -695,10 +691,9 @@ enum pkcs11_rc entry_find_objects(struct pkcs11_client *client,
 	struct serialargs ctrlargs = { };
 	struct pkcs11_session *session = NULL;
 	struct pkcs11_find_objects *ctx = NULL;
-	char *out_handles = NULL;
+	uint8_t *out_handles = NULL;
 	size_t out_count = 0;
 	size_t count = 0;
-	size_t idx = 0;
 
 	if (!client || ptypes != exp_pt)
 		return PKCS11_CKR_ARGUMENTS_BAD;
@@ -717,32 +712,13 @@ enum pkcs11_rc entry_find_objects(struct pkcs11_client *client,
 
 	ctx = session->find_ctx;
 
-	/*
-	 * TODO: should we check again if these handles are valid?
-	 */
 	if (!ctx)
 		return PKCS11_CKR_OPERATION_NOT_INITIALIZED;
 
-	for (count = 0, idx = ctx->next; idx < ctx->count; idx++, count++) {
-		struct pkcs11_object *obj = NULL;
-
-		if (count >= out_count)
-			break;
-
+	for (count = 0; ctx->next < ctx->count && count < out_count;
+	     ctx->next++, count++)
 		TEE_MemMove(out_handles + count * sizeof(uint32_t),
-			    ctx->handles + idx, sizeof(uint32_t));
-		ctx->next = idx + 1;
-
-		if (idx < session->find_ctx->temp_start)
-			continue;
-
-		/* Newly published handles: store in session list */
-		obj = handle_lookup(&session->object_handle_db,
-				    *(ctx->handles + idx));
-		if (!obj)
-			TEE_Panic(0);
-
-	}
+			    ctx->handles + ctx->next, sizeof(uint32_t));
 
 	/* Update output buffer according the number of handles provided */
 	out->memref.size = count * sizeof(uint32_t);
@@ -754,14 +730,14 @@ enum pkcs11_rc entry_find_objects(struct pkcs11_client *client,
 
 void release_session_find_obj_context(struct pkcs11_session *session)
 {
-	release_find_obj_context(session, session->find_ctx);
+	release_find_obj_context(session->find_ctx);
 	session->find_ctx = NULL;
 }
 
 uint32_t entry_find_objects_final(struct pkcs11_client *client,
 				  uint32_t ptypes, TEE_Param *params)
 {
-        const uint32_t exp_pt = TEE_PARAM_TYPES(TEE_PARAM_TYPE_MEMREF_INOUT,
+	const uint32_t exp_pt = TEE_PARAM_TYPES(TEE_PARAM_TYPE_MEMREF_INOUT,
 						TEE_PARAM_TYPE_NONE,
 						TEE_PARAM_TYPE_NONE,
 						TEE_PARAM_TYPE_NONE);
@@ -793,7 +769,7 @@ uint32_t entry_find_objects_final(struct pkcs11_client *client,
 uint32_t entry_get_attribute_value(struct pkcs11_client *client,
 				   uint32_t ptypes, TEE_Param *params)
 {
-        const uint32_t exp_pt = TEE_PARAM_TYPES(TEE_PARAM_TYPE_MEMREF_INOUT,
+	const uint32_t exp_pt = TEE_PARAM_TYPES(TEE_PARAM_TYPE_MEMREF_INOUT,
 						TEE_PARAM_TYPE_NONE,
 						TEE_PARAM_TYPE_MEMREF_OUTPUT,
 						TEE_PARAM_TYPE_NONE);
@@ -846,7 +822,7 @@ uint32_t entry_get_attribute_value(struct pkcs11_client *client,
 		goto out;
 	}
 
-	/* iterate over attributes and set their values */
+	/* Iterate over attributes and set their values */
 	/*
 	 * 1. If the specified attribute (i.e., the attribute specified by the
 	 * type field) for the object cannot be revealed because the object is
@@ -875,8 +851,7 @@ uint32_t entry_get_attribute_value(struct pkcs11_client *client,
 	end = cur + template->attrs_size;
 
 	for (; cur < end; cur += len) {
-		struct pkcs11_attribute_head *cli_ref =
-			(struct pkcs11_attribute_head *)(void *)cur;
+		struct pkcs11_attribute_head *cli_ref = (void *)cur;
 
 		len = sizeof(*cli_ref) + cli_ref->size;
 
@@ -893,7 +868,7 @@ uint32_t entry_get_attribute_value(struct pkcs11_client *client,
 		 */
 		rc = get_attribute(obj->attributes, cli_ref->id,
 				   cli_ref->size ? cli_ref->data : NULL,
-				   &(cli_ref->size));
+				   &cli_ref->size);
 		/* Check 2. */
 		switch (rc) {
 		case PKCS11_CKR_OK:
@@ -938,7 +913,6 @@ uint32_t entry_get_attribute_value(struct pkcs11_client *client,
 
 out:
 	TEE_Free(template);
-	template = NULL;
 
 	return rc;
 }
@@ -946,7 +920,7 @@ out:
 uint32_t entry_get_object_size(struct pkcs11_client *client,
 			       uint32_t ptypes, TEE_Param *params)
 {
-        const uint32_t exp_pt = TEE_PARAM_TYPES(TEE_PARAM_TYPE_MEMREF_INOUT,
+	const uint32_t exp_pt = TEE_PARAM_TYPES(TEE_PARAM_TYPE_MEMREF_INOUT,
 						TEE_PARAM_TYPE_NONE,
 						TEE_PARAM_TYPE_MEMREF_OUTPUT,
 						TEE_PARAM_TYPE_NONE);
@@ -985,8 +959,6 @@ uint32_t entry_get_object_size(struct pkcs11_client *client,
 
 	if (out->memref.size != sizeof(uint32_t))
 		return PKCS11_CKR_ARGUMENTS_BAD;
-
-	assert(obj->attributes);
 
 	obj_size = ((struct obj_attrs *)obj->attributes)->attrs_size +
 		   sizeof(struct obj_attrs);

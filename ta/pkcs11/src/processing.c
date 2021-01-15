@@ -180,7 +180,7 @@ static enum pkcs11_rc generate_random_key_value(struct obj_attrs **head)
 enum pkcs11_rc entry_generate_secret(struct pkcs11_client *client,
 				     uint32_t ptypes, TEE_Param *params)
 {
-        const uint32_t exp_pt = TEE_PARAM_TYPES(TEE_PARAM_TYPE_MEMREF_INOUT,
+	const uint32_t exp_pt = TEE_PARAM_TYPES(TEE_PARAM_TYPE_MEMREF_INOUT,
 						TEE_PARAM_TYPE_NONE,
 						TEE_PARAM_TYPE_MEMREF_OUTPUT,
 						TEE_PARAM_TYPE_NONE);
@@ -227,8 +227,10 @@ enum pkcs11_rc entry_generate_secret(struct pkcs11_client *client,
 	rc = check_mechanism_against_processing(session, proc_params->id,
 						PKCS11_FUNCTION_GENERATE,
 						PKCS11_FUNC_STEP_INIT);
-	if (rc)
+	if (rc) {
+		DMSG("Invalid mechanism %#"PRIx32": %#x", proc_params->id, rc);
 		goto out;
+	}
 
 	/*
 	 * Prepare a clean initial state for the requested object attributes.
@@ -236,7 +238,8 @@ enum pkcs11_rc entry_generate_secret(struct pkcs11_client *client,
 	 */
 	rc = create_attributes_from_template(&head, template, template_size,
 					     NULL, PKCS11_FUNCTION_GENERATE,
-					     proc_params->id);
+					     proc_params->id,
+					     PKCS11_CKO_UNDEFINED_ID);
 	if (rc)
 		goto out;
 
@@ -287,8 +290,8 @@ enum pkcs11_rc entry_generate_secret(struct pkcs11_client *client,
 	/*
 	 * Now obj_handle (through the related struct pkcs11_object instance)
 	 * owns the serialized buffer that holds the object attributes.
-	 * We reset attrs->buffer to NULL as serializer object is no more
-	 * the attributes buffer owner.
+	 * We reset head to NULL as it is no more the buffer owner and would
+	 * be freed at function out.
 	 */
 	head = NULL;
 

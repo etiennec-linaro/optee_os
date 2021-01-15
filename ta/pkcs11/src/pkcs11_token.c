@@ -4,6 +4,7 @@
  */
 
 #include <assert.h>
+#include <config.h>
 #include <confine_array_index.h>
 #include <pkcs11_ta.h>
 #include <printk.h>
@@ -603,9 +604,10 @@ enum pkcs11_rc entry_ck_open_session(struct pkcs11_client *client,
 		return PKCS11_CKR_SLOT_ID_INVALID;
 
 	/* Sanitize session flags */
-	if (!(flags & PKCS11_CKFSS_SERIAL_SESSION) ||
-	    (flags & ~(PKCS11_CKFSS_RW_SESSION |
-		       PKCS11_CKFSS_SERIAL_SESSION)))
+	if (!(flags & PKCS11_CKFSS_SERIAL_SESSION))
+		return PKCS11_CKR_SESSION_PARALLEL_NOT_SUPPORTED;
+
+	if (flags & ~(PKCS11_CKFSS_RW_SESSION | PKCS11_CKFSS_SERIAL_SESSION))
 		return PKCS11_CKR_ARGUMENTS_BAD;
 
 	readonly = !(flags & PKCS11_CKFSS_RW_SESSION);
@@ -841,6 +843,28 @@ enum pkcs11_rc entry_ck_token_initialize(uint32_t ptypes, TEE_Param *params)
 			if (sess->token == token)
 				return PKCS11_CKR_SESSION_EXISTS;
 
+#if defined(CFG_PKCS11_TA_AUTH_TEE_IDENTITY)
+	/* Check TEE Identity based authentication if enabled */
+	if (token->db_main->flags & PKCS11_CKFT_PROTECTED_AUTHENTICATION_PATH) {
+		rc = verify_identity_auth(ck_token, PKCS11_CKU_SO);
+		if (rc)
+			return rc;
+	}
+
+	/* Detect TEE Identity based ACL usage activation with NULL PIN */
+	if (!pin) {
+		rc = setup_so_identity_auth_from_client(token);
+		if (rc)
+			return rc;
+
+		goto inited;
+	} else {
+		/* De-activate TEE Identity based authentication */
+		token->db_main->flags &=
+			~PKCS11_CKFT_PROTECTED_AUTHENTICATION_PATH;
+	}
+#endif /* CFG_PKCS11_TA_AUTH_TEE_IDENTITY */
+
 	if (!token->db_main->so_pin_salt) {
 		/*
 		 * The spec doesn't permit returning
@@ -856,8 +880,6 @@ enum pkcs11_rc entry_ck_token_initialize(uint32_t ptypes, TEE_Param *params)
 			      token->db_main->so_pin_hash);
 		if (rc)
 			return rc;
-
-		update_persistent_db(token);
 
 		goto inited;
 	}
@@ -885,11 +907,14 @@ enum pkcs11_rc entry_ck_token_initialize(uint32_t ptypes, TEE_Param *params)
 		return PKCS11_CKR_PIN_INCORRECT;
 	}
 
+inited:
+	/* Make sure SO PIN counters are zeroed */
 	token->db_main->flags &= ~(PKCS11_CKFT_SO_PIN_COUNT_LOW |
-				   PKCS11_CKFT_SO_PIN_FINAL_TRY);
+				   PKCS11_CKFT_SO_PIN_FINAL_TRY |
+				   PKCS11_CKFT_SO_PIN_LOCKED |
+				   PKCS11_CKFT_SO_PIN_TO_BE_CHANGED);
 	token->db_main->so_pin_count = 0;
 
-inited:
 	TEE_MemMove(token->db_main->label, label, PKCS11_TOKEN_LABEL_SIZE);
 	token->db_main->flags |= PKCS11_CKFT_TOKEN_INITIALIZED;
 	/* Reset user PIN */
@@ -902,6 +927,18 @@ inited:
 
 	update_persistent_db(token);
 
+	/* Remove all persistent objects */
+	while (!LIST_EMPTY(&token->object_list)) {
+		struct pkcs11_object *obj = LIST_FIRST(&token->object_list);
+
+		/* Try twice otherwise panic! */
+		if (unregister_persistent_object(token, obj->uuid) &&
+		    unregister_persistent_object(token, obj->uuid))
+			TEE_Panic(0);
+
+		cleanup_persistent_object(obj, token);
+	}
+
 	IMSG("PKCS11 token %"PRIu32": initialized", token_id);
 
 	return PKCS11_CKR_OK;
@@ -911,15 +948,26 @@ static enum pkcs11_rc set_pin(struct pkcs11_session *session,
 			      uint8_t *new_pin, size_t new_pin_size,
 			      enum pkcs11_user_type user_type)
 {
+	struct ck_token *token = session->token;
 	enum pkcs11_rc rc = PKCS11_CKR_OK;
 	uint32_t flags_clear = 0;
 	uint32_t flags_set = 0;
 
-	if (session->token->db_main->flags & PKCS11_CKFT_WRITE_PROTECTED)
+	if (token->db_main->flags & PKCS11_CKFT_WRITE_PROTECTED)
 		return PKCS11_CKR_TOKEN_WRITE_PROTECTED;
 
 	if (!pkcs11_session_is_read_write(session))
 		return PKCS11_CKR_SESSION_READ_ONLY;
+
+	if (IS_ENABLED(CFG_PKCS11_TA_AUTH_TEE_IDENTITY) &&
+	    token->db_main->flags & PKCS11_CKFT_PROTECTED_AUTHENTICATION_PATH) {
+		rc = setup_identity_auth_from_pin(token, user_type, new_pin,
+						  new_pin_size);
+		if (rc)
+			return rc;
+
+		goto update_db;
+	}
 
 	if (new_pin_size < PKCS11_TOKEN_PIN_SIZE_MIN ||
 	    new_pin_size > PKCS11_TOKEN_PIN_SIZE_MAX)
@@ -928,11 +976,11 @@ static enum pkcs11_rc set_pin(struct pkcs11_session *session,
 	switch (user_type) {
 	case PKCS11_CKU_SO:
 		rc = hash_pin(user_type, new_pin, new_pin_size,
-			      &session->token->db_main->so_pin_salt,
-			      session->token->db_main->so_pin_hash);
+			      &token->db_main->so_pin_salt,
+			      token->db_main->so_pin_hash);
 		if (rc)
 			return rc;
-		session->token->db_main->so_pin_count = 0;
+		token->db_main->so_pin_count = 0;
 		flags_clear = PKCS11_CKFT_SO_PIN_COUNT_LOW |
 			      PKCS11_CKFT_SO_PIN_FINAL_TRY |
 			      PKCS11_CKFT_SO_PIN_LOCKED |
@@ -940,11 +988,11 @@ static enum pkcs11_rc set_pin(struct pkcs11_session *session,
 		break;
 	case PKCS11_CKU_USER:
 		rc = hash_pin(user_type, new_pin, new_pin_size,
-			      &session->token->db_main->user_pin_salt,
-			      session->token->db_main->user_pin_hash);
+			      &token->db_main->user_pin_salt,
+			      token->db_main->user_pin_hash);
 		if (rc)
 			return rc;
-		session->token->db_main->user_pin_count = 0;
+		token->db_main->user_pin_count = 0;
 		flags_clear = PKCS11_CKFT_USER_PIN_COUNT_LOW |
 			      PKCS11_CKFT_USER_PIN_FINAL_TRY |
 			      PKCS11_CKFT_USER_PIN_LOCKED |
@@ -955,10 +1003,11 @@ static enum pkcs11_rc set_pin(struct pkcs11_session *session,
 		return PKCS11_CKR_FUNCTION_FAILED;
 	}
 
-	session->token->db_main->flags &= ~flags_clear;
-	session->token->db_main->flags |= flags_set;
+update_db:
+	token->db_main->flags &= ~flags_clear;
+	token->db_main->flags |= flags_set;
 
-	update_persistent_db(session->token);
+	update_persistent_db(token);
 
 	return PKCS11_CKR_OK;
 }
@@ -1015,6 +1064,10 @@ static enum pkcs11_rc check_so_pin(struct pkcs11_session *session,
 
 	assert(token->db_main->flags & PKCS11_CKFT_TOKEN_INITIALIZED);
 
+	if (IS_ENABLED(CFG_PKCS11_TA_AUTH_TEE_IDENTITY) &&
+	    token->db_main->flags & PKCS11_CKFT_PROTECTED_AUTHENTICATION_PATH)
+		return verify_identity_auth(token, PKCS11_CKU_SO);
+
 	if (token->db_main->flags & PKCS11_CKFT_SO_PIN_LOCKED)
 		return PKCS11_CKR_PIN_LOCKED;
 
@@ -1066,6 +1119,10 @@ static enum pkcs11_rc check_user_pin(struct pkcs11_session *session,
 {
 	struct ck_token *token = session->token;
 	enum pkcs11_rc rc = PKCS11_CKR_OK;
+
+	if (IS_ENABLED(CFG_PKCS11_TA_AUTH_TEE_IDENTITY) &&
+	    token->db_main->flags & PKCS11_CKFT_PROTECTED_AUTHENTICATION_PATH)
+		return verify_identity_auth(token, PKCS11_CKU_USER);
 
 	if (!token->db_main->user_pin_salt)
 		return PKCS11_CKR_USER_PIN_NOT_INITIALIZED;
@@ -1228,8 +1285,32 @@ static void session_logout(struct pkcs11_session *session)
 	struct pkcs11_session *sess = NULL;
 
 	TAILQ_FOREACH(sess, &client->session_list, link) {
+		struct pkcs11_object *obj = NULL;
+		uint32_t handle = 0;
+
 		if (sess->token != session->token)
 			continue;
+
+		release_active_processing(session);
+
+		/* Destroy private session objects */
+		LIST_FOREACH(obj, &sess->object_list, link) {
+			if (object_is_private(obj->attributes))
+				destroy_object(sess, obj, true);
+		}
+
+		/*
+		 * Remove handle of token private objects from
+		 * sessions object_handle_db
+		 */
+		LIST_FOREACH(obj, &session->token->object_list, link) {
+			handle = pkcs11_object2handle(obj, session);
+
+			if (handle && object_is_private(obj->attributes))
+				handle_put(&sess->object_handle_db, handle);
+		}
+
+		release_session_find_obj_context(session);
 
 		if (pkcs11_session_is_read_write(sess))
 			sess->state = PKCS11_CKS_RW_PUBLIC_SESSION;

@@ -424,19 +424,91 @@ enum pkcs11_ta_cmd {
 	PKCS11_CMD_VERIFY_ONESHOT = 32,
 
 	/*
-	 * PKCS11_CMD_COPY_OBJECT - Duplicate an object possibly with new attributes
+	 * PKCS11_CMD_GENERATE_KEY - Generate a symmetric key or domain
+	 *                           parameters
 	 *
 	 * [in]  memref[0] = [
 	 *              32bit session handle,
-	 *              32bit object handle,
-	 *              (struct pkcs11_object_head)attribs + attributes data,
+	 *              (struct pkcs11_attribute_head)mechanism + mecha params,
+	 *              (struct pkcs11_object_head)attribs + attributes data
 	 *	 ]
 	 * [out] memref[0] = 32bit return code, enum pkcs11_rc
 	 * [out] memref[2] = 32bit object handle
 	 *
-	 * This command relates to the PKCS#11 API function C_CopyObject().
+	 * This command relates to the PKCS#11 API function C_GenerateKey().
 	 */
-	PKCS11_CMD_COPY_OBJECT = 119,
+	PKCS11_CMD_GENERATE_KEY = 33,
+
+	/*
+	 * PKCS11_CMD_FIND_OBJECTS_INIT - Initialize an object search
+	 *
+	 * [in]  memref[0] = [
+	 *              32bit session handle,
+	 *              (struct pkcs11_object_head)attribs + attributes data
+	 *	 ]
+	 * [out] memref[0] = 32bit return code, enum pkcs11_rc
+	 *
+	 * This command relates to the PKCS#11 API function C_FindOjectsInit().
+	 */
+	PKCS11_CMD_FIND_OBJECTS_INIT = 34,
+
+	/*
+	 * PKCS11_CMD_FIND_OBJECTS - Get handles of matching objects
+	 *
+	 * [in]  memref[0] = 32bit session handle
+	 * [out] memref[0] = 32bit return code, enum pkcs11_rc
+	 * [out] memref[2] = 32bit array object_handle_array[N]
+	 *
+	 * This command relates to the PKCS#11 API function C_FindOjects().
+	 * The size of object_handle_array depends on the size of the output
+	 * buffer provided by the client.
+	 */
+	PKCS11_CMD_FIND_OBJECTS = 35,
+
+	/*
+	 * PKCS11_CMD_FIND_OBJECTS_FINAL - Finalize current objects search
+	 *
+	 * [in]  memref[0] = 32bit session handle
+	 * [out] memref[0] = 32bit return code, enum pkcs11_rc
+	 *
+	 * This command relates to the PKCS#11 API function C_FindOjectsFinal().
+	 */
+	PKCS11_CMD_FIND_OBJECTS_FINAL = 36,
+
+	/*
+	 * PKCS11_CMD_GET_OBJECT_SIZE - Get byte size used by object in the TEE
+	 *
+	 * [in]  memref[0] = [
+	 *              32bit session handle,
+	 *              32bit object handle
+	 *	 ]
+	 * [out] memref[0] = 32bit return code, enum pkcs11_rc
+	 * [out] memref[2] = 32bit object_byte_size
+	 *
+	 * This command relates to the PKCS#11 API function C_GetObjectSize().
+	 */
+	PKCS11_CMD_GET_OBJECT_SIZE = 37,
+
+	/*
+	 * PKCS11_CMD_GET_ATTRIBUTE_VALUE - Get the value of object attribute(s)
+	 *
+	 * [in]  memref[0] = [
+	 *              32bit session handle,
+	 *              32bit object handle,
+	 *              (struct pkcs11_object_head)attribs + attributes data
+	 *	 ]
+	 * [out] memref[0] = 32bit return code, enum pkcs11_rc
+	 * [out] memref[2] = (struct pkcs11_object_head)attribs + attributes
+	 *                   data
+	 *
+	 * This command relates to the PKCS#11 API function C_GetAttributeValue.
+	 * Caller provides an attribute template as 3rd argument in memref[0]
+	 * (referred here as attribs + attributes data). Upon successful
+	 * completion, the TA returns the provided template filled with expected
+	 * data through output argument memref[2] (referred here again as
+	 * attribs + attributes data).
+	 */
+	PKCS11_CMD_GET_ATTRIBUTE_VALUE = 38,
 
 	/*
 	 * PKCS11_CMD_GET_SESSION_STATE - Retrieve the session state for later restore
@@ -461,73 +533,19 @@ enum pkcs11_ta_cmd {
 	PKCS11_CMD_SET_SESSION_STATE = 117,
 
 	/*
-	 * PKCS11_CMD_FIND_OBJECTS_INIT - Initialize an object search
-	 *
-	 * [in]  memref[0] = [
-	 *              32bit session handle,
-	 *              (struct pkcs11_object_head)attribs + attributes data
-	 *	 ]
-	 * [out] memref[0] = 32bit return code, enum pkcs11_rc
-	 *
-	 * This command relates to the PKCS#11 API function C_FindOjectsInit().
-	 */
-	PKCS11_CMD_FIND_OBJECTS_INIT = 121,
-
-	/*
-	 * PKCS11_CMD_FIND_OBJECTS - Get handles of matching objects
-	 *
-	 * [in]  memref[0] = 32bit session handle
-	 * [out] memref[0] = 32bit return code, enum pkcs11_rc
-	 * [out] memref[2] = 32bit array object_handle_array[N]
-	 *
-	 * This command relates to the PKCS#11 API function C_FindOjects().
-	 * The size of object_handle_array depends on the size of the output buffer
-	 * provided by the client.
-	 */
-	PKCS11_CMD_FIND_OBJECTS = 122,
-
-	/*
-	 * PKCS11_CMD_FIND_OBJECTS_FINAL - Finalize current objects search
-	 *
-	 * [in]  memref[0] = 32bit session handle
-	 * [out] memref[0] = 32bit return code, enum pkcs11_rc
-	 *
-	 * This command relates to the PKCS#11 API function C_FindOjectsFinal().
-	 */
-	PKCS11_CMD_FIND_OBJECTS_FINAL = 123,
-
-	/*
-	 * PKCS11_CMD_GET_OBJECT_SIZE - Get byte size used by object in the TEE
-	 *
-	 * [in]  memref[0] = [
-	 *              32bit session handle,
-	 *              32bit object handle
-	 *	 ]
-	 * [out] memref[0] = 32bit return code, enum pkcs11_rc
-	 * [out] memref[2] = 32bit object_byte_size
-	 *
-	 * This command relates to the PKCS#11 API function C_GetObjectSize().
-	 */
-	PKCS11_CMD_GET_OBJECT_SIZE = 124,
-
-	/*
-	 * PKCS11_CMD_GET_ATTRIBUTE_VALUE - Get the value of object attribute(s)
+	 * PKCS11_CMD_COPY_OBJECT - Duplicate an object possibly with new attributes
 	 *
 	 * [in]  memref[0] = [
 	 *              32bit session handle,
 	 *              32bit object handle,
-	 *              (struct pkcs11_object_head)attribs + attributes data
+	 *              (struct pkcs11_object_head)attribs + attributes data,
 	 *	 ]
 	 * [out] memref[0] = 32bit return code, enum pkcs11_rc
-	 * [out] memref[2] = (struct pkcs11_object_head)attribs + attributes data
+	 * [out] memref[2] = 32bit object handle
 	 *
-	 * This command relates to the PKCS#11 API function C_GetAttributeValue.
-	 * Caller provides an attribute template as 3rd argument in memref[0]
-	 * (referred here as attribs + attributes data). Upon successful completion,
-	 * the TA returns the provided template filled with expected data through
-	 * output argument memref[2] (referred here again as attribs + attributes data).
+	 * This command relates to the PKCS#11 API function C_CopyObject().
 	 */
-	PKCS11_CMD_GET_ATTRIBUTE_VALUE = 125,
+	PKCS11_CMD_COPY_OBJECT = 119,
 
 	/*
 	 * PKCS11_CMD_SET_ATTRIBUTE_VALUE - Set the value for object attribute(s)
@@ -542,21 +560,6 @@ enum pkcs11_ta_cmd {
 	 * This command relates to the PKCS#11 API function C_SetAttributeValue().
 	 */
 	PKCS11_CMD_SET_ATTRIBUTE_VALUE = 126,
-
-	/*
-	 * PKCS11_CMD_GENERATE_KEY - Generate a symmetric key or domain parameters
-	 *
-	 * [in]  memref[0] = [
-	 *              32bit session handle,
-	 *              (struct pkcs11_attribute_head)mechanism + mecha params,
-	 *              (struct pkcs11_object_head)attribs + attributes data
-	 *	 ]
-	 * [out] memref[0] = 32bit return code, enum pkcs11_rc
-	 * [out] memref[2] = 32bit object handle
-	 *
-	 * This command relates to the PKCS#11 API functions C_GenerateKey().
-	 */
-	PKCS11_CMD_GENERATE_KEY = 127,
 
 	/*
 	 * PKCS11_CMD_DERIVE_KEY - Derive a key from already provisioned parent key
@@ -636,6 +639,7 @@ enum pkcs11_rc {
 	PKCS11_CKR_SESSION_CLOSED		= 0x00b0,
 	PKCS11_CKR_SESSION_COUNT		= 0x00b1,
 	PKCS11_CKR_SESSION_HANDLE_INVALID	= 0x00b3,
+	PKCS11_CKR_SESSION_PARALLEL_NOT_SUPPORTED = 0x00b4,
 	PKCS11_CKR_SESSION_READ_ONLY		= 0x00b5,
 	PKCS11_CKR_SESSION_EXISTS		= 0x00b6,
 	PKCS11_CKR_SESSION_READ_ONLY_EXISTS	= 0x00b7,

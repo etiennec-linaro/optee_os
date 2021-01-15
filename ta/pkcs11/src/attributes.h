@@ -223,7 +223,7 @@ static inline enum pkcs11_rc get_u32_attribute(struct obj_attrs *head,
 }
 
 /*
- * Return true all attributes from the reference are found and match value
+ * Return true if all attributes from the reference are found and match value
  * in the candidate attribute list.
  *
  * Return PKCS11_CKR_OK on success, or a PKCS11 return code.

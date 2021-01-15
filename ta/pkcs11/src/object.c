@@ -428,18 +428,6 @@ enum pkcs11_rc entry_destroy_object(struct pkcs11_client *client,
 	return rc;
 }
 
-static enum pkcs11_rc token_obj_matches_ref(struct obj_attrs *req_attrs,
-					    struct pkcs11_object *obj)
-{
-	if (!obj->attributes)
-		return PKCS11_RV_NOT_FOUND;
-
-	if (!attributes_match_reference(obj->attributes, req_attrs))
-		return PKCS11_RV_NOT_FOUND;
-
-	return PKCS11_CKR_OK;
-}
-
 static void release_find_obj_context(struct pkcs11_find_objects *find_ctx)
 {
 	if (!find_ctx)
@@ -554,8 +542,7 @@ enum pkcs11_rc entry_find_objects_init(struct pkcs11_client *client,
 		if (check_access_attrs_against_token(session, obj->attributes))
 			continue;
 
-		if (req_attrs->attrs_count &&
-		    !attributes_match_reference(obj->attributes, req_attrs))
+		if (!attributes_match_reference(obj->attributes, req_attrs))
 			continue;
 
 		rc = find_ctx_add(find_ctx, pkcs11_object2handle(obj, session));
@@ -565,13 +552,25 @@ enum pkcs11_rc entry_find_objects_init(struct pkcs11_client *client,
 
 	LIST_FOREACH(obj, &session->token->object_list, link) {
 		uint32_t handle = 0;
+		bool new_load = false;
 
-		if (check_access_attrs_against_token(session, obj->attributes))
-			continue;
+		if (!obj->attributes) {
+			rc = load_persistent_object_attributes(obj);
+			if (rc)
+				return PKCS11_CKR_GENERAL_ERROR;
 
-		if (req_attrs->attrs_count &&
-		    token_obj_matches_ref(req_attrs, obj))
+			new_load = true;
+		}
+
+		if (!obj->attributes ||
+		    check_access_attrs_against_token(session,
+						      obj->attributes) ||
+		    !attributes_match_reference(obj->attributes, req_attrs)) {
+			if (new_load)
+				release_persistent_object_attributes(obj);
+
 			continue;
+		}
 
 		/* Object may not yet be published in the session */
 		handle = pkcs11_object2handle(obj, session);

@@ -694,7 +694,7 @@ create_attributes_from_template(struct obj_attrs **out_attrs, void *template,
 				struct obj_attrs *parent __unused,
 				enum processing_func function,
 				enum pkcs11_mechanism_id mecha,
-				enum pkcs11_class_id template_class __unused)
+				enum pkcs11_class_id template_class)
 {
 	struct obj_attrs *temp = NULL;
 	struct obj_attrs *attrs = NULL;
@@ -750,6 +750,12 @@ create_attributes_from_template(struct obj_attrs **out_attrs, void *template,
 
 	if (class == PKCS11_CKO_UNDEFINED_ID) {
 		rc = PKCS11_CKR_TEMPLATE_INCOMPLETE;
+		goto out;
+	}
+
+	if (template_class != PKCS11_CKO_UNDEFINED_ID &&
+	    template_class != class) {
+		rc = PKCS11_CKR_TEMPLATE_INCONSISTENT;
 		goto out;
 	}
 

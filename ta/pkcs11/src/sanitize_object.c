@@ -230,18 +230,7 @@ static uint32_t sanitize_indirect_attr(struct obj_attrs **dst,
 	enum pkcs11_rc rc = PKCS11_CKR_OK;
 	enum pkcs11_class_id class = get_class(*dst);
 
-	/*
-	 * Serialized attributes: current applicable only to the key
-	 * templates which are tables of attributes.
-	 */
-	switch (cli_ref->id) {
-	case PKCS11_CKA_WRAP_TEMPLATE:
-	case PKCS11_CKA_UNWRAP_TEMPLATE:
-	case PKCS11_CKA_DERIVE_TEMPLATE:
-		break;
-	default:
-		return PKCS11_RV_NOT_FOUND;
-	}
+	assert(pkcs11_attr_has_indirect_attributes(cli_ref.id));
 
 	if (class == PKCS11_CKO_UNDEFINED_ID) {
 		DMSG("Template without CLASS not supported yet");
@@ -315,10 +304,10 @@ enum pkcs11_rc sanitize_client_object(struct obj_attrs **dst, void *src,
 
 		if (pkcs11_attr_has_indirect_attributes(cli_ref.id)) {
 			rc = sanitize_indirect_attr(dst, &cli_ref, data);
-			if (rc == PKCS11_CKR_OK)
-				continue;
-			if (rc != PKCS11_RV_NOT_FOUND)
+			if (rc)
 				return rc;
+
+			continue;
 		}
 
 		if (!valid_pkcs11_attribute_id(cli_ref.id, cli_ref.size)) {

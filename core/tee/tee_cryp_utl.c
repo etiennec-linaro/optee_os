@@ -150,6 +150,8 @@ TEE_Result tee_do_cipher_update(void *ctx, uint32_t algo,
 	return crypto_cipher_update(ctx, mode, last_block, data, len, dst);
 }
 
+#if defined (CFG_WITH_SOFTWARE_PRNG)
+#if defined (CFG_WITH_SOFTWARE_PRNG) && !defined(CFG_WITH_HW_SEEDED_PRNG)
 /*
  * Override this in your platform code to feed the PRNG platform-specific
  * jitter entropy. This implementation does not efficiently deliver entropy
@@ -158,16 +160,16 @@ TEE_Result tee_do_cipher_update(void *ctx, uint32_t algo,
 __weak void plat_prng_add_jitter_entropy(enum crypto_rng_src sid,
 					 unsigned int *pnum)
 {
-	TEE_Time current;
+	TEE_Time __maybe_unused current = {};
 
-#ifdef CFG_SECURE_TIME_SOURCE_REE
-	if (CRYPTO_RNG_SRC_IS_QUICK(sid))
+	if (IS_ENABLED(CFG_SECURE_TIME_SOURCE_REE) &&
+	    CRYPTO_RNG_SRC_IS_QUICK(sid))
 		return; /* Can't read REE time here */
-#endif
 
 	if (tee_time_get_sys_time(&current) == TEE_SUCCESS)
 		crypto_rng_add_event(sid, pnum, &current, sizeof(current));
 }
+#endif
 
 __weak void plat_rng_init(void)
 {

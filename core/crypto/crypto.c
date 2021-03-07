@@ -795,3 +795,15 @@ TEE_Result crypto_acipher_sm2_kep_derive(struct ecc_keypair *my_key __unused,
 __weak void crypto_storage_obj_del(uint8_t *data __unused, size_t len __unused)
 {
 }
+
+/* Platform can override this function unless what ask 1 byte of HW entropy */
+__weak size_t hw_get_available_entropy(uint8_t *buf, size_t size)
+{
+	assert(!size || buf);
+
+	if (!size)
+		return 0;
+
+	*buf = hw_get_random_byte();
+	return 1;
+}

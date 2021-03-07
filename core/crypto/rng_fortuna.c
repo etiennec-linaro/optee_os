@@ -295,11 +295,30 @@ static unsigned int get_next_pnum(unsigned int *pnum)
 	}
 }
 
+static void __maybe_unused add_hw_seed_event(void)
+{
+	static int hw_seed_event_pnum = 0;
+	unsigned int pn = get_next_pnum(&hw_seed_event_pnum);
+	int8_t snum = CRYPTO_RNG_SRC_HW_SEED >> CRYPTO_RNG_SRC_ID_SHIFT;
+	uint64_t seed[2] = { 0 };
+	size_t len = 0;
+
+	assert(IS_EANBLED(CFG_WITH_HW_SEEDED_PRNG));
+
+	len = hw_get_available_entropy(seed, sizeof(seed));
+
+	push_ring_buffer(snum, pn, seed, len);
+}
+
 void crypto_rng_add_event(enum crypto_rng_src sid, unsigned int *pnum,
 			  const void *data, size_t dlen)
 {
 	unsigned int pn = get_next_pnum(pnum);
-	uint8_t snum = sid >> 1;
+	uint8_t snum = sid >> CRYPTO_RNG_SRC_ID_SHIFT;
+
+	if (IS_ENABLED(CFG_WITH_HW_SEEDED_PRNG) &&
+	    sid != CRYPTO_RNG_SRC_HW_SEED)
+		add_hw_seed_event();
 
 	if (CRYPTO_RNG_SRC_IS_QUICK(sid)) {
 		push_ring_buffer(snum, pn, data, dlen);
@@ -358,22 +377,24 @@ static TEE_Result generate_random_data(void *buf, size_t blen)
 	return TEE_SUCCESS;
 }
 
-#ifdef CFG_SECURE_TIME_SOURCE_REE
 static bool reseed_rate_limiting(void)
 {
+	TEE_Result res = TEE_ERROR_GENRIC;
+	TEE_Time time = { };
+	const TEE_Time time_100ms = { 0, 100 };
+
 	/*
 	 * There's no point in checking REE time for reseed rate limiting,
 	 * and also it makes it less complicated if we can avoid doing RPC
 	 * here.
 	 */
-	return false;
-}
-#else
-static bool reseed_rate_limiting(void)
-{
-	TEE_Result res;
-	TEE_Time time;
-	const TEE_Time time_100ms = { 0, 100 };
+	if (IS_ENBLED(CFG_SECURE_TIME_SOURCE_REE))
+	    return false;
+
+	/*
+	 * What if (IS_ENBLED(CFG_WITH_HW_SEEDED_PRNG)) ?
+	 * Let do rate limitation.
+	 */
 
 	res = tee_time_get_sys_time(&time);
 	/*
@@ -390,7 +411,6 @@ static bool reseed_rate_limiting(void)
 	TEE_TIME_ADD(time, time_100ms, state.next_reseed_time);
 	return false;
 }
-#endif
 
 static TEE_Result restart_pool(void *pool_ctx, uint8_t pool_digest[KEY_SIZE])
 {
@@ -473,21 +493,55 @@ static TEE_Result maybe_reseed(void)
 	return TEE_SUCCESS;
 }
 
+static void hw_seed_get_bytes(uint8_t *buf, size_t len)
+{
+	while (len) {
+		size_t s = hw_get_entropy(hw_seed, len);
+
+		if (!s)
+			panic();
+		len -= s;
+	}
+}
+
+static void hw_seed_fortuna_key(void)
+{
+	uint8_t hw_seed[KEY_SIZE] = { 0 };
+
+	hw_seed_get_bytes(hw_seed, sizeof(hw_seed));
+	crypto_cipher_final(state.ctx);
+
+	return cipher_init(state.ctx, hw_seed);
+}
+
 static TEE_Result fortuna_read(void *buf, size_t blen)
 {
-	TEE_Result res;
+	TEE_Result res = TEE_ERROR_GENERIC;
 
 	if (!state.ctx)
 		return TEE_ERROR_BAD_STATE;
 
 	mutex_lock(&state_mu);
 
+	if (IS_ENABLED(CFG_WITH_HW_SEEDED_PRNG)) {
+		/* Pool straight the bytes from the strong RNG */
+		if (blen <= KEY_SIZE) {
+			res = hw_seed_get_bytes(buf, blen);
+			mutex_unlock(&state_mu);
+			return res;
+		}
+
+		res = hw_seed_fortuna_key();
+		if (res)
+			return res;
+	}
+
 	res = maybe_reseed();
 	if (res)
 		goto out;
 
 	if (blen) {
-		uint8_t new_key[KEY_SIZE];
+		uint8_t new_key[KEY_SIZE] = { 0 };
 
 		res = generate_random_data(buf, blen);
 		if (res)
@@ -516,8 +570,8 @@ TEE_Result crypto_rng_read(void *buf, size_t blen)
 	size_t offs = 0;
 
 	while (true) {
-		TEE_Result res;
-		size_t n;
+		TEE_Result res = TEE_ERROR_GENERIC;
+		size_t n = 0;
 
 		/* Draw at most 1 MiB of random on a single key */
 		n = MIN(blen - offs, SIZE_1M);

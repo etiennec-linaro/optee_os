@@ -298,20 +298,29 @@ TEE_Result hash_sha256_check(const uint8_t *hash, const uint8_t *data,
 TEE_Result hash_sha512_256_compute(uint8_t *digest, const uint8_t *data,
 		size_t data_size);
 
-#define CRYPTO_RNG_SRC_IS_QUICK(sid) (!!((sid) & 1))
-
 /*
- * enum crypto_rng_src - RNG entropy source
+ * RNG entropy source identifiers
  *
- * Identifiers for different RNG entropy sources. The lowest bit indicates
- * if the source is to be merely queued (bit is 1) or if it's delivered
+ * IDs for different RNG entropy sources. Bit CRYPTO_RNG_SRC_SLOW
+ * indicates if the source is to be merely queued or if it's delivered
  * directly to the pool. The difference is that in the latter case RPC to
  * normal world can be performed and in the former it must not.
  */
+#define CRYPTO_RNG_SRC_SLOW		BIT(0)
+#define CRYPTO_RNG_SRC_ID_SHIFT		1
+
+#define CRYPTO_RNG_SRC_SID(id)		(id << CRYPTO_RNG_SRC_ID_SHIFT)
+#define CRYPTO_RNG_SRC_IS_QUICK(sid)	(!(bool)((sid) & CRYPTO_RNG_SRC_SLOW))
+
+#define RNG_FAST_SRC(id)	CRYPTO_RNG_SRC_SID(id)
+#define RNG_SLOW_SRC(id)	(CRYPTO_RNG_SRC_SID(id) | CRYPTO_RNG_SRC_SLOW)
+
+/* enum crypto_rng_src - RNG entropy source with speed bit flag */
 enum crypto_rng_src {
-	CRYPTO_RNG_SRC_JITTER_SESSION	= (0 << 1 | 0),
-	CRYPTO_RNG_SRC_JITTER_RPC	= (1 << 1 | 1),
-	CRYPTO_RNG_SRC_NONSECURE	= (1 << 1 | 0),
+	CRYPTO_RNG_SRC_JITTER_SESSION	= RNG_FAST_SRC(0),
+	CRYPTO_RNG_SRC_JITTER_RPC	= RNG_FAST_SRC(1),
+	CRYPTO_RNG_SRC_NONSECURE	= RNG_SLOW_SRC(2),
+	CRYPTO_RNG_SRC_HW_SEED		= RNG_FAST_SRC(3),
 };
 
 /*

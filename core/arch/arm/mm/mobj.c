@@ -597,6 +597,9 @@ static TEE_Result mobj_with_fobj_get_pa(struct mobj *mobj, size_t offs,
 	struct mobj_with_fobj *f = to_mobj_with_fobj(mobj);
 	paddr_t p = 0;
 
+	if (mobj_is_paged(mobj))
+		return TEE_ERROR_NO_DATA;
+
 	if (!f->fobj->ops->get_pa)
 		return TEE_ERROR_GENERIC;
 

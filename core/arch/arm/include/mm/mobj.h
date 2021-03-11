@@ -47,6 +47,12 @@ static inline void *mobj_get_va(struct mobj *mobj, size_t offset)
 	return NULL;
 }
 
+/*
+ * Get the physical address for a mobj memory cell
+ * Return TEE_ERROR_NO_DATA if mobj refers to volatile physical memory
+ * Return TEE_SUCCESS if physical address is found
+ * Return another TEE_Result code on error
+ */
 static inline TEE_Result mobj_get_pa(struct mobj *mobj, size_t offs,
 				     size_t granule, paddr_t *pa)
 {

@@ -1210,7 +1210,9 @@ TEE_Result vm_pa2va(const struct user_mode_ctx *uctx, paddr_t pa, void **va)
 				size = region->size;
 
 			res = mobj_get_pa(region->mobj, ofs, granule, &p);
-			if (res != TEE_SUCCESS)
+			if (res == TEE_ERROR_NO_DATA)
+				continue;
+			if (res)
 				return res;
 
 			if (core_is_buffer_inside(pa, 1, p, size)) {
@@ -1225,7 +1227,7 @@ TEE_Result vm_pa2va(const struct user_mode_ctx *uctx, paddr_t pa, void **va)
 		}
 	}
 
-	return TEE_ERROR_ACCESS_DENIED;
+	return TEE_ERROR_NO_DATA;
 }
 
 TEE_Result vm_check_access_rights(const struct user_mode_ctx *uctx,

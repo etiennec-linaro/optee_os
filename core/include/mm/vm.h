@@ -9,14 +9,10 @@
 #include <kernel/tee_ta_manager.h>
 #include <kernel/user_ta.h>
 
-/*-----------------------------------------------------------------------------
- * Allocate context resources like ASID and MMU table information
- *---------------------------------------------------------------------------*/
+/* Allocate context resources like ASID and MMU table information */
 TEE_Result vm_info_init(struct user_mode_ctx *uctx);
 
-/*-----------------------------------------------------------------------------
- * Release context resources like ASID
- *---------------------------------------------------------------------------*/
+/* Release context resources like ASID */
 void vm_info_final(struct user_mode_ctx *uctx);
 
 /*
@@ -87,26 +83,32 @@ TEE_Result vm_buf_to_mboj_offs(const struct user_mode_ctx *uctx,
 			       const void *va, size_t size,
 			       struct mobj **mobj, size_t *offs);
 
-/*-----------------------------------------------------------------------------
- * vm_va2pa - Translate virtual user address to physical address
- * given the user context.
- * Interface is deprecated, use virt_to_phys() instead.
- *---------------------------------------------------------------------------*/
+/*
+ * This function is far less efficient than virt_to_phys().
+ * Returns TEE_ERROR_NO_DATA if @va refers to volatile physical memory.
+ * Returns TEE_ERROR_ACCESS_DENIED if @va is not mapped in user context.
+ * Returns TEE_SUCCESS if physical address is found.
+ * Returns another TEE_Result code on error.
+ */
 TEE_Result vm_va2pa(const struct user_mode_ctx *uctx, void *ua, paddr_t *pa);
 
-/*-----------------------------------------------------------------------------
- * vm_pa2va - Translate physical address to virtual user address
- * given the user context.
- * Interface is deprecated, use phys_to_virt() instead.
- *---------------------------------------------------------------------------*/
+/*
+ * This function may be less efficient than phys_to_virt().
+ * Return TEE_ERROR_NO_DATA if no virtual address match @pa. This may not be an
+ * error as for example when pager makes physical addresses volatile.
+ * Return TEE_SUCCESS if a virtual address is found.
+ * Return another TEE_Result code on error.
+ */
 TEE_Result vm_pa2va(const struct user_mode_ctx *uctx, paddr_t pa, void **va);
 
+/*
+ * Return TEE_SUCCESS or TEE_ERROR_ACCESS_DENIED if buffer location is valid,
+ * else return another TEE_Result code.
+ */
 TEE_Result vm_check_access_rights(const struct user_mode_ctx *uctx,
 				  uint32_t flags, uaddr_t uaddr, size_t len);
 
-/*-----------------------------------------------------------------------------
- * If ctx is NULL user mapping is removed and ASID set to 0
- *---------------------------------------------------------------------------*/
+/* Set user context @ctx or core privileged context if @ctx is NULL */
 void vm_set_ctx(struct ts_ctx *ctx);
 
 #endif /*TEE_MMU_H*/
